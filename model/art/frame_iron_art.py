@@ -81,14 +81,24 @@ def chest(W, D, hole):
             'up': up, 'down': ['p' * W] * D}
 
 
-def waist(W, D):
-    """Ribbed slate with a small abdomen plate in front, in the chest's shadow at the top."""
-    front = ribs(W, 5)
-    front = overlay(front, W // 2 - 2, 1, plate(4, 4, top='tuck', bottom='roll', seed='ab'))
-    front[0] = 'd' * W
-    back = ['d' * W] + ribs(W, 4, 1)
-    side = ['d' * D] + ribs(D, 4, 1)
+def waist(W, D, H=3):
+    """Ribbed slate with an abdomen plate in front that tapers on with the steps above it (2026-11-05, user): its top
+    row 6 texels wide, the rows under it 4. Back and sides ribbed, the top row in the band's shadow."""
+    front = ['d' * W] + ribs(W, H - 1)
+    c = W // 2
+    front = overlay(front, c - 3, 0, ['g' + 'h' * 4 + 'e'])
+    front = overlay(front, c - 2, 1, plate(4, H - 1, top=None, bottom='shade', marks=False))
+    back = ['d' * W] + ribs(W, H - 1, 1)
+    side = ['d' * D] + ribs(D, H - 1, 1)
     return {'north': front, 'south': back, 'east': side, 'west': side, 'up': ['d' * W] * D, 'down': ['p' * W] * D}
+
+
+def waist_step(W, H, D):
+    """A band between the chest and the waist, the breastplate's steel stepping in: its top a lit ledge, its face a
+    lit row over its body (one row: just the lit edge), a shaded bottom row."""
+    face = lambda w: (['h' * w] if H == 1 else plate(w, H, top='rim', bottom='shade', marks=False))
+    return {'north': face(W), 'south': face(W), 'east': face(D), 'west': face(D), 'up': ['h' * W] * D,
+            'down': ['p' * W] * D}
 
 
 def pauldron(W, H, D):

@@ -353,6 +353,12 @@ ARMOR_BOX = {'helmet': ((-4.5, 25.5, -4.5), (4.5, 34.5, 4.5)),
              'arm': ((3.75 + ARM_OUT, 10, -2.5), (8.75 + ARM_OUT, 26.1, 2.5)),
              'leg': ((-0.25 + LEG_OUT, 0, -2.5), (4.75 + LEG_OUT, 17, 2.5)),   # raw (legs)
              'hip': ((-4.75, 13.9, -2.25), (4.75, 15.1, 2.25))}
+# The waist steps in (2026-11-05, user: more steps from the chest down to the waist): a band halfway between the chest
+# and the waist at the sides (wide: 12 -> 11 -> 10 px across; slim 11 -> 10.5 -> 10) and 0.25 px shallower than the
+# chest front and back, y 20-22, over the waist (y 17-20). Picked over one step (the waist straight under the chest)
+# and two 1 px bands down to a waist pinched to 9 px with the hips flaring out under it.
+WAIST_STEPS = [((-(CHEST_X + TX) / 2, 18, -2.75), ((CHEST_X + TX) / 2, 20, 2.75))]   # raw y (built - FY)
+ARMOR_BOX['waist'] = ((-TX, 15, -TZ + 0.5), (TX, 18, TZ - 0.5))
 def _dims(box): return [round(box[1][k] - box[0][k]) for k in range(3)]   # its art's texels (one per px, ~)
 
 def _legrows(face): return face[:1] + [r for r in face[1:] for _ in range(2)]   # the half-px top row once, the rest twice
@@ -431,9 +437,10 @@ if ARMOR != 'none':
     SHELLS.update({
         'helmet_armor': dict(faces=_helmet(HELMET)),
         'chest_armor': dict(faces=iron.chest(_cw, _d, round((CHEST_X - 4) * 2))),
-        'waist_armor': dict(faces=iron.waist(_tw, _wd)),
+        'waist_armor': dict(faces=iron.waist(*_dims(ARMOR_BOX['waist'])[::2], _dims(ARMOR_BOX['waist'])[1])),
+        **{f'waist{i}_armor': dict(faces=iron.waist_step(*_dims(b))) for i, b in enumerate(WAIST_STEPS)},
         'pauldron_armor': dict(faces=iron.pauldron(*_dims(ARMOR_BOX['pauldron']))),
-        'hip_armor': dict(faces=iron.hip(10, 5)),
+        'hip_armor': dict(faces=iron.hip(_dims(ARMOR_BOX['hip'])[0], 5)),
         'arm_armor': dict(cage=iron.arm(), below=['fist'], rows=1, up=iron.arm()['up']),
         'leg_armor': dict(cage=iron.leg(), below=['boot'], rows=1, up=iron.leg()['up'])})
 elif HELMET != 'none': SHELLS['helmet_armor'] = dict(faces=_helmet(HELMET))
@@ -460,7 +467,8 @@ SHELLS['shoulder_plate'] = dict(faces=_plate())
 # where each shell's faces sit in the texture (below / beside nothing else), one strip per shell
 SHELL_AT = {'arm_shell': (0, 64), 'leg_shell': (0, 80),
             'chest_armor': (35, 87), 'waist_armor': (128, 40), 'helmet_armor': (70, 112), 'arm_armor': (128, 0),
-            'leg_armor': (224, 40), 'pauldron_armor': (192, 0), 'hip_armor': (192, 12)}
+            'leg_armor': (224, 40), 'pauldron_armor': (192, 0), 'hip_armor': (192, 12),
+            'waist0_armor': (128, 47), 'waist1_armor': (128, 54)}
 def shell_art(part, f):
     """The face's rows: letters ('#' bar, 'T' tucked bar, '.' hole, PAL colours) and (u, v) refs into the source
     canvas for the gauntlet / boot art copied below a limb's cage."""
@@ -863,6 +871,8 @@ if ARMOR != 'none':
     for piece, frame in (('chest', 'fr_chest_shell'), ('waist', 'fr_abdomen_shell')):
         unlink(frame)
         _armor('torso', 'r', piece, f'ar_{piece}')
+    for i, b in enumerate(WAIST_STEPS):
+        _armor('torso', 'r', f'waist{i}', f'ar_waist{i}', box=b)
     unlink('fr_belt_shell')
     _armor('body', 'r', 'hip', 'ar_hip')
     for side, nm in (('r', 'right'), ('l', 'left')):
