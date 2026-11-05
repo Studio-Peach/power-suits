@@ -283,13 +283,12 @@ _LEG = {     # 5 x 12 x 5: thigh plate, a knee cap on the dark knee, shin plate 
 _LEG['south'] = ['khhhh', 'kppps', 'kppps', 'kppps', 'kssss', 'kkkkk', 'kmmmm', 'khhhh', 'kppps', 'kppps', 'kppps', 'kssss']
 def _pad(W, H, D):
     """The pauldron, W x H x D: one big plate, lit from the upper left, a rolled rim (a light row) over
-    its bottom edge's shadow; its top a plate with a bright front rim and outer edge; its inner side (against the
-    torso) and underside slate."""
+    its bottom edge's shadow; its top a plate with a bright front rim and outer edge; its inner side a plate too (it
+    stands 1 px off the arm, so it shows), its underside slate."""
     face = lambda w: ['g' + 'h' * (w - 1)] + ['l' + 'p' * (w - 2) + 's'] * (H - 3) + ['l' * w, 's' * w]
     north = face(W)                                   # outer column first
     up = ['h' * W] + ['l' * (W - 1) + 'h'] * (D - 2) + ['p' * (W - 1) + 'l']   # rows front -> back, columns inner -> outer
-    inner = ['k' * D, 'm' * D] * (H // 2) + ['k' * D] * (H % 2)
-    return {'north': north, 'south': [r[::-1] for r in north], 'east': face(D), 'west': inner, 'up': up,
+    return {'north': north, 'south': [r[::-1] for r in north], 'east': face(D), 'west': face(D), 'up': up,
             'down': ['k' * W] * D}
 
 for _f in (_TORSO, _LEG):
@@ -362,12 +361,16 @@ def _helmet(visor='painted'):
 # soles): the frame's boxes (see the model building below), heights here as built (with FY).
 # - helmet: 0.5 px round his head, its bottom 0.5 px under his neck, in the chest.
 # - torso (2026-11-04, user: stepped, one piece, over a straight one at the chest's width): the chest box over the
-#   waist (the frame's abdomen box).
-# - pauldron (the iron tier's; 2026-11-04, user: the shoulder plate's footprint, 6 x 6, down over most of the arm): one
-#   box on the arm bone, from the plate's top (29) down to PAULDRON (20), replacing the plate and the arm box's top. The arm
-#   piece under it is the arm box from the fist up to the pauldron (they meet back to back), so the pauldron stands out
-#   1 px at the side and 0.5 front and back. It turns with the arm about the shoulder (8.25, 28): its inner top corner
-#   stays 1.3 px clear of the helmet's side however the arm turns.
+#   waist (the frame's abdomen box), the waist 0.5 px shallower front and back (z +-2.5, flush with the legs; user's
+#   edit), so the chest stands proud of it all round.
+# - arm: the whole arm box, from the fist up to 0.1 px over the shoulder (28.1: at 28 its top would lie in his arm's),
+#   with or without a pauldron (2026-11-04, user's edit; first it stopped under the pauldron).
+# - pauldron (the iron tier's add-on; 2026-11-04, user: the shoulder plate's footprint down over most of the arm, then
+#   his edit: 1 px off its inner side, 5 x 6): one box on the arm bone over the arm piece, from the plate's top (29)
+#   down to PAULDRON (20), 1 px out at the side, 0.5 front and back, its inner wall 1 px off the arm's, so the arm
+#   piece shows between it and the chest. That keeps it clear of the helmet: a 50 deg head turn sweeps the helmet's
+#   corners 6.4 px from the neck (the wide build's pauldron starts at 7, the slim's at 6.5; flush with the arm, at 6
+#   / 5.5, the corners cut into its top).
 # - legs: the leg box, but up to the waist (17), replacing the belt too: the frame's leg stops 0.5 px under the belt
 #   (room for a stride), and with sealed armour that slit showed his trousers, his leg's top in a stride. The leg's
 #   top meets the waist's bottom back to back; in a stride it turns up into the waist.
@@ -377,9 +380,9 @@ def _helmet(visor='painted'):
 #   its top would lie in the leg tops' plane).
 ARMOR_BOX = {'helmet': ((-4.5, 25.5, -4.5), (4.5, 34.5, 4.5)),
              'chest': ((-CHEST_X, 20, -TZ), (CHEST_X, 26, TZ)),
-             'waist': ((-TX, 15, -TZ), (TX, 20, TZ)),
-             'pauldron': ((3.75 + ARM_OUT, PAULDRON - FY, -2.5 - PLATE_FB), (8.75 + ARM_OUT + PLATE_OUT, 27, 2.5 + PLATE_FB)),
-             'arm': ((3.75 + ARM_OUT, 10, -2.5), (8.75 + ARM_OUT, PAULDRON - FY, 2.5)),
+             'waist': ((-TX, 15, -TZ + 0.5), (TX, 20, TZ - 0.5)),
+             'pauldron': ((4.75 + ARM_OUT, PAULDRON - FY, -2.5 - PLATE_FB), (8.75 + ARM_OUT + PLATE_OUT, 27, 2.5 + PLATE_FB)),
+             'arm': ((3.75 + ARM_OUT, 10, -2.5), (8.75 + ARM_OUT, 26.1, 2.5)),
              'leg': ((-0.25 + LEG_OUT, 0, -2.5), (4.75 + LEG_OUT, 17, 2.5)),   # raw (legs)
              'hip': ((-4.75, 13.9, -2.25), (4.75, 15.1, 2.25))}
 def _dims(box): return [round(box[1][k] - box[0][k]) for k in range(3)]   # its art's texels (one per px, ~)
@@ -469,14 +472,13 @@ if ARMOR != 'none':
     _chest.update(up=_up, down=['d' * _cw] * _d)
     _waist = {f: _fit(_TORSO[f][7:], _tw if f in ('north', 'south') else _d, 5) for f in ('north', 'south', 'east', 'west')}
     _waist.update(up=['d' * _tw] * _d, down=['d' * _tw] * _d)
-    _arm_rows = round(PAULDRON - 16)   # the arm piece's cage rows over the fist: the leg's shin plate
     _pdims = _dims(ARMOR_BOX['pauldron'])
     SHELLS.update({
         'helmet_armor': dict(faces=_helmet(HELMET)), 'chest_armor': dict(faces=_chest), 'waist_armor': dict(faces=_waist),
         'pauldron_armor': dict(faces=_pad(*_pdims)),
         'hip_armor': dict(faces={f: ['k' * (10 if f in ('north', 'south', 'up', 'down') else 4)] * (4 if f in ('up', 'down') else 1)
                                  for f in FACES}),
-        'arm_armor': dict(cage={f: _LEG[f][12 - _arm_rows:] for f in ('north', 'east', 'south', 'west')}, below=['fist'],
+        'arm_armor': dict(cage={f: _LEG[f] for f in ('north', 'east', 'south', 'west')}, below=['fist'],
                           rows=1, up=['k' * 5] * 5),
         'leg_armor': dict(cage={f: _fit(_LEG[f], 5, 26) for f in ('north', 'east', 'south', 'west')}, below=['boot'], rows=2,
                           up=['k' * 5] * 5)})
@@ -912,7 +914,7 @@ if ARMOR != 'none':
     for side, nm in (('r', 'right'), ('l', 'left')):
         for frame in (f'fr_arm_shell_{side}', f'fr_shoulder_plate_{side}', f'fr_leg_shell_{side}'): unlink(frame)
         _armor(f'{nm}_arm', side, 'arm', f'ar_arm_{side}')
-        _armor(f'{nm}_arm', side, 'pauldron', f'ar_pauldron_{side}')
+        _armor(f'{nm}_arm', side, 'pauldron', f'ar_pauldron_{side}', addon=True)
         _armor(f'{nm}_leg', side, 'leg', f'ar_leg_{side}', raw=True)
 
 # ---------------------------------------------------------------- write the project
