@@ -87,6 +87,7 @@ assert HELMET in ('none', 'glass'), HELMET
 _hex = lambda h: tuple(int(h[i:i + 2], 16) for i in range(0, len(h), 2))
 GLASS = _hex(os.environ.get('GLASS', '262c34c8'))
 GLINT = _hex(os.environ.get('GLINT', 'e8f4ff78'))   # a glint across it, top left to bottom right
+FY = 2   # he stands on the 4 px soles (his feet at y 4): everything above the soles is lifted 2 px from the numbers below
 LEG_OUT = 0.25
 CHEST_X = {'wide': 6.0, 'slim': 5.5}[BUILD]   # the chest's half width
 ARM_OUT = CHEST_X - 3.75                      # the arm box's inner wall (3.75 + ARM_OUT) against the chest's side
@@ -94,17 +95,13 @@ ARM_OUT = CHEST_X - 3.75                      # the arm box's inner wall (3.75 +
 # (shoulder platforms) and at the sides.
 TX, TZ = 4.75 + LEG_OUT, 3   # the abdomen box's (the waist's) half width, the torso boxes' half depth
 assert (TX * 2) % 1 == 0 and (CHEST_X * 2) % 1 == 0, (TX, CHEST_X)   # fronts are 2 texels per px: whole texels outside his torso
-# Draft knob: the iron armour over the frame ('none' / 'iron'): helmet, torso, arms, legs. See ARMOR_BOX. Its boxes
-# predate the 2026-11-04 spacing (split chest, touching limbs): check_armor() fails on them until they're refitted.
+# Draft knob: the iron armour ('none' / 'iron'): helmet, torso, arms, legs. See ARMOR_BOX.
 ARMOR = os.environ.get('ARMOR', 'none')
 assert ARMOR in ('none', 'iron'), ARMOR
-# Draft knob: the arm piece ('SP': a slim sleeve round the upper arm + a pauldron over it, out to its side, as tall
-# as the sleeve; 'A': one 7 x 8 x 7 block round the upper arm, the pad and the arm in one). Power reads
-# as shoulders much wider than the head (the big suit: 3.3x its helmet; vanilla iron 1.8x). Tried and dropped: an arm
-# piece the arm's size (2.2x, vanilla-like); wide flat pads (8 / 10 x 5 / 6: planks); a 7 x 9 x 8 pad (too large);
-# S, a 6 x 7 x 7 block.
-ARM = os.environ.get('ARM', 'SP')
-assert ARM in ('SP', 'A'), ARM
+# Where the iron pauldron ends (built y; the shoulder plate's top is at 29, the arm's cage 16-28 over the fist 12-16):
+# 9 of the arm's 16 px, past the elbow, leaving 4 px of forearm over the fist (2026-11-04, user; picked over 18, which
+# left 2 px and read as a whole sleeve). See ARMOR_BOX.
+PAULDRON = 20
 STEVE_PNG = {'wide': 'assets/minecraft/textures/entity/player/wide/steve.png',
              'slim': 'assets/minecraft/textures/entity/player/slim/alex.png'}[BUILD]
 
@@ -247,13 +244,15 @@ def _belt():
 
 # ---------------------------------------------------------------- armour drafts (ARMOR)
 # The armour is SEALED: each piece is a closed box, every face solid (the see-through texels are the frame's only).
-# It is the frame's size, not a box round it: each piece is its frame box plus 0.25 px (the least that keeps every face
-# out of the frame's planes), so the suited player stays at vanilla armour's size (bigger armour read as a costume).
+# It REPLACES the frame part in place (2026-11-04, user): the piece is that part's box exactly, painted as armour, and
+# the frame's box isn't drawn under it, so the suit stays the frame's size. (Refitted first as overlays, each piece
+# its frame box plus 0.25-0.5 px over the frame: too thick.) The limbs keep the frame's fists and soles (their art
+# at the bottom of the piece's faces: the box is one, as the frame's), the belt stays the frame's. Pieces touch where
+# the frame's boxes do (legs at the crotch, arms against the chest, waist on the belt): those faces meet back to back
+# with the pieces on either side, shut in like the frame's touching walls. What must never happen is two faces in one
+# plane facing the same way (they flicker): check_armor().
 # Its look is the big suit's (power_suit.bbmodel, the marketing pictures): plates in its mid steel, everything
 # between them (waist, upper arms, knees, inner legs) its dark slate under-armour, the helmet its helmet.
-# Where pieces overlap (a shoulder pad and the helmet, the leg tops and the belt, the two legs at the crotch) each one's
-# faces inside the other are hidden by it; what must never happen is two faces in one plane (they flicker):
-# check_armor() tests every armour face against Steve, the frame's solid texels and the other pieces.
 ARMPAL = {'g': 'cdcfcf', 'h': '9fa4a9', 'l': '757c85', 'p': '58606a', 's': '3c424c',      # the plates' steel
           'n': '4c5559', 'm': '3b4246', 'k': '2f3437', 'd': '25292c', 'x': '1a1d1f'}      # the slate under-armour
 ARMPAL = {c: tuple(int(h[i:i + 2], 16) for i in (0, 2, 4)) for c, h in ARMPAL.items()}
@@ -278,13 +277,8 @@ _LEG = {     # 5 x 12 x 5: thigh plate, a knee cap on the dark knee, shin plate 
     'west': ['kkkkk', 'mmmmm'] * 5 + ['kkkkk', 'ddddd'],
     'up': ['kkkkk'] * 5, 'down': ['ddddd'] * 5}
 _LEG['south'] = ['khhhh', 'kppps', 'kppps', 'kppps', 'kssss', 'kkkkk', 'kmmmm', 'khhhh', 'kppps', 'kppps', 'kppps', 'kssss']
-def _sleeve(W, H, D):   # the slim arm piece under a pauldron: dark ribbed under-armour all round
-    rib = lambda w: ['k' * w, 'm' * w] * (H // 2) + ['k' * w] * (H % 2)
-    return {'north': rib(W), 'south': rib(W), 'east': rib(D), 'west': rib(D), 'up': ['k' * W] * D,
-            'down': ['k' * W] * D}
-
 def _pad(W, H, D):
-    """The arm piece, a shoulder pad W x H x D: one big plate, lit from the upper left, a rolled rim (a light row) over
+    """The pauldron, W x H x D: one big plate, lit from the upper left, a rolled rim (a light row) over
     its bottom edge's shadow; its top a plate with a bright front rim and outer edge; its inner side (against the
     torso) and underside slate."""
     face = lambda w: ['g' + 'h' * (w - 1)] + ['l' + 'p' * (w - 2) + 's'] * (H - 3) + ['l' * w, 's' * w]
@@ -361,33 +355,29 @@ def _helmet(visor='painted'):
     return faces
 
 # Boxes, right side (the left mirrors), in the frame's numbers (helmet / torso / arms lifted by FY; legs raw, like the
-# soles). Each is its frame box (or Steve's head) plus 0.25 px, except where that would put a face in a plane. Heights
-# below are as built (with FY):
-# - helmet: 0.5 px round his head (the old helmet's clearance), its bottom 0.5 px under his neck, in the torso piece.
-# - torso: its top 0.5 px over his neck (28.5; his torso's top and his head's underside are at 28), its bottom 0.5 px
-#   into the belt (16.5; the belt's top and bottom are at 17 and 16).
-# - arms (ARM_BOX, in the arm's numbers before ARM_OUT moves it out): around the upper arm from y 21.25 to 0.25 px
-#   over his shoulder, inner wall 0.5 px inside his arm's. OPEN: under it the frame's cage shows, down to the fist
-#   (y 16), with his forearm in it: the sleeve down to the fist, or a forearm piece? A box round his arm can't clear
-#   the helmet: its top inner corner, turned by the splay, tucks into the helmet's base (the sleeve 0.26 px, A 0.35 px;
-#   hidden inside it). The pauldron (PAD_BOX) needn't enclose him, so it starts further out and clears the helmet
-#   (by 0.4 px); 0.25 px in front of / behind the torso piece; it covers the sleeve's whole height (a pad only on top
-#   of it was tried: the dark sleeve showed under it).
-# - legs: from 0.25 px over the sole's top (3.75: his feet stand at 4; no face of the frame there, sole and cage are
-#   one box) up into the belt (16.5; his leg's top is at 16: the leg's turned planes cross the belt's, never lie in
-#   them); inner wall 0.5 px inside his leg's. With his legs out (LEG_OUT) the two legs' pieces just meet at the crotch
-#   (_LEG paints their inner columns one colour, so even a touch can't flicker).
+# soles): the frame's boxes (see the model building below), heights here as built (with FY).
+# - helmet: 0.5 px round his head, its bottom 0.5 px under his neck, in the chest.
+# - torso (2026-11-04, user: stepped, one piece, over a straight one at the chest's width): the chest box over the
+#   waist (the frame's abdomen box).
+# - pauldron (the iron tier's; 2026-11-04, user: the shoulder plate's footprint, 6 x 6, down over most of the arm): one
+#   box on the arm bone, from the plate's top (29) down to PAULDRON (20), replacing the plate and the arm box's top. The arm
+#   piece under it is the arm box from the fist up to the pauldron (they meet back to back), so the pauldron stands out
+#   1 px at the side and 0.5 front and back. It turns with the arm about the shoulder (8.25, 28): its inner top corner
+#   stays 1.3 px clear of the helmet's side however the arm turns.
+# - legs: the leg box, but up to the waist (17), replacing the belt too: the frame's leg stops 0.5 px under the belt
+#   (room for a stride), and with sealed armour that slit showed his trousers, his leg's top in a stride. The leg's
+#   top meets the waist's bottom back to back; in a stride it turns up into the waist.
+# - hip (the leg piece's, as vanilla's leggings have a body part): the belt gone, a leg swung away bared his pelvis
+#   under the waist (y 16-17). A slate block on the body bone round it, inside the legs at rest (x +-4.75, z +-2.25:
+#   0.25 inside their walls, 0.25 round him), from 0.1 px under his torso's bottom up 0.1 px into the waist (at 17
+#   its top would lie in the leg tops' plane).
 ARMOR_BOX = {'helmet': ((-4.5, 25.5, -4.5), (4.5, 34.5, 4.5)),
-             'torso': ((-4.75, 14.5, -3.25), (4.75, 26.5, 3.25)),
-             'leg': ((-0.5, 3.75, -2.75), (5.0, 16.5, 2.75))}   # raw (legs)
-ARM_BOX = {'A': ((3.5, 19.5, -3.5), (10.5, 27.5, 3.5)), 'SP': ((3.5, 19.25, -2.75), (9.0, 26.25, 2.75))}
-PAD_BOX = ((4.75, 19.0, -3.5), (10.75, 27.5, 3.5))   # its bottom 0.25 px under the sleeve's (not in its plane)
-def _dx(box, dx): return tuple((c[0] + dx, c[1], c[2]) for c in box)
-ARMOR_BOX['arm'] = _dx(ARM_BOX[ARM], ARM_OUT)
-ARMOR_BOX['leg'] = _dx(ARMOR_BOX['leg'], LEG_OUT)
-# With the arms out, the pad keeps its inner wall (grows outward), unless his arm's inner face lands in it (4.75)
-PAD_BOX = ((PAD_BOX[0][0] + (0.25 if ARM_OUT == 0.75 else 0), PAD_BOX[0][1], PAD_BOX[0][2]),
-           (PAD_BOX[1][0] + ARM_OUT, PAD_BOX[1][1], PAD_BOX[1][2]))
+             'chest': ((-CHEST_X, 20, -TZ), (CHEST_X, 26, TZ)),
+             'waist': ((-TX, 15, -TZ), (TX, 20, TZ)),
+             'pauldron': ((3.75 + ARM_OUT, PAULDRON - FY, -2.5 - PLATE_FB), (8.75 + ARM_OUT + PLATE_OUT, 27, 2.5 + PLATE_FB)),
+             'arm': ((3.75 + ARM_OUT, 10, -2.5), (8.75 + ARM_OUT, PAULDRON - FY, 2.5)),
+             'leg': ((-0.25 + LEG_OUT, 0, -2.5), (4.75 + LEG_OUT, 17, 2.5)),   # raw (legs)
+             'hip': ((-4.75, 13.9, -2.25), (4.75, 15.1, 2.25))}
 def _dims(box): return [round(box[1][k] - box[0][k]) for k in range(3)]   # its art's texels (one per px, ~)
 
 def _legrows(face): return face[:1] + [r for r in face[1:] for _ in range(2)]   # the half-px top row once, the rest twice
@@ -461,11 +451,31 @@ SHELLS = {'arm_shell': dict(cage=dict(ARM_ART), below=['fist'], rows=1, up=_rim(
           'leg_shell': dict(cage={f: _legrows(r) for f, r in LEG_ART.items()}, below=['boot'], rows=2, up=['.' * 5] * 5),
           'belt_shell': dict(faces=_belt())}
 SHELLS['chest_shell'], SHELLS['abdomen_shell'] = (dict(faces=f) for f in _torso())
+def _fit(rows, w, h):   # an art grid resized to w x h texels (nearest), for the placeholder art on new sizes
+    return [''.join(rows[j * len(rows) // h][i * len(rows[0]) // w] for i in range(w)) for j in range(h)]
 if ARMOR != 'none':
-    SHELLS.update({'helmet_armor': dict(faces=_helmet(HELMET)), 'torso_armor': dict(faces=_TORSO),
-                   'arm_armor': dict(faces=(_sleeve if ARM == 'SP' else _pad)(*_dims(ARMOR_BOX['arm']))),
-                   'leg_armor': dict(faces=_LEG)})
-    if ARM == 'SP': SHELLS['pad_armor'] = dict(faces=_pad(*_dims(PAD_BOX)))
+    # Placeholder art (2026-11-04): the overlay draft's grids fitted to the frame's boxes, to judge the shapes.
+    _cw, _tw, _d = round(CHEST_X * 2), round(TX * 2), round(TZ * 2)
+    _chest = {f: _fit(_TORSO[f][:7], _cw if f in ('north', 'south') else _d, 6) for f in ('north', 'south', 'east', 'west')}
+    # its top 2 texels per px (the slim chest's 11 px), open over his torso as the frame's is: closed, it would lie in
+    # his torso's top (under his head, but a turned head bares its corners)
+    _up = _fit(_TORSO['up'], 2 * _cw, 2 * _d)
+    _n = round((CHEST_X - 4) * 2)
+    _up = [r if j < 2 or j >= 2 * _d - 2 else r[:_n] + '.' * (len(r) - 2 * _n) + r[-_n:] for j, r in enumerate(_up)]
+    _chest.update(up=_up, down=['d' * _cw] * _d)
+    _waist = {f: _fit(_TORSO[f][7:], _tw if f in ('north', 'south') else _d, 5) for f in ('north', 'south', 'east', 'west')}
+    _waist.update(up=['d' * _tw] * _d, down=['d' * _tw] * _d)
+    _arm_rows = round(PAULDRON - 16)   # the arm piece's cage rows over the fist: the leg's shin plate
+    _pdims = _dims(ARMOR_BOX['pauldron'])
+    SHELLS.update({
+        'helmet_armor': dict(faces=_helmet(HELMET)), 'chest_armor': dict(faces=_chest), 'waist_armor': dict(faces=_waist),
+        'pauldron_armor': dict(faces=_pad(*_pdims)),
+        'hip_armor': dict(faces={f: ['k' * (10 if f in ('north', 'south', 'up', 'down') else 4)] * (4 if f in ('up', 'down') else 1)
+                                 for f in FACES}),
+        'arm_armor': dict(cage={f: _LEG[f][12 - _arm_rows:] for f in ('north', 'east', 'south', 'west')}, below=['fist'],
+                          rows=1, up=['k' * 5] * 5),
+        'leg_armor': dict(cage={f: _fit(_LEG[f], 5, 26) for f in ('north', 'east', 'south', 'west')}, below=['boot'], rows=2,
+                          up=['k' * 5] * 5)})
 elif HELMET != 'none': SHELLS['helmet_armor'] = dict(faces=_helmet(HELMET))
 
 def _plate():
@@ -489,8 +499,8 @@ def _plate():
 SHELLS['shoulder_plate'] = dict(faces=_plate())
 # where each shell's faces sit in the texture (below / beside nothing else), one strip per shell
 SHELL_AT = {'arm_shell': (0, 64), 'leg_shell': (0, 80),
-            'torso_armor': (35, 87), 'arm_armor': (35, 101), 'leg_armor': (35, 112), 'helmet_armor': (70, 112),
-            'pad_armor': (78, 101)}
+            'chest_armor': (35, 87), 'waist_armor': (128, 40), 'helmet_armor': (70, 112), 'arm_armor': (128, 0),
+            'leg_armor': (224, 40), 'pauldron_armor': (192, 0), 'hip_armor': (192, 12)}
 def shell_art(part, f):
     """The face's rows: letters ('#' bar, 'T' tucked bar, '.' hole, PAL colours) and (u, v) refs into the source
     canvas for the gauntlet / boot art copied below a limb's cage."""
@@ -596,7 +606,6 @@ def b64(b): return 'data:image/png;base64,' + base64.b64encode(b).decode()
 # ---------------------------------------------------------------- model building
 def uid(): return str(uuid.uuid4())
 
-FY = 2   # he stands on the 4 px soles (his feet at y 4): everything above the soles is lifted 2 px from the numbers below
 groups, elements = [], []
 def group(name, origin, parent, visible=True):
     g = {'name': name, 'uuid': uid(), 'export': True, 'locked': False, 'scope': 0, 'selected': False, 'visibility': visible,
@@ -824,28 +833,39 @@ def coplanar(A, B, eps=1e-3, area=0.05):
             if min(max(a_), max(b_)) - max(min(a_), min(b_)) <= area: return False
     return True
 
+def _centre(e):
+    q = [p for f in quads(e) for p in f]
+    return tuple(sum(p[k] for p in q) / len(q) for k in range(3))
+
 def check_armor():
     """The sealed pieces: each encloses Steve's part of its bone (0.1 px to spare, so no face of his lies in one of
     its faces), and no face of a piece shares a plane with any other face (Steve's, the frame's solid texels', another
-    piece's). Overlapping other solid parts is fine (each hides the other's faces inside it)."""
+    piece's) unless the two meet back to back, their boxes on either side of the plane (touching boxes: shut in).
+    Overlapping other solid parts is fine (each hides the other's faces inside it)."""
     bad = []
     pieces = [e for e in elements if e.get('_armor')]
     others = [x for e in elements for x in e.get('_hollow', [e])]
-    W = {x['uuid']: world(x) for x in others}
+    W = {x['uuid']: world(x) for x in others + pieces}
+    side = lambda A, P: sum((P[k] - A[0][k]) * n for k, n in enumerate(_normal(A)))
     for a in pieces:
         for st in elements:
             if a['_armor'] != 'addon' and st['name'].startswith('st_') and limb(st) == limb(a) \
                     and st['_g']['_parent'] is a['_g']['_parent'] \
                     and not encloses(a, st, W, margin=0.1):
                 bad.append((a['name'], 'does not enclose', st['name']))
-        fa = quads(a)
+        fa, ca = [A for x in a.get('_hollow', [a]) for A in quads(x)], _centre(a)
         for o in others:
-            if o is a or {a['name'], o['name']} == {'ar_leg_r', 'ar_leg_l'}: continue   # see _leg_inner
+            if o['name'] == a['name']: continue
+            co = _centre(o)
             for B in quads(o):
-                if any(coplanar(A, B) for A in fa):
+                if any(coplanar(A, B) and side(A, ca) * side(A, co) >= 0 for A in fa):
                     bad.append((a['name'], 'shares a plane with', o['name']))
                     break
     return bad
+
+def _normal(A):
+    u = [A[1][k] - A[0][k] for k in range(3)]; v = [A[3][k] - A[0][k] for k in range(3)]
+    return (u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0])
 
 def check():
     items = [s for e in elements if not e.get('_armor') for s in e.get('_hollow', [e])]   # shells by their solid texels
@@ -864,19 +884,31 @@ def check():
     return bad
 
 # ---------------------------------------------------------------- armour (draft)
-# One piece per bone, each in its own group (so a piece can be shown / hidden as one): helmet, torso, arms, legs.
+# One piece per bone, each in its own group (so a piece can be shown / hidden as one): helmet, torso, arms, legs. A
+# piece replaces the frame cubes it covers (unlink drops them).
 def _armor(bone, side, piece, name, raw=False, box=None, addon=False):
     g = next(x for x in groups if x['name'] == bone)
     ga = next((x for x in groups if x['name'] == f'armor_{bone}'), None) or \
         group(f'armor_{bone}', [g['origin'][0], g['origin'][1] - FY, g['origin'][2]], g)
-    e = painted(ga, side, f'{piece}_armor', name, *(box or ARMOR_BOX[piece]), raw=raw)
-    e['_armor'] = 'addon' if addon else True   # an add-on (the pauldron) sits on its bone's piece: needn't enclose him
+    open_ = any('.' in r for rows in SHELLS[f'{piece}_armor']['faces'].values() for r in rows) \
+        if 'faces' in SHELLS[f'{piece}_armor'] else False
+    e = (hollow if open_ else painted)(ga, side, f'{piece}_armor', name, *(box or ARMOR_BOX[piece]), raw=raw)
+    e['_armor'] = 'addon' if addon else True
+def unlink(name):
+    e = next(x for x in elements if x['name'] == name)
+    elements.remove(e)
+    e['_g']['children'].remove(e['uuid'])
 if 'helmet_armor' in SHELLS: _armor('head', 'r', 'helmet', 'ar_helmet')
 if ARMOR != 'none':
-    _armor('torso', 'r', 'torso', 'ar_torso')
+    for piece, frame in (('chest', 'fr_chest_shell'), ('waist', 'fr_abdomen_shell')):
+        unlink(frame)
+        _armor('torso', 'r', piece, f'ar_{piece}')
+    unlink('fr_belt_shell')
+    _armor('body', 'r', 'hip', 'ar_hip')
     for side, nm in (('r', 'right'), ('l', 'left')):
+        for frame in (f'fr_arm_shell_{side}', f'fr_shoulder_plate_{side}', f'fr_leg_shell_{side}'): unlink(frame)
         _armor(f'{nm}_arm', side, 'arm', f'ar_arm_{side}')
-        if ARM == 'SP': _armor(f'{nm}_arm', side, 'pad', f'ar_pad_{side}', box=PAD_BOX, addon=True)
+        _armor(f'{nm}_arm', side, 'pauldron', f'ar_pauldron_{side}')
         _armor(f'{nm}_leg', side, 'leg', f'ar_leg_{side}', raw=True)
 
 # ---------------------------------------------------------------- write the project
