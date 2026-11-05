@@ -246,7 +246,7 @@ def _belt():
     # bottom, 0.003 px inside its side column (hidden in the ring)
     return {'north': ['#' * n], 'south': ['#' * n], 'east': ['#' * 6], 'west': ['#' * 6], 'up': rim('#'), 'down': rim('T')}
 
-# ---------------------------------------------------------------- armour drafts (ARMOR)
+# ---------------------------------------------------------------- armour (draft: ARMOR)
 # The armour is SEALED: each piece is a closed box, every face solid (the see-through texels are the frame's only).
 # It REPLACES the frame part in place (2026-11-04, user): the piece is that part's box exactly, painted as armour, and
 # the frame's box isn't drawn under it, so the suit stays the frame's size. (Refitted first as overlays, each piece
@@ -257,42 +257,10 @@ def _belt():
 # plane facing the same way (they flicker): check_armor().
 # Its look is the big suit's (power_suit.bbmodel, the marketing pictures): plates in its mid steel, everything
 # between them (waist, upper arms, knees, inner legs) its dark slate under-armour, the helmet its helmet.
-ARMPAL = {'g': 'cdcfcf', 'h': '9fa4a9', 'l': '757c85', 'p': '58606a', 's': '3c424c',      # the plates' steel
-          'n': '4c5559', 'm': '3b4246', 'k': '2f3437', 'd': '25292c', 'x': '1a1d1f'}      # the slate under-armour
-ARMPAL = {c: tuple(int(h[i:i + 2], 16) for i in (0, 2, 4)) for c, h in ARMPAL.items()}
+import frame_iron_art as iron
+ARMPAL = {c: tuple(int(h[i:i + 2], 16) for i in (0, 2, 4)) for c, h in iron.PAL.items()}   # steel + slate letters
 
-# The pieces, one letter per texel (ARMPAL), faces as the frame's: north / south as seen from the front / back (the
-# limbs' north: outer column first), east back -> front, west front -> back, up rows front -> back and columns
-# x- -> x+. Right side; the left mirrors it.
-_TORSO = {   # 10 x 12 x 7: a breastplate over a pinched dark waist with a small plate, the waist band over the belt
-    'north': ['ghhhhhhhhh', 'lpppppppps', 'lpppppppps', 'lpplppppps', 'lppppplpps', 'lppppppppp', 'ssssssssss',
-              'dkkhhhhkkd', 'dmmlppsmmd', 'dkklppskkd', 'dmmssssmmd', 'dddddddddd'],
-    'south': ['ghhhddhhhh', 'lpppddppps', 'lpppddppps', 'lplpddppps', 'lpppddplps', 'lpppddppps', 'ssssddssss',
-              'dkkkkkkkkd', 'dmmmmmmmmd', 'dkkkkkkkkd', 'dmmmmmmmmd', 'dddddddddd'],
-    'east': ['hhhhhhg', 'spppppl', 'spppppl', 'spppppl', 'spppppl', 'spppppl', 'sssssss',
-             'dkkkkkd', 'dmmmmmd', 'dkkkkkd', 'dmmmmmd', 'ddddddd'],
-    'up': ['hhhhhhhhhh', 'llllllllll', 'llllllllll', 'llllllllll', 'llllllllll', 'llllllllll', 'pppppppppp'],
-    'down': ['dddddddddd'] * 7}
-_TORSO['west'] = [r[::-1] for r in _TORSO['east']]
-_LEG = {     # 5 x 12 x 5: thigh plate, a knee cap on the dark knee, shin plate down to the sole; inner side dark. The
-             # inner column of the front / back is one colour: the two legs' pieces meet at the crotch
-    'north': ['hhhhk', 'lpppk', 'lpppk', 'lplpk', 'ssssk', 'mhhmk', 'mssmk', 'hhhhk', 'lpppk', 'lpppk', 'lplpk', 'ssssk'],
-    'east': ['hhhhh', 'plppl', 'ppppl', 'ppppl', 'sssss', 'mmmhh', 'mmmss', 'hhhhh', 'ppppl', 'plppl', 'ppppl', 'sssss'],
-    'west': ['kkkkk', 'mmmmm'] * 5 + ['kkkkk', 'ddddd'],
-    'up': ['kkkkk'] * 5, 'down': ['ddddd'] * 5}
-_LEG['south'] = ['khhhh', 'kppps', 'kppps', 'kppps', 'kssss', 'kkkkk', 'kmmmm', 'khhhh', 'kppps', 'kppps', 'kppps', 'kssss']
-def _pad(W, H, D):
-    """The pauldron, W x H x D: one big plate, lit from the upper left, a rolled rim (a light row) over
-    its bottom edge's shadow; its top a plate with a bright front rim and outer edge; its inner side a plate too (it
-    stands 1 px off the arm, so it shows), its underside slate."""
-    face = lambda w: ['g' + 'h' * (w - 1)] + ['l' + 'p' * (w - 2) + 's'] * (H - 3) + ['l' * w, 's' * w]
-    north = face(W)                                   # outer column first
-    up = ['h' * W] + ['l' * (W - 1) + 'h'] * (D - 2) + ['p' * (W - 1) + 'l']   # rows front -> back, columns inner -> outer
-    return {'north': north, 'south': [r[::-1] for r in north], 'east': face(D), 'west': face(D), 'up': up,
-            'down': ['k' * W] * D}
-
-for _f in (_TORSO, _LEG):
-    for _k, _rows in _f.items(): assert len({len(r) for r in _rows}) == 1, (_k, _rows)
+# The paint: frame_iron_art.py (its letters join ARMPAL there).
 
 SUIT_HELMET = ['helmet_shell', 'visor', 'helmet_brow', 'cheek_l', 'cheek_r', 'chin_guard']
 def _helmet(visor='painted'):
@@ -458,30 +426,16 @@ SHELLS = {'arm_shell': dict(cage=dict(ARM_ART), below=['fist'], rows=1, up=_rim(
           'leg_shell': dict(cage={f: _legrows(r) for f, r in LEG_ART.items()}, below=['boot'], rows=2, up=['.' * 5] * 5),
           'belt_shell': dict(faces=_belt())}
 SHELLS['chest_shell'], SHELLS['abdomen_shell'] = (dict(faces=f) for f in _torso())
-def _fit(rows, w, h):   # an art grid resized to w x h texels (nearest), for the placeholder art on new sizes
-    return [''.join(rows[j * len(rows) // h][i * len(rows[0]) // w] for i in range(w)) for j in range(h)]
 if ARMOR != 'none':
-    # Placeholder art (2026-11-04): the overlay draft's grids fitted to the frame's boxes, to judge the shapes.
-    _cw, _tw, _d = round(CHEST_X * 2), round(TX * 2), round(TZ * 2)
-    _chest = {f: _fit(_TORSO[f][:7], _cw if f in ('north', 'south') else _d, 6) for f in ('north', 'south', 'east', 'west')}
-    # its top 2 texels per px (the slim chest's 11 px), open over his torso as the frame's is: closed, it would lie in
-    # his torso's top (under his head, but a turned head bares its corners)
-    _up = _fit(_TORSO['up'], 2 * _cw, 2 * _d)
-    _n = round((CHEST_X - 4) * 2)
-    _up = [r if j < 2 or j >= 2 * _d - 2 else r[:_n] + '.' * (len(r) - 2 * _n) + r[-_n:] for j, r in enumerate(_up)]
-    _chest.update(up=_up, down=['d' * _cw] * _d)
-    _waist = {f: _fit(_TORSO[f][7:], _tw if f in ('north', 'south') else _d, 5) for f in ('north', 'south', 'east', 'west')}
-    _waist.update(up=['d' * _tw] * _d, down=['d' * _tw] * _d)
-    _pdims = _dims(ARMOR_BOX['pauldron'])
+    _cw, _tw, _d, _wd = round(CHEST_X * 2), round(TX * 2), round(TZ * 2), round(TZ * 2) - 1
     SHELLS.update({
-        'helmet_armor': dict(faces=_helmet(HELMET)), 'chest_armor': dict(faces=_chest), 'waist_armor': dict(faces=_waist),
-        'pauldron_armor': dict(faces=_pad(*_pdims)),
-        'hip_armor': dict(faces={f: ['k' * (10 if f in ('north', 'south', 'up', 'down') else 4)] * (4 if f in ('up', 'down') else 1)
-                                 for f in FACES}),
-        'arm_armor': dict(cage={f: _LEG[f] for f in ('north', 'east', 'south', 'west')}, below=['fist'],
-                          rows=1, up=['k' * 5] * 5),
-        'leg_armor': dict(cage={f: _fit(_LEG[f], 5, 26) for f in ('north', 'east', 'south', 'west')}, below=['boot'], rows=2,
-                          up=['k' * 5] * 5)})
+        'helmet_armor': dict(faces=_helmet(HELMET)),
+        'chest_armor': dict(faces=iron.chest(_cw, _d, round((CHEST_X - 4) * 2))),
+        'waist_armor': dict(faces=iron.waist(_tw, _wd)),
+        'pauldron_armor': dict(faces=iron.pauldron(*_dims(ARMOR_BOX['pauldron']))),
+        'hip_armor': dict(faces=iron.hip(10, 5)),
+        'arm_armor': dict(cage=iron.arm(), below=['fist'], rows=1, up=iron.arm()['up']),
+        'leg_armor': dict(cage=iron.leg(), below=['boot'], rows=1, up=iron.leg()['up'])})
 elif HELMET != 'none': SHELLS['helmet_armor'] = dict(faces=_helmet(HELMET))
 
 def _plate():
