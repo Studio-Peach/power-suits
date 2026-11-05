@@ -83,11 +83,13 @@ def chest(W, D, hole):
 
 def waist(W, D, H=3):
     """Ribbed slate with an abdomen plate in front that tapers on with the steps above it (2026-11-05, user): its top
-    row 6 texels wide, the rows under it 4. Back and sides ribbed, the top row in the band's shadow."""
+    row 8 texels wide, the row under it 6 (first 6 over 4: the user had it 1 px wider all round), the bottom row
+    ribbed slate (the plate stopped a row short of the waist's bottom, user). Back and sides ribbed, the top row in
+    the band's shadow."""
     front = ['d' * W] + ribs(W, H - 1)
     c = W // 2
-    front = overlay(front, c - 3, 0, ['g' + 'h' * 4 + 'e'])
-    front = overlay(front, c - 2, 1, plate(4, H - 1, top=None, bottom='shade', marks=False))
+    front = overlay(front, c - 4, 0, ['g' + 'h' * 6 + 'e'])
+    front = overlay(front, c - 3, 1, plate(6, H - 2, top=None, bottom=None, marks=False))
     back = ['d' * W] + ribs(W, H - 1, 1)
     side = ['d' * D] + ribs(D, H - 1, 1)
     return {'north': front, 'south': back, 'east': side, 'west': side, 'up': ['d' * W] * D, 'down': ['p' * W] * D}
