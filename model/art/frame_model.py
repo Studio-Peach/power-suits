@@ -101,6 +101,10 @@ assert ARMOR in ('none', 'iron'), ARMOR
 # Where the iron pauldron ends (built y; the shoulder plate's top is at 29, the arm's cage 16-28 over the fist 12-16):
 # 9 of the arm's 16 px, past the elbow, leaving 4 px of forearm over the fist (2026-11-04, user; picked over 18, which
 # left 2 px and read as a whole sleeve). See ARMOR_BOX.
+# (Tried and dropped, 2026-11-04, user: a guard round the helmet like the old suit's chest (a collar ring, pauldrons
+# 2 px taller beside the head, a plate behind it). The old suit's head barely moved and its chest was deeper than its
+# helmet; the frame's head turns 50 deg from the body and pitches 90, its 9 px helmet's corners sweeping 6.4 px from
+# the neck over a 6 px deep chest, so every guard was cut by the helmet or jutted far past the chest.)
 PAULDRON = 20
 STEVE_PNG = {'wide': 'assets/minecraft/textures/entity/player/wide/steve.png',
              'slim': 'assets/minecraft/textures/entity/player/slim/alex.png'}[BUILD]
