@@ -52,6 +52,11 @@ the Art direction page of the design docs. Add a new lesson to the right section
   inside it (0.5 px smaller on every side, so no shared planes) and the 8x7x8 gauntlet: two overlapping blocks make the
   elbow, no joint pieces. Under-armour is painted as machinery (rubber cables + brass clamps, `arm_cables_art.py`), not
   noise. The texture is too fragmented for new box-UV nets (no 38x21 hole): new parts use per-face UV rects.
+- **Machine base + armour on top** (2026-11-09, user): the suit is a machine (torso core, waist core, simple limbs that
+  hang beside the torso like a player's arms, painted as cables + brass clamps) with an armour set over it (iron is the
+  built-in one; others will swap in like the helmet styles). Armour covers the front; the sides show the machine. The
+  chest is `frame_parts` (`torso_core` 13x7x7 + `abd_core`) under the iron `bp_plate` (15x7x6, 1 px past the core's
+  sides). A core block reaching into the plate shared its top/bottom planes and flickered: start it at the plate's back.
 - **The Blockbench viewer is shared with the user**: they hide cubes to look while you work. Toggle only what a render
   needs and put back only what is still in your state; save with the file's own visibility (export ignores it).
 
