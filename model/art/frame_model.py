@@ -481,31 +481,19 @@ SHELLS['shoulder_plate'] = dict(faces=_plate())
 #   y 16-17, so they nest without crossing, 1 px apart. Round the sides they go on as thin pipes (0.4 px, in the
 #   0.5-1 px between the abdomen and the arm: the engine is its own part, not paint on the frame; user) back to the
 #   pack's copper inlets. Proud above raw 21.5 like the core: the helmet looking down passes through their tops too.
-# - pack: the big suit's (user: the firebox near the top, like the old suit; a pack on the abdomen read too low), the
-#   whole back's height (user: no need to keep it small), from the abdomen's bottom to the chest's top (raw 15-26; the
-#   helmet tucks 0.5 px into it as into the chest), 5 px deep, the abdomen's width (user: too wide at the chest's
-#   12; picked over 8, the firebox door's frame only), so the side pipes run straight along it. Its paint
-#   (frame_engine_art.back_pistons, 2026-11-05, user: the back should look like an engine; picked over a vertical
-#   boiler, an engine block with cooling fins, and the old pack's paint, a firebox door over an ash-pan door): a
-#   twin-cylinder steam engine, two upright cylinders on its back corners (the stacks leave their heads), their
-#   piston rods down into a crankcase, the firebox door between them; its coals lit for the review (in game the
-#   reserved colours and the glowmask).
-# - exhausts: the old suit's (user: they were great), its pipes and caps with their paint scaled down and toned down
-#   (user): 2 px round, 8 tall (2 inside the pack), the cap 3 x 1 x 3, leaning back 12 deg out of holes in the pack's
-#   top, 1.25 px in from its sides, flush with its back. They rise right behind the helmet, which the old suit's head
-#   barely moved in; the frame's turns 50 deg each way and pitches 90, and looking up 20-30 deg swings its back into
-#   them (engine_sweep.py). So in game the worn helmet's tilt back is to be limited (the camera free), a decision for
-#   the renderer.
+# - back: the radial firebox (frame_radial_art.py; 2026-11-07, user, picked from six drafts, commit 7a24d3f): an
+#   aircraft radial engine on a mounting plate the abdomen's width (raw 15-26, 1 px deep, the side pipes' inlets on
+#   its sides), seven finned cylinders round a hub with the fire in its porthole, two exhaust stubs under it. It
+#   replaced a 10 x 11 x 5 twin-cylinder pack with the old suit's exhausts leaning back out of its top (2026-11-05):
+#   those rose right behind the helmet, so looking up 20-30 deg swung its back into them; the radial's top cylinder
+#   ends at raw 25.5. The helmet still sinks into the plate from behind when the head pitches back (engine_sweep.py),
+#   so in game the worn helmet's tilt back is to be limited (the camera free), a decision for the renderer.
 ENGINE = os.environ.get('ENGINE', 'none')
 assert ENGINE in ('none', 'firebox'), ENGINE
 import frame_engine_art as engine_art
-# Draft knob FIREBOX (2026-11-07, user: alternative fireboxes, "go wild"): the pack and its exhausts redrawn as other
-# machines, frame_firebox_drafts.py (its docstring lists them); 'pistons' is the committed one above.
-import frame_firebox_drafts as firebox
-FIREBOX = os.environ.get('FIREBOX', 'pistons')
-assert FIREBOX in firebox.OPTIONS, FIREBOX
-PAL.update(firebox.EXTRA)
-ENGINE_META = {}
+import frame_radial_art as radial_art
+PAL.update(radial_art.EXTRA)
+ENGINE_META = {}   # the radial's parts: their mirror / turn / shared paint (frame_radial_art.part)
 PAL.update({'F': (0xff, 0xdc, 0x6e), 'I': (0xff, 0x96, 0x32), 'J': (0xd2, 0x46, 0x19)})   # fire, lit (see engine_art)
 LIT = {(0x3f, 0x21, 0x1b): (0xff, 0xdc, 0x6e), (0x37, 0x1d, 0x19): (0xff, 0x96, 0x32), (0x2f, 0x1a, 0x17): (0xd2, 0x46, 0x19)}
 
@@ -526,71 +514,34 @@ def suit_faces(name, cols=None, rows=None):
         out[f] = [[LIT.get(tuple(p[:3]), tuple(p[:3])) + (p[3],) for p in r] for r in face]
     return out
 
-ENGINE_BOX, EXHAUST = {}, None
+ENGINE_BOX = {}
 if ENGINE != 'none':
-    PD = 5                                          # the pack's depth (the old one's)
-    PACK_W = 10
-    PX = PACK_W / 2
-    ENGINE_BOX['pack'] = ((-PX, 15, TZ), (PX, 26, TZ + PD))
     ENGINE_BOX['core'] = ((-2, 21, -TZ - 1), (2, 25, -TZ))
     Z = (-TZ - 1, -TZ)                              # the front pipes' depth: 1 px proud, as the core
     PIPES = {'pipe_t0': ((2, 24), (4, 25)), 'pipe_t1': ((3, 18), (4, 24)), 'pipe_t2': ((4, 18), (TX, 19)),
              'pipe_b0': ((1, 16), (2, 21)), 'pipe_b1': ((2, 16), (TX, 17))}
     for k, ((x0, y0), (x1, y1)) in PIPES.items():
         ENGINE_BOX[k] = ((x0, y0, Z[0]), (x1, y1, Z[1]))
-    for k, y in (('pipe_ts', 18), ('pipe_bs', 16)):   # round the side, from the front pipe's end to the pack's inlet
+    for k, y in (('pipe_ts', 18), ('pipe_bs', 16)):   # round the side, from the front pipe's end to the back's inlet
         ENGINE_BOX[k] = ((TX, y, Z[0]), (TX + 0.4, y + 1, TZ + 1))
-    EW = 2                                           # the exhausts' width; the caps' EW + 1
-    EXH_X, EXH_Z = float(os.environ.get('EXH_X', PX - EW / 2 - 0.25)), float(os.environ.get('EXH_Z', TZ + PD - EW / 2))
-    EXHAUST = dict(base=26 - 2, x=EXH_X, z=EXH_Z, lean=12)
-    ENGINE_BOX['exhaust'] = ((EXH_X - EW / 2, 24, EXH_Z - EW / 2), (EXH_X + EW / 2, 32, EXH_Z + EW / 2))
-    ENGINE_BOX['exhaust_cap'] = ((EXH_X - EW / 2 - 0.5, 32, EXH_Z - EW / 2 - 0.5), (EXH_X + EW / 2 + 0.5, 33, EXH_Z + EW / 2 + 0.5))
-    # the old 3 x 11 x 3 pipe picked down: its lit and shaded columns, rows less two plain steel and one buried
-    exhaust = suit_faces('exhaust_r', cols={f: [0, 2] for f in FACES},
-                         rows={**{f: [0, 1, 2, 3, 6, 7, 8, 9] for f in ('north', 'south', 'east', 'west')}, 'up': [0, 2], 'down': [0, 2]})
-    exhaust_cap = suit_faces('exhaust_cap_r', cols={f: [0, 1, 3] for f in FACES}, rows={'up': [0, 1, 3], 'down': [0, 1, 3]})
-    # the pack (2 texels per px)
-    rgba = lambda c: (ARMPAL[c] if c in ARMPAL else PAL[c]) + (255,)
-    pack = {f: [[rgba(c) for c in r] for r in rows_] for f, rows_ in engine_art.back_pistons().items()}
-    # the pipes' copper inlets on its sides, where the side pipes end (y 18-19, 16-17), 1 px from the front (east
-    # runs back -> front, west front -> back)
-    Q = PAL['Q'] + (255,)
-    k = len(pack['east']) // 11                     # texels per px
-    for f in ('east', 'west'):
-        n = len(pack[f][0])
-        for y in (18, 16):
-            for j in range((25 - y) * k, (26 - y) * k):
-                for i in (range(n - k, n) if f == 'east' else range(0, k)): pack[f][j][i] = Q
-    SHELLS.update({'en_pack': dict(faces=pack), 'en_exhaust': dict(faces=exhaust),
-                   'en_exhaust_cap': dict(faces=exhaust_cap),
-                   'en_core': dict(faces=engine_art.porthole(corner='Q'))})
+    SHELLS['en_core'] = dict(faces=engine_art.porthole(corner='Q'))
     for k, box in ENGINE_BOX.items():
         if k.startswith('pipe'): SHELLS[f'en_{k}'] = dict(faces=engine_art.pipe_box(*[round((box[1][i] - box[0][i]) * 2) for i in range(3)]))
-    if FIREBOX != 'pistons':
-        for k in ('pack', 'exhaust', 'exhaust_cap'):
-            del ENGINE_BOX[k]
-            SHELLS.pop(f'en_{k}')
-        EXHAUST = None
-        van = None
-        if FIREBOX == 'furnace':   # vanilla's furnace faces, for the draft only (see frame_firebox_drafts.py)
-            _jar = sorted(glob.glob(os.path.join(HERE, '..', '..', 'build', 'moddev', 'artifacts', 'minecraft-patched-*.jar')))[-1]
-            with zipfile.ZipFile(_jar) as z:
-                van = {k: unpng(z.read(f'assets/minecraft/textures/block/furnace_{k}.png')) for k in ('front_on', 'side', 'top')}
-        for p in firebox.build(FIREBOX, van):
-            k = 'fb_' + p['name']
-            ENGINE_BOX[k] = p['box']
-            ENGINE_META[k] = p
-            if p['faces']: SHELLS[f'en_{k}'] = dict(faces=p['faces'])
+    for p in radial_art.build():
+        k = 'fb_' + p['name']
+        ENGINE_BOX[k] = p['box']
+        ENGINE_META[k] = p
+        if p['faces']: SHELLS[f'en_{k}'] = dict(faces=p['faces'])
 # where each shell's faces sit in the texture (below / beside nothing else), one strip per shell
 SHELL_AT = {'arm_shell': (0, 64), 'leg_shell': (0, 80),
             'chest_armor': (35, 87), 'waist_armor': (128, 40), 'helmet_armor': (70, 112), 'arm_armor': (128, 0),
             'leg_armor': (224, 40), 'pauldron_armor': (192, 0), 'hip_armor': (192, 12),
             'waist0_armor': (128, 47), 'waist1_armor': (128, 54)}
 # the engine's parts in the free block right of the skin (u 64-127, v 0-63), one strip each
-SHELL_AT.update({'en_pack': (136, 57), 'en_exhaust': (64, 8), 'en_exhaust_cap': (64, 20), 'en_core': (64, 24),
+SHELL_AT.update({'en_core': (64, 24),
                  'en_pipe_t0': (64, 34), 'en_pipe_t1': (64, 52), 'en_pipe_t2': (96, 34), 'en_pipe_b0': (84, 52),
                  'en_pipe_b1': (96, 38), 'en_pipe_ts': (64, 64), 'en_pipe_bs': (100, 64)})
-if ENGINE_META:   # the draft fireboxes' parts, shelf-packed below the texture's old bottom (it grows to 256 tall)
+if ENGINE_META:   # the radial's parts, shelf-packed below the texture's old bottom (it grows to 256 tall)
     TH = 256
     _u, _v, _rh = 0, 128, 0
     for k in [k for k in ENGINE_META if f'en_{k}' in SHELLS]:
@@ -1017,7 +968,7 @@ if ENGINE_BOX:
     eng = group('engine', (0, 14, 0), _t)
     for k, box in ENGINE_BOX.items():
         meta = ENGINE_META.get(k)
-        if meta:   # a draft firebox's part (mirrored: the left one's turns about y and z flip)
+        if meta:   # a radial part (mirrored: the left one's turns about y and z flip)
             for side in (('r', 'l') if meta['mirror'] else ('r',)):
                 s_ = 1 if side == 'r' else -1
                 e = painted(eng, side, 'en_fb_' + meta['shell'] if meta['shell'] else f'en_{k}',
@@ -1028,13 +979,9 @@ if ENGINE_BOX:
                     o = meta['origin']
                     e['origin'] = [o[0] * s_, o[1] + FY, o[2]]
             continue
-        sides = ('r', 'l') if k.startswith(('exhaust', 'pipe')) else ('r',)
+        sides = ('r', 'l') if k.startswith('pipe') else ('r',)
         for side in sides:
-            e = painted(eng, side, f'en_{k}', f'en_{k}' + (f'_{side}' if len(sides) > 1 else ''), *box)
-            if k.startswith('exhaust'):   # lean back about the pipe's foot, as on the old suit
-                s_ = 1 if side == 'r' else -1
-                e['rotation'] = [EXHAUST['lean'], 0, 0]
-                e['origin'] = [EXHAUST['x'] * s_, EXHAUST['base'] + FY, EXHAUST['z']]
+            painted(eng, side, f'en_{k}', f'en_{k}' + (f'_{side}' if len(sides) > 1 else ''), *box)
 
 # ---------------------------------------------------------------- write the project
 def outline(g):
