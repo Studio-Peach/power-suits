@@ -499,6 +499,13 @@ SHELLS['shoulder_plate'] = dict(faces=_plate())
 ENGINE = os.environ.get('ENGINE', 'none')
 assert ENGINE in ('none', 'firebox'), ENGINE
 import frame_engine_art as engine_art
+# Draft knob FIREBOX (2026-11-07, user: alternative fireboxes, "go wild"): the pack and its exhausts redrawn as other
+# machines, frame_firebox_drafts.py (its docstring lists them); 'pistons' is the committed one above.
+import frame_firebox_drafts as firebox
+FIREBOX = os.environ.get('FIREBOX', 'pistons')
+assert FIREBOX in firebox.OPTIONS, FIREBOX
+PAL.update(firebox.EXTRA)
+ENGINE_META = {}
 PAL.update({'F': (0xff, 0xdc, 0x6e), 'I': (0xff, 0x96, 0x32), 'J': (0xd2, 0x46, 0x19)})   # fire, lit (see engine_art)
 LIT = {(0x3f, 0x21, 0x1b): (0xff, 0xdc, 0x6e), (0x37, 0x1d, 0x19): (0xff, 0x96, 0x32), (0x2f, 0x1a, 0x17): (0xd2, 0x46, 0x19)}
 
@@ -559,6 +566,21 @@ if ENGINE != 'none':
                    'en_core': dict(faces=engine_art.porthole(corner='Q'))})
     for k, box in ENGINE_BOX.items():
         if k.startswith('pipe'): SHELLS[f'en_{k}'] = dict(faces=engine_art.pipe_box(*[round((box[1][i] - box[0][i]) * 2) for i in range(3)]))
+    if FIREBOX != 'pistons':
+        for k in ('pack', 'exhaust', 'exhaust_cap'):
+            del ENGINE_BOX[k]
+            SHELLS.pop(f'en_{k}')
+        EXHAUST = None
+        van = None
+        if FIREBOX == 'furnace':   # vanilla's furnace faces, for the draft only (see frame_firebox_drafts.py)
+            _jar = sorted(glob.glob(os.path.join(HERE, '..', '..', 'build', 'moddev', 'artifacts', 'minecraft-patched-*.jar')))[-1]
+            with zipfile.ZipFile(_jar) as z:
+                van = {k: unpng(z.read(f'assets/minecraft/textures/block/furnace_{k}.png')) for k in ('front_on', 'side', 'top')}
+        for p in firebox.build(FIREBOX, van):
+            k = 'fb_' + p['name']
+            ENGINE_BOX[k] = p['box']
+            ENGINE_META[k] = p
+            if p['faces']: SHELLS[f'en_{k}'] = dict(faces=p['faces'])
 # where each shell's faces sit in the texture (below / beside nothing else), one strip per shell
 SHELL_AT = {'arm_shell': (0, 64), 'leg_shell': (0, 80),
             'chest_armor': (35, 87), 'waist_armor': (128, 40), 'helmet_armor': (70, 112), 'arm_armor': (128, 0),
@@ -568,6 +590,15 @@ SHELL_AT = {'arm_shell': (0, 64), 'leg_shell': (0, 80),
 SHELL_AT.update({'en_pack': (136, 57), 'en_exhaust': (64, 8), 'en_exhaust_cap': (64, 20), 'en_core': (64, 24),
                  'en_pipe_t0': (64, 34), 'en_pipe_t1': (64, 52), 'en_pipe_t2': (96, 34), 'en_pipe_b0': (84, 52),
                  'en_pipe_b1': (96, 38), 'en_pipe_ts': (64, 64), 'en_pipe_bs': (100, 64)})
+if ENGINE_META:   # the draft fireboxes' parts, shelf-packed below the texture's old bottom (it grows to 256 tall)
+    TH = 256
+    _u, _v, _rh = 0, 128, 0
+    for k in [k for k in ENGINE_META if f'en_{k}' in SHELLS]:
+        fs = SHELLS[f'en_{k}']['faces']
+        w, h = sum(len(fs[f][0]) for f in FACES), max(len(fs[f]) for f in FACES)
+        if _u + w > 256: _u, _v, _rh = 0, _v + _rh, 0
+        SHELL_AT[f'en_{k}'] = (_u, _v)
+        _u, _rh = _u + w, max(_rh, h)
 def shell_art(part, f):
     """The face's rows: letters ('#' bar, 'T' tucked bar, '.' hole, PAL colours) and (u, v) refs into the source
     canvas for the gauntlet / boot art copied below a limb's cage."""
@@ -985,6 +1016,18 @@ if ENGINE_BOX:
     _t = next(x for x in groups if x['name'] == 'torso')
     eng = group('engine', (0, 14, 0), _t)
     for k, box in ENGINE_BOX.items():
+        meta = ENGINE_META.get(k)
+        if meta:   # a draft firebox's part (mirrored: the left one's turns about y and z flip)
+            for side in (('r', 'l') if meta['mirror'] else ('r',)):
+                s_ = 1 if side == 'r' else -1
+                e = painted(eng, side, 'en_fb_' + meta['shell'] if meta['shell'] else f'en_{k}',
+                            f'en_{k}' + (f'_{side}' if meta['mirror'] else ''), *box)
+                if meta['rot']:
+                    rx, ry, rz = meta['rot']
+                    e['rotation'] = [rx, ry * s_, rz * s_]
+                    o = meta['origin']
+                    e['origin'] = [o[0] * s_, o[1] + FY, o[2]]
+            continue
         sides = ('r', 'l') if k.startswith(('exhaust', 'pipe')) else ('r',)
         for side in sides:
             e = painted(eng, side, f'en_{k}', f'en_{k}' + (f'_{side}' if len(sides) > 1 else ''), *box)

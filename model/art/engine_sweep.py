@@ -17,10 +17,13 @@ def pts(e, step=0.25):
     (x0, y0, z0), (x1, y1, z1) = e['from'], e['to']
     n = lambda a, b: [a + (b - a) * i / max(1, round((b - a) / step)) for i in range(max(1, round((b - a) / step)) + 1)]
     return [(x, y, z) for x in n(x0, x1) for y in n(y0, y1) for z in n(z0, z1)]
-def own(e, p):   # the element's own rotation (x only) about its origin
+def rz(p, a):
+    c, s = math.cos(a), math.sin(a); x, y, z = p; return (x * c - y * s, x * s + y * c, z)
+def own(e, p):   # the element's own rotation about its origin (single-axis turns; x, then y, then z)
     r = e.get('rotation') or [0, 0, 0]
-    if not r[0]: return p
-    o = e['origin']; q = rx([p[k] - o[k] for k in range(3)], math.radians(r[0]))
+    if not any(r): return p
+    o = e['origin']; q = [p[k] - o[k] for k in range(3)]
+    q = rz(ry(rx(q, math.radians(r[0])), math.radians(r[1])), math.radians(r[2]))
     return tuple(q[k] + o[k] for k in range(3))
 def inside(p, e, m=0.02):
     return all(e['from'][k] + m < p[k] < e['to'][k] - m for k in range(3))
