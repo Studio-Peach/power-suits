@@ -47,6 +47,14 @@ the Art direction page of the design docs. Add a new lesson to the right section
   of the live project): when someone tweaks a leg cube by hand, carry the change into the script before the next
   rebuild, or it is undone (the knee joint's 6.2 depth, 2026-10-15).
 
+- **Simple boxes, detail in the texture** (2026-11-09 "minecraftier" pass, user: the suit didn't look minecrafty): a pad
+  is one 9x11x10 block; an arm is the pad, a 7x15x6 upper arm, a 6x8x5 inner forearm reaching 2 px over the elbow pivot
+  inside it (0.5 px smaller on every side, so no shared planes) and the 8x7x8 gauntlet: two overlapping blocks make the
+  elbow, no joint pieces. Under-armour is painted as machinery (rubber cables + brass clamps, `arm_cables_art.py`), not
+  noise. The texture is too fragmented for new box-UV nets (no 38x21 hole): new parts use per-face UV rects.
+- **The Blockbench viewer is shared with the user**: they hide cubes to look while you work. Toggle only what a render
+  needs and put back only what is still in your state; save with the file's own visibility (export ignores it).
+
 ## Gaits and baked animations
 - **Gaits come from the legs, not the game speed**: legs this long (hip 22.6 px) can't walk 5 blocks/s. The old "walk" had
   each foot down only 37.5% of the cycle (a run: both feet in the air) and dropped the hips 3.6 px, which bent the knees
