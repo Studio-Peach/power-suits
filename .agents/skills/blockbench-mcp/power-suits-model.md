@@ -57,6 +57,12 @@ the Art direction page of the design docs. Add a new lesson to the right section
   built-in one; others will swap in like the helmet styles). Armour covers the front; the sides show the machine. The
   chest is `frame_parts` (`torso_core` 13x7x7 + `abd_core`) under the iron `bp_plate` (15x7x6, 1 px past the core's
   sides). A core block reaching into the plate shared its top/bottom planes and flickered: start it at the plate's back.
+- **Armour sets are groups** (2026-11-09, a copper set is planned): each armour piece sits in a `<set>_<part>` group inside
+  the bone that moves it (`iron_torso`, `iron_pad_r/l`, `iron_gauntlet_r/l`), each machine piece in a `frame_<part>` group
+  (`frame_parts`, `frame_arm_r/l`, `frame_forearm_r/l`); new groups take their bone's pivot, so nothing moves (checked by
+  a pixel diff). A new set adds `copper_*` groups in the same bones; the renderer will show the worn set's groups like
+  the helmet styles. Every set's gauntlet keeps the 8x7x8 gauntlet's underside (y 20.625): the socket tools hang there.
+  The legs and the `abdomen` / `pelvis` pieces are grouped when the legs get their machine + armour pass.
 - **The Blockbench viewer is shared with the user**: they hide cubes to look while you work. Toggle only what a render
   needs and put back only what is still in your state; save with the file's own visibility (export ignores it).
 
