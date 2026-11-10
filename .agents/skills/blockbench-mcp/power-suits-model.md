@@ -67,7 +67,9 @@ the Art direction page of the design docs. Add a new lesson to the right section
   of one 9x8 footprint down to the ground, iron on every side (no machine showing at the back of the legs), a dark knee
   block inside both. A wider block at the bottom (a greave) reads as a boot: also rejected. The lower leg rides the shin
   bone; the foot bone is left empty, so the gaits baked for a flat foot tip the planted lower leg onto its front edge
-  until they're re-baked for footless legs.
+  until they're re-baked for footless legs. No hip axle (mobs have none): the thighs go straight up into the belt's hip
+  plates. Inside the iron is a machine leg built like the arm (2026-11-10, so armour sets can swap): `upper_leg` 7x13x6
+  over `lower_leg` 6x15x5 reaching 2 px over the knee (its cables are the knee band), in `frame_thigh_*` / `frame_shin_*`.
 - **The Blockbench viewer is shared with the user**: they hide cubes to look while you work. Toggle only what a render
   needs and put back only what is still in your state; save with the file's own visibility (export ignores it).
 
