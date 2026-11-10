@@ -16,6 +16,7 @@ function pose(k,extra){
   addTo(P,'marine','p',g('marine_p'));
   for(const n of ['body','torso','head','right_arm','right_forearm','left_arm','left_forearm','right_pad','left_pad'])addTo(P,n,'r',g(n));
   addTo(P,'right_pad','p',g('right_pad_p'));addTo(P,'left_pad','p',g('left_pad_p'));
+  K.squat(P);   // footless legs (2026-11-10): the hips sit back so the blocks stay flat (k2.js)
   for(const s of ['r','l'])plant(P,s,STANCE[s].pv,STANCE[s].R);
   return P;}
 if(MODE==='powered_off')return {name:'animation.marine.powered_off',length:0.05,loop:'hold',fps:20,

@@ -19,7 +19,9 @@ const heftS=spring(heft,{f:2.4,z:0.35,T,loop:true});
 return {name:'animation.marine.idle',length:T,loop:'loop',fps:20,sample(t){
   const P={};
   const W=w(t),B=b(t),BL=bl(t),WL=wl(t);
-  addTo(P,'marine','p',[0.9*W,0.2+0.12*Math.cos(2*TAU*t/T)+0.08*B,0.15*Math.sin(TAU*t/T+1)]);
+  // footless legs (2026-11-10): base 0.2 -> 0 (at 0.2 the breath lifted the hips past the straight legs' reach; squat()
+  // below sits them back so the blocks stay flat)
+  addTo(P,'marine','p',[0.9*W,0.0+0.12*Math.cos(2*TAU*t/T)+0.08*B,0.15*Math.sin(TAU*t/T+1)]);
   addTo(P,'body','r',[0.4*B,0.6*n1(t),1.4*W]);
   const ty=torsoYaw(t);
   addTo(P,'torso','r',[1.1*B+0.3*n2(t),ty+0.5*n3(t),-2.1*WL]);
@@ -36,5 +38,6 @@ return {name:'animation.marine.idle',length:T,loop:'loop',fps:20,sample(t){
   addTo(P,'left_forearm','r',[2.5*BL+1.5*n4(t),0,0.8*n5(t)]);
   addTo(P,'left_pad','r',[0,0,-0.9*BL]);
   addTo(P,'left_pad','p',[0,0.18*BL,0]);
+  K.squat(P);   // footless legs (2026-11-10): the hips sit back so the blocks stay flat (k2.js)
   for(const s of ['r','l'])plant(P,s,STANCE[s].pv,STANCE[s].R);
   return P;}};

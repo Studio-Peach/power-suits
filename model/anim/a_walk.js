@@ -1,27 +1,20 @@
-// WALK v6 (2026-10-15, legs v10: solid shin, front ankle hinge): a slow, heavy stride. A 1.0 s cycle instead of v5's 0.6 with steps half as long
-// again (stance 22 px instead of 15), 2.22 blocks/s: longer double support (duty 0.62), the hips dropping between
-// the feet and rising over the planted leg (reachHip, knee >= KMIN), a weight-accepting knee dip after each heel strike,
-// a footfall jolt through the torso, more weight roll over the planted leg, a slower and wider free-arm swing.
-// Tool arm stabilized. v5 (0.6 s, 2.6 blocks/s, shorter quicker steps) in a_walk_v5.js; v4 jog in a_walk_v4.js.
-const {TAU,spring,addTo,pnoise,plant,gaitFoot,reachHip,REST}=K;
-const O=Object.assign({T:1.0,beta:0.62,S:22,zc:-2,H:2.6,KMIN:23,strike:20,toe:20,hang:-8,sway:1.5,rout:0.26,w:0.03,kneeOut:0,roll:4.5,
-  dip:0.4,jolt:1.0,arm:18,yaw:5,
-  // legs v10 (2026-10-15): the shin is a solid block down to the sole and the boot hinges at its front bottom edge. Toes
-  // down at most 4 deg (the shin's back would sink into the sole), toes up to 40 (the shin's back lifts off the heel).
-  // KMIN 23: with the hinge 5 px in front of the shin's axis the leg is stretched along hip-knee-hinge with the knee
-  // bent ~23, so the planted knee bends 38-60 (12-20 with the old heel hinge); zc -2 places the stance for the hinge.
-  ankle:[-4,40]},K.P||{});
+// WALK v7 (2026-11-10, footless legs: the lower leg is one block down to the ground, no foot, user: like the player and
+// other mobs). The planted block rolls without slipping: on its heel edge from the strike until it stands flat, then on
+// its toe edge to toe-off (k2.js plantRoll / footlessLegs). The hips ride on the planted leg held at a 15 deg knee
+// (legs.hip): highest over it, dropping into each double support. Stance 16 px (22 rolled the blocks 50 deg onto their
+// toes), heel centre z 6, 1.0 s cycle, duty 0.62: 1.61 blocks/s. Upper body as v6, tool arm stabilized.
+// v6 (booted legs, front ankle hinge, 22 px / 2.22 blocks/s) in a_walk_v6.js.
+const {TAU,spring,addTo,pnoise}=K;
+const O=Object.assign({T:1.0,beta:0.62,S:16,zc:6,H:2.6,clear:0.6,vm:0.45,kStance:15,hip:0,sway:1.5,kneeOut:0,roll:4.5,
+  dip:0.4,jolt:1.0,arm:18,yaw:5},K.P||{});
 const {T,beta,S,zc}=O;
-if(O.ankle)K.setAnkleLimit(O.ankle);   // [toes down, toes up] against the shin; kit.json's range otherwise
-const Gr={x:REST.r.pivot[0],zc,S,beta,H:O.H,yaw:REST.r.yaw,strike:O.strike,toe:O.toe,hang:O.hang,rin:0.14,rout:O.rout,vm:0.45};
-const Gl={...Gr,x:REST.l.pivot[0],yaw:REST.l.yaw};
 const phR=t=>t/T, phL=t=>t/T+0.5;
 const xr=Math.sign(K.rig.bones.right_leg.origin[0]);       // sway toward the stance leg
 const swayX=t=>O.sway*xr*Math.sin(TAU*t/T);
-const foot=(s,t)=>{const ph=s==='r'?phR(t):phL(t);return gaitFoot(s,ph,s==='r'?Gr:Gl);};
-const inStance=(s,t)=>{const ph=(((s==='r'?phR(t):phL(t))%1)+1)%1;return ph<beta;};
-// walking: hips highest over the planted leg, lowest in double support (the curve comes from the leg reach)
-const yHip=O.fixedHip!=null?(t=>O.fixedHip+O.bob*Math.cos(2*TAU*(t/T-beta/2))):reachHip(T,['r','l'].map(s=>t=>({s,pivot:foot(s,t).pivot,contact:inStance(s,t)})),{kmin:O.KMIN,w:O.w,sway:swayX});
+// the hips ride on the planted leg (legs.hip: as high as the block's intended roll allows; highest over the planted leg)
+const legs=K.footlessLegs({T,beta,S,zc,H:O.H,clear:O.clear,vm:O.vm,kStance:O.kStance,
+  rootXZ:t=>[swayX(t),0,0],root:t=>[swayX(t),yHip(t)+dipY(t),0]});
+const yHip=t=>legs.hip(t)+O.hip;
 // weight acceptance: the planted knee gives a little after each heel strike (an impulse shaped dip, both feet)
 const hit=u=>{u=((u%1)+1)%1;return u<0.06?Math.sin(Math.PI/2*u/0.06):Math.exp(-(u-0.06)/0.09);};
 const dipY=t=>-O.dip*(hit(phR(t))+hit(phL(t)));
@@ -53,7 +46,6 @@ function stabilize(raw,T,{keepPos=0.25,keepRot=0.15,N=30}={}){
 // ---
 const SAMPLE=stabilize(RAW,T);
 return {name:'animation.marine.walk',length:T,loop:'loop',fps:30,tol:{r:0.05,p:0.01},speed:S/(beta*T)/16,
- target(t,s){return foot(s,t).pivot;},
  sample(t){return SAMPLE(t);}};
 function RAW(t){
   const P={},f=TAU*t/T,R=rel(t);
@@ -78,6 +70,5 @@ function RAW(t){
   // must stay square to the shin, whose slot it sits in)
   for(const s of ['r','l']){const out=Math.sign(K.rig.bones[s==='r'?'right_leg':'left_leg'].origin[0]);
     const load=0.6+0.4*Math.cos(f-(s==='r'?0.9:0.9+Math.PI));addTo(P,s==='r'?'right_leg':'left_leg','r',[0,-out*O.kneeOut*load,0]);}
-  const fr=foot('r',t),fl=foot('l',t);
-  plant(P,'r',fr.pivot,fr.R);plant(P,'l',fl.pivot,fl.R);
+  legs(P,t);
   return P;}

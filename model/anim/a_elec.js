@@ -20,5 +20,6 @@ return {name:'animation.marine.electrified',length:T,loop:'loop',fps:40,tol:{r:0
   addTo(P,'left_forearm','r',[-10+j.lfx(t),0,0]);
   addTo(P,'right_pad','p',[2+j.pr(t),0.6+Math.abs(j.pr(t+0.1)),0]);addTo(P,'right_pad','r',[0,0,6+j.prr(t)]);
   addTo(P,'left_pad','p',[-2.5+j.pl(t),0.6+Math.abs(j.pl(t+0.1)),0]);addTo(P,'left_pad','r',[0,0,-6+j.plr(t)]);
+  K.squat(P);   // footless legs (2026-11-10): the hips sit back so the blocks stay flat (k2.js)
   for(const s of ['r','l'])plant(P,s,STANCE[s].pv,STANCE[s].R);
   return P;}};

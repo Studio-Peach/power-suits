@@ -55,12 +55,27 @@ ankle range. After re-baking, run `../art/shoulders_apply.js` step `limits` (re-
 after an upload) and `livesweep.js` (shin pieces `^shin(_knee|_ramp|_low|_back|_skirt.)?_[rl]$` vs thighs and boots,
 arms vs thighs).
 
+**Footless legs (2026-11-10).** The lower leg is one block down to the ground and the foot bone is empty (see
+`power-suits-model.md`). The kit (`k2.js`) then takes the shin's lowest cubes as the "foot" (heel / toe = the block's back
+and front bottom edges) and keeps the foot bone at 0: `plant()` turns a requested foot pose into the block standing on
+its heel or toe edge (`plantRoll`, no slip), or, in the air, the ankle pivot reaching its target. Standing specs call
+`K.squat(P)` before planting: a flat block needs an upright shin, so a lowered root sits back (idle's base height 0.2 -> 0;
+jump starts sat back like jump_charge's end and drives forward). Gaits use `footlessLegs` (walk, run). Check with the
+skill's `scripts/fsweep.mjs` (gaits: knee, the planted block's pitch, IK error, lowest point) and `fstand.mjs` (any spec).
+Every leg animation was re-baked on 2026-11-10 (then `../art/shoulders_apply.js` `limits`); blocks stay within 0.24 px of
+the ground; idle rolls them up to 9 deg, crouches stay within 3. **Export TODO:** the game still plays the exported walk
+v6 / run v8: on export set `SuitAnimator.WALK_ANIM_AUTHORED` = 1.613 and `RUN_ANIM_AUTHORED` = 5.580 (and GaitScene's
+comment), then check with `runAutopilotGait`.
+
 | File | Animation | Type |
 |---|---|---|
 | a_idle.js | idle | full body loop, IK feet |
-| a_walk.js | walk v6 (2026-10-15, legs v10): slow heavy stride, 1.0 s cycle, stance 22 px, duty 0.62, 2.22 blocks/s, knee >= 23 (the front ankle hinge stretches the leg along hip-knee-hinge with the knee bent ~23: planted 38-60, swing 89), ankle -4..+40, stance zc -2, knee dip after each heel strike, footfall jolt, tool stabilized (v5 0.6 s / 2.6 blocks/s in a_walk_v5.js, v4 jog in a_walk_v4.js) | full body gait loop |
+| a_walk.js | walk v7 (2026-11-10, footless legs): the planted block rocks heel -> flat -> toe without slipping (k2.js `footlessLegs`), hips held up by the planted leg at a 15 deg knee (`legs.hip`), stance 16 px, heel centre z 6, 1.0 s cycle, duty 0.62, 1.613 blocks/s; upper body as v6 | full body gait loop |
+| a_walk_v6.js | walk v6 (2026-10-15, legs v10): slow heavy stride, 1.0 s cycle, stance 22 px, duty 0.62, 2.22 blocks/s, knee >= 23 (the front ankle hinge stretches the leg along hip-knee-hinge with the knee bent ~23: planted 38-60, swing 89), ankle -4..+40, stance zc -2, knee dip after each heel strike, footfall jolt, tool stabilized (v5 0.6 s / 2.6 blocks/s in a_walk_v5.js, v4 jog in a_walk_v4.js) | full body gait loop |
 | a_walk_upper.js | old walk upper-body layer (v1 walk, superseded by a_walk.js) | legacy |
-| a_run.js / a_sneak.js | run v8 (2026-10-15, legs v10): a driving run, 0.7 s stride, foot planted 32% (22 px), 6.25 blocks/s, the suit sinks 2 px into each planted leg and drives up through a push-off that throws the trailing leg out behind (thigh -19), hips from the legs' reach (KMIN 30) + 1.5 px in flight, swing targets eased into reach, both arms pump the same short swing in opposite phase (arm 14, armF 6, toolPump: the tool arm is no longer stabilized in the run; its third-person pose never aims), knee kept bent (kneeFloor 22: the front hinge's straighter knee solution flipped with the bent one, the old run's 47 deg 'stutter'); v7 bounding and v6 short steps rejected by the user (v5/v4/... in a_run_v*.js) / sneakwalk (**removed from the model** 2026-10-18: the suit doesn't sneak) | full body gait loops |
+| a_run.js | run v9 (2026-11-10, footless legs): v8's drive (flight, sink 1 px into each planted leg, heel kick, paw) on `footlessLegs`, kStance 20, stance 20 px, heel centre z 4, 0.7 s, duty 0.32, 5.580 blocks/s | full body gait loop |
+| walk_back.mjs | walk_back: the baked walk with its keys mirrored in time; re-run after every walk re-bake | node script |
+| a_run_v8.js / a_sneak.js | run v8 (2026-10-15, legs v10): a driving run, 0.7 s stride, foot planted 32% (22 px), 6.25 blocks/s, the suit sinks 2 px into each planted leg and drives up through a push-off that throws the trailing leg out behind (thigh -19), hips from the legs' reach (KMIN 30) + 1.5 px in flight, swing targets eased into reach, both arms pump the same short swing in opposite phase (arm 14, armF 6, toolPump: the tool arm is no longer stabilized in the run; its third-person pose never aims), knee kept bent (kneeFloor 22: the front hinge's straighter knee solution flipped with the bent one, the old run's 47 deg 'stutter'); v7 bounding and v6 short steps rejected by the user (v5/v4/... in a_run_v*.js) / sneakwalk (**removed from the model** 2026-10-18: the suit doesn't sneak) | full body gait loops |
 | a_jump_charge.js | jump_charge (hold): crouch wind-up, ends on jump t=0 | full body |
 | a_jump.js, a_fall.js, a_land.js | jump (once, ends on fall t=0) -> fall (loop), land (once, ends at rest stance) | full body, shared airborne pose block |
 | a_attack.js, a_hit.js, a_fidget.js | attack, hit, idle_fidget | upper-body overlays |

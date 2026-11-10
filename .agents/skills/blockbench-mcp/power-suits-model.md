@@ -74,6 +74,12 @@ the Art direction page of the design docs. Add a new lesson to the right section
   needs and put back only what is still in your state; save with the file's own visibility (export ignores it).
 
 ## Gaits and baked animations
+- **Footless gaits** (2026-11-10, user liked the walk): the planted block rocks heel -> flat -> toe like a rocker without
+  slipping, the hips held up by the planted leg at a fixed knee (k2.js `footlessLegs`, `legs.hip`: whichever edge holds
+  the hip higher is the one it stands on). Steps must be short: a 22 px stance rolled the blocks 50 deg onto their toes
+  (walk v7 16 px, run v9 20 px). A near-straight leg is very sensitive (0.2 px of hip ~ 15 deg of knee): standing poses
+  keep the blocks flat by sitting the hips back (`squat`), never by lowering them alone. A point IK'd off the shin's
+  axis (heel / toe edge) bends the knee backward when out of reach: `reachPt` holds the knee at the floor then.
 - **Gaits come from the legs, not the game speed**: legs this long (hip 22.6 px) can't walk 5 blocks/s. The old "walk" had
   each foot down only 37.5% of the cycle (a run: both feet in the air) and dropped the hips 3.6 px, which bent the knees
   to 128 deg through the thigh. Hip height is very sensitive (1 px lower ~ +20 deg of knee): derive it from the planted

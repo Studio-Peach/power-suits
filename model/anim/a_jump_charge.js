@@ -11,5 +11,6 @@ return {name:'animation.marine.jump_charge',length:T,loop:'hold',fps:40,tol:{r:0
   const P={},k=w(t);
   for(const [b,v] of Object.entries(END))addTo(P,b,b==='marine'?'p':'r',v.map(x=>x*k));
   addTo(P,'right_pad','p',[0,0,0]);addTo(P,'left_pad','p',[0,0,0]);
+  K.squat(P);   // footless legs (2026-11-10): the hips sit back so the blocks stay flat (k2.js)
   for(const s of ['r','l'])plant(P,s,STANCE[s].pv,STANCE[s].R);
   return P;}};

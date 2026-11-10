@@ -5,6 +5,6 @@
   -4,
   40
  ],
- "ankle_why": "Legs v10 (final feet, 2026-10-15): the boot hinges at the shin's front bottom edge. Toes down more than ~4 deg sinks the shin's back into the sole; toes up to 40 the shin's back rocks up over the boot's arc-shaped heel (no gap). Past the range plant() rolls the boot (k2.js).",
+ "ankle_why": "Legs v10 (booted, 2026-10-15). Since 2026-11-10 the legs are footless (empty foot bone): plant() ignores this range and keeps the foot bone at 0 (k2.js FOOTLESS); kept for the booted specs (a_walk_v6.js, a_run_v8.js) on older models.",
  "ankleSquare": true
 }

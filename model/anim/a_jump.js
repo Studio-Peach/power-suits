@@ -32,6 +32,9 @@ return {name:'animation.marine.jump',length:T,loop:'once',fps:40,tol:{r:0.08,p:0
  sample(t){
   const P={},w=W(t),R=padS(t)-imp(t);
   addTo(P,'marine','p',root(t));
+  // footless legs (2026-11-10): starts sat back like jump_charge's end (squat), driving the hips forward over the toes
+  // through the push-off
+  {const Q={marine:{p:root(0)}};const z=K.squat(Q);addTo(P,'marine','p',[0,0,z*(1-smoother(Math.min(1,t/0.1)))]);}
   addTo(P,'body','r',lerp3([-4,0,0],AIR.body,w).map((v,i)=>v+(i?0:lean(t)[0]*0.4)));
   addTo(P,'torso','r',lerp3([0,0,0],AIR.torso,w).map((v,i)=>v+(i?0:lean(t)[0]*0.6)));
   addTo(P,'head','r',lerp3([8,0,0],AIR.head,w));

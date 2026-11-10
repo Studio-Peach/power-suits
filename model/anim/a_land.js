@@ -20,5 +20,6 @@ return {name:'animation.marine.land',length:T,loop:'once',fps:80,tol:{r:0.05,p:0
   addTo(P,'left_arm','r',[-6*B,0,-10*B]);addTo(P,'left_forearm','r',[16*B,0,0]);
   addTo(P,'right_pad','p',[0,-1.2*C,0]);addTo(P,'right_pad','r',[0,0,-4*C]);
   addTo(P,'left_pad','p',[0,-1.2*C,0]);addTo(P,'left_pad','r',[0,0,4*C]);
+  K.squat(P);   // footless legs (2026-11-10): the hips sit back so the blocks stay flat (k2.js)
   for(const s of ['r','l'])plant(P,s,STANCE[s].pv,STANCE[s].R);
   return P;}};
