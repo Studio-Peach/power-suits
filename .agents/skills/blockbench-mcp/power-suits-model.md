@@ -63,6 +63,11 @@ the Art direction page of the design docs. Add a new lesson to the right section
   a pixel diff). A new set adds `copper_*` groups in the same bones; the renderer will show the worn set's groups like
   the helmet styles. Every set's gauntlet keeps the 8x7x8 gauntlet's underside (y 20.625): the socket tools hang there.
   The legs and the `abdomen` / `pelvis` pieces are grouped when the legs get their machine + armour pass.
+- **Legs are two blocks, no feet** (2026-11-09, user: like the player and other mobs): a thigh block and a lower-leg block
+  of one 9x8 footprint down to the ground, iron on every side (no machine showing at the back of the legs), a dark knee
+  block inside both. A wider block at the bottom (a greave) reads as a boot: also rejected. The lower leg rides the shin
+  bone; the foot bone is left empty, so the gaits baked for a flat foot tip the planted lower leg onto its front edge
+  until they're re-baked for footless legs.
 - **The Blockbench viewer is shared with the user**: they hide cubes to look while you work. Toggle only what a render
   needs and put back only what is still in your state; save with the file's own visibility (export ignores it).
 
