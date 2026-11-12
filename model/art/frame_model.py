@@ -525,42 +525,59 @@ def suit_faces(name, cols=None, rows=None):
     return out
 
 ENGINE_BOX, EXHAUST = {}, None
-# Draft knob PACK (2026-11-11, user: the pack and exhausts scaled down to the frame, from the big suit's): its width,
-# height, depth, the exhausts' width and height (px), its upper and lower inlets' heights (raw). Its top stays flush
-# with the chest's (raw 26), the exhausts 2 px into it at its back corners, leaning back 12 deg, a cap 1 px wider.
-PACKS = {'full': (10, 11, 5, 2, 8, 18, 16),       # as 4eec4a8
-         'A': (8, 9, 4, 1.5, 6, 21, 18),
-         'B': (8, 8, 3, 1.5, 5, 22, 19),
-         'C': (6, 8, 3, 1, 5, 22, 19)}
+# Draft knob PACK (2026-11-11, user: the pack scaled down to the frame, from the big suit's; A picked): its width,
+# height, depth (px), its upper and lower inlets' heights (raw). Its top stays flush with the chest's (raw 26).
+PACKS = {'full': (10, 11, 5, 18, 16),       # as 4eec4a8
+         'A': (8, 9, 4, 21, 18),
+         'B': (8, 8, 3, 22, 19),
+         'C': (6, 8, 3, 22, 19)}
 PACK = os.environ.get('PACK', 'A')
+# Draft knob BACK (2026-11-11, user: the pack's exhausts "don't evoke that cool mechanical vibe of a motor engine"):
+# 'pistons' the twin-cylinder pack (PACK, EXH), or a motor (frame_motor_art.py): 'blower' (picked, 2026-11-11),
+# 'vtwin', 'inline'.
+BACK = os.environ.get('BACK', 'blower')
+import frame_motor_art as motor_art
+PAL.update(motor_art.EXTRA)
 if ENGINE == 'heart':
-    PW_, PH_, PD, EW, EH, UP_Y, LOW_Y = PACKS[PACK]
-    PX = PW_ / 2
-    for p in heart_art.build(CHEST_X, PX, UP_Y, LOW_Y):
+    if BACK == 'pistons':
+        PW_, PH_, PD, UP_Y, LOW_Y = PACKS[PACK]
+        PX, PACK_TOP = PW_ / 2, 26
+    else:
+        MOTOR, PX, UP_Y, LOW_Y, PACK_TOP = motor_art.build(BACK, suit_faces)
+        for p in MOTOR:
+            k = 'mt_' + p['name']
+            ENGINE_BOX[k] = p['box']
+            ENGINE_META[k] = p
+            if p['faces']: SHELLS[f'en_{k}'] = dict(faces=p['faces'])
+    for p in heart_art.build(CHEST_X, PX, UP_Y, LOW_Y, PACK_TOP):
         k = 'ht_' + p['name']
         ENGINE_BOX[k] = p['box']
         ENGINE_META[k] = p
         if p['faces']: SHELLS[f'en_{k}'] = dict(faces=p['faces'])
+if ENGINE == 'heart' and BACK == 'pistons':
     # the back: the twin-cylinder pack and the old suit's exhausts (commit 4eec4a8, where their picks are told;
     # 2026-11-11, user: "the original firebox with the furnace face and exhausts", over the radial)
     ENGINE_BOX['pack'] = ((-PX, 26 - PH_, TZ), (PX, 26, TZ + PD))
-    EXH_X, EXH_Z = PX - EW / 2 - 0.25, TZ + PD - EW / 2
-    EXHAUST = dict(base=26 - 2, x=EXH_X, z=EXH_Z, lean=12)
-    ENGINE_BOX['exhaust'] = ((EXH_X - EW / 2, 24, EXH_Z - EW / 2), (EXH_X + EW / 2, 24 + EH, EXH_Z + EW / 2))
-    ENGINE_BOX['exhaust_cap'] = ((EXH_X - EW / 2 - 0.5, 24 + EH, EXH_Z - EW / 2 - 0.5), (EXH_X + EW / 2 + 0.5, 25 + EH, EXH_Z + EW / 2 + 0.5))
-    # the old 3 x 11 x 3 pipe picked down: its lit and shaded columns, its top rows and its bottom ones
-    ecols = {1: [0, 2], 1.5: [0, 1, 2], 2: [0, 2]}[EW]
-    first = min(4, EH - 2)
-    erows = list(range(first)) + list(range(10 - (EH - first), 10))
-    exhaust = suit_faces('exhaust_r', cols={f: ecols for f in FACES},
-                         rows={**{f: erows for f in ('north', 'south', 'east', 'west')}, 'up': ecols, 'down': ecols})
-    ccols = [0, 3] if EW == 1 else [0, 1, 3]
-    exhaust_cap = suit_faces('exhaust_cap_r', cols={f: ccols for f in FACES}, rows={'up': ccols, 'down': ccols})
+    # Draft knob EXH (2026-11-11, user: the old exhausts didn't line up with the holes in the pack, were a little
+    # too big and leaned; integrate them): straight up out of the cylinders' heads, flush with the pack's back, the
+    # pack's top painted round their feet. 'column': the cylinder goes on up as the stack, 2 px wide (its width),
+    # 1.5 deep, 3 tall; 'stack': a 1 px pipe, 4 tall; 'stub': a 1 px pipe, 2 tall, under a 1.5 px cap.
+    EXH = os.environ.get('EXH', 'column')
+    CW = max(3, round(PW_ * 2) // 4) / 2                   # the cylinders' width (frame_engine_art.back_pistons_sized)
+    EXH_X = PX - 0.5 - CW / 2                              # their centre (they stand 1 texel in from its sides)
+    EW, ED, EH = {'column': (CW, 1.5, 3), 'stack': (1, 1, 4), 'stub': (1, 1, 2)}[EXH]
+    EXH_Z = TZ + PD - ED / 2
+    EXHAUST = dict(base=26, x=EXH_X, z=EXH_Z, lean=0)
+    ENGINE_BOX['exhaust'] = ((EXH_X - EW / 2, 26, TZ + PD - ED), (EXH_X + EW / 2, 26 + EH, TZ + PD))
+    exhaust = engine_art.stack_sized(EXH, round(EW * 2), round(EH * 2), round(ED * 2))
+    if EXH == 'stub':
+        ENGINE_BOX['exhaust_cap'] = ((EXH_X - 0.75, 26 + EH, TZ + PD - 1.25), (EXH_X + 0.75, 26.5 + EH, TZ + PD + 0.25))
+        exhaust_cap = engine_art.stack_cap(3, 1, 3)
     rgba = lambda c: (ARMPAL[c] if c in ARMPAL else PAL[c]) + (255,)
     if PACK == 'full': art = engine_art.back_pistons()
     else:   # the exhausts' holes in its top (columns from -x, rows front -> back), both sides
         hx0 = round((EXH_X - EW / 2 + PX) * 2)
-        holes = [(c0, round((EXH_Z - EW / 2 - TZ) * 2), round(EW * 2), round(EW * 2)) for c0 in (hx0, round(PW_ * 2) - hx0 - round(EW * 2))]
+        holes = [(c0, round((TZ + PD - ED - TZ) * 2), round(EW * 2), round(ED * 2)) for c0 in (hx0, round(PW_ * 2) - hx0 - round(EW * 2))]
         art = engine_art.back_pistons_sized(round(PW_ * 2), round(PH_ * 2), round(PD * 2), holes)
     pack = {f: [[rgba(c) for c in r] for r in rows_] for f, rows_ in art.items()}
     # the hoses' copper inlets on its sides (UP_Y, LOW_Y), 1 px from its front (east runs back -> front)
@@ -570,7 +587,9 @@ if ENGINE == 'heart':
         for y in (UP_Y, LOW_Y):
             for j in range((25 - y) * 2, (26 - y) * 2):
                 for i in (range(n - 2, n) if f == 'east' else range(0, 2)): pack[f][j][i] = Q
-    SHELLS.update({'en_pack': dict(faces=pack), 'en_exhaust': dict(faces=exhaust), 'en_exhaust_cap': dict(faces=exhaust_cap)})
+    rgbaf = lambda faces: {f: [[rgba(c) for c in r] for r in rows_] for f, rows_ in faces.items()}
+    SHELLS.update({'en_pack': dict(faces=pack), 'en_exhaust': dict(faces=rgbaf(exhaust))})
+    if EXH == 'stub': SHELLS['en_exhaust_cap'] = dict(faces=rgbaf(exhaust_cap))
 if ENGINE == 'firebox':
     ENGINE_BOX['core'] = ((-2, 21, -TZ - 1), (2, 25, -TZ))
     Z = (-TZ - 1, -TZ)                              # the front pipes' depth: 1 px proud, as the core

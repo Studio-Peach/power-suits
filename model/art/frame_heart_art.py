@@ -118,7 +118,7 @@ def strip_side(low_y):
     return part('strip_side', ((SIDE_X - 0.5, low_y - 0.5, -3.5), (SIDE_X, low_y + 2, BACK_Z)), paint, mirror=True)
 
 
-def harness_back(pack_x, up_y, low_y):
+def harness_back(pack_x, up_y, low_y, pack_top=26):
     """The back plate (behind the pack where the pack covers it): the top pair down from the shoulder strips to the
     pack's upper inlets, the lower pair in from the waist strips to its lower ones."""
     x0, x1, y0, y1 = -6, 6, low_y - 0.5, TOP_Y
@@ -126,7 +126,7 @@ def harness_back(pack_x, up_y, low_y):
                    [(6.5, low_y + HR), (pack_x - 0.5, low_y + HR)]])
 
     def clip(x, y):
-        if abs(x) < pack_x: return '.'                              # inside the pack (its front's plane)
+        if abs(x) < pack_x and y < pack_top: return '.'             # behind the pack (its front's plane); whole above it
         if abs(x) > SIDE_X and y < 20: return '.'                    # the lower pair comes off the waist strip here
         return at(x, y)
 
@@ -137,7 +137,7 @@ def harness_back(pack_x, up_y, low_y):
     return part('harness_back', ((x0, y0, 3), (x1, y1, BACK_Z)), paint)
 
 
-def build(chest_x=6.0, pack_x=5, up_y=18, low_y=16):
+def build(chest_x=6.0, pack_x=5, up_y=18, low_y=16, pack_top=26):
     """pack_x: the pack's half width; up_y / low_y: its inlets' heights (the back hoses end in them)."""
     xo = min(6, chest_x)                  # the strip beside the helmet (+-4.5) and inside the arm box
-    return [harness(low_y), strip_top(xo), strip_side(low_y), harness_back(pack_x, up_y, low_y)]
+    return [harness(low_y), strip_top(xo), strip_side(low_y), harness_back(pack_x, up_y, low_y, pack_top)]

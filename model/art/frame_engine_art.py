@@ -140,3 +140,35 @@ def back_pistons_sized(W, H, D, holes=()):
                     top[j][i] = 'X' if (c0 <= i < c0 + cs and r0 <= j < r0 + rs) else 'Y'
     return {'north': ['X' * W] * H, 'south': [''.join(r) for r in g], 'east': side, 'west': [r[::-1] for r in side],
             'up': [''.join(r) for r in top], 'down': ['X' * W] * D}
+
+
+def stack_sized(style, W, H, D):
+    """An exhaust rising straight out of a cylinder's head (2026-11-11, user: the old leaning exhausts didn't line up
+    with the pack's holes, too big, angled; one coherent piece): W x H x D texels, drawn in the cylinders' paint.
+    'column': the cylinder itself goes on up as the stack (its shading, a brass ring at the top, soot in its mouth);
+    'stack' / 'stub': a slim steel pipe, a brass band, sooty at the mouth ('stub' is the short one under a cap)."""
+    if style == 'column':
+        body = {3: 'VWN', 4: 'UVWN', 5: 'UVWVN'}[W]
+        sbody = {2: 'WN', 3: 'VWN', 4: 'UVWN'}[D]
+        def face(row): return ['Y' * len(row), 'Z' * len(row)] + [row] * (H - 3) + ['Z' * len(row)]
+        mouth = _grid(W, D, 'Y')
+        for j in range(1, D - 1):
+            for i in range(1, W - 1): mouth[j][i] = 'P' if (i in (1, W - 2) or j in (1, D - 2)) else 'X'
+        return {'north': face(body), 'south': face(body), 'east': face(sbody), 'west': face(sbody[::-1]),
+                'up': [''.join(r) for r in mouth], 'down': ['X' * W] * D}
+    lit = lambda n: 'W' + 'V' * (n - 2) + 'U' if n > 2 else 'WU'[:n] if n == 2 else 'V'
+    def face(n): return ['P' * n] * 2 + ['Y' * n] + [lit(n)] * (H - 3) if style == 'stack' else [lit(n)] * H
+    mouth = _grid(W, D, 'P')
+    if W > 1 and D > 1: mouth[D // 2][W // 2] = 'X'
+    return {'north': face(W), 'south': face(W), 'east': face(D), 'west': face(D), 'up': [''.join(r) for r in mouth],
+            'down': ['X' * W] * D}
+
+
+def stack_cap(W, H, D):
+    """The stub's cap: a brass ring, soot in the middle of its top."""
+    top = _grid(W, D, 'Y')
+    for j in range(1, D - 1):
+        for i in range(1, W - 1): top[j][i] = 'P'
+    return {'north': ['E' * W] + ['Z' * W] * (H - 1), 'south': ['E' * W] + ['Z' * W] * (H - 1),
+            'east': ['E' * D] + ['Z' * D] * (H - 1), 'west': ['E' * D] + ['Z' * D] * (H - 1),
+            'up': [''.join(r) for r in top], 'down': ['Z' * W] * D}
