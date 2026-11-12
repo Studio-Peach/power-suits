@@ -164,18 +164,37 @@ def diver():
 # ---------------------------------------------------------------- C: wraparound visor (glass round the front corners)
 # (2026-11-12, user: C picked as the basis; with the old helmet's chin grille back, B out: an easter-egg helmet is
 # BioShock's already.)
+# The side seam's two rows (top, bottom): 'seam' as the armour's (a dark line over the lit plate edge) or 'ridge'
+# shaded as the visor's ridge it runs into (lit over dark: one band round the helmet). Env HELMET_SEAM.
+import os
+# (ridge: its dark row a step lighter than the wing's, user: the two dark rows read the same)
+SEAM = {'seam': ('p', 'h'), 'ridge': ('h', 'p')}[os.environ.get('HELMET_SEAM', 'ridge')]   # picked: ridge
+
+
 def wrap(back_style='plain'):
     f = shade(blank())
     ridge(f, 5, 1, 17)
+    for i in range(N): f[5][i], f[6][i] = 'g', 's'   # the ridge (its lit edge, the dark row under it) over the
+                                              # visor, the whole width (2026-11-12, user: it stopped short of the
+                                              # corners), on round them below
     rect(f, 0, 7, 18, 12, 'V')                                            # the visor across the whole front
     for i in range(0, 18): f[12][i], f[13][i] = 'x', 'p'
     grille(f, 14)
+    # (no bolts on the front: tried on the forehead's corners, 2026-11-12, user: without)
     glint(f)
     side = shade(blank())
     rect(side, 13, 7, 18, 12, 'V')                                        # the glass wraps the front corner
     for i in range(13, 18): side[12][i] = 'x'
     for j in range(7, 12): side[j][12] = 'x'
-    seam(side, 4, 1, 17)
+    # the ridge over the glass, winged (2026-11-12, user: the layered cap didn't convince; its swept side, in the
+    # helmet's own paint), and the crown seam become one with it (user: not stacked over it): the seam (its dark line,
+    # the lit plate edge under it) in the ridge's two rows (5-6) from the back; over the glass, its border and a texel
+    # behind (cols 11-17), the ridge (lit row over the dark one), its lit row running 1 px further back
+    for i in range(1, 11): side[5][i], side[6][i] = SEAM          # in the ridge's two rows (user: line them up)
+    for i in range(11, 18): side[5][i], side[6][i] = 'g', 's'
+    for i in (9, 10): side[5][i] = 'g'        # the wing's tail: its lit row 1 px further back (lost once, user)
+    # the crown seam (2026-11-12, user: back, but like the other seams, not black, with bolts above it, as the back's)
+    for i in (3, 14): side[3][i] = 'p'          # bolts as the top's rivets (user), a row lower than first drawn
     # (no ear disc, no side vents: 2026-11-12, user: helmets don't usually have ear discs; the neck guard wraps here)
     if back_style == 'guard': neck_guard(side, GUARD_WRAP)
     east = side
@@ -227,8 +246,7 @@ def wrap_back(style='plain'):
         for i in (4, 13): bolt(b, i, 8)
     elif style == 'guard':
         neck_guard(b, [N] * len(GUARD_ROWS))
-        crest(b, 2, GUARD_ROWS[0][0])
-        for i in (3, 14): bolt(b, i, 5)
+        crest(b, 2, GUARD_ROWS[0][0])   # (no bolts: 2026-11-12, user)
     elif style == 'crest':
         bands(b, [(8, 3), (11, 3), (14, 3)])
         crest(b, 2, 18 if style == 'crest' else 8)
@@ -253,3 +271,85 @@ def faces(style, back='plain'):
     d = STYLES[style](back) if style == 'C' else STYLES[style]()
     d['down'] = ['k' * N] * N
     return d
+
+
+# ---------------------------------------------------------------- the outer layer (HELMET_EXTRA)
+# (2026-11-12, user: the sides have just one floating line; an outer layer like the chest's, small details: a cap over
+# the visor's upper rim, a radio with an antenna on the side.) Decals as the engine's: thin plates 0.5 px off the
+# helmet, only their outward faces painted, the rest see-through. Raw coordinates of the head bone (the helmet is
+# x / z +-4.5, y 25.5 - 34.5). They stay inside a 6.4 px radius of the neck below the pauldrons' top (raw 26.5), so
+# the head still turns 50 deg clear of them; nothing goes more than 1 px over the helmet's top.
+def _grid(w, h, c='.'): return [c * w for _ in range(h)]
+
+
+def _part(name, box, faces):
+    (x0, y0, z0), (x1, y1, z1) = box
+    W, H, D = (round((b - a) * 2) for a, b in ((x0, x1), (y0, y1), (z0, z1)))
+    size = {'north': (W, H), 'south': (W, H), 'east': (D, H), 'west': (D, H), 'up': (W, D), 'down': (W, D)}
+    out = {f: faces.get(f) or _grid(*size[f]) for f in size}
+    for f, (w, h) in size.items():
+        assert len(out[f]) == h and all(len(r) == w for r in out[f]), (name, f, w, h)
+    return dict(name=name, box=box, faces=out)
+
+
+def cap():
+    """A brow cap over the visor's top rim (the glass is rows 7-11: raw y 31 down), 0.5 px off the front and round the
+    front corners past the glass's wrap and its border (3.5 px back), 1.5 px tall, its bottom edge 0.5 px over the
+    glass: a lit top edge, the plate, a dark lip shading the glass; behind the glass it slopes off (1.5 px)."""
+    W, D = 20, 10
+    north = ['g' * W, 'h' + 'e' * (W - 2) + 'l', 'x' * W]
+    # rows painted per column, back -> front: full depth over the whole glass and its border on the side (2026-11-12,
+    # user: cover the full visor width; it tapered off over the glass), then the first draft's slope (1, 2, 2 rows)
+    # behind it (a single step there changed its silhouette)
+    taper = [1, 2, 2] + [3] * (D - 3)
+    east = [''.join(('g' if j == 0 else 'x' if j == taper[i] - 1 else 'e') if j < taper[i] else '.'
+                    for i in range(D)) for j in range(3)]
+    west = [r[::-1] for r in east]
+    return [_part('cap', ((-5, 30.5, -5), (5, 32, 0)), dict(north=north, east=east, west=west))]
+
+
+def radio():
+    """A radio on the left side (x-), toward the back, all on one plate 0.5 px off the side: a slate box (3 x 3 px), a
+    speaker grille, a brass dial, a copper lamp, and two antenna lines drawn up out of its top, the taller ending
+    1 px over the helmet's top (2026-11-12, user: no 3D antenna, a few lines out of the 2D radio, short, at most a
+    pixel past the helmet's top: helmets keep within their upper bound)."""
+    west = ['....E.',                                     # columns front -> back (as seen from the left)
+            '....l.',
+            '....l.',
+            '..E.l.',
+            '..l.l.',
+            '..l.l.',
+            '..l.l.',
+            'nnnnnn',
+            'mxmxmm',
+            'mxmxYm',
+            'mxmxmm',
+            'mmmmfm',
+            'xxxxxx']
+    return [_part('radio', ((-5, 29, 0.5), (-4.5, 35.5, 3.5)), dict(west=west))]
+
+
+def camera():
+    """A helmet camera on the right side (x+), opposite the radio (2026-11-12, user, after a Halo Reach helmet's: a
+    rounded housing, the lens forward, a red lamp): drawn on a plate 0.5 px off the side, and
+    the lens again on a small plate facing forward at its front end. The lamp is the fire's reserved red, so in game
+    it lights with the engine (the fire glowmask)."""
+    east = ['...nnnJJ',                                  # columns back -> front (as seen from the right); the
+            '..nmmmxx',                                  # front column solid, as the front plate it meets (user:
+            '..nmmmxg',                                  # see-through texels there didn't line up with it; no
+                                                         # mount tail behind it, user)
+            '..nmmmxx',
+            '...kkkkk']
+    # its front, the housing's full height and depth, from the helmet's side out to the housing's plane (a 1 px lens
+    # plate, then one 0.5 px past the housing, didn't line up with it, user): the lamp, the lens, the bottom
+    front = ['J', 'x', 'g', 'x', 'k']                  # (one texel across: the housing's plate is 0.5 px off the side)
+    # forward, beside the visor at eye level (not mirroring the radio, user), the front plate 0.25 px ahead of it
+    # (the housing's plate zero-thick, so the front plate can meet its front edge exactly: 0.25 px apart they showed a
+    # gap, user; a box's own front face there would lie in the front plate's plane)
+    return [_part('camera', ((5, 28.5, -1), (5, 31, 3)), dict(east=east)),
+            _part('camera_front', ((4.5, 28.5, -1), (5, 31, -1)), dict(north=front))]
+
+
+def extras(kind):
+    return {'none': [], 'cap': cap(), 'radio': radio(), 'both': cap() + radio(),
+            'all': cap() + radio() + camera(), 'gear': radio() + camera()}[kind]

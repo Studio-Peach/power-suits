@@ -562,6 +562,12 @@ if ARMOR != 'none':
         'arm_armor': dict(cage=iron.arm(), below=['fist'], rows=1, up=iron.arm()['up']),
         'leg_armor': dict(cage=iron.leg(), below=['boot'], rows=1, up=iron.leg()['up'])})
 elif HELMET != 'none': SHELLS['helmet_armor'] = dict(faces=_helmet(HELMET))
+# Draft knob HELMET_EXTRA ('none' / 'cap' / 'radio' / 'both' / 'all' / 'gear'; 2026-11-12, user): the helmet's outer layer, decals on
+# the head bone (frame_helmet_art.extras), placed in the texture's free room.
+import frame_helmet_art as helmet_art
+# Picked: 'gear' (radio + camera; the layered cap dropped, its swept side painted into the helmet, user 2026-11-12).
+HELMET_EXTRAS = helmet_art.extras(os.environ.get('HELMET_EXTRA', 'gear')) if 'helmet_armor' in SHELLS else []
+for _p in HELMET_EXTRAS: SHELLS[f"hx_{_p['name']}"] = dict(faces=_p['faces'])
 
 def _plate():
     """The shoulder plate at 2 texels per px: a steel plate, its top lit along the front and outer edges, a
@@ -801,6 +807,7 @@ SHELL_UV, _used = {}, set()
 # flat pauldron, 2026-11-12, outgrew the solid one's place).
 if ARMOR_FORM == 'flat': SHELL_AT['pauldron_armor'] = None
 if HELMET_STYLE != 'suit': SHELL_AT['helmet_armor'] = None
+for _p in HELMET_EXTRAS: SHELL_AT[f"hx_{_p['name']}"] = None
 def _free_at(part):
     sizes = [shell_art(part, f) for f in FACES]
     w, h = sum(len(a[0]) if a else 0 for a in sizes), max(len(a) for a in sizes)
@@ -1199,7 +1206,12 @@ def unlink(name):
     e = next(x for x in elements if x['name'] == name)
     elements.remove(e)
     e['_g']['children'].remove(e['uuid'])
-if 'helmet_armor' in SHELLS: _armor('head', 'r', 'helmet', 'ar_helmet')
+if 'helmet_armor' in SHELLS:
+    _armor('head', 'r', 'helmet', 'ar_helmet')
+    _gh = next(x for x in groups if x['name'] == 'armor_head')
+    for _p in HELMET_EXTRAS:   # checked as boxes (painted, like the pauldron decal)
+        e = painted(_gh, 'r', f"hx_{_p['name']}", f"ar_hx_{_p['name']}", *_p['box'])
+        e['_armor'] = 'addon'
 if ARMOR != 'none':
     for piece, frame in (('chest', 'fr_chest_shell'), ('waist', 'fr_abdomen_shell')):
         unlink(frame)

@@ -71,3 +71,9 @@ live on `experimental/frame-concept`; the frame isn't in the game yet (model onl
   big suit's helmet sampled at 1 read flat): a wraparound glass visor under a brow ridge, the old helmet's chin grille,
   a crest over the top, a slate neck guard (2 plates, the bottom 3 px) wrapping round onto the sides; no ear discs.
   In third person the blower hides the back's bottom: detail there is only seen from the side.
+  Its outer layer (`HELMET_EXTRA=gear`): a 2D radio on the left side with two antenna lines (no 3D antenna; nothing
+  more than 1 px over the helmet's top) and a camera on the right, its side and front plates meeting edge to edge
+  (the side plate zero-thick, the front 0.5 px wide: any offset showed a gap). A layered brow cap was dropped: its
+  swept side is painted into the helmet instead, the winged ridge over the glass, the side seam run into it in the
+  same two rows and shaded like it (`HELMET_SEAM=ridge`, its dark row a step lighter). Bolts only on the sides, as
+  the top's rivets (none on the front or back).
