@@ -416,6 +416,63 @@ if BANDS != 'brass':
         for _f, _rows in _art.items():
             _art[_f] = [r if set(r) - set('YZ') else (_CAGE_ROW[_f] if _RIB is None else ''.join(_RIB[c] for c in r))
                         for r in _rows]
+# Draft knob LEATHER (2026-11-12, user: leather accents on the cage, the frame being the inner piece the pilot wears,
+# leather in its recipe; the armour goes on over it): 'none', 'straps' (a leather strap round the upper arm and the
+# thigh, in the cage rows where the bands were, a brass buckle in front), 'lining' (those cage rows backed with dark
+# leather: leather sleeves under the bars) or 'pads' (the elbow and knee joints' gunmetal in leather, bolts kept).
+# Round 2 (user: lining is the best but flat, one shade where the torso has two, and it hides his body, which the cage
+# showed): in the window rows under the shoulder / hip (rows 2-4; the legs' row 2 was a window already), the torso's
+# two leathers, his body still showing: 'half' (the lining in the top two rows, the dark one in the shadow of the bar
+# above, the bottom row open), 'back' (lined on the back face only, light-dark-light; front and outside open) or
+# 'laced' (a lace across each face, light from the top of the first window over the rod to dark at the bottom of the
+# second, his body round it).
+# Round 3 (user: half is the best of those; try it split the other way, the leather replacing the bar down the middle
+# or beside it on one side, the other side open): 'strip' (the middle rod in leather, both windows open) or 'side'
+# (the first window of each face in leather, the second open). Dark leather in the top row (the bar's shadow), light
+# under it, as in half.
+# Round 4 (user: work on side, the limb's sides different): 'wrap': the front and back windows beside the outer side
+# in leather, the other open; the outer side's rod gone, leather in both its windows, so the leather turns the corners
+# into the front and back pieces with his body showing in the middle of the side (the inner side is closed anyway).
+# Picked: wrap (2026-11-12).
+LEATHER = os.environ.get('LEATHER', 'wrap')
+assert LEATHER in ('none', 'straps', 'lining', 'pads', 'half', 'back', 'laced', 'strip', 'side', 'wrap'), LEATHER
+if LEATHER in ('half', 'back', 'laced', 'strip', 'side', 'wrap'):
+    def _win(row, col, c):   # the row with its window column col (0: the first, 1: the second) or the rod (col 'rod')
+        if col == 'rod': return row[:2] + c + row[3:] if row[2] == 'N' else row
+        holes = [i for i, ch in enumerate(row) if ch == '.']
+        return row[:holes[col]] + c + row[holes[col] + 1:] if len(holes) > col else row
+    for _art in (ARM_ART, LEG_ART):
+        for _f, _rows in _art.items():
+            _rows = list(_rows)
+            if LEATHER == 'half':
+                _rows[2], _rows[3] = _rows[2].replace('.', 'H'), _rows[3].replace('.', 'L')
+            elif LEATHER == 'back' and _f == 'south':
+                for j, c in ((2, 'L'), (3, 'H'), (4, 'L')): _rows[j] = _rows[j].replace('.', c)
+            elif LEATHER == 'laced':
+                _rows[2], _rows[3] = _win(_rows[2], 0, 'L'), _win(_rows[3], 'rod', 'L')
+                _rows[4] = _win(_rows[4], 1, 'H')
+            elif LEATHER in ('strip', 'side'):
+                for j, c in ((2, 'H'), (3, 'L'), (4, 'L')):
+                    _rows[j] = _win(_rows[j], 'rod' if LEATHER == 'strip' else 0, c)
+            elif LEATHER == 'wrap':   # columns: north outer -> inner, south inner -> outer, east back -> front
+                for j, c in ((2, 'H'), (3, 'L'), (4, 'L')):
+                    r = _rows[j]
+                    if _f == 'north': r = _win(r, 0, c)
+                    elif _f == 'south': r = _win(r, 1, c)
+                    elif _f == 'east': r = _win(_win(_win(r, 'rod', '.'), 0, c), 1, c)
+                    _rows[j] = r
+            _art[_f] = _rows
+elif LEATHER != 'none':
+    for _art, _band, _joint in ((ARM_ART, (2, 3, 4), (5, 6, 7)), (LEG_ART, (3, 4), (5, 6, 7))):
+        for _f, _rows in _art.items():
+            _rows = list(_rows)
+            if LEATHER == 'straps':
+                _rows[_band[-2]] = 'LLYLL' if _f == 'north' else 'LLLLL'
+            elif LEATHER == 'lining':
+                for j in _band: _rows[j] = _rows[j].replace('.', 'H')
+            else:
+                for j in _joint: _rows[j] = _rows[j].replace('N', 'H').replace('O', 'L')
+            _art[_f] = _rows
 
 def _torso():
     """The torso's two boxes, the chest (y 22-28, x +-CHEST_X) over the abdomen (y 17-22, x +-TX), drawn as one face
