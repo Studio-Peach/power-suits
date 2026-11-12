@@ -403,6 +403,19 @@ LEG_ART = {
     'east':  ['NNNNN', 'UVVVW', 'U.N.W', 'YYYYY', 'ZZZZZ', 'VNONW', 'VOXOW', 'VNONW', 'UVVVW', 'UG.GW', 'U...W', 'GUUUU'],
     'west':  ['NNNNN', 'UVVVU', 'UGNGU', 'YYYYY', 'ZZZZZ', 'UNNNU', 'UGGGU', 'UNNNU', 'UVVVU', 'UGVGU', 'UGVGU', 'GGGGG'],
     'south': ['TNNNN', 'UVVVW', 'U.N.W', 'YYYYY', 'ZZZZZ', 'UNNNW', 'UGGGW', 'UNNNW', 'UVVVW', 'UG.GW', 'U...W', 'GUUUU']}
+# Draft knob BANDS (2026-11-12, user: get rid of the brownish bands on the arms and legs): the brass bellows rows
+# 'brass' (as drawn above), 'steel' (the ribs in the members' steel), 'gunmetal' (in the joints' gunmetal) or 'cage'
+# (no band: the cage's window rows carry on, a bar each side and a rod down the middle; the inner side stays closed).
+# Picked: cage (2026-11-12, user: gunmetal looked cool but like armour; the frame is only what the armour goes on).
+BANDS = os.environ.get('BANDS', 'cage')
+assert BANDS in ('brass', 'steel', 'gunmetal', 'cage'), BANDS
+if BANDS != 'brass':
+    _CAGE_ROW = {'north': 'W.N.U', 'east': 'V.N.W', 'south': 'U.N.W', 'west': 'UGNGU'}
+    _RIB = {'steel': {'Y': 'V', 'Z': 'U'}, 'gunmetal': {'Y': 'O', 'Z': 'N'}}.get(BANDS)
+    for _art in (ARM_ART, LEG_ART):
+        for _f, _rows in _art.items():
+            _art[_f] = [r if set(r) - set('YZ') else (_CAGE_ROW[_f] if _RIB is None else ''.join(_RIB[c] for c in r))
+                        for r in _rows]
 
 def _torso():
     """The torso's two boxes, the chest (y 22-28, x +-CHEST_X) over the abdomen (y 17-22, x +-TX), drawn as one face
