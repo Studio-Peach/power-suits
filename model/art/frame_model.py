@@ -488,11 +488,17 @@ SHELLS['shoulder_plate'] = dict(faces=_plate())
 #   those rose right behind the helmet, so looking up 20-30 deg swung its back into them; the radial's top cylinder
 #   ends at raw 25.5. The helmet still sinks into the plate from behind when the head pitches back (engine_sweep.py),
 #   so in game the worn helmet's tilt back is to be limited (the camera free), a decision for the renderer.
+# - heart (draft, 2026-11-11, user: after Shiro Tomoe's engine heart in Tailenders, replacing the firebox, its core
+#   and pipes): an iron ball on the sternum, two fat hoses over the shoulders, mufflers and exhausts on the back.
+#   frame_heart_art.py has the shapes and paint; its draft knobs BALL (A | B | C), EXH (X | Y), HOSE (cream | brass |
+#   copper).
 ENGINE = os.environ.get('ENGINE', 'none')
-assert ENGINE in ('none', 'firebox'), ENGINE
+assert ENGINE in ('none', 'firebox', 'heart'), ENGINE
 import frame_engine_art as engine_art
 import frame_radial_art as radial_art
+import frame_heart_art as heart_art
 PAL.update(radial_art.EXTRA)
+PAL.update(heart_art.EXTRA)
 ENGINE_META = {}   # the radial's parts: their mirror / turn / shared paint (frame_radial_art.part)
 PAL.update({'F': (0xff, 0xdc, 0x6e), 'I': (0xff, 0x96, 0x32), 'J': (0xd2, 0x46, 0x19)})   # fire, lit (see engine_art)
 LIT = {(0x3f, 0x21, 0x1b): (0xff, 0xdc, 0x6e), (0x37, 0x1d, 0x19): (0xff, 0x96, 0x32), (0x2f, 0x1a, 0x17): (0xd2, 0x46, 0x19)}
@@ -515,7 +521,14 @@ def suit_faces(name, cols=None, rows=None):
     return out
 
 ENGINE_BOX = {}
-if ENGINE != 'none':
+if ENGINE == 'heart':
+    for p in heart_art.build(os.environ.get('BALL', 'B'), os.environ.get('EXH', 'X'), os.environ.get('HOSE', 'cream'),
+                             CHEST_X):
+        k = 'ht_' + p['name']
+        ENGINE_BOX[k] = p['box']
+        ENGINE_META[k] = p
+        if p['faces']: SHELLS[f'en_{k}'] = dict(faces=p['faces'])
+if ENGINE == 'firebox':
     ENGINE_BOX['core'] = ((-2, 21, -TZ - 1), (2, 25, -TZ))
     Z = (-TZ - 1, -TZ)                              # the front pipes' depth: 1 px proud, as the core
     PIPES = {'pipe_t0': ((2, 24), (4, 25)), 'pipe_t1': ((3, 18), (4, 24)), 'pipe_t2': ((4, 18), (TX, 19)),
