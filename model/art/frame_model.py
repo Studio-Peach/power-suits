@@ -474,6 +474,13 @@ elif LEATHER != 'none':
                 for j in _joint: _rows[j] = _rows[j].replace('N', 'H').replace('O', 'L')
             _art[_f] = _rows
 
+# Draft knob TORSO_LEATHER (2026-11-12, user: compare with no leather at all, the chest included; with LEATHER=none):
+# 'keep', 'open' (the leather over his torso, front and back, gone: windows, his shirt through them; on the sides,
+# beside him, steel) or 'steel' (all of it in the members' steel). Kept: the leather (user, 2026-11-12: wrap with the
+# torso's leather; without it the frame read as a grey robot cage, closer to armour).
+TORSO_LEATHER = os.environ.get('TORSO_LEATHER', 'keep')
+assert TORSO_LEATHER in ('keep', 'open', 'steel'), TORSO_LEATHER
+
 def _torso():
     """The torso's two boxes, the chest (y 22-28, x +-CHEST_X) over the abdomen (y 17-22, x +-TX), drawn as one face
     and split: front / back 2 texels per px across (the frame's edge members outside his torso, his torso's 8 px drawn
@@ -496,6 +503,10 @@ def _torso():
         'WWWWWWWW', 'VUWNNWUV', 'V.UOOU.V', 'V.UNNU.V', 'VUUOOUUV', 'UGLNNLGU',
         'LHLOOLHL', 'L.LNNL.L', 'L.LOOL.L', 'LHLNNLHL', 'GVOVVOVG'))
     side = ['VVVVVV', 'VNNNNV', 'VNNNNV', 'UUUUUU', 'WWWWWW', 'VOVVOV', 'UUUUUU', 'LHGGHL', 'LHGGHL', 'LLLLLL', 'GVVVVG']
+    if TORSO_LEATHER != 'keep':   # the leather out (see TORSO_LEATHER); the sides can't open (an empty box behind)
+        over = {'L': '.', 'H': '.'} if TORSO_LEATHER == 'open' else {'L': 'V', 'H': 'U'}
+        front, back = ([''.join(over.get(c, c) for c in r) for r in f] for f in (front, back))
+        side = [r.replace('L', 'V').replace('H', 'U') for r in side]
     W, n = len(front[0]), round((CHEST_X - 4) * 2)
     up = [p * n + '.' * (W - 2 * n) + p * n for p in 'WVVVVU']   # rows front -> back
     k = round((CHEST_X - TX) * 2)
