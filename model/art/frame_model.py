@@ -79,6 +79,14 @@ HELMET = os.environ.get('HELMET', 'none')
 # (picked over a 5 x 5 cap flush with the arm, which read as the cage's lid, and a 7 x 6 that read as a shelf). Its top
 # also covers his shoulder's top, which showed through the cage's open top.
 PLATE_OUT, PLATE_FB = 1, 0.5
+# Draft knob SHOULDER (2026-11-12, user unsure about the 3D plates next to the 2D engine): 'plate' (the 3D plate above),
+# 'decal' (the plate drawn flat round the arm's top like the engine's hoses: a 0.5 px decal over the top and the outer,
+# front and back faces, a pauldron band with an ink edge, nothing sticking out) or 'bare' (no plate: a painted lid
+# 0.1 px over his shoulder closes the cage's open top). See _decal(). Picked: decal (2026-11-12, user: "looks smooth";
+# over the plate, and the bare lid I'd recommended). The plate stays for the iron pauldron's footprint (PLATE_OUT/_FB).
+SHOULDER = os.environ.get('SHOULDER', 'decal')
+assert SHOULDER in ('plate', 'decal', 'bare'), SHOULDER
+DECAL = 0.5   # the decal's offset from the arm box (outer side, front, back, top)
 assert HELMET in ('none', 'glass'), HELMET
 # The pane's colour and opacity, RGBA hex (env GLASS to try others): the big suit's visor glass colour (262c34,
 # tools/make-glowmasks.py) at 80 % (2026-11-04, user, over 60 % and a pale blue at 35 % that read washed out): his face
@@ -463,7 +471,35 @@ def _plate():
     down = ['G' * W] * a + ['.' * (W - b) + 'G' * b] * (D - 2 * a) + ['G' * W] * a
     return {'north': side(W), 'south': side(W), 'east': side(D), 'west': side(D), 'up': [''.join(r) for r in up],
             'down': down}
-SHELLS['shoulder_plate'] = dict(faces=_plate())
+def _decal(bare=False):
+    """SHOULDER=decal: the shoulder plate drawn on, 2 texels per px, only the outward faces painted (see-through
+    elsewhere: a decal, SKILL.md sec. 0). The top as the plate's (lit front and outer edges, rail and bolts), then down
+    the outer, front and back faces a steel band with a lit top row and an ink edge under it, deepest at the outer
+    corner (5 rows) and running out to 3 at the chest (the inner side, against the chest, stays bare).
+    bare: only the top, a plain steel lid (the cage's cap colours, no rail or bolts)."""
+    W, D, H = 10 if bare else 11, 10 if bare else 12, 1 if bare else 7   # columns inner -> outer, rows front -> back
+    up = [['V'] * W for _ in range(D)]
+    for i in range(W): up[0][i], up[-1][i] = 'W', 'U'
+    for j in range(1, D - 1): up[j][0], up[j][-1] = 'U', 'W'
+    if not bare:
+        rail = W // 2 - 1
+        for j in range(1, D - 1): up[j][rail], up[j][rail + 1] = 'N', 'O'
+        up[1][rail] = up[1][rail + 1] = up[-2][rail] = up[-2][rail + 1] = 'X'
+        for i, j in ((1, 1), (W - 2, 1), (1, D - 2), (W - 2, D - 2)): up[j][i] = 'X'
+    up = [''.join(r) for r in up]
+    none = lambda n: ['.' * n] * H
+    if bare: return {'north': none(W), 'south': none(W), 'east': none(D), 'west': none(D), 'up': up, 'down': ['.' * W] * D}
+    def band(depths, bolts=()):   # one column per depth: lit row, steel, ink under it, see-through below
+        rows = [['.'] * len(depths) for _ in range(H)]
+        for i, d in enumerate(depths):
+            for j in range(d):
+                rows[j][i] = 'W' if j == 0 else 'X' if j == d - 1 else 'V'
+        for i in bolts: rows[2][i] = 'N'
+        return [''.join(r) for r in rows]
+    side = [3 + round(2 * i / (W - 1)) for i in range(W)]          # inner -> outer: 3 .. 5 rows
+    return {'north': band(side[::-1], bolts=(1,)), 'south': band(side, bolts=(W - 2,)),   # north outer -> inner
+            'east': band([5] * D, bolts=(2, D - 3)), 'west': none(D), 'up': up, 'down': ['.' * W] * D}
+SHELLS['shoulder_plate'] = dict(faces={'plate': _plate, 'decal': _decal, 'bare': lambda: _decal(bare=True)}[SHOULDER]())
 
 # Draft knob ENGINE ('none' / 'firebox'; 2026-11-05, user): the engine as parts round the torso, not only a backpack:
 # the furnace and its exhausts on the back, a core in front, pipes between them through the sides. The armour is
@@ -847,8 +883,15 @@ for side in ('r', 'l'):
     p = group(f'pilot_{nm}_arm', ((6 + ARM_OUT) * s, 26, 0), arm)
     steve(p, f'st_arm_{side}', *sx((4 + ARM_OUT, 14, -2), (4 + AW + ARM_OUT, 26, 2)), STEVE[f'arm_{side}'])
     # the shoulder plate on the arm box's top, its inner side over the arm box's inner wall
-    painted(arm, side, 'shoulder_plate', f'fr_shoulder_plate_{side}',
-            (3.75 + ARM_OUT, 26, -2.5 - PLATE_FB), (8.75 + ARM_OUT + PLATE_OUT, 27, 2.5 + PLATE_FB))
+    if SHOULDER == 'plate':
+        painted(arm, side, 'shoulder_plate', f'fr_shoulder_plate_{side}',
+                (3.75 + ARM_OUT, 26, -2.5 - PLATE_FB), (8.75 + ARM_OUT + PLATE_OUT, 27, 2.5 + PLATE_FB))
+    elif SHOULDER == 'decal':   # 3.5 px of the arm's top, 0.5 off it outside, front, back and above
+        hollow(arm, side, 'shoulder_plate', f'fr_shoulder_plate_{side}',
+               (3.75 + ARM_OUT, 23, -2.5 - DECAL), (8.75 + ARM_OUT + DECAL, 26 + DECAL, 2.5 + DECAL))
+    else:   # the lid: 0.1 px over his arm's top (in its plane it would flicker)
+        hollow(arm, side, 'shoulder_plate', f'fr_shoulder_plate_{side}',
+               (3.75 + ARM_OUT, 26, -2.5), (8.75 + ARM_OUT, 26.1, 2.5))
 
 # ---------------------------------------------------------------- clearance check, in the posed rest pose
 # Every cube in world space (its own rotation, then each bone's, all about z), as an xy quad plus a z range. Fails on

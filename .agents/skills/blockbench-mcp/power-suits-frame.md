@@ -44,3 +44,8 @@ live on `experimental/frame-concept`; the frame isn't in the game yet (model onl
 - Light: the core's fire and the fire window are painted in the reserved coal colours of `tools/make-glowmasks.py`
   (`FIRE=dark`), so the fire glowmask lights them by the burn state as on the suit; the smoke code (`ExhaustSmoke`)
   needs the frame's cap positions when the frame goes in game.
+
+## Shoulders (2026-11-12)
+- The shoulder plate is a decal too (`SHOULDER=decal`, picked over the 3D 6 x 1 x 6 plate and a bare lid): drawn on
+  0.5 px off the arm's top, outer side, front and back, a steel band with an ink edge, 5 rows deep at the outer corner
+  running out to 3 at the chest. Next to the 2D engine the 3D plate read as a ledge.
