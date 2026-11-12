@@ -88,6 +88,12 @@ SHOULDER = os.environ.get('SHOULDER', 'decal')
 assert SHOULDER in ('plate', 'decal', 'bare'), SHOULDER
 DECAL = 0.5   # the decal's offset from the arm box (outer side, front, back, top)
 assert HELMET in ('none', 'glass'), HELMET
+# Draft knob HELMET_STYLE (2026-11-12, user: the default helmet, the one players see most, looks flat): 'suit' (the
+# big suit's helmet sampled onto the box at 1 texel per px) or a new one painted at 2 (frame_helmet_art.py): 'A'
+# sentinel (slit visor, crest), 'B' diver (a porthole), 'C' wraparound visor. Picked: C (2026-11-12, user; with the
+# old helmet's chin grille back, a slate neck guard wrapping the sides, no ear discs; B out: an easter-egg helmet is
+# BioShock's already).
+HELMET_STYLE = os.environ.get('HELMET_STYLE', 'C')
 # The pane's colour and opacity, RGBA hex (env GLASS to try others): the big suit's visor glass colour (262c34,
 # tools/make-glowmasks.py) at 80 % (2026-11-04, user, over 60 % and a pale blue at 35 % that read washed out): his face
 # a faint silhouette, clear only up close. In game the visor lights up (the glow layer tints it by the suit's state,
@@ -279,6 +285,15 @@ ARMPAL = {c: tuple(int(h[i:i + 2], 16) for i in (0, 2, 4)) for c, h in iron.PAL.
 
 SUIT_HELMET = ['helmet_shell', 'visor', 'helmet_brow', 'cheek_l', 'cheek_r', 'chin_guard']
 def _helmet(visor='painted'):
+    if HELMET_STYLE != 'suit':
+        import frame_helmet_art as helmet_art
+        sub = {'V': GLASS, 'T': GLINT}
+        # Draft knob HELMET_BACK (C's back): 'plain' / 'guard' / 'crest' / 'vents' (frame_helmet_art.wrap_back)
+        back = os.environ.get('HELMET_BACK', 'guard')
+        return {f: [[sub.get(c, c) for c in r] for r in rows] for f, rows in helmet_art.faces(HELMET_STYLE, back).items()}
+    return _helmet_suit(visor)
+
+def _helmet_suit(visor='painted'):
     """The big suit's helmet (power_suit.bbmodel: a 9 px shell round the pilot's head, a 7x5 visor, the brow band,
     cheeks and chin guard standing 0.75 px proud) as ONE 9x9x9 box: each face is the old helmet seen straight from
     that side (the front-most cube's face at every texel), so the proud parts are painted flat. Underside slate.
@@ -785,6 +800,7 @@ SHELL_UV, _used = {}, set()
 # Parts without a fixed place (SHELL_AT None) go into the first free strip, scanning the texture row by row (the
 # flat pauldron, 2026-11-12, outgrew the solid one's place).
 if ARMOR_FORM == 'flat': SHELL_AT['pauldron_armor'] = None
+if HELMET_STYLE != 'suit': SHELL_AT['helmet_armor'] = None
 def _free_at(part):
     sizes = [shell_art(part, f) for f in FACES]
     w, h = sum(len(a[0]) if a else 0 for a in sizes), max(len(a) for a in sizes)

@@ -67,3 +67,7 @@ live on `experimental/frame-concept`; the frame isn't in the game yet (model onl
   reserved coal colours, hottest in the middle, dark slots) in a dark slate surround (in steel it vanished), so it
   glows with the burn state.
 - `ALLOW_CLASH=1` builds a model that fails the checks, for a survey before a refit (never for a saved file).
+- The helmet (`HELMET_STYLE=C`, `model/art/frame_helmet_art.py`): the 9 x 9 x 9 box painted at 2 texels per px (the
+  big suit's helmet sampled at 1 read flat): a wraparound glass visor under a brow ridge, the old helmet's chin grille,
+  a crest over the top, a slate neck guard (2 plates, the bottom 3 px) wrapping round onto the sides; no ear discs.
+  In third person the blower hides the back's bottom: detail there is only seen from the side.
