@@ -543,7 +543,7 @@ if ENGINE == 'heart':
         PW_, PH_, PD, UP_Y, LOW_Y = PACKS[PACK]
         PX, PACK_TOP = PW_ / 2, 26
     else:
-        MOTOR, PX, UP_Y, LOW_Y, PACK_TOP = motor_art.build(BACK, suit_faces)
+        MOTOR, PX, UP_Y, LOW_Y, PACK_TOP = motor_art.build(BACK, suit_faces, CHEST_X)
         for p in MOTOR:
             k = 'mt_' + p['name']
             ENGINE_BOX[k] = p['box']
@@ -931,6 +931,8 @@ def quads(e):
     fs = [[(x0, y0, z0), (x1, y0, z0), (x1, y1, z0), (x0, y1, z0)], [(x0, y0, z1), (x1, y0, z1), (x1, y1, z1), (x0, y1, z1)],
           [(x0, y0, z0), (x0, y1, z0), (x0, y1, z1), (x0, y0, z1)], [(x1, y0, z0), (x1, y1, z0), (x1, y1, z1), (x1, y0, z1)],
           [(x0, y0, z0), (x1, y0, z0), (x1, y0, z1), (x0, y0, z1)], [(x0, y1, z0), (x1, y1, z0), (x1, y1, z1), (x0, y1, z1)]]
+    # a flat cube (a plane, e.g. the slim build's waist strip) has faces with no area: no plane of their own
+    fs = [f for f in fs if len({p for p in f}) == 4]
     return [to_world(e, f) for f in fs]
 
 def coplanar(A, B, eps=1e-3, area=0.05):

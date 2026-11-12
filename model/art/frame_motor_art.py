@@ -103,7 +103,7 @@ def put(g, x, y, block):
 # 4 x 1 x 4 cap -> 2 x 1 x 2, the hole in its top), where the block's cylinder columns were painted, sunk 0.5 px into
 # it and standing 1 px out of its back, up past its top. Their caps' tops (raw y 27.5, x +-3.5, z 6) are where the
 # frame's smoke comes from. Everything at or above the helmet's bottom (raw 25.5) stays behind its back (z >= 4.5).
-def blower(suit_faces=None):
+def blower(suit_faces=None, cx=6.0):
     # Then (user): wider, the exhausts shorter, the supercharger on the block's top, off the fire window (the part that
     # lights up); then the block taller, the exhausts wider, the supercharger standing on the block (it hung behind it):
     # a 10 x 8 x 2.5 block (the abdomen's width), the fire window across most of its back between the pipes, the
@@ -133,11 +133,12 @@ def blower(suit_faces=None):
         if f in ('east', 'west'):
             g = grid(w, h, 'N'); g[0] = ['O'] * w; g[-1] = ['X'] * w
             return g
-        if f == 'up':                                       # rows front -> back; where the hoses land: copper, and the
-            g = grid(w, h, 'N'); g[0] = ['O'] * w           # ink line along their inner side (x 4 - 4.5) beside it
-            for i, k in ((0, 1), (w - 1, w - 2)):
-                g[0][i], g[1][i] = 'Q', 'R'
-                g[0][k] = g[1][k] = 'X'
+        if f == 'up':                                       # rows front -> back; where the hoses land: copper (the hose's
+            g = grid(w, h, 'N'); g[0] = ['O'] * w           # 1.5 px in from the chest's side cx, over the block), and the
+            n = round((X - (cx - 1.5)) * 2)                 # ink line along its inner side beside it (slim: 1 px lands)
+            for i in range(n):
+                for c in (i, w - 1 - i): g[0][c], g[1][c] = 'Q', 'R'
+            for c in (n, w - 1 - n): g[0][c] = g[1][c] = 'X'
             return g
         return grid(w, h, 'X')
     b = part('block', ((-X, Y0, TZ), (X, Y1, Z1)), block)
@@ -278,6 +279,6 @@ def inline():
 DESIGNS = {'blower': blower, 'vtwin': vtwin, 'inline': inline}
 
 
-def build(design, suit_faces=None):
+def build(design, suit_faces=None, chest_x=6.0):
     """(parts, body half width, upper inlet y, lower inlet y, body top y). suit_faces: frame_model's reader of the big suit's art."""
-    return blower(suit_faces) if design == 'blower' else DESIGNS[design]()
+    return blower(suit_faces, chest_x) if design == 'blower' else DESIGNS[design]()
