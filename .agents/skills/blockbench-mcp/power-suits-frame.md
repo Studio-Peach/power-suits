@@ -64,5 +64,6 @@ live on `experimental/frame-concept`; the frame isn't in the game yet (model onl
   6.5 slim, clear of the helmet's corners turned 50 deg; checked as one box: texel by texel the check ran minutes).
 - The engine under it, tiered: the upper hoses hidden by the breastplate, the lower pair out from under its painted
   bottom edge over the waist; the core replaced by a radiator grille decal (`GUARD=hot`: three slats in the fire's
-  reserved coal colours, hottest in the middle, dark slots), so it glows with the burn state.
+  reserved coal colours, hottest in the middle, dark slots) in a dark slate surround (in steel it vanished), so it
+  glows with the burn state.
 - `ALLOW_CLASH=1` builds a model that fails the checks, for a survey before a refit (never for a saved file).

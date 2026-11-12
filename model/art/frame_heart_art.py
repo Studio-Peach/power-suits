@@ -185,8 +185,13 @@ def bezel(guard='ring'):
         elif ax < 2 and abs(cy) < 2:
             if guard == 'grille' and 0.5 <= ax < 1: return 'h' if cy > 0 else 'l'
             return port[int((2 - cy) * K)][int((x + 2) * K)]
+        lit = cy >= (y1 - y0) / 2 - 0.5 or x >= hx - 0.5                         # lit from the viewer's upper left
+        if wide:   # the grille's surround is dark slate (2026-11-12, user: in the breastplate's steel it vanished),
+            # so the glowing slats sit in a black frame; its bolts a lighter slate
+            if ax >= hx - 0.5 and abs(cy) >= (y1 - y0) / 2 - 0.5: return 'n'
+            return 'm' if lit else 'd'
         if ax >= hx - 0.5 and abs(cy) >= (y1 - y0) / 2 - 0.5: return 'z'          # the corners' bolts
-        return 'h' if (cy >= (y1 - y0) / 2 - 0.5 or x >= hx - 0.5) else 's'      # lit from the viewer's upper left
+        return 'h' if lit else 's'
     def paint(f, w, h):
         if f == 'north': return [[front(hx - (i + 0.5) / K, y1 - (j + 0.5) / K) for i in range(w)] for j in range(h)]
         return grid(w, h, '.')
