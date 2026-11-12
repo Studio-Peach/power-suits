@@ -145,3 +145,41 @@ def leg(rows=13):
 def hip(W, D):
     return {f: ['k' * (W if f in ('north', 'south', 'up', 'down') else D)] * (D if f in ('up', 'down') else 1)
             for f in ('north', 'east', 'south', 'west', 'up', 'down')}
+
+
+# ---------------------------------------------------------------- flat (ARMOR_FORM=flat)
+# (2026-11-12, user: "not digging the mix of 3D and 2D armour"; the copper and the core went 2D, so the armour too.)
+# The pieces are the frame's boxes, nothing standing proud of them: the step band between chest and waist is painted
+# on the waist's top rows, the pauldron is a decal (like the frame's shoulder plate) at 2 texels per px.
+
+def waist_flat(W, D, H=5):
+    """The waist box with the step band painted on its top two rows (lit rim, shaded row), the waist under it."""
+    band = waist_step(W, 2, D)
+    low = waist(W, D, H - 2)
+    return {f: band[f] + low[f] for f in ('north', 'east', 'south', 'west')} | {'up': low['up'], 'down': low['down']}
+
+
+def pauldron_decal(W, H, D, inner_depth=None):
+    """The pauldron drawn on (2 texels per px): W texels inner -> outer, H rows, D front -> back. Only the outward faces
+    (top, outer side, front, back) are painted, see-through below the plate's edge; the front and back run from the full
+    depth at the outer corner up to inner_depth at the chest side (the plate's bottom edge curves up), a rolled rim
+    (lit row, shadow, a dark slate edge) along it. Two bolts near the top of each face."""
+    inner_depth = inner_depth or H - 4
+    def col(depth, k=0):   # one column of the plate, top -> bottom
+        c = ['g'] + ['h'] * 4 + ['e'] * (depth - 9) + ['l'] * 1 + ['h', 's', 'x']
+        c = [step(x, k) if x not in 'x' else x for x in c][:depth]
+        return c + ['.'] * (H - depth)
+    def face(w, depths, k=0, bolts=()):
+        cols = [col(d, k) for d in depths]
+        for i in bolts: cols[i][2] = 'z'
+        return [''.join(cols[i][j] for i in range(w)) for j in range(H)]
+    curve = [round(inner_depth + (H - inner_depth) * (i / (W - 1)) ** 2) for i in range(W)]   # inner -> outer
+    north = face(W, curve[::-1], bolts=(1, W - 2))           # outer column first
+    south = face(W, curve, k=-1, bolts=(1, W - 2))           # inner first, in the shade
+    east = face(D, [H] * D, bolts=(1, D - 2))
+    up = [['h'] * W for _ in range(D)]
+    for i in range(W): up[0][i], up[-1][i] = 'g', 's'
+    for j in range(1, D - 1): up[j][0], up[j][-1] = 'e', 'g'
+    for i, j in ((1, 1), (W - 2, 1), (1, D - 2), (W - 2, D - 2)): up[j][i] = 'z'
+    return {'north': north, 'south': south, 'east': east, 'west': ['.' * D] * H,
+            'up': [''.join(r) for r in up], 'down': ['.' * W] * D}

@@ -55,3 +55,14 @@ live on `experimental/frame-concept`; the frame isn't in the game yet (model onl
   bands are gone (`BANDS=cage`; steel / gunmetal ribs read as armour). Leather in the torso's two shades wraps the outer
   corners (`LEATHER=wrap`): the front and back windows beside the outer side and both outer-side windows (its rod
   removed), his body showing between. One flat shade, or leather over every window, read flat and hid him.
+
+## Iron armour (2026-11-12)
+- Sealed stays: "sealed" is a game mechanic (a full set with the helmet makes the pilot immune to most outside
+  debuffs), so the armour covers the whole frame; the frame shows only where a piece is missing.
+- Flat, like the engine (`ARMOR_FORM=flat`): the pieces are the frame's boxes (the waist as deep as the chest, the
+  step band painted on its top 2 px), the pauldron a decal 0.5 px off the arm piece (from its old inner edge, x 7 /
+  6.5 slim, clear of the helmet's corners turned 50 deg; checked as one box: texel by texel the check ran minutes).
+- The engine under it, tiered: the upper hoses hidden by the breastplate, the lower pair out from under its painted
+  bottom edge over the waist; the core replaced by a radiator grille decal (`GUARD=hot`: three slats in the fire's
+  reserved coal colours, hottest in the middle, dark slots), so it glows with the burn state.
+- `ALLOW_CLASH=1` builds a model that fails the checks, for a survey before a refit (never for a saved file).

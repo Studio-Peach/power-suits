@@ -125,13 +125,15 @@ def strip_side(low_y, cx):
     return part('strip_side', ((sx - t, low_y - 0.5, -3.5), (sx, low_y + 2, BACK_Z)), paint, mirror=True)
 
 
-def harness_back(pack_x, up_y, low_y, pack_top=26, cx=6.0):
+def harness_back(pack_x, up_y, low_y, pack_top=26, cx=6.0, low_only=False, sx=None):
     """The back plate (behind the pack where the pack covers it): the top pair down from the shoulder strips to the
-    pack's upper inlets, the lower pair in from the waist strips to its lower ones."""
-    x0, x1, y0, y1 = -cx, cx, low_y - 0.5, TOP_Y
-    sx = side(cx)[0]
-    at = hoses_at([[(cx - HR, 27), (cx - HR, up_y + HR), (pack_x - 0.5, up_y + HR)],
-                   [(cx + 0.5, low_y + HR), (pack_x - 0.5, low_y + HR)]])
+    pack's upper inlets, the lower pair in from the waist strips to its lower ones. low_only: the lower pair only,
+    under the breastplate's back (raw y < 20; the armour, sx the waist strip's plane)."""
+    sx = sx or side(cx)[0]
+    x0, x1, y0, y1 = -max(cx, sx), max(cx, sx), low_y - 0.5, 20 if low_only else TOP_Y
+    paths = [[(max(cx, sx) + 0.5, low_y + HR), (pack_x - 0.5, low_y + HR)]]
+    if not low_only: paths.insert(0, [(cx - HR, 27), (cx - HR, up_y + HR), (pack_x - 0.5, up_y + HR)])
+    at = hoses_at(paths)
 
     def clip(x, y):
         if abs(x) < pack_x and y < pack_top: return '.'             # behind the pack (its front's plane); whole above it
@@ -145,7 +147,82 @@ def harness_back(pack_x, up_y, low_y, pack_top=26, cx=6.0):
     return part('harness_back', ((x0, y0, 3), (x1, y1, BACK_Z)), paint)
 
 
-def build(chest_x=6.0, pack_x=5, up_y=18, low_y=16, pack_top=26):
-    """pack_x: the pack's half width; up_y / low_y: its inlets' heights (the back hoses end in them)."""
+# Under the iron armour (2026-11-12, user: the copper and the core should feel protected; option 2, the core visible,
+# tiered): the breastplate covers the top pair (shoulder strips, the front's and the back's upper hoses: not drawn), the
+# core shows in a steel bezel 0.5 px proud of the breastplate (GUARD 'ring', or 'grille' with two bars across it), and
+# the lower pair, where the waist is narrower than the chest, comes out from under the breastplate's bottom edge (raw
+# y 20): drawn on a plane 0.1 px behind its front, so the plate overlaps the hoses, over the waist's step band (0.15 px
+# off it), round the sides in the gap between the step band and the arm (a plane between them) and in on the back.
+FRONT_LOW_Z = -2.9
+
+
+def bezel(guard='ring'):
+    """The core's porthole (x +-2, raw y 21-25) in a 0.5 px steel ring (lit top and left, shaded bottom and right,
+    a dark bolt in each corner); 'grille': two steel bars down across the glass too. 'radiator' / 'hot' (2026-11-12,
+    user: no bars over the core, a horizontal radiator grille that heats up, the core under it unseen): a 6 x 5 px
+    grille in the same ring, three steel slats (a lit and a shaded row each) over two slots; 'radiator': the slots
+    glow (the fire behind), 'hot': the slats themselves glow, hottest in the middle, the slots dark. The glowing
+    texels are the fire's reserved coal colours, lit by the fire glowmask by the burn state (FIRE=dark: off)."""
+    port = engine_art.porthole(corner='Q')['north']
+    wide = guard in ('radiator', 'hot')
+    hx, y0, y1 = (3, 20.5, 25.5) if wide else (2.5, 20.5, 25.5)
+    slats = [('h', 's'), None, ('h', 's'), None, ('h', 's')]       # the grille's 8 rows inside the ring: 2 1 2 1 2
+    rows8 = ['s0', 's1', 'g', 's0', 's1', 'g', 's0', 's1']
+    def front(x, y):
+        ax, cy = abs(x), y - 23
+        ix, iy = hx - 0.5, (y1 - y0) / 2 - 0.5                      # inside the ring
+        if wide:
+            if ax < ix and abs(cy) < iy:
+                j = int((23 + iy - y) * K)                          # 0..7 from the top
+                r = rows8[j]
+                mid = ax < ix / 2
+                if guard == 'radiator':
+                    if r == 'g': return 'F' if ax < 1 else 'I' if ax < 2 else 'J'
+                    return 'h' if r == 's0' else 's'
+                if r == 'g': return 'x'
+                hot = 'F' if j < 5 and j > 2 and ax < 1.5 else 'I' if ax < 2 else 'J'   # the middle slat hottest
+                return hot if r == 's0' else {'F': 'I', 'I': 'J', 'J': 'J'}[hot]
+        elif ax < 2 and abs(cy) < 2:
+            if guard == 'grille' and 0.5 <= ax < 1: return 'h' if cy > 0 else 'l'
+            return port[int((2 - cy) * K)][int((x + 2) * K)]
+        if ax >= hx - 0.5 and abs(cy) >= (y1 - y0) / 2 - 0.5: return 'z'          # the corners' bolts
+        return 'h' if (cy >= (y1 - y0) / 2 - 0.5 or x >= hx - 0.5) else 's'      # lit from the viewer's upper left
+    def paint(f, w, h):
+        if f == 'north': return [[front(hx - (i + 0.5) / K, y1 - (j + 0.5) / K) for i in range(w)] for j in range(h)]
+        return grid(w, h, '.')
+    return part('bezel', ((-hx, y0, -3.5), (hx, y1, -3)), paint)
+
+
+def harness_low(low_y, sx, z=FRONT_LOW_Z):
+    """The lower pair below the breastplate (raw y < 20), from under its edge to the waist strip."""
+    at = hoses_at([low(low_y, sx)], bands=lambda x, y: False)
+    def front(x, y):
+        if abs(x) > sx: return '.'
+        return at(x, y)
+    hx = math.floor(sx * 4) / 4   # whole texels across (the slim strip's plane, 5.375, isn't: 1/8 px short of it, edge on)
+    def paint(f, w, h):
+        if f == 'north': return [[front(hx - (i + 0.5) / K, 20 - (j + 0.5) / K) for i in range(w)] for j in range(h)]
+        return grid(w, h, '.')
+    return part('harness_low', ((-hx, low_y - 0.5, z), (hx, 20, z)), paint)
+
+
+def build(chest_x=6.0, pack_x=5, up_y=18, low_y=16, pack_top=26, armored=False, side_x=None, guard='ring',
+          flat=False):
+    """pack_x: the pack's half width; up_y / low_y: its inlets' heights (the back hoses end in them). armored: fitted
+    under the iron armour (see FRONT_LOW_Z), side_x the waist strip's plane there (between the step band and the arm)."""
     cx = min(6, chest_x)                  # the hoses stay inside the arm boxes (from the chest's sides)
-    return [harness(low_y, cx), strip_top(cx), strip_side(low_y, cx), harness_back(pack_x, up_y, low_y, pack_top, cx)]
+    if not armored:
+        return [harness(low_y, cx), strip_top(cx), strip_side(low_y, cx), harness_back(pack_x, up_y, low_y, pack_top, cx)]
+    hi, mid, lo = HOSE
+    rows = ['X', hi, mid, lo, 'X']
+    def side_paint(f, w, h):
+        if f == 'east': return [[c] * w for c in rows]
+        return grid(w, h, '.')
+    # from the breastplate's front plane (whole texels; 0.1 px past the hoses' plane, seen edge on) to the back plate's
+    if flat:   # (ARMOR_FORM=flat) the waist as deep as the chest: the lower pair as on the frame, 0.5 px off it
+        sx = side(cx)[0]
+        return [bezel(guard), harness_low(low_y, sx, z=-3.5), strip_side(low_y, cx),
+                harness_back(pack_x, 0, low_y, pack_top, cx, low_only=True, sx=sx)]
+    strip = part('strip_side', ((side_x, low_y - 0.5, -3), (side_x, low_y + 2, BACK_Z)), side_paint, mirror=True)
+    back = harness_back(pack_x, 0, low_y, pack_top, cx, low_only=True, sx=side_x)
+    return [bezel(guard), harness_low(low_y, side_x), strip, back]

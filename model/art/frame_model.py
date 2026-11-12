@@ -106,6 +106,13 @@ assert (TX * 2) % 1 == 0 and (CHEST_X * 2) % 1 == 0, (TX, CHEST_X)   # fronts ar
 # Draft knob: the iron armour ('none' / 'iron'): helmet, torso, arms, legs. See ARMOR_BOX.
 ARMOR = os.environ.get('ARMOR', 'none')
 assert ARMOR in ('none', 'iron'), ARMOR
+# Draft knob ARMOR_FORM (2026-11-12, user: no mix of 3D and 2D armour; the engine went 2D, the armour should too):
+# 'solid' (the pieces as built 11-04/05: the waist 0.5 px shallower than the chest, a step band between them, the
+# pauldron a box 1 px proud) or 'flat' (nothing proud of the frame's boxes: the waist as deep as the chest, the step
+# band painted on it, the pauldron a decal like the frame's shoulder plate). See frame_iron_art.py, flat.
+# Picked: flat (2026-11-12, user: "looks sick").
+ARMOR_FORM = os.environ.get('ARMOR_FORM', 'flat')
+assert ARMOR_FORM in ('solid', 'flat'), ARMOR_FORM
 # Where the iron pauldron ends (built y; the shoulder plate's top is at 29, the arm's cage 16-28 over the fist 12-16):
 # 9 of the arm's 16 px, past the elbow, leaving 4 px of forearm over the fist (2026-11-04, user; picked over 18, which
 # left 2 px and read as a whole sleeve). See ARMOR_BOX.
@@ -366,7 +373,12 @@ ARMOR_BOX = {'helmet': ((-4.5, 25.5, -4.5), (4.5, 34.5, 4.5)),
 # chest front and back, y 20-22, over the waist (y 17-20). Picked over one step (the waist straight under the chest)
 # and two 1 px bands down to a waist pinched to 9 px with the hips flaring out under it.
 WAIST_STEPS = [((-(CHEST_X + TX) / 2, 18, -2.75), ((CHEST_X + TX) / 2, 20, 2.75))]   # raw y (built - FY)
+# the flat pauldron (arm coordinates, as ARMOR_BOX['pauldron']): from its old inner edge to 0.5 past the arm outside,
+# 0.5 front and back, from PAULDRON up to 0.5 over the arm's top
+PAULDRON_DECAL = ((4.75 + ARM_OUT, PAULDRON - FY, -3), (9.25 + ARM_OUT, 26.5, 3))
 ARMOR_BOX['waist'] = ((-TX, 15, -TZ + 0.5), (TX, 18, TZ - 0.5))
+if ARMOR_FORM == 'flat':   # the waist up to the chest and as deep as it, the step band painted on its top 2 px
+    ARMOR_BOX['waist'] = ((-TX, 15, -TZ), (TX, 20, TZ))
 def _dims(box): return [round(box[1][k] - box[0][k]) for k in range(3)]   # its art's texels (one per px, ~)
 
 def _legrows(face): return face[:1] + [r for r in face[1:] for _ in range(2)]   # the half-px top row once, the rest twice
@@ -526,9 +538,11 @@ if ARMOR != 'none':
     SHELLS.update({
         'helmet_armor': dict(faces=_helmet(HELMET)),
         'chest_armor': dict(faces=iron.chest(_cw, _d, round((CHEST_X - 4) * 2))),
-        'waist_armor': dict(faces=iron.waist(*_dims(ARMOR_BOX['waist'])[::2], _dims(ARMOR_BOX['waist'])[1])),
+        'waist_armor': dict(faces=(iron.waist if ARMOR_FORM == 'solid' else iron.waist_flat)(
+            *_dims(ARMOR_BOX['waist'])[::2], _dims(ARMOR_BOX['waist'])[1])),
         **{f'waist{i}_armor': dict(faces=iron.waist_step(*_dims(b))) for i, b in enumerate(WAIST_STEPS)},
-        'pauldron_armor': dict(faces=iron.pauldron(*_dims(ARMOR_BOX['pauldron']))),
+        'pauldron_armor': dict(faces=iron.pauldron(*_dims(ARMOR_BOX['pauldron'])) if ARMOR_FORM == 'solid' else
+                               iron.pauldron_decal(*[round((PAULDRON_DECAL[1][k] - PAULDRON_DECAL[0][k]) * 2) for k in range(3)])),
         'hip_armor': dict(faces=iron.hip(_dims(ARMOR_BOX['hip'])[0], 5)),
         'arm_armor': dict(cage=iron.arm(), below=['fist'], rows=1, up=iron.arm()['up']),
         'leg_armor': dict(cage=iron.leg(), below=['boot'], rows=1, up=iron.leg()['up'])})
@@ -666,7 +680,12 @@ if ENGINE == 'heart':
             ENGINE_BOX[k] = p['box']
             ENGINE_META[k] = p
             if p['faces']: SHELLS[f'en_{k}'] = dict(faces=p['faces'])
-    for p in heart_art.build(CHEST_X, PX, UP_Y, LOW_Y, PACK_TOP):
+    # Under the armour (frame_heart_art.FRONT_LOW_Z): the waist strip in a plane between the step band and the arm.
+    # Draft knob GUARD ('ring' / 'grille' / 'radiator' / 'hot'): the core's guard (frame_heart_art.bezel). Picked:
+    # hot (2026-11-12, user), with flat armour.
+    GUARD = os.environ.get('GUARD', 'hot')
+    for p in heart_art.build(CHEST_X, PX, UP_Y, LOW_Y, PACK_TOP, armored=ARMOR != 'none', guard=GUARD,
+                             side_x=(WAIST_STEPS[0][1][0] + CHEST_X) / 2, flat=ARMOR_FORM == 'flat'):
         k = 'ht_' + p['name']
         ENGINE_BOX[k] = p['box']
         ENGINE_META[k] = p
@@ -738,7 +757,7 @@ if ENGINE_META:   # the radial's parts, shelf-packed below the texture's old bot
     _u, _v, _rh = 0, 128, 0
     for k in [k for k in ENGINE_META if f'en_{k}' in SHELLS]:
         fs = SHELLS[f'en_{k}']['faces']
-        w, h = sum(len(fs[f][0]) for f in FACES), max(len(fs[f]) for f in FACES)
+        w, h = sum(len(fs[f][0]) if fs[f] else 0 for f in FACES), max(len(fs[f]) for f in FACES)   # (a flat part's edges: no rows)
         if _u + w > 256: _u, _v, _rh = 0, _v + _rh, 0
         SHELL_AT[f'en_{k}'] = (_u, _v)
         _u, _rh = _u + w, max(_rh, h)
@@ -763,11 +782,26 @@ TW = 256
 SHELL_AT.update(belt_shell=(128, 32), chest_shell=(128, 80), abdomen_shell=(128, 92), shoulder_plate=(128, 104))
 
 SHELL_UV, _used = {}, set()
-for part, (u, v) in SHELL_AT.items():
+# Parts without a fixed place (SHELL_AT None) go into the first free strip, scanning the texture row by row (the
+# flat pauldron, 2026-11-12, outgrew the solid one's place).
+if ARMOR_FORM == 'flat': SHELL_AT['pauldron_armor'] = None
+def _free_at(part):
+    sizes = [shell_art(part, f) for f in FACES]
+    w, h = sum(len(a[0]) if a else 0 for a in sizes), max(len(a) for a in sizes)
+    S = [[0] * (TW + 1) for _ in range(TH + 1)]   # summed-area table of the used texels (each try is then O(1))
+    for y in range(TH):
+        for x in range(TW):
+            S[y + 1][x + 1] = S[y][x + 1] + S[y + 1][x] - S[y][x] + ((x, y) in _used or (x < 64 and y < 64))
+    for v in range(0, TH - h + 1):
+        for u in range(0, TW - w + 1):
+            if S[v + h][u + w] - S[v][u + w] - S[v + h][u] + S[v][u] == 0: return u, v
+    raise AssertionError(('no room', part, w, h))
+for part, at in sorted(SHELL_AT.items(), key=lambda kv: kv[1] is None):
     if part not in SHELLS: continue
+    u, v = at or _free_at(part)
     for f in FACES:
         art = shell_art(part, f)
-        w, h = len(art[0]), len(art)
+        w, h = (len(art[0]) if art else 0), len(art)
         SHELL_UV[part, f] = (u, v, w, h)
         cells = {(u + i, v + j) for i in range(w) for j in range(h)}
         assert u + w <= TW and v + h <= TH and not cells & _used and all(x >= 64 or y >= 64 for x, y in cells), (part, f)
@@ -796,6 +830,7 @@ def shell_slabs(part, a, b):
     t, out = 0.01, []
     for f in FACES:
         art = shell_art(part, f)
+        if not art: continue
         n, m = len(art[0]), len(art)
         cw = (z1 - z0 if f in ('east', 'west') else x1 - x0) / n
         rh = (z1 - z0 if f in ('up', 'down') else y1 - y0) / m
@@ -1153,14 +1188,20 @@ if ARMOR != 'none':
     for piece, frame in (('chest', 'fr_chest_shell'), ('waist', 'fr_abdomen_shell')):
         unlink(frame)
         _armor('torso', 'r', piece, f'ar_{piece}')
-    for i, b in enumerate(WAIST_STEPS):
+    for i, b in enumerate(WAIST_STEPS if ARMOR_FORM == 'solid' else []):
         _armor('torso', 'r', f'waist{i}', f'ar_waist{i}', box=b)
     unlink('fr_belt_shell')
     _armor('body', 'r', 'hip', 'ar_hip')
     for side, nm in (('r', 'right'), ('l', 'left')):
         for frame in (f'fr_arm_shell_{side}', f'fr_shoulder_plate_{side}', f'fr_leg_shell_{side}'): unlink(frame)
         _armor(f'{nm}_arm', side, 'arm', f'ar_arm_{side}')
-        _armor(f'{nm}_arm', side, 'pauldron', f'ar_pauldron_{side}', addon=True)
+        if ARMOR_FORM == 'solid': _armor(f'{nm}_arm', side, 'pauldron', f'ar_pauldron_{side}', addon=True)
+        else:   # the decal: 0.5 px off the arm piece's top, outer side, front and back, its inner edge where the solid
+            # pauldron's was (1 px off the arm's inner wall: clear of the helmet's corners turned 50 deg)
+            g = next(x for x in groups if x['name'] == f'armor_{nm}_arm')
+            # checked as its box, like the solid one (texel by texel, the check's pairs ran to minutes)
+            e = painted(g, side, 'pauldron_armor', f'ar_pauldron_{side}', *PAULDRON_DECAL)
+            e['_armor'] = 'addon'
         _armor(f'{nm}_leg', side, 'leg', f'ar_leg_{side}', raw=True)
 
 # ---------------------------------------------------------------- engine (draft, ENGINE)
@@ -1202,7 +1243,9 @@ def tex(name, data, i):
 
 if __name__ == '__main__':
     bad = check() + check_armor()
-    assert not bad, bad
+    if os.environ.get('ALLOW_CLASH'):   # review a known-bad fit (a survey before a refit); never for a saved model
+        if bad: print('CLASHES (allowed):', bad)
+    else: assert not bad, bad
     for g in groups:
         g.pop('_parent', None)
     for e in elements:
