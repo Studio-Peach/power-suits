@@ -1,6 +1,6 @@
 ---
 name: blockbench-mcp
-description: Use when inspecting or editing a model in the user's open Blockbench project through the Blockbench MCP server (rigs, groups, cubes, UVs, textures, animations, walk/run cycles, screenshots). Covers codemode orchestration, reading the live project JSON, viewing screenshots, risky_eval rules, safe undo/saving, FK/IK-solved animation, a procedural animation pipeline (layers, springs, IK, gait, bake + key reduction, overlays), clipping/clearance checks, adding textured box-UV parts, a direct-HTTP fallback when the MCP connection drops, and known pitfalls (box UV, z-fighting, rotation signs, rebuilt groups breaking animations).
+description: Use when inspecting or editing a model in the user's open Blockbench project through the Blockbench MCP server (rigs, groups, cubes, UVs, textures, animations, walk/run cycles, screenshots), or when building a model or design drafts from a script and reviewing them in Blockbench. Covers the script-built workflow (generator as source, draft knobs, reload, review sheets, clearance/coplanar checks, decals), codemode orchestration, reading the live project JSON, viewing screenshots, risky_eval rules, safe undo/saving, FK/IK-solved animation, a procedural animation pipeline (layers, springs, IK, gait, bake + key reduction, overlays), clipping/clearance checks, adding textured box-UV parts, a direct-HTTP fallback when the MCP connection drops, and known pitfalls (box UV, z-fighting, rotation signs, rebuilt groups breaking animations).
 ---
 
 # Blockbench MCP best practices
@@ -9,8 +9,55 @@ Learned from real sessions: rigging/posing a Bedrock entity, fixing its walk cyc
 
 - **Building or reworking animations?** Read [ANIMATION.md](ANIMATION.md) (pipeline, toolkit API, recipes, pitfalls) and use `scripts/`.
 - **Working on the Power Suits model?** Read [power-suits-model.md](power-suits-model.md): what its rig, gaits, texture, glow and drafts already taught us.
+- **Working on the Power Suits frame (the script-built exosuit, its engine)?** Read [power-suits-frame.md](power-suits-frame.md): its files, coordinates, the envelopes every part must clear, and the engine's decisions.
 - **Taking a model into Minecraft (NeoForge + GeckoLib)?** See `~/Developer/PowerSuits/.agents/skills/minecraft-modding/SKILL.md` (export pipeline, rendering, flicker, testing in game).
 - Example production specs for a real rig: `model/anim/a_*.js` (model: `model/power_suit.bbmodel`).
+- **Designing new parts or a new model, or iterating drafts with the user?** Start with §0: build it from a script and
+  use Blockbench to show it. The rest of this file is for working on a live, hand-made project.
+
+## 0. Script-built models: the generator is the source, Blockbench is the viewer
+The workflow behind the Power Suits frame and its engine (2026-11, branch `experimental/frame-concept`, ~20 rounds of
+user feedback in one session, each answered in minutes). The MCP's modelling tools (place_cube, modify_cube, paint)
+barely appear in it; `risky_eval` and the offscreen cameras carry it.
+- **The model is a Python script that writes the `.bbmodel` JSON** (`model/art/frame_model.py`): elements with
+  `from/to/origin/rotation`, per-face UVs into one generated PNG (embedded base64), groups for the rig. Parts are
+  declared as boxes plus a paint function per face that returns a grid of palette letters (2 texels per px); helpers
+  in `model/art/frame_radial_art.py` (`part`, `grid`, `disc`). Every version is reproducible from git (a rejected
+  draft round rebuilds from its commit), changes are parametric ("follow the chest's width" fixed the slim build in
+  one edit), and checks run on the same data the renderer gets.
+- **Draft rounds are env knobs** (`BALL=A|B|C`): `frame_drafts.py 'K=A' 'K=B' ...` builds every option into one file
+  as hidden `proto_<settings>` groups (Generic format, so each option keeps its own texture). Show a sheet per option
+  (`scripts/drafts_shots.js`), let the user pick, then commit the round before cleaning it up: the rejected options
+  stay in history ("kept in f688cc9"). Report what changed in numbers ("raised 1 px: block y 17-25").
+- **Review loop: build -> reload -> render -> look.** `scripts/reload.js` loads the file into its own tab (async
+  close, fresh path, texture check: §0 pitfalls). Run the build, then the reload, never in parallel. Render with
+  `scripts/shots.js` custom views (close-ups: fov 20-26, a 500 px view aimed at the joint) or `drafts_shots.js`.
+- **Checks after every build**, before showing anything:
+  - the generator's own clearance check (frame shells vs the pilot, `check()` / `check_armor()` in `frame_model.py`);
+  - a pose sweep for the parts near moving bones (`model/art/engine_sweep.py`: head yaw +-50 x pitch +-90, arm
+    -120..60, leg +-60) and say what still clips ("the helmet meets the caps when turned 10 deg");
+  - `scripts/coplanar.py` (same-direction faces in one plane with overlapping outlines; it can't see texels, so read
+    each match against the paint: see-through faces can't flicker);
+  - "unchanged" claims are proven, not assumed: `git archive HEAD model/art | tar -x -C /tmp/x` (link `build/moddev`,
+    copy the inputs the script reads), build both, compare geometry + texture; ignore uuids (random every build), and
+    revert a default rebuild whose diff is uuids only.
+- **Texel-level QA is the weak spot**: from downscaled renders the agent missed one-texel faults the user saw at once
+  (a hose 1 px narrower past a corner, an ink texel on the wrong face of an edge, a copper patch one texel short on
+  the slim build). Before showing a change, render close-ups of every place two parts meet (corners, where a strip
+  lands on a block, where a width changes) and count the texels on each side of the joint.
+- **Face orientation in the generated art** (Blockbench, as drawn): north / south as seen from the front / back (south
+  column 0 at -x), east columns back -> front, west front -> back, up rows front -> back, down mirrored front to back.
+  Unsure? Paint it symmetric, or render once with a marker texel.
+- **2D detail on a 3D body: decals.** A thin plate (0.5 px, or 0 thick where a gap is narrower) with only its outward
+  face painted and every other texel see-through (`.` -> alpha 0, the renderer must not cull: entityCutoutNoCull).
+  Painted edges make a plate read as a raised bar ("you kept the other sides 3D"). Plates on adjacent faces meet at
+  their outward planes so a painted line turns the corner; clip a plate's paint where a part covers it, not beyond
+  (a hose half hidden above a block it doesn't reach looked a pixel too thin).
+- **No shared planes by construction**: give overlapping parts different depths (a hose 1 deep into a ball 1.5 deep),
+  keep mirrored parts' feet apart (two V-twin cylinders overlapping at the base shared both z faces), and keep faces
+  off planes of armour the user doesn't see yet (the frame's helmet front at z -4.5 caught a hose and a collar).
+- **The viewer is shared**: the user's extra scene objects (a reference figure) are hidden only during renders and
+  restored exactly (`drafts_shots.js` does it); close only your own tabs; never save their projects from a script.
 
 ## 1. Access: MCP tools live in `codemode`
 - Blockbench tools are not direct function calls. Call them as `tools.mcp__blockbench__<name>(args)` inside `codemode`.
@@ -174,6 +221,8 @@ Known gaps with no tool (use `risky_eval`): delete an animation, save the projec
 - **New bones get empty animators in every animation** (Blockbench adds them on preview): ignore animators without keys
   when diffing animations.
 - **Hide everything else to focus** (`scripts/isolate.mjs on|off`), and restore before saving: visibility is saved.
+- **Offscreen view names must not contain spaces** (`shots.js` writes temp files named after them: `base64: invalid
+  argument`).
 - **A generated plan must be fresh before it's applied**: `art.py | tail` from codemode returned exit code 0 for a
   failing script, and the apply step re-applied the previous plan (it brought back drafts just removed). Delete the plan
   file before building it and check the build's own exit code (no pipe) before applying.

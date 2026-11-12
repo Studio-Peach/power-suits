@@ -11,6 +11,7 @@ knowledge lives in the project skills and their references (read the one that ma
 | `.agents/skills/minecraft-modding/references/power-suits-lessons.md` | before changing code in an area: what each part of this mod already cost us |
 | `.agents/skills/minecraft-modding/references/power-suits-runs.md` | every verification command and autopilot scene, what it drives and logs |
 | `.agents/skills/blockbench-mcp/SKILL.md` + `ANIMATION.md` + `power-suits-model.md` | model, rig, animation, texture work |
+| `.agents/skills/blockbench-mcp/SKILL.md` §0 + `power-suits-frame.md` | script-built models and design drafts (the frame, its engine) |
 | `.agents/skills/key-art/SKILL.md` | marketing pictures (Blender) |
 | `README.md`, `docs/guide.md` | what the mod does, controls, the file map |
 | the design docs (see Conventions) | design decisions, roadmap, art direction |
