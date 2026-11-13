@@ -88,4 +88,6 @@ live on `experimental/frame-concept`; the frame isn't in the game yet (model onl
   is closed by a dark border as along its bottom (a dark row, a shadow row on the front, the side's corner left out:
   rounded), not run on up under the peak. The peak is over the visor only, its lit row swept 1 px back (the wing),
   and the seam a row lower than the peak (`HELMET_PEAK=visor`): its lit row level with the border's top, filling its
-  corner, its dark row running into the border's side, so peak and seam read apart.
+  corner, its dark row running into the border's side, so peak and seam read apart. The peak is slate (a lit row over a
+  shadow row, `HELMET_PEAK_STYLE=up`), its wings a texel shorter, a third row over its middle 6 px on the front (a
+  raised middle, for shape from the front; `down`, dipping over the glass, kept as a knob).

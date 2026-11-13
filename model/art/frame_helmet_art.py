@@ -245,7 +245,27 @@ def split_brow(f, side, back):
             back[5][i], back[6][i], back[7][i] = clean[5][i], SEAM[0], SEAM[1]
         side[6][12] = SEAM[0]                          # the border's rounded corner filled by the seam's lit row
         for i in (10, 11): grids['east'][5][i] = 'g'   # the peak's wing: its lit row 1 px further back
+    if BROW == 'outer' and PEAK_STYLE != 'steel':
+        n, e = grids['north'], grids['east']
+        for g in (n, e):                               # slate: a lit row over a shadow row
+            for j in range(N):
+                for i in range(N):
+                    g[j][i] = {'g': 'n', 's': 'k'}.get(g[j][i], g[j][i])
+        e[5][10] = '.'                                 # the wing a texel shorter
+        mid = range(3, 15)                             # the third row, 6 px in the middle of the front (4 first; user:
+                                                       # wider)
+        if PEAK_STYLE == 'up':                         # a raised middle: lit row on top, the old lit row its body
+            for i in mid: n[4][i], n[5][i] = 'n', 'm'
+        else:                                          # a middle dipping over the glass: the old shadow its body
+            for i in mid: n[6][i], n[7][i] = 'm', 'k'
     return grids
+
+
+# Draft knob HELMET_PEAK_STYLE (2026-11-13, user: the brow in slate, the wings kept but shorter, a third row near the
+# middle, to give it more shape from the front): 'steel' (as picked before), 'up' (picked: slate, the third row over
+# the middle 6 px, a raised middle), 'down' (slate, the third row under the middle, dipping over the glass's top).
+PEAK_STYLE = os.environ.get('HELMET_PEAK_STYLE', 'up')
+assert PEAK_STYLE in ('steel', 'up', 'down'), PEAK_STYLE
 
 
 # Draft knob HELMET_PEAK (2026-11-13, user: tell the brow from the seam): 'wing' (the peak's wings run 1.5 px back
