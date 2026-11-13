@@ -71,13 +71,12 @@ live on `experimental/frame-concept`; the frame isn't in the game yet (model onl
   big suit's helmet sampled at 1 read flat): a wraparound glass visor under a brow ridge, the old helmet's chin grille,
   a crest over the top, a slate neck guard (2 plates, the bottom 3 px) wrapping round onto the sides; no ear discs.
   In third person the blower hides the back's bottom: detail there is only seen from the side.
-  Its outer layer (`HELMET_EXTRA=gear`): a radio on the left side (its body a closed 0.5 px box, the two antenna
-  lines a flat plane above it: they can't share the body's box) (no 3D antenna; nothing
-  more than 1 px over the helmet's top) and a camera on the right: one box 0.5 px off the side, its east face the housing, its north face the
-  front, so they meet edge to edge (it began as two plates, a zero-thick side and a 0.5 px front; any offset between
-  separate plates showed a gap); its top (the lamp, then lit slate) and bottom (dark slate) carry on the side's top
-  and bottom rows, its rounded back a second box (the tail, a texel shorter top and bottom: one box's back
-  face left see-through corners), only the inner side against the helmet open. A layered brow cap was dropped: its
+  Its outer layer (`HELMET_EXTRA=layer`, 2026-11-13): one see-through box 0.5 px out all round, like a player's hat
+  layer, painted only on its sides: a 2D radio on the left with two antenna lines (the taller's tip on the layer's top
+  edge: nothing past the layer) and a camera on the right. Its four blank faces share one see-through texel
+  (`compact`, so they take no texture room). It replaced `gear`, the same art as 3D boxes (a closed radio body, a
+  camera with its lens facing forward and a rounded tail; 4 cubes, kept as a knob option): the user preferred the
+  flat layer's look, in line with the flat armour and engine. A layered brow cap was dropped: its
   swept side is painted into the helmet instead, the winged ridge over the glass, the side seam run into it in the
   same two rows and shaded like it (`HELMET_SEAM=ridge`, its dark row a step lighter). Bolts only on the sides, as
   the top's rivets (none on the front or back).

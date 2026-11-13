@@ -562,12 +562,15 @@ if ARMOR != 'none':
         'arm_armor': dict(cage=iron.arm(), below=['fist'], rows=1, up=iron.arm()['up']),
         'leg_armor': dict(cage=iron.leg(), below=['boot'], rows=1, up=iron.leg()['up'])})
 elif HELMET != 'none': SHELLS['helmet_armor'] = dict(faces=_helmet(HELMET))
-# Draft knob HELMET_EXTRA ('none' / 'cap' / 'radio' / 'both' / 'all' / 'gear'; 2026-11-12, user): the helmet's outer layer, decals on
-# the head bone (frame_helmet_art.extras), placed in the texture's free room.
+# Draft knob HELMET_EXTRA ('none' / 'cap' / 'radio' / 'both' / 'all' / 'gear' / 'layer'; 2026-11-12, user): the
+# helmet's outer layer, decals on the head bone (frame_helmet_art.extras), placed in the texture's free room. 'layer'
+# (2026-11-13): the same gear painted on one see-through box round the helmet (frame_helmet_art.layer).
 import frame_helmet_art as helmet_art
-# Picked: 'gear' (radio + camera; the layered cap dropped, its swept side painted into the helmet, user 2026-11-12).
-HELMET_EXTRAS = helmet_art.extras(os.environ.get('HELMET_EXTRA', 'gear')) if 'helmet_armor' in SHELLS else []
-for _p in HELMET_EXTRAS: SHELLS[f"hx_{_p['name']}"] = dict(faces=_p['faces'])
+# Picked: 'gear' (radio + camera; the layered cap dropped, its swept side painted into the helmet, user 2026-11-12),
+# then 'layer' (2026-11-13, user: the 2D layer "has that je ne sais quoi"; one cube for the gear, paint only, like
+# the armour and the engine; the boxes' forward lens and edges given up).
+HELMET_EXTRAS = helmet_art.extras(os.environ.get('HELMET_EXTRA', 'layer')) if 'helmet_armor' in SHELLS else []
+for _p in HELMET_EXTRAS: SHELLS[f"hx_{_p['name']}"] = dict(faces=_p['faces'], compact=_p.get('hollow', False))
 
 def _plate():
     """The shoulder plate at 2 texels per px: a steel plate, its top lit along the front and outer edges, a
@@ -808,8 +811,12 @@ SHELL_UV, _used = {}, set()
 if ARMOR_FORM == 'flat': SHELL_AT['pauldron_armor'] = None
 if HELMET_STYLE != 'suit': SHELL_AT['helmet_armor'] = None
 for _p in HELMET_EXTRAS: SHELL_AT[f"hx_{_p['name']}"] = None
+# A compact part (the helmet's see-through outer layer) is mostly empty: its all-see-through faces take no room, they
+# all map to one see-through texel (EMPTY_UV), so only its painted faces need a strip.
+def _blank(part, f): return SHELLS[part].get('compact') and all(c == '.' for r in shell_art(part, f) for c in r)
+EMPTY_UV = None
 def _free_at(part):
-    sizes = [shell_art(part, f) for f in FACES]
+    sizes = [shell_art(part, f) for f in FACES if not _blank(part, f)]
     w, h = sum(len(a[0]) if a else 0 for a in sizes), max(len(a) for a in sizes)
     S = [[0] * (TW + 1) for _ in range(TH + 1)]   # summed-area table of the used texels (each try is then O(1))
     for y in range(TH):
@@ -823,6 +830,15 @@ for part, at in sorted(SHELL_AT.items(), key=lambda kv: kv[1] is None):
     if part not in SHELLS: continue
     u, v = at or _free_at(part)
     for f in FACES:
+        if _blank(part, f):
+            if EMPTY_UV is None:   # a texel left free (so see-through) in the strip's row, past its end
+                SHELL_AT['_empty'] = None
+                SHELLS['_empty'] = dict(faces={g: ['.'] if g == 'north' else [] for g in FACES})
+                EMPTY_UV = _free_at('_empty')
+                del SHELL_AT['_empty'], SHELLS['_empty']
+                _used.add(EMPTY_UV)
+            SHELL_UV[part, f] = (*EMPTY_UV, 1, 1)
+            continue
         art = shell_art(part, f)
         w, h = (len(art[0]) if art else 0), len(art)
         SHELL_UV[part, f] = (u, v, w, h)
@@ -834,6 +850,7 @@ for part, at in sorted(SHELL_AT.items(), key=lambda kv: kv[1] is None):
 def paint_shells(px, src):
     for part in SHELLS:
         for f in FACES:
+            if _blank(part, f): continue
             u, v, w, h = SHELL_UV[part, f]
             for j, line in enumerate(shell_art(part, f)):
                 for i, c in enumerate(line):
@@ -1210,7 +1227,7 @@ if 'helmet_armor' in SHELLS:
     _armor('head', 'r', 'helmet', 'ar_helmet')
     _gh = next(x for x in groups if x['name'] == 'armor_head')
     for _p in HELMET_EXTRAS:   # checked as boxes (painted, like the pauldron decal)
-        e = painted(_gh, 'r', f"hx_{_p['name']}", f"ar_hx_{_p['name']}", *_p['box'])
+        e = (hollow if _p.get('hollow') else painted)(_gh, 'r', f"hx_{_p['name']}", f"ar_hx_{_p['name']}", *_p['box'])
         e['_armor'] = 'addon'
 if ARMOR != 'none':
     for piece, frame in (('chest', 'fr_chest_shell'), ('waist', 'fr_abdomen_shell')):

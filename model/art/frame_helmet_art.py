@@ -369,6 +369,38 @@ def camera():
             _part('camera_tail', ((4.5, 29, 1.5), (5, 30.5, 2)), dict(east=tail, up=['n'], down=['k'], south=['m'] * 3))]
 
 
+def layer():
+    """Draft (2026-11-13, user: the gear's 3D boxes vs one see-through outer layer round the helmet, painted 2D, as
+    the extras began): one box 0.5 px out from the helmet all round, like a player's hat layer, its only paint the
+    radio's and the camera's side art where their boxes' outer faces were (those lie in its side planes, x +-5), so
+    nothing moves. 0.5 px out on top too, so the taller antenna is a texel shorter (user: respect the layer's bounds;
+    as boxes it reached 1 px over the helmet's top), its tip on the layer's top edge. Lost against the
+    boxes: the camera's lens face forward, the radio's and the camera's tops, bottoms, fronts and backs (edge on,
+    from the front or back, they vanish)."""
+    x0, y0, z0, x1, y1, z1 = -5, 25, -5, 5, 35, 5
+    W, H, D = round((x1 - x0) * 2), round((y1 - y0) * 2), round((z1 - z0) * 2)
+    east, west = [list(r) for r in _grid(D, H)], [list(r) for r in _grid(D, H)]
+    def stamp(g, art, col, row):
+        for j, line in enumerate(art):
+            for i, c in enumerate(line):
+                if c != '.': g[row + j][col + i] = c
+    row = lambda y: round((y1 - y) * 2)                 # the row whose top edge is at y
+    for p in radio():                                  # west: columns front -> back (z0 up)
+        (a, b), art = p['box'], p['faces']['west']
+        top = b[1]
+        if top > y1:                                   # the aerials: drop shaft rows under the tip to fit
+            cut = round((top - y1) * 2)
+            art, top = art[:1] + art[1 + cut:], y1
+        stamp(west, art, round((a[2] - z0) * 2), row(top))
+    for p in camera():                                 # east: columns back -> front (z1 down)
+        (a, b), art = p['box'], p['faces']['east']
+        stamp(east, art, round((z1 - b[2]) * 2), row(b[1]))
+    part = _part('layer', ((x0, y0, z0), (x1, y1, z1)), dict(east=[''.join(r) for r in east],
+                                                            west=[''.join(r) for r in west]))
+    part['hollow'] = True
+    return [part]
+
+
 def extras(kind):
     return {'none': [], 'cap': cap(), 'radio': radio(), 'both': cap() + radio(),
-            'all': cap() + radio() + camera(), 'gear': radio() + camera()}[kind]
+            'all': cap() + radio() + camera(), 'gear': radio() + camera(), 'layer': layer()}[kind]
