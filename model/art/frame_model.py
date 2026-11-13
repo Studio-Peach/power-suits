@@ -783,11 +783,12 @@ if ENGINE == 'firebox':
         ENGINE_BOX[k] = p['box']
         ENGINE_META[k] = p
         if p['faces']: SHELLS[f'en_{k}'] = dict(faces=p['faces'])
-# Knob TOOL ('none' / 'drill'; 2026-11-13, user: the big suit's power tools, sized down and redesigned, the drill
+# Knob TOOL ('none' / 'drill' / 'saw'; 2026-11-13, user: the big suit's power tools, sized down and redesigned, the drill
 # first): the tool in the left arm's socket (SOCKET), on a `tool` bone under it. Tools are the exception to the simple
-# boxes (user, 2026-11-13): they may be models of several parts. The drill: frame_drill_art.py.
+# boxes (user, 2026-11-13): they may be models of several parts. The drill: frame_drill_art.py; the chainsaw:
+# frame_saw_art.py (its drafts SAW=A|B|C).
 TOOL = os.environ.get('TOOL', 'none')
-assert TOOL in ('none', 'drill'), TOOL
+assert TOOL in ('none', 'drill', 'saw'), TOOL
 SHELLS['arm_socket_shell'] = dict(SHELLS['arm_shell'], below=[], end='socket')
 if ARMOR != 'none': SHELLS['arm_socket_armor'] = dict(SHELLS['arm_armor'], below=[], end='socket')
 TOOL_PARTS = []
@@ -795,7 +796,10 @@ if TOOL == 'drill':
     import frame_drill_art as drill_art
     TOOL_PARTS = drill_art.build(6.25 + ARM_OUT, SOCKET_Y, os.environ.get('LAMP', 'red'), os.environ.get('DRILL_ART', 'B'),
                                  os.environ.get('DRILL_BASE', 'open'), os.environ.get('DRILL_FIT', 'fist'))
-    for p in TOOL_PARTS: SHELLS[f"tl_{p['name']}"] = dict(faces=p['faces'])
+if TOOL == 'saw':
+    import frame_saw_art as saw_art
+    TOOL_PARTS = saw_art.build(6.25 + ARM_OUT, SOCKET_Y, os.environ.get('LAMP', 'red'), os.environ.get('SAW', 'A'))
+for p in TOOL_PARTS: SHELLS[f"tl_{p['name']}"] = dict(faces=p['faces'])
 # where each shell's faces sit in the texture (below / beside nothing else), one strip per shell
 SHELL_AT = {'arm_shell': (0, 64), 'leg_shell': (0, 80),
             'chest_armor': (35, 87), 'waist_armor': (128, 40), 'helmet_armor': (70, 112), 'arm_armor': (128, 0),
