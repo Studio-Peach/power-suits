@@ -65,18 +65,43 @@ def BAR_MOUNT():
     return rows
 
 
-def saw_body(art, lamp, fins='A', cowl='copper', barrel='steel'):
+# The bottom half, again (SAW_LOW; 2026-11-13, user: with Y the copper part couldn't be recognised: it was the
+# engine's cylinder between its cooling fins, at 4 rows only stripes). Drafts of things a chainsaw shows:
+# - shield: the muffler's heat shield, a copper plate punched with a staggered grid of holes, all round;
+# - sprocket: the clutch cover on both sides (the bar's plane: the side views): a copper sprocket, 6 x 6 texels, its
+#   four teeth out of a ring round a dark hub, over the band and the motor; the shield on the front and back;
+# - cover: the sprocket alone, the rest of the motor plain steel.
+# 'fins' is Y (the barrel between the fins).
+SHIELD = ['fffffffffQ', 'QxQxQxQxQC', 'QQxQxQxQxC', 'CCCCCCCCCC']
+PLAIN = ['hhhhhhhhhe', 'ellllllllp', 'ellllllllp', 'ssssssssss']
+SPROCKET = ['..fQ..', '.fQQC.', 'fQxxQC', 'QQxxCC', '.QCCC.', '..CC..']   # rows 2-7, columns 2-7 ('.': what's under)
+
+
+def _stamp(rows, art, at=(2, 2)):
+    rows = list(rows)
+    for j, r in enumerate(art):
+        y = at[1] + j
+        rows[y] = ''.join(ch if ch != '.' else rows[y][at[0] + i] for i, ch in enumerate(r)).join(
+            (rows[y][:at[0]], rows[y][at[0] + len(r):]))
+    return rows
+
+
+def saw_body(art, lamp, fins='A', cowl='copper', barrel='steel', low='fins'):
     W_, L_, r_ = drill.LAMPS[lamp]
     pal = PAL | {'copper': COPPER, 'brass': BRASS, 'slate': SLATE_COWL}[cowl] | HEAT | drill.CU | {'x': _c('1a1d1f'), 'n': _c('4c5559'), 'W': _c(W_), 'L': _c(L_), 'r': _c(r_)}
     d = dict(SAW_BODY[art])
     if art == 'B':
-        low = FIN_DRAFTS[fins]
-        if fins == 'A' and barrel == 'copper': low = [low[0], BARREL_CU, low[2], BARREL_CU]
-        d['side'] = d['side'][:4] + low
+        rows = FIN_DRAFTS[fins]
+        if fins == 'A' and barrel == 'copper': rows = [rows[0], BARREL_CU, rows[2], BARREL_CU]
+        d['side'] = d['side'][:4] + rows
     side = d['side']
     front = [side[0], side[1][0] + 'WL' + side[1][3:]] + side[2:]
     back = side[:4] + d.get('back_low', side[4:])
     outer = d.get('outer_top', side[:3]) + side[3:]
+    if low != 'fins':
+        rest = side[:4] + (PLAIN if low == 'cover' else SHIELD)
+        front, back = front[:4] + rest[4:], rest
+        side = outer = rest if low == 'shield' else _stamp(side[:4] + PLAIN, SPROCKET)
     faces = {'north': front, 'south': back, 'east': outer, 'west': side,   # (the right arm's east is its outer side)
              'up': ['k' * 10] * 10, 'down': BAR_MOUNT()}
     return lambda f, w, h: [[pal[ch] for ch in r] for r in faces[f]]
@@ -190,13 +215,13 @@ def toothed_parts(c, t, shape, part):
     return parts
 
 
-def build(c, top, lamp='red', kind='B', art='B', fins='A', cowl='slate', barrel='copper', bar_shape='box'):
+def build(c, top, lamp='red', kind='B', art='B', fins='A', cowl='slate', barrel='copper', bar_shape='box', low='fins'):
     """The chainsaw's parts on an arm centred at x c (right side) whose socket is at y top: the body (the drill's)
     and the bar under it (SAW, picked: B), its paint SAW_ART; bone 'tool' still, 'bit' the chain (it runs)."""
     sq = lambda n, y0, y1: ((c - n / 2, y0, -n / 2), (c + n / 2, y1, n / 2))
     t = top - 4                                         # the body's bottom: the bar hangs from it
     part = lambda name, box, faces, bone='tool': dict(drill.part(name, box, _paint(faces) if isinstance(faces, dict) else faces), bone=bone)
-    parts = [part('body', sq(5, t, top), saw_body(art, lamp, fins, cowl, barrel))]
+    parts = [part('body', sq(5, t, top), saw_body(art, lamp, fins, cowl, barrel, low))]
     if BARS[bar_shape]:
         parts += toothed_parts(c, t, BARS[bar_shape], part)
         for p in parts: p.setdefault('rot', 0)
