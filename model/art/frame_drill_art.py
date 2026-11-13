@@ -86,9 +86,9 @@ def _rows(rows, pal):
 def BASE(w):
     bolts = list('m' * (w - 1) + 'k'); bolts[2] = bolts[w - 3] = 'h'
     return ['n' * (w - 1) + 'm', 'm' * (w - 1) + 'k', ''.join(bolts), 'x' * w]
-def LAMP_AT(w):   # the front's base rows 1-2 (its outer end first): the lamp 2 x 1 texels, its top row (2026-11-13,
-    # user: the 2 x 2 lamp's bottom row gone, band colour there, no bolt under it)
-    return {1: 'mWL' + 'm' * (w - 4) + 'k', 2: 'mmm' + BASE(w)[2][3:]}
+def LAMP_AT(w):   # the front's base row 1 (its outer end first): the lamp 2 x 1 texels, its top row (2026-11-13,
+    # user: the 2 x 2 lamp's bottom row gone, the bolts' row under it as on the other faces, its bolt back)
+    return {1: 'mWL' + 'm' * (w - 4) + 'k'}
 def MOTOR(art, w):
     vents = list('e' + 'l' * (w - 2) + 'p')
     for i in (2, 4, w - 5, w - 3): vents[i] = 'z'
