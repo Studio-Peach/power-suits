@@ -793,7 +793,7 @@ if ARMOR != 'none': SHELLS['arm_socket_armor'] = dict(SHELLS['arm_armor'], below
 TOOL_PARTS = []
 if TOOL == 'drill':
     import frame_drill_art as drill_art
-    TOOL_PARTS = drill_art.build(6.25 + ARM_OUT, SOCKET_Y, os.environ.get('LAMP', 'red'))
+    TOOL_PARTS = drill_art.build(6.25 + ARM_OUT, SOCKET_Y, os.environ.get('LAMP', 'red'), os.environ.get('DRILL_ART', 'A'))
     for p in TOOL_PARTS: SHELLS[f"tl_{p['name']}"] = dict(faces=p['faces'])
 # where each shell's faces sit in the texture (below / beside nothing else), one strip per shell
 SHELL_AT = {'arm_shell': (0, 64), 'leg_shell': (0, 80),

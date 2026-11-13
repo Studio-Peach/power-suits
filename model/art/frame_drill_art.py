@@ -6,11 +6,12 @@ hangs in the left arm's socket (frame_model.SOCKET, the big suit's playbook: the
 bone (`tool`, its pivot on the arm's axis at the socket: the bit spins about y in game). Tools may be models of
 several parts (user, 2026-11-13: the exception to the simple boxes).
 The big suit's drill (mining_tools_art.py): a 7 x 1 x 7 socket base, a 6 x 2 x 6 motor hub, steel cone steps and a
-diamond point, 11 px. The frame's, 7 px (its point 8 px over the ground with the arm hanging), straight under the
-socket (its base is painted on the arm's end, frame_model.SOCKET: a 1 px base cube read as a step; user, 2026-11-13):
+diamond point, 11 px. The frame's, 7 px under the socket (its point 8 px over the ground with the arm hanging):
+- the body: one 6 x 4 x 6 block (base + motor, see BODY below; the user's, 2026-11-13: a 3D guard cuff with a lamp
+  and a separate base, 4dad9e4, didn't feel right);
 - the cone (picked from drafts A cone, B crossed planes, C auger, commit 0988ca2): the big suit's stepped cone sized
-  down, steel steps 4 and 3 px (the second with diamond studs), diamond steps 2 and 1, each 2 px tall but the point
-  (1), turned +-22.5 / 45 deg in turn (a twisted auger).
+  down, steel step 4 px with diamond studs, diamond steps 3 and 1, 2 px tall but the point (1), turned +-22.5 / 45
+  deg in turn (a twisted auger).
 
 Coordinates are raw (frame_model.py adds FY), the right arm's (+x; the left mirrors), centred on the arm's axis (x c,
 z 0) under the socket (y top). Art at 2 texels per px, RGBA tuples ('.' see-through). Faces as frame_model.py's: north
@@ -62,8 +63,10 @@ def studded(f, w, h):
     return g
 
 
-# The guard's lamp: its colours per state.
-LAMPS = {'red': ('ffb0a0', 'e8402a', '9a2418'), 'green': ('c8ffc0', '4fe05a', '2a8a34')}   # highlight, lit, rim
+# The status lamp's colours (red idle, green spinning: LAMP): highlight, lit, rim.
+LAMPS = {'red': ('ffb0a0', 'e8402a', '9a2418'), 'green': ('c8ffc0', '4fe05a', '2a8a34')}
+# copper (frame_heart_art.EXTRA, frame_model.PAL Q / R): lit, mid, shade
+CU = {'f': _c('e09868'), 'Q': _c('c07440'), 'C': _c('804426')}
 
 
 def _rows(rows, pal):
@@ -71,48 +74,40 @@ def _rows(rows, pal):
     return [[pal[ch] for ch in r] for r in rows]
 
 
-def panel(lamp):
-    """The guard's two painted views, 2 texels per px, 4 rows (its 2 px): the front (12 columns: outer corner ->
-    inner end) and the outer side (12 columns: back -> front corner). Plain steel (a lit top row and corner, a shadow
-    row), the status lamp (red idle, green spinning) in a dark bezel at the front's outer end; two bolts on the side.
-    (Drafted first 4 px tall with gauges, a bar-meter screen, vents or hazard stripes: too busy, user, 2026-11-13.)"""
-    W_, R_, r_ = LAMPS[lamp]
-    pal = {k: v for k, v in S.items()} | {k: v for k, v in SL.items()} | {'W': _c(W_), 'R': _c(R_), 'r': _c(r_)}
-    front = ['hghghghghghp', 'hdWRdeeeeelp', 'hdRrdeeeeelp', 'pppppppppppp']
-    side = ['ghghghghghgh', 'lemeeeeeemeh', 'leeeeeeeeeeh', 'pppppppppppp']
-    return _rows(front, pal), _rows(side, pal)
+# BODY (2026-11-13, user: the drill's 3D housing and guard didn't feel right; like the shoulder plates, the heart
+# engine and the helmet it reads better as a simple block with the elements painted on, so they replaced it with one
+# block, then: fit it to the shoulder plate above it, just bigger than the arm). One 6 x 4 x 6 block, 0.5 px past the
+# arm on every side (as the plate is past its top), its top 2 px round the arm's end (the base: it clamps on the
+# socket), the bottom 2 px under it (the motor), the bit under that. 2 texels per px: sides 12 x 8, top / bottom 12 x 12.
+# The base: a slate clamp band (lit top row, two bolts a face, the status lamp at the front's outer end), a dark seam;
+# the motor under it in steel, its middle rows the draft's element (DRILL_ART): A vent slots | B a copper winding
+# window | C cooling fins.
+BASE = ['nnnnnnnnnnnm', 'mmmmmmmmmmmk', 'mmhmmmmmmhmk', 'xxxxxxxxxxxx']
+LAMP_AT = {1: 'mWLmmmmmmmmk', 2: 'mLrmmmmmmhmk'}   # the front's base rows 1-2 (its outer end first)
+MOTOR = {'A': ['hhhhhhhhhhhe', 'elzlzllzlzlp', 'elzlzllzlzlp', 'ssssssssssss'],
+         'B': ['hhhhhhhhhhhe', 'elzffffffzlp', 'elzQCQCQCzlp', 'ssssssssssss'],
+         'C': ['hhhhhhhhhhhe', 'zzzzzzzzzzzz', 'hhhhhhhhhhhe', 'zzzzzzzzzzzz']}
+# underneath (rows front -> back): the motor's steel round a dark chuck hole the bit hangs from, a bolt in each corner;
+# on top only its 1-texel rim shows round the arm: the base's lit slate
+DOWN = ['pppppppppppp', 'phllllllllhp'] + ['plxxxxxxxxlp'] * 8 + ['phllllllllhp', 'pppppppppppp']
+UP = ['nnnnnnnnnnnn'] + ['nkkkkkkkkkkn'] * 10 + ['nnnnnnnnnnnn']
 
 
-def cuff(c, top, lamp, T=1, H=2):
-    """The guard: an L-shaped cuff T px thick round the arm's front and outer side, its last H px over the
-    socket (x c +-2.5 the arm), flush with the arm's inner side and back (the tools grow outward and forward: user,
-    2026-11-13); two boxes, the front one over the corner."""
-    front, side = panel(lamp)
-    fbox = ((c - 2.5, top, -2.5 - T), (c + 2.5 + T, top + H, -2.5))
-    obox = ((c + 2.5, top, -2.5), (c + 2.5 + T, top + H, 2.5))
-    k = round(T * 2)
-    lid = lambda w, h: [[S['h'] if j == 0 else S['l'] for i in range(w)] for j in range(h)]
-    def fpaint(f, w, h):
-        if f == 'north': return front
-        if f == 'east': return [r[-k:] for r in side]                 # the corner's side: the outer view's front end
-        if f == 'up': return lid(w, h)
-        if f == 'west': return [[S['l']] * w for _ in range(h)]
-        return grid(w, h, S['p'])
-    def opaint(f, w, h):
-        if f == 'east': return [r[:-k] for r in side]
-        if f == 'up': return lid(w, h)
-        if f == 'south': return [[S['l']] * w for _ in range(h)]
-        return grid(w, h, S['p'])
-    return [part('panel_front', fbox, fpaint), part('panel_side', obox, opaint)]
+def body(art, lamp):
+    W_, L_, r_ = LAMPS[lamp]
+    pal = S | SL | {'x': _c('1a1d1f'), 'n': _c('4c5559')} | CU | {'W': _c(W_), 'L': _c(L_), 'r': _c(r_)}
+    side = BASE + MOTOR[art]
+    front = [LAMP_AT.get(j, r) for j, r in enumerate(side)]
+    return lambda f, w, h: _rows({'north': front, 'up': UP, 'down': DOWN}.get(f, side), pal)
 
 
-def build(c, top, lamp='red'):
+def build(c, top, lamp='red', art='A'):
     """The drill's parts on an arm centred at x c (right side) whose end (the socket) is at y top: name, box (raw),
-    faces, rot (deg about the arm's axis, y), bone ('tool': still; 'bit': spins). The first step is the bit's fixed
-    base (2026-11-13, user): square under the arm, not turned, on the still bone; the steps under it spin."""
+    faces, rot (deg about the arm's axis, y), bone ('tool': still; 'bit': spins). The body (base + motor) is still,
+    the steps under it spin."""
     sq = lambda n, y0, y1: ((c - n / 2, y0, -n / 2), (c + n / 2, y1, n / 2))
     t = top
-    parts = cuff(c, top, lamp) + [part('base', sq(5, t - 2, t), lambda f, w, h: step(f, w, h, 'steel'))]
+    parts = [part('base', sq(6, t - 2, t + 2), body(art, lamp))]
     bit = [part('s2', sq(4, t - 4, t - 2), studded, -22.5),
            part('s3', sq(3, t - 6, t - 4), lambda f, w, h: step(f, w, h, 'diamond'), 22.5),
            part('tip', sq(1, t - 7, t - 6), lambda f, w, h: step(f, w, h, 'diamond'), 45)]
