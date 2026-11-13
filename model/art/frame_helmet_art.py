@@ -331,28 +331,30 @@ def radio():
 
 def camera():
     """A helmet camera on the right side (x+), opposite the radio (2026-11-12, user, after a Halo Reach helmet's: a
-    rounded housing, the lens forward, a red lamp): drawn on a plate 0.5 px off the side, and
-    the lens again on a small plate facing forward at its front end. The lamp is the fire's reserved red, so in game
+    rounded housing, the lens forward, a red lamp): one box 0.5 px off the side, the housing on its side face and
+    the lens again on its front face. The lamp is the fire's reserved red, so in game
     it lights with the engine (the fire glowmask)."""
-    east = ['...nnnJJ',                                  # columns back -> front (as seen from the right); the
-            '..nmmmxx',                                  # front column solid, as the front plate it meets (user:
-            '..nmmmxg',                                  # see-through texels there didn't line up with it; no
-                                                         # mount tail behind it, user)
-            '..nmmmxx',
-            '...kkkkk']
+    east = ['.nnnJJ',                                    # columns back -> front (as seen from the right); the
+            'nmmmxx',                                    # front column solid, as the front face it meets (user:
+            'nmmmxg',                                    # see-through texels there didn't line up with it; no
+                                                         # mount tail behind it, user); the back corners rounded
+            'nmmmxx',
+            '.kkkkk']
     # its front, the housing's full height and depth, from the helmet's side out to the housing's plane (a 1 px lens
     # plate, then one 0.5 px past the housing, didn't line up with it, user): the lamp, the lens, the bottom
-    front = ['J', 'x', 'g', 'x', 'k']                  # (one texel across: the housing's plate is 0.5 px off the side)
+    front = ['J', 'x', 'g', 'x', 'k']                  # (one texel across: the housing is 0.5 px off the side)
     # forward, beside the visor at eye level (not mirroring the radio, user). One box 0.5 px off the side, like the
     # radio: its east face is the housing, its north face the front, so the two meet edge to edge by construction
     # (2026-11-13, user: it was a zero-thick side plate plus a zero-deep front plate, the same faces in two cubes; as
-    # separate plates 0.25 px apart they had shown a gap). Its top and bottom (2026-11-13, user: fill them out)
-    # carry on the side's top and bottom rows over its 0.5 px: the lamp then the lit slate on top, the dark slate
-    # under it, the housing's length only (the side's see-through back columns stay open). Its back and inner side
-    # stay see-through.
-    up = list('JJnnn...')                              # rows front -> back, one texel across
-    down = list('...kkkkk')                            # rows back -> front
-    return [_part('camera', ((4.5, 28.5, -1), (5, 31, 3)), dict(east=east, north=front, up=up, down=down))]
+    # separate plates 0.25 px apart they had shown a gap). Closed all round but the inner side against the helmet
+    # (2026-11-13, user: fill out the top and bottom, then the back): the top carries on the side's top row (the lamp,
+    # then lit slate), the bottom its bottom row (dark slate), the back the body's slate between the rounded corners.
+    # The box ends at the housing's back (z 2), so the back face sits on it (the side's art had 2 see-through
+    # columns behind it, z 2-3).
+    up = list('JJnnn.')                                # rows front -> back, one texel across
+    down = list('.kkkkk')                              # rows back -> front
+    back = ['.', 'm', 'm', 'm', '.']
+    return [_part('camera', ((4.5, 28.5, -1), (5, 31, 2)), dict(east=east, north=front, up=up, down=down, south=back))]
 
 
 def extras(kind):
