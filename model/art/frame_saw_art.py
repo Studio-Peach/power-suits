@@ -38,18 +38,37 @@ SAW_BODY = {
     'C': dict(side=['bbbbbbbbbY', 'YYYYYYYYYZ', 'YYhYYYYhYZ', 'xxxxxxxxxx'] + FINS, back_low=MUFFLER,
               outer_top=['bbbbbbbbbY', 'YYYkkkkYYZ', 'YYhYxxYhYZ']),   # the grip across, its cord into the cowl
 }
+# B picked (2026-11-13, user: C's muffler and grip too small to recognise). Its bottom half, the fins, drafts
+# (SAW_FINS; user: make it more interesting):
+# - A barrel: the cylinder seen between the fins, round (dark at its sides, lit in the middle);
+# - B strap: a brass strap down the middle of each face over the fins, a bolt on it;
+# - C heat: the fins heat-tinted, the upper one straw, the lower bronze running to blue at its far end.
+FIN_DRAFTS = {'A': ['hhhhhhhhhe', 'zspplllpsz', 'hhhhhhhhhe', 'zspplllpsz'],
+              'B': ['hhhhbYhhhe', 'zzzzYZzzzz', 'hhhhhYhhhe', 'zzzzYZzzzz'],
+              'C': ['4444444445', 'zzzzzzzzzz', '5555555556', 'zzzzzzzzzz']}
+HEAT = {'4': _c('c9a45c'), '5': _c('8a6038'), '6': _c('6a4a8a')}   # straw, bronze, blue (C)
+# Underneath (rows front -> back, columns inner -> outer on the right arm), the face that holds the bar (user: geared
+# towards the blade, not a square hole): a steel mounting plate along the bar (3 px wide, lit / shaded edges), the
+# slot the bar and chain run through down its middle, the length of the chain, two bolts each side of it.
+def BAR_MOUNT():
+    rows = []
+    for j in range(10):
+        bolt = j in (1, 8)
+        rows.append('kk' + 'e' + ('g' if bolt else 'l') + 'xx' + ('g' if bolt else 'l') + 's' + 'kk')   # (slate round it: the plate stands out)
+    return rows
 
 
-def saw_body(art, lamp):
+def saw_body(art, lamp, fins='A'):
     W_, L_, r_ = drill.LAMPS[lamp]
-    pal = PAL | BRASS | {'x': _c('1a1d1f'), 'n': _c('4c5559'), 'W': _c(W_), 'L': _c(L_), 'r': _c(r_)}
-    d = SAW_BODY[art]
+    pal = PAL | BRASS | HEAT | {'x': _c('1a1d1f'), 'n': _c('4c5559'), 'W': _c(W_), 'L': _c(L_), 'r': _c(r_)}
+    d = dict(SAW_BODY[art])
+    if art == 'B': d['side'] = d['side'][:4] + FIN_DRAFTS[fins]
     side = d['side']
     front = [side[0], side[1][0] + 'WL' + side[1][3:]] + side[2:]
     back = side[:4] + d.get('back_low', side[4:])
     outer = d.get('outer_top', side[:3]) + side[3:]
     faces = {'north': front, 'south': back, 'east': outer, 'west': side,   # (the right arm's east is its outer side)
-             'up': ['k' * 10] * 10, 'down': ['p' * 10] + ['pzzzzzzzzp'] * 8 + ['p' * 10]}
+             'up': ['k' * 10] * 10, 'down': BAR_MOUNT()}
     return lambda f, w, h: [[pal[ch] for ch in r] for r in faces[f]]
 
 
@@ -91,13 +110,13 @@ def ring(w, h):
     return [''.join(r) for r in g]
 
 
-def build(c, top, lamp='red', kind='B', art='A'):
+def build(c, top, lamp='red', kind='B', art='B', fins='A'):
     """The chainsaw's parts on an arm centred at x c (right side) whose socket is at y top: the body (the drill's)
     and the bar under it (SAW, picked: B), its paint SAW_ART; bone 'tool' still, 'bit' the chain (it runs)."""
     sq = lambda n, y0, y1: ((c - n / 2, y0, -n / 2), (c + n / 2, y1, n / 2))
     t = top - 4                                         # the body's bottom: the bar hangs from it
     part = lambda name, box, faces, bone='tool': dict(drill.part(name, box, _paint(faces) if isinstance(faces, dict) else faces), bone=bone)
-    parts = [part('body', sq(5, t, top), saw_body(art, lamp))]
+    parts = [part('body', sq(5, t, top), saw_body(art, lamp, fins))]
     T = 2 if kind == 'C' else 1                         # the bar's thickness (x)
     bar = ((c - T / 2, t - 6, -2), (c + T / 2, t, 2))
     lid = lambda w, h: ['k' * w] * h
