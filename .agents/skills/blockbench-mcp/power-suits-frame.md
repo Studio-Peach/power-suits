@@ -86,4 +86,6 @@ live on `experimental/frame-concept`; the frame isn't in the game yet (model onl
   The brow (the ridge over the glass and its wings) is on the outer layer, 0.5 px proud like a cap's peak
   (`HELMET_BROW=outer`, 2026-11-13; `band`, the whole ring out there, read as a hat brim from behind); under it the glass
   is closed by a dark border as along its bottom (a dark row, a shadow row on the front, the side's corner left out:
-  rounded), not run on up under the peak.
+  rounded), not run on up under the peak. The peak is over the visor only, its lit row swept 1 px back (the wing),
+  and the seam a row lower than the peak (`HELMET_PEAK=visor`): its lit row level with the border's top, filling its
+  corner, its dark row running into the border's side, so peak and seam read apart.

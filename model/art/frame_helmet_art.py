@@ -236,7 +236,25 @@ def split_brow(f, side, back):
             if BROW == 'band': move('south', back, j, i, clean[j][i])
     if BROW == 'outer':                                # the wing's tail: its lit row over the seam, the seam's under it
         for i in (9, 10): move('east', side, 5, i, SEAM[0])
+    if BROW == 'outer' and PEAK == 'visor':
+        for j in (5, 6):                               # the peak over the visor only (its border column 12 on)
+            for i in range(12): grids['east'][j][i] = '.'
+        for i in range(12):                            # the seam a row down: its lit row level with the border's
+            side[5][i], side[6][i], side[7][i] = clean[5][i], SEAM[0], SEAM[1]   # rounded corner, its dark row
+        for i in range(N):                             # into the border's side; the ring across the back with it
+            back[5][i], back[6][i], back[7][i] = clean[5][i], SEAM[0], SEAM[1]
+        side[6][12] = SEAM[0]                          # the border's rounded corner filled by the seam's lit row
+        for i in (10, 11): grids['east'][5][i] = 'g'   # the peak's wing: its lit row 1 px further back
     return grids
+
+
+# Draft knob HELMET_PEAK (2026-11-13, user: tell the brow from the seam): 'wing' (the peak's wings run 1.5 px back
+# past the visor on the sides, into the seam in the same rows), 'visor' (picked: the peak over the visor, its border
+# included, its lit row swept 1 px further back (user: "give the brow the winged edges again"); the seam (and the
+# ring across the back) a row lower, its lit row level with the visor border's top, filling its rounded corner
+# (user), its dark row running into the border's side).
+PEAK = os.environ.get('HELMET_PEAK', 'visor')
+assert PEAK in ('wing', 'visor'), PEAK
 
 
 # Draft knob HELMET_FLOW (2026-11-13, user: the top and the back "feel a little disconnected from the rest of the
