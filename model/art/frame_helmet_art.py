@@ -326,7 +326,16 @@ def radio():
             'mxmxmm',
             'mmmmfm',
             'xxxxxx']
-    return [_part('radio', ((-5, 29, 0.5), (-4.5, 35.5, 3.5)), dict(west=west))]
+    # 2026-11-13 (user: close it like the camera): the body is a closed box (all round but the inner side against the
+    # helmet): its top carries on the side's lit top row, its bottom the ink bottom row, its front and back the
+    # side's edge columns. The antennas rise above its top, so they can't share its box (its top would be at their
+    # tips): they stay a flat plane in the side's plane, trimmed to their own columns.
+    body, aerials = west[7:], [r[2:5] for r in west[:7]]
+    edge = [r[0] for r in body]                        # the front column (the back one is the same)
+    assert edge == [r[-1] for r in body]
+    return [_part('radio', ((-5, 29, 0.5), (-4.5, 32, 3.5)),
+                  dict(west=body, up=['n'] * 6, down=['x'] * 6, north=edge, south=edge)),
+            _part('radio_aerials', ((-5, 32, 1.5), (-5, 35.5, 3)), dict(west=aerials))]
 
 
 def camera():

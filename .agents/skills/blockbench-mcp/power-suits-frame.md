@@ -71,7 +71,8 @@ live on `experimental/frame-concept`; the frame isn't in the game yet (model onl
   big suit's helmet sampled at 1 read flat): a wraparound glass visor under a brow ridge, the old helmet's chin grille,
   a crest over the top, a slate neck guard (2 plates, the bottom 3 px) wrapping round onto the sides; no ear discs.
   In third person the blower hides the back's bottom: detail there is only seen from the side.
-  Its outer layer (`HELMET_EXTRA=gear`): a 2D radio on the left side with two antenna lines (no 3D antenna; nothing
+  Its outer layer (`HELMET_EXTRA=gear`): a radio on the left side (its body a closed 0.5 px box, the two antenna
+  lines a flat plane above it: they can't share the body's box) (no 3D antenna; nothing
   more than 1 px over the helmet's top) and a camera on the right: one box 0.5 px off the side, its east face the housing, its north face the
   front, so they meet edge to edge (it began as two plates, a zero-thick side and a 0.5 px front; any offset between
   separate plates showed a gap); its top (the lamp, then lit slate) and bottom (dark slate) carry on the side's top
