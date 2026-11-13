@@ -38,7 +38,8 @@ def main(options):
         tex.update(name=f'{name}.png', id=str(i), uuid=str(uuid.uuid4()))
         for e in m['elements']:
             e['visibility'] = shown
-            for f in e['faces'].values(): f['texture'] = i
+            for f in e['faces'].values():
+                if f.get('texture') is not None: f['texture'] = i   # (None: a face not drawn)
         g = {'name': name, 'uuid': str(uuid.uuid4()), 'export': False, 'locked': False, 'scope': 0, 'selected': False,
              'visibility': shown, 'origin': [0, 0, 0], 'rotation': [0, 0, 0], 'bedrock_binding': '', 'color': i % 8,
              'children': [], 'reset': False, 'shade': True, 'mirror_uv': False, 'autouv': 0, 'isOpen': False,

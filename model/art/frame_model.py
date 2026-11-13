@@ -241,15 +241,21 @@ u = 0
 for f in FACES:
     GAUNT_UV['boot', f] = (u, 8 + len(GAUNT) * 8, len(BOOT[f][0]), len(BOOT[f]))
     u += len(BOOT[f][0])
-# The tool arm's end (TOOL, 2026-11-13): a tool replaces the fist (frame_drill_art.py), its motor housing painted where
-# the fist's art is (5 x 4, the fist's faces' layout): a lit seam under the cage, a body with vent slots, a dark chuck
-# rim; underneath, the chuck round the bit.
-HOUSING = {f: ['CBBBA', 'BMBMB', 'BMBMB', 'DDDDD'] for f in ('north', 'east', 'south', 'west')}
-HOUSING.update(up=['DDDDD'] * 5, down=['DDDDD', 'DMMMD', 'DMXMD', 'DMMMD', 'DDDDD'])
+# The tool socket (2026-11-13, user: the big suit's playbook, the left hand replaced by a socket, which leaves the
+# tools more room). The left arm (the big suit's tool arm) has no fist: its box ends where his hand does (raw 14: the
+# whole fist's 4 px gone, user), its underside the socket: a steel plate, bolts in its corners, the cyan contact in the
+# middle (the big suit's empty socket). His hand's bottom face lies in that plane, so it isn't drawn (the frame draws
+# the pilot; the plate covers it). A tool (TOOL) hangs straight under it: the big suit's tools had a socket base each
+# (7 x 1 x 7), here the plate is the base for all of them (2026-11-13, user: a 1 px base read as a step, then a 1 px
+# socket ring left the arm a px longer than the fist-less arm should be). Only its underside is used ('+' the contact).
+SOCKET = {f: ['DKDKD'] for f in ('north', 'east', 'south', 'west')}
+SOCKET.update(up=['DDDDD'] * 5, down=['XBBBX', 'BAAAB', 'BA+AB', 'BAAAB', 'XBBBX'])
+CONTACT = (0x2c, 0xe3, 0xd9)   # the big suit's socket cyan
 u = 0
 for f in FACES:
-    GAUNT_UV['housing', f] = (u, 8 + (len(GAUNT) + 1) * 8, len(HOUSING[f][0]), len(HOUSING[f]))
-    u += len(HOUSING[f][0])
+    GAUNT_UV['socket', f] = (u, 8 + (len(GAUNT) + 1) * 8, len(SOCKET[f][0]), len(SOCKET[f]))
+    u += len(SOCKET[f][0])
+SOCKET_Y = 14   # the left arm's bottom (raw): the socket, at his hand's bottom
 
 # ---------------------------------------------------------------- shells
 # A limb's faces are composed top to bottom from its painted frame (ARM_ART / LEG_ART: PAL letters, '#' a bar texel,
@@ -392,7 +398,7 @@ ARMOR_BOX = {'helmet': ((-4.5, 25.5, -4.5), (4.5, 34.5, 4.5)),
              'arm': ((3.75 + ARM_OUT, 10, -2.5), (8.75 + ARM_OUT, 26.1, 2.5)),
              'leg': ((-0.25 + LEG_OUT, 0, -2.5), (4.75 + LEG_OUT, 17, 2.5)),   # raw (legs)
              'hip': ((-4.75, 13.9, -2.25), (4.75, 15.1, 2.25))}
-ARMOR_BOX['arm_tool'] = ARMOR_BOX['arm']
+ARMOR_BOX['arm_socket'] = ((3.75 + ARM_OUT, SOCKET_Y, -2.5), (8.75 + ARM_OUT, 26.1, 2.5))   # the left arm's
 # The waist steps in (2026-11-05, user: more steps from the chest down to the waist): a band halfway between the chest
 # and the waist at the sides (wide: 12 -> 11 -> 10 px across; slim 11 -> 10.5 -> 10) and 0.25 px shallower than the
 # chest front and back, y 20-22, over the waist (y 17-20). Picked over one step (the waist straight under the chest)
@@ -777,17 +783,17 @@ if ENGINE == 'firebox':
         ENGINE_BOX[k] = p['box']
         ENGINE_META[k] = p
         if p['faces']: SHELLS[f'en_{k}'] = dict(faces=p['faces'])
-# Draft knob TOOL ('none' / 'drill'; 2026-11-13, user: the big suit's power tools, sized down and redesigned, the drill
-# first) and DRILL (its drafts A / B / C, frame_drill_art.py): the tool on the left arm (the big suit's tool arm) in
-# place of its fist (HOUSING), its bit on a `tool` bone under it.
+# Knob TOOL ('none' / 'drill'; 2026-11-13, user: the big suit's power tools, sized down and redesigned, the drill
+# first): the tool in the left arm's socket (SOCKET), on a `tool` bone under it. Tools are the exception to the simple
+# boxes (user, 2026-11-13): they may be models of several parts. The drill: frame_drill_art.py.
 TOOL = os.environ.get('TOOL', 'none')
 assert TOOL in ('none', 'drill'), TOOL
+SHELLS['arm_socket_shell'] = dict(SHELLS['arm_shell'], below=[], end='socket')
+if ARMOR != 'none': SHELLS['arm_socket_armor'] = dict(SHELLS['arm_armor'], below=[], end='socket')
 TOOL_PARTS = []
 if TOOL == 'drill':
     import frame_drill_art as drill_art
-    TOOL_PARTS = drill_art.build(os.environ.get('DRILL', 'A'), 6.25 + ARM_OUT)
-    SHELLS['arm_tool_shell'] = dict(SHELLS['arm_shell'], below=['housing'])
-    if ARMOR != 'none': SHELLS['arm_tool_armor'] = dict(SHELLS['arm_armor'], below=['housing'])
+    TOOL_PARTS = drill_art.build(6.25 + ARM_OUT, SOCKET_Y, os.environ.get('LAMP', 'red'))
     for p in TOOL_PARTS: SHELLS[f"tl_{p['name']}"] = dict(faces=p['faces'])
 # where each shell's faces sit in the texture (below / beside nothing else), one strip per shell
 SHELL_AT = {'arm_shell': (0, 64), 'leg_shell': (0, 80),
@@ -814,7 +820,7 @@ def shell_art(part, f):
     if 'faces' in sp: return sp['faces'][f]
     if f == 'up': return sp['up']
     if f == 'down':
-        u, v, w, h = GAUNT_UV[sp['below'][-1], 'down']
+        u, v, w, h = GAUNT_UV[sp.get('end') or sp['below'][-1], 'down']
         return [[(u + i, v + j) for i in range(w)] for j in range(h)]
     rows = list(sp['cage'][f])
     for b in sp['below']:
@@ -832,7 +838,7 @@ SHELL_UV, _used = {}, set()
 # flat pauldron, 2026-11-12, outgrew the solid one's place).
 if ARMOR_FORM == 'flat': SHELL_AT['pauldron_armor'] = None
 for _k in SHELLS:
-    if _k.startswith('tl_') or _k in ('arm_tool_shell', 'arm_tool_armor'): SHELL_AT[_k] = None
+    if _k.startswith('tl_') or _k in ('arm_socket_shell', 'arm_socket_armor'): SHELL_AT[_k] = None
 if HELMET_STYLE != 'suit': SHELL_AT['helmet_armor'] = None
 for _p in HELMET_EXTRAS: SHELL_AT[f"hx_{_p['name']}"] = None
 # A compact part (the helmet's see-through outer layer) is mostly empty: its all-see-through faces take no room, they
@@ -932,10 +938,10 @@ def paint_gauntlet(px):
             for i, ch in enumerate(line):
                 px[v + j][u + i] = PAL[ch] + (255,)
     for f in FACES:
-        u, v, w, h = GAUNT_UV['housing', f]
-        for j, line in enumerate(HOUSING[f]):
+        u, v, w, h = GAUNT_UV['socket', f]
+        for j, line in enumerate(SOCKET[f]):
             for i, ch in enumerate(line):
-                px[v + j][u + i] = PAL[ch] + (255,)
+                px[v + j][u + i] = (CONTACT if ch == '+' else PAL[ch]) + (255,)
 
 def model_tex():   # Steve's real skin at 0,0 + the shells (their gauntlet / boot art copied from a source canvas)
     px = [[(0, 0, 0, 0)] * TW for _ in range(TH)]
@@ -1064,16 +1070,19 @@ for side in ('r', 'l'):
     # One box: the fist (the big suit's, sized down: 5x4x5 over his hand, so 2 px past it) and the cage above it, up to
     # his shoulder's top. Its footprint is 0.5 px round his arm front and back, 0.25 px inside (the closest encloses()
     # allows) and 0.75 px outside.
-    tool_arm = side == 'l' and TOOL != 'none'   # the tool arm: its fist's place the tool's housing
-    hollow(arm, side, 'arm_tool_shell' if tool_arm else 'arm_shell', f'fr_arm_shell_{side}',
-           (3.75 + ARM_OUT, 10, -2.5), (8.75 + ARM_OUT, 26, 2.5))
-    if tool_arm:   # the bit, on its own bone (it spins about y in game), its pivot on the arm's axis at the arm's bottom
-        tg = group('tool', (-(6.25 + ARM_OUT), 10, 0), arm)
+    # the left arm (the tool arm) ends in the socket instead of the fist (SOCKET)
+    hollow(arm, side, 'arm_socket_shell' if side == 'l' else 'arm_shell', f'fr_arm_shell_{side}',
+           (3.75 + ARM_OUT, SOCKET_Y if side == 'l' else 10, -2.5), (8.75 + ARM_OUT, 26, 2.5))
+    if side == 'l' and TOOL_PARTS:   # the tool, its pivot on the arm's axis at the socket (a drill's bit spins about y)
+        tg = group('tool', (-(6.25 + ARM_OUT), SOCKET_Y, 0), arm)
+        bones = {'tool': tg, 'bit': group('tool_bit', (-(6.25 + ARM_OUT), SOCKET_Y, 0), tg)}   # the bit spins, the rest not
         for tp in TOOL_PARTS:
-            e = painted(tg, 'l', f"tl_{tp['name']}", f"tl_{TOOL}_{tp['name']}", *tp['box'])
-            if tp['rot']: e['rotation'], e['origin'] = [0, -tp['rot'], 0], list(tg['origin'])
+            g_ = bones[tp.get('bone', 'tool')]
+            e = painted(g_, 'l', f"tl_{tp['name']}", f"tl_{TOOL}_{tp['name']}", *tp['box'])
+            if tp['rot']: e['rotation'], e['origin'] = [0, -tp['rot'], 0], list(g_['origin'])
     p = group(f'pilot_{nm}_arm', ((6 + ARM_OUT) * s, 26, 0), arm)
-    steve(p, f'st_arm_{side}', *sx((4 + ARM_OUT, 14, -2), (4 + AW + ARM_OUT, 26, 2)), STEVE[f'arm_{side}'])
+    st = steve(p, f'st_arm_{side}', *sx((4 + ARM_OUT, 14, -2), (4 + AW + ARM_OUT, 26, 2)), STEVE[f'arm_{side}'])
+    if side == 'l': st['faces']['down']['texture'] = None   # in the socket's plane, under it (SOCKET)
     # the shoulder plate on the arm box's top, its inner side over the arm box's inner wall
     if SHOULDER == 'plate':
         painted(arm, side, 'shoulder_plate', f'fr_shoulder_plate_{side}',
@@ -1167,7 +1176,9 @@ def quads(e):
           [(x0, y0, z0), (x0, y1, z0), (x0, y1, z1), (x0, y0, z1)], [(x1, y0, z0), (x1, y1, z0), (x1, y1, z1), (x1, y0, z1)],
           [(x0, y0, z0), (x1, y0, z0), (x1, y0, z1), (x0, y0, z1)], [(x0, y1, z0), (x1, y1, z0), (x1, y1, z1), (x0, y1, z1)]]
     # a flat cube (a plane, e.g. the slim build's waist strip) has faces with no area: no plane of their own
-    fs = [f for f in fs if len({p for p in f}) == 4]
+    # a face not drawn (texture None: his hand's bottom in the socket) has no plane either
+    names = ('north', 'south', 'west', 'east', 'down', 'up')
+    fs = [f for f, n in zip(fs, names) if len({p for p in f}) == 4 and e.get('faces', {}).get(n, {}).get('texture', 0) is not None]
     return [to_world(e, f) for f in fs]
 
 def coplanar(A, B, eps=1e-3, area=0.05):
@@ -1238,6 +1249,12 @@ def check():
             if limb(a) == limb(b) and (a['uuid'] in of or b['uuid'] in of):   # a shell's texel and his part
                 sh, st = (of[a['uuid']], b) if a['uuid'] in of else (of[b['uuid']], a)
                 if st['name'].startswith(('fr_', 'ar_')) or encloses(sh, st, W): continue
+            if limb(a) == limb(b) and {a['name'][:3], b['name'][:3]} & {'tl_'}:   # a tool (TOOL) on its own arm:
+                o = b if a['name'].startswith('tl_') else a
+                if o['name'].startswith(('fr_', 'ar_', 'tl_')): continue          # built on it (a collar wraps it)
+                t_ = a if o is b else b                                          # his arm: inside it with room, or clear
+                if encloses(t_, o, W) or not overlap(W[a['uuid']], W[b['uuid']]): continue
+                bad.append((a['name'], b['name'])); continue
             fa, fb = a['name'].startswith(('fr_', 'ar_')), b['name'].startswith(('fr_', 'ar_'))
             if not (fa or fb): continue                                   # Steve against himself: vanilla's business
             if fa and fb and limb(a) == limb(b): continue                 # one limb's frame is built touching itself
@@ -1275,7 +1292,7 @@ if ARMOR != 'none':
     _armor('body', 'r', 'hip', 'ar_hip')
     for side, nm in (('r', 'right'), ('l', 'left')):
         for frame in (f'fr_arm_shell_{side}', f'fr_shoulder_plate_{side}', f'fr_leg_shell_{side}'): unlink(frame)
-        _armor(f'{nm}_arm', side, 'arm_tool' if side == 'l' and TOOL != 'none' else 'arm', f'ar_arm_{side}')
+        _armor(f'{nm}_arm', side, 'arm_socket' if side == 'l' else 'arm', f'ar_arm_{side}')
         if ARMOR_FORM == 'solid': _armor(f'{nm}_arm', side, 'pauldron', f'ar_pauldron_{side}', addon=True)
         else:   # the decal: 0.5 px off the arm piece's top, outer side, front and back, its inner edge where the solid
             # pauldron's was (1 px off the arm's inner wall: clear of the helmet's corners turned 50 deg)
