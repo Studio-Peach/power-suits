@@ -120,13 +120,87 @@ def ring(w, h):
     return [''.join(r) for r in g]
 
 
-def build(c, top, lamp='red', kind='B', art='B', fins='A', cowl='copper', barrel='steel'):
+# The bar's shape (SAW_BAR; 2026-11-13, user: with Y's paint, still couldn't tell it's a chainsaw). The 6 x 4 bar read
+# as a paddle, its 0.5 px chain as a dashed outline. Drafts, as seen from the side (the bar in the arm's y-z plane):
+# - box: the bar so far (6 long x 4 deep, square, 0.5 px chain);
+# - slim: 7 long x 2.5 deep, square end, the same chain (proportion alone);
+# - tooth: 6.5 long x 2 deep, a round nose, the chain a 1 px band round it: an inner row of links and teeth standing
+#   out of it every other texel (the side's outline saw-toothed);
+# - long: tooth, 8 long.
+BARS = {'box': None, 'slim': (2.5, 7, 0.5, False), 'tooth': (2, 6.5, 1, True), 'long': (2, 8, 1, True)}
+
+
+def bar_grid(depth, length, cw, nose):
+    """The bar and its chain as seen from the side, texels, column 0 the front (z-), row 0 the top (the body's bottom):
+    {(i, j): letter} for the bar ('B' edge, 'b' inside) and the chain (its colours). The chain box's grid is W x H,
+    the bar inside it from column cw2 (cw2 = the chain's width in texels)."""
+    cw2, D, L = round(cw * 2), round(depth * 2), round(length * 2)
+    W, H = D + 2 * cw2, L + cw2
+    R, cx, cy = D / 2, cw2 + D / 2, L - D / 2
+    def in_bar(i, j):
+        if not (cw2 <= i < cw2 + D and 0 <= j < L): return False
+        return not nose or j + 0.5 <= cy or (i + 0.5 - cx) ** 2 + (j + 0.5 - cy) ** 2 <= R * R + 0.3
+    bar = {(i, j) for i in range(W) for j in range(H) if in_bar(i, j)}
+    g = {}
+    for (i, j) in bar:
+        edge = any((i + di, j + dj) not in bar for di, dj in ((1, 0), (-1, 0), (0, 1)))
+        g[i, j] = 'B' if edge else 'b'
+    for i in range(W):
+        for j in range(H):
+            if (i, j) in bar: continue
+            d = min(((i - a) ** 2 + (j - b) ** 2) ** 0.5 for a, b in bar)
+            if cw2 == 1:
+                if d <= 1.5: g[i, j] = tooth(i + j)
+            elif d <= 1.5: g[i, j] = '1'                                       # the links
+            elif d <= 2.9 and (i + j) % 2 == 0: g[i, j] = '3'                  # a tooth every other texel
+    return g, W, H, cw2, D, L
+
+
+def toothed_parts(c, t, shape, part):
+    depth, length, cw, nose = shape
+    g, W, H, cw2, D, L = bar_grid(depth, length, cw, nose)
+    bar_px = lambda i, j: {'B': 'p', 'b': 'l'}.get(g.get((i, j)), '.')
+    def side(cols, rows, fn, rev):   # a side face: east runs back -> front (rev), west front -> back
+        out = []
+        for j in rows:
+            r = [fn(i, j) for i in cols]
+            out.append(''.join(r[::-1] if rev else r))
+        return out
+    bcols, brows = range(cw2, cw2 + D), range(L)
+    def bar_side_face(rev):
+        rows = side(bcols, brows, bar_px, rev)
+        rows[0] = ''.join('k' if ch != '.' else '.' for ch in rows[0])    # the slate row under the body
+        mid = D // 2 - 1
+        for j in (3, 6, 9, 12):                                            # rivets down its middle
+            if j < L - D: rows[j] = rows[j][:mid] + 'g' + rows[j][mid + 1:]
+        if nose: rows[round(L - D / 2) - 1] = rows[round(L - D / 2) - 1][:mid] + 'g' + rows[round(L - D / 2) - 1][mid + 1:]   # the nose sprocket
+        return rows
+    edge_rows = lambda i: (lambda w, h: ['k' * w] + [(('p' if (i, j) in g else '.') * w) for j in range(1, L)])
+    parts = [part('bar', ((c - 0.5, t - length, -depth / 2), (c + 0.5, t, depth / 2)),
+                  {'east': lambda w, h: bar_side_face(True), 'west': lambda w, h: bar_side_face(False),
+                   'north': edge_rows(cw2), 'south': edge_rows(cw2 + D - 1), 'up': lambda w, h: ['k' * w] * h,
+                   'down': lambda w, h: [('p' if (cw2 + k, L - 1) in g else '.') * w for k in range(D)]})]
+    ch = lambda i, j: g.get((i, j), '.') if g.get((i, j), 'B') not in 'Bb' else '.'
+    cols, rows = range(W), range(H)
+    out = lambda i: (lambda w, h: [ch(i, j) * w for j in rows])          # the front (i 0) / back (W - 1) edge
+    parts.append(part('chain', ((c - 0.25, t - length - cw, -depth / 2 - cw), (c + 0.25, t, depth / 2 + cw)),
+                      {'east': lambda w, h: side(cols, rows, ch, True), 'west': lambda w, h: side(cols, rows, ch, False),
+                       'north': out(0), 'south': out(W - 1), 'up': lambda w, h: ['.' * w] * h,
+                       'down': lambda w, h: [ch(k, H - 1) * w for k in range(W)]}, bone='bit'))
+    return parts
+
+
+def build(c, top, lamp='red', kind='B', art='B', fins='A', cowl='slate', barrel='copper', bar_shape='box'):
     """The chainsaw's parts on an arm centred at x c (right side) whose socket is at y top: the body (the drill's)
     and the bar under it (SAW, picked: B), its paint SAW_ART; bone 'tool' still, 'bit' the chain (it runs)."""
     sq = lambda n, y0, y1: ((c - n / 2, y0, -n / 2), (c + n / 2, y1, n / 2))
     t = top - 4                                         # the body's bottom: the bar hangs from it
     part = lambda name, box, faces, bone='tool': dict(drill.part(name, box, _paint(faces) if isinstance(faces, dict) else faces), bone=bone)
     parts = [part('body', sq(5, t, top), saw_body(art, lamp, fins, cowl, barrel))]
+    if BARS[bar_shape]:
+        parts += toothed_parts(c, t, BARS[bar_shape], part)
+        for p in parts: p.setdefault('rot', 0)
+        return parts
     T = 2 if kind == 'C' else 1                         # the bar's thickness (x)
     bar = ((c - T / 2, t - 6, -2), (c + T / 2, t, 2))
     lid = lambda w, h: ['k' * w] * h
