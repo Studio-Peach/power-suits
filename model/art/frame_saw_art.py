@@ -22,6 +22,9 @@ import frame_drill_art as drill
 D, S, SL, _c = drill.D, drill.S, drill.SL, drill._c
 PAL = S | SL | {'0': D['0'], '1': D['1'], '2': D['2'], '3': D['3'], '.': '.'}
 BRASS = {'b': _c('d9c17a'), 'Y': _c('a89160'), 'Z': _c('6a5838')}   # lit, mid (frame_model.PAL Y), shade (Z)
+# The cowl's metal (SAW_COWL, 2026-11-13, user: copper, not brass: copper is in the game): the cowl's letters b / Y / Z
+# painted in the heart engine's copper (frame_heart_art.EXTRA f, frame_model.PAL Q / R: lit, mid, shade).
+COPPER = {'b': _c('e09868'), 'Y': _c('c07440'), 'Z': _c('804426')}
 
 
 # The body's paint (SAW_ART; 2026-11-13, user: the body's shape shared by the tools, its paint each tool's own). The
@@ -38,8 +41,8 @@ SAW_BODY = {
     'C': dict(side=['bbbbbbbbbY', 'YYYYYYYYYZ', 'YYhYYYYhYZ', 'xxxxxxxxxx'] + FINS, back_low=MUFFLER,
               outer_top=['bbbbbbbbbY', 'YYYkkkkYYZ', 'YYhYxxYhYZ']),   # the grip across, its cord into the cowl
 }
-# B picked (2026-11-13, user: C's muffler and grip too small to recognise). Its bottom half, the fins, drafts
-# (SAW_FINS; user: make it more interesting):
+# B picked (2026-11-13, user: C's muffler and grip too small to recognise). Its bottom half, the fins (SAW_FINS; user:
+# make it more interesting; A picked):
 # - A barrel: the cylinder seen between the fins, round (dark at its sides, lit in the middle);
 # - B strap: a brass strap down the middle of each face over the fins, a bolt on it;
 # - C heat: the fins heat-tinted, the upper one straw, the lower bronze running to blue at its far end.
@@ -58,9 +61,9 @@ def BAR_MOUNT():
     return rows
 
 
-def saw_body(art, lamp, fins='A'):
+def saw_body(art, lamp, fins='A', cowl='copper'):
     W_, L_, r_ = drill.LAMPS[lamp]
-    pal = PAL | BRASS | HEAT | {'x': _c('1a1d1f'), 'n': _c('4c5559'), 'W': _c(W_), 'L': _c(L_), 'r': _c(r_)}
+    pal = PAL | (COPPER if cowl == 'copper' else BRASS) | HEAT | {'x': _c('1a1d1f'), 'n': _c('4c5559'), 'W': _c(W_), 'L': _c(L_), 'r': _c(r_)}
     d = dict(SAW_BODY[art])
     if art == 'B': d['side'] = d['side'][:4] + FIN_DRAFTS[fins]
     side = d['side']
@@ -110,13 +113,13 @@ def ring(w, h):
     return [''.join(r) for r in g]
 
 
-def build(c, top, lamp='red', kind='B', art='B', fins='A'):
+def build(c, top, lamp='red', kind='B', art='B', fins='A', cowl='copper'):
     """The chainsaw's parts on an arm centred at x c (right side) whose socket is at y top: the body (the drill's)
     and the bar under it (SAW, picked: B), its paint SAW_ART; bone 'tool' still, 'bit' the chain (it runs)."""
     sq = lambda n, y0, y1: ((c - n / 2, y0, -n / 2), (c + n / 2, y1, n / 2))
     t = top - 4                                         # the body's bottom: the bar hangs from it
     part = lambda name, box, faces, bone='tool': dict(drill.part(name, box, _paint(faces) if isinstance(faces, dict) else faces), bone=bone)
-    parts = [part('body', sq(5, t, top), saw_body(art, lamp, fins))]
+    parts = [part('body', sq(5, t, top), saw_body(art, lamp, fins, cowl))]
     T = 2 if kind == 'C' else 1                         # the bar's thickness (x)
     bar = ((c - T / 2, t - 6, -2), (c + T / 2, t, 2))
     lid = lambda w, h: ['k' * w] * h
