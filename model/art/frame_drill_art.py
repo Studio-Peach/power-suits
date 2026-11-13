@@ -137,21 +137,26 @@ def motor(art, lamp):
 # under the socket), base over motor painted as before (closed all round: nothing of the arm is inside it to show),
 # the bit under it. Picked (2026-11-13: the arms match from behind, every tool can take the fist's place and grow from
 # its bottom, the bit stands out). 'sleeve' is the 6 x 4 x 6 body round the arm's end.
-def fist(art, lamp):
+# DRILL_BAND (2026-11-13, user: the drill and chainsaw should look more alike; draft): 'slate' the base band slate and
+# the motor's window copper | 'copper' the two swapped, the band in copper as the chainsaw's cowl, the window slate.
+def fist(art, lamp, band='slate'):
     side = BASE(10) + MOTOR(art, 10)
     front = [LAMP_AT(10).get(j, r) for j, r in enumerate(side)]
     faces = {'north': front, 'up': ['k' * 10] * 10, 'down': DOWN(10)}   # (its top lies under the socket: unseen)
-    return lambda f, w, h: _rows(faces.get(f, side), _pal(lamp))
+    pal = _pal(lamp)
+    if band == 'copper':   # slate n / m / k (lit, mid, shade) <-> copper f / Q / C: on this body only those parts use them
+        pal = pal | {'n': pal['f'], 'm': pal['Q'], 'k': pal['C'], 'f': pal['n'], 'Q': pal['m'], 'C': pal['k']}
+    return lambda f, w, h: _rows(faces.get(f, side), pal)
 
 
-def build(c, top, lamp='red', art='B', mode='open', fit='sleeve'):
+def build(c, top, lamp='red', art='B', mode='open', fit='sleeve', band='slate'):
     """The drill's parts on an arm centred at x c (right side) whose end (the socket) is at y top: name, box (raw),
     faces, rot (deg about the arm's axis, y), bone ('tool': still; 'bit': spins). The body (base, motor) is still,
     the steps under it spin."""
     sq = lambda n, y0, y1: ((c - n / 2, y0, -n / 2), (c + n / 2, y1, n / 2))
     t = top
     if fit == 'fist':
-        parts = [part('body', sq(5, t - 4, t), fist(art, lamp))]
+        parts = [part('body', sq(5, t - 4, t), fist(art, lamp, band))]
         t -= 2   # the bit hangs 2 px lower (under the 4 px body, not the sleeve's 2 below the socket)
     else:
         parts = [part('base', sq(6, t, t + 2), base(lamp, mode)), part('motor', sq(6, t - 2, t), motor(art, lamp))]
