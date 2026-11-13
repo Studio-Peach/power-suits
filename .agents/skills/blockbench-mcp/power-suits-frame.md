@@ -83,3 +83,7 @@ live on `experimental/frame-concept`; the frame isn't in the game yet (model onl
   across the back, so the top and back stopped reading as separate from the front and sides); no crest (with the ring
   it was too much; a crest down the forehead more so), the top plain with 4 rivets in a square 3 texels in from its
   edges, in the side bolts' rows. `crest` (an unbroken crest over the top and down the back, no ring) stays a knob.
+  The brow (the ridge over the glass and its wings) is on the outer layer, 0.5 px proud like a cap's peak
+  (`HELMET_BROW=outer`, 2026-11-13; `band`, the whole ring out there, read as a hat brim from behind); under it the glass
+  is closed by a dark border as along its bottom (a dark row, a shadow row on the front, the side's corner left out:
+  rounded), not run on up under the peak.

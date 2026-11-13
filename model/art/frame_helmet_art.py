@@ -199,9 +199,44 @@ def wrap(back_style='plain'):
     if back_style == 'guard': neck_guard(side, GUARD_WRAP)
     back, top = wrap_back(back_style), top_crest()
     flow(f, side, back, top)
+    outer = split_brow(f, side, back)
     east = side
     west = [r[::-1] for r in side]
-    return dict(north=out(f), south=out(back), east=out(east), west=out(west), up=out(top))
+    return dict(north=out(f), south=out(back), east=out(east), west=out(west), up=out(top), _outer=outer)
+
+
+# Draft knob HELMET_BROW (2026-11-13, user: now the outer layer works, complete the visor in the inner layer and put
+# the cap / brow over it in the outer one): 'inner' (as picked: the ridge painted on the helmet over the glass),
+# 'outer' (the ridge over the glass, front and its wings on the sides, moved 0.5 px out onto the outer layer, so it
+# stands over the visor like a cap's peak; the seam ring stays on the helmet), 'band' (the whole ring, the ridge and
+# the seam round the sides and back, on the outer layer: a band round the head). Picked: 'outer' (2026-11-13, user;
+# the band rejected), and under it the glass not raised (a first try ran it on up under the peak) but closed by a
+# dark border as along its bottom: a dark row over the glass, a shadow row over that on the front, the border's
+# corner on the side left out (rounded), as the bottom's.
+BROW = os.environ.get('HELMET_BROW', 'outer')
+assert BROW in ('inner', 'outer', 'band'), BROW
+
+
+def split_brow(f, side, back):
+    """Moves the brow (BROW) off the helmet's faces: returns it as 18 x 18 grids in the helmet's own texel coords
+    ('.' elsewhere) for north / east / south (frame_helmet_art.layer puts them on the outer layer, a texel in), and
+    fills what it leaves on the helmet: the glass (its back border on the side), plain steel."""
+    grids = {k: [['.'] * N for _ in range(N)] for k in ('north', 'east', 'south')}
+    if BROW == 'inner': return grids
+    clean = shade(blank())
+    def move(face, g, j, i, fill):
+        grids[face][j][i] = g[j][i]
+        g[j][i] = fill
+    border = {5: 'p', 6: 'x'}                          # the glass's top border, as its bottom (rows 12 x, 13 p)
+    for j in (5, 6):
+        for i in range(N): move('north', f, j, i, border[j])
+        for i in range(N):
+            if BROW == 'band' or i >= 11:              # the side: its dark row over the glass, the corner left out
+                move('east', side, j, i, 'x' if (j == 6 and i >= 13) else clean[j][i])
+            if BROW == 'band': move('south', back, j, i, clean[j][i])
+    if BROW == 'outer':                                # the wing's tail: its lit row over the seam, the seam's under it
+        for i in (9, 10): move('east', side, 5, i, SEAM[0])
+    return grids
 
 
 # Draft knob HELMET_FLOW (2026-11-13, user: the top and the back "feel a little disconnected from the rest of the
@@ -310,6 +345,7 @@ STYLES = {'A': sentinel, 'B': diver, 'C': wrap}
 
 def faces(style, back='plain'):
     d = STYLES[style](back) if style == 'C' else STYLES[style]()
+    d.pop('_outer', None)
     d['down'] = ['k' * N] * N
     return d
 
@@ -426,6 +462,27 @@ def layer():
             for i, c in enumerate(line):
                 if c != '.': g[row + j][col + i] = c
     row = lambda y: round((y1 - y) * 2)                 # the row whose top edge is at y
+    # the brow (HELMET_BROW; first: the radio and camera go over the band): the helmet's texel (j, i) is the layer's (j + 1, i + 1) (both 2 per px, the layer 0.5 px
+    # bigger each way); at the layer's corners (its first / last column, outside the helmet's faces) each band row
+    # carries on round the corner in its colour
+    o = wrap(os.environ.get('HELMET_BACK', 'guard'))['_outer']
+    north, south = [list(r) for r in _grid(W, H)], [list(r) for r in _grid(W, H)]
+    for face, g in (('north', north), ('east', east), ('south', south)):
+        for j in range(N):
+            for i in range(N):
+                if o[face][j][i] != '.': g[j + 1][i + 1] = o[face][j][i]
+            row_ = [c for c in o[face][j] if c != '.']
+            if face != 'east' and row_ and len(row_) == N:   # a full row: round both corners
+                g[j + 1][0], g[j + 1][-1] = row_[0], row_[-1]
+        if face == 'east':                             # the side's band meets the front's / back's corner texel
+            for j in range(N):
+                if o['east'][j][-1] != '.': east[j + 1][-1] = o['east'][j][-1]
+                if o['east'][j][0] != '.': east[j + 1][0] = o['east'][j][0]
+    for j in range(N):                                 # west: the east mirrored (columns front -> back)
+        for i in range(N):
+            if o['east'][j][i] != '.': west[j + 1][W - 2 - i] = o['east'][j][i]
+        if o['east'][j][-1] != '.': west[j + 1][0] = o['east'][j][-1]
+        if o['east'][j][0] != '.': west[j + 1][-1] = o['east'][j][0]
     for p in radio():                                  # west: columns front -> back (z0 up)
         (a, b), art = p['box'], p['faces']['west']
         top = b[1]
@@ -437,7 +494,9 @@ def layer():
         (a, b), art = p['box'], p['faces']['east']
         stamp(east, art, round((z1 - b[2]) * 2), row(b[1]))
     part = _part('layer', ((x0, y0, z0), (x1, y1, z1)), dict(east=[''.join(r) for r in east],
-                                                            west=[''.join(r) for r in west]))
+                                                            west=[''.join(r) for r in west],
+                                                            north=[''.join(r) for r in north],
+                                                            south=[''.join(r) for r in south]))
     part['hollow'] = True
     return [part]
 
