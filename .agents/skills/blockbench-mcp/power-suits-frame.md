@@ -76,8 +76,8 @@ live on `experimental/frame-concept`; the frame isn't in the game yet (model onl
   more than 1 px over the helmet's top) and a camera on the right: one box 0.5 px off the side, its east face the housing, its north face the
   front, so they meet edge to edge (it began as two plates, a zero-thick side and a 0.5 px front; any offset between
   separate plates showed a gap); its top (the lamp, then lit slate) and bottom (dark slate) carry on the side's top
-  and bottom rows, its back is slate between rounded corners (the box ends at the housing's back), only the inner
-  side against the helmet open. A layered brow cap was dropped: its
+  and bottom rows, its rounded back a second box (the tail, a texel shorter top and bottom: one box's back
+  face left see-through corners), only the inner side against the helmet open. A layered brow cap was dropped: its
   swept side is painted into the helmet instead, the winged ridge over the glass, the side seam run into it in the
   same two rows and shaded like it (`HELMET_SEAM=ridge`, its dark row a step lighter). Bolts only on the sides, as
   the top's rivets (none on the front or back).

@@ -357,13 +357,16 @@ def camera():
     # (2026-11-13, user: it was a zero-thick side plate plus a zero-deep front plate, the same faces in two cubes; as
     # separate plates 0.25 px apart they had shown a gap). Closed all round but the inner side against the helmet
     # (2026-11-13, user: fill out the top and bottom, then the back): the top carries on the side's top row (the lamp,
-    # then lit slate), the bottom its bottom row (dark slate), the back the body's slate between the rounded corners.
-    # The box ends at the housing's back (z 2), so the back face sits on it (the side's art had 2 see-through
-    # columns behind it, z 2-3).
-    up = list('JJnnn.')                                # rows front -> back, one texel across
-    down = list('.kkkkk')                              # rows back -> front
-    back = ['.', 'm', 'm', 'm', '.']
-    return [_part('camera', ((4.5, 28.5, -1), (5, 31, 2)), dict(east=east, north=front, up=up, down=down, south=back))]
+    # then lit slate), the bottom its bottom row (dark slate). The rounded back (the back column shorter by a texel at
+    # top and bottom) is a second box, the tail, behind the housing's (user: one box's back face left see-through
+    # spots in those corners): the housing's back shows only its top and bottom rows above and below the tail.
+    tail = [r[0] for r in east[1:-1]]                  # the back column between the rounded corners
+    housing = [r[1:] for r in east]
+    up = list('JJnnn')                                 # rows front -> back, one texel across
+    down = list('kkkkk')                               # rows back -> front
+    back = ['n', '.', '.', '.', 'k']                   # the tail covers the middle rows
+    return [_part('camera', ((4.5, 28.5, -1), (5, 31, 1.5)), dict(east=housing, north=front, up=up, down=down, south=back)),
+            _part('camera_tail', ((4.5, 29, 1.5), (5, 30.5, 2)), dict(east=tail, up=['n'], down=['k'], south=['m'] * 3))]
 
 
 def extras(kind):
