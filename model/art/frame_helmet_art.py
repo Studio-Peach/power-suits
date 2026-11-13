@@ -343,11 +343,11 @@ def camera():
     # its front, the housing's full height and depth, from the helmet's side out to the housing's plane (a 1 px lens
     # plate, then one 0.5 px past the housing, didn't line up with it, user): the lamp, the lens, the bottom
     front = ['J', 'x', 'g', 'x', 'k']                  # (one texel across: the housing's plate is 0.5 px off the side)
-    # forward, beside the visor at eye level (not mirroring the radio, user), the front plate 0.25 px ahead of it
-    # (the housing's plate zero-thick, so the front plate can meet its front edge exactly: 0.25 px apart they showed a
-    # gap, user; a box's own front face there would lie in the front plate's plane)
-    return [_part('camera', ((5, 28.5, -1), (5, 31, 3)), dict(east=east)),
-            _part('camera_front', ((4.5, 28.5, -1), (5, 31, -1)), dict(north=front))]
+    # forward, beside the visor at eye level (not mirroring the radio, user). One box 0.5 px off the side, like the
+    # radio: its east face is the housing, its north face the front, so the two meet edge to edge by construction
+    # (2026-11-13, user: it was a zero-thick side plate plus a zero-deep front plate, the same faces in two cubes; as
+    # separate plates 0.25 px apart they had shown a gap). Its other faces are left see-through.
+    return [_part('camera', ((4.5, 28.5, -1), (5, 31, 3)), dict(east=east, north=front))]
 
 
 def extras(kind):
