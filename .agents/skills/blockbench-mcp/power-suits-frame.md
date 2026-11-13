@@ -91,3 +91,18 @@ live on `experimental/frame-concept`; the frame isn't in the game yet (model onl
   corner, its dark row running into the border's side, so peak and seam read apart. The peak is slate (a lit row over a
   shadow row, `HELMET_PEAK_STYLE=up`), its wings a texel shorter, a third row over its middle 6 px on the front (a
   raised middle, for shape from the front; `down`, dipping over the glass, kept as a knob).
+
+## Tools (2026-11-13, the drill first)
+- The left hand is a socket (the big suit's playbook): the left arm's box ends where his hand does (raw 14), its
+  underside the socket plate. A tool (`TOOL=drill`, `model/art/frame_drill_art.py`) hangs on a `tool` bone there, the
+  spinning part on `tool_bit` under it.
+- **A tool's body takes the fist's place** (`DRILL_FIT=fist`): a 5 x 4 x 5 block flush with the arm (raw y 10-14),
+  so both arms match in width and length from behind, and the tool grows only from its bottom (the drill's bit). A body
+  0.5 px round the arm's end like the shoulder plate (`sleeve`, kept as a knob) made the tool arm look a different size.
+  The same slot fits every later tool.
+- Simple blocks, elements painted (as the engine, shoulders, helmet): a 3D housing and an L-shaped guard cuff with a
+  lamp (4dad9e4) didn't feel right; the user replaced them with one block. The drill's paint: a slate base band (lit
+  top row, two bolts a face, a 2 x 1 status lamp at the front's outer end: highlight + lit, LAMP red idle / green
+  spinning), a dark seam, a steel motor with a copper winding window (`DRILL_ART=B`, picked over vents and fins).
+- A face whose art is all see-through isn't drawn (texture None) and `quads()` skips it, so the clearance check
+  doesn't count it as a shared plane.
