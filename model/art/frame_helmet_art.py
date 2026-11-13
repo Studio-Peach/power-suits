@@ -346,8 +346,13 @@ def camera():
     # forward, beside the visor at eye level (not mirroring the radio, user). One box 0.5 px off the side, like the
     # radio: its east face is the housing, its north face the front, so the two meet edge to edge by construction
     # (2026-11-13, user: it was a zero-thick side plate plus a zero-deep front plate, the same faces in two cubes; as
-    # separate plates 0.25 px apart they had shown a gap). Its other faces are left see-through.
-    return [_part('camera', ((4.5, 28.5, -1), (5, 31, 3)), dict(east=east, north=front))]
+    # separate plates 0.25 px apart they had shown a gap). Its top and bottom (2026-11-13, user: fill them out)
+    # carry on the side's top and bottom rows over its 0.5 px: the lamp then the lit slate on top, the dark slate
+    # under it, the housing's length only (the side's see-through back columns stay open). Its back and inner side
+    # stay see-through.
+    up = list('JJnnn...')                              # rows front -> back, one texel across
+    down = list('...kkkkk')                            # rows back -> front
+    return [_part('camera', ((4.5, 28.5, -1), (5, 31, 3)), dict(east=east, north=front, up=up, down=down))]
 
 
 def extras(kind):

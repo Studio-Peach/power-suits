@@ -74,7 +74,8 @@ live on `experimental/frame-concept`; the frame isn't in the game yet (model onl
   Its outer layer (`HELMET_EXTRA=gear`): a 2D radio on the left side with two antenna lines (no 3D antenna; nothing
   more than 1 px over the helmet's top) and a camera on the right: one box 0.5 px off the side, its east face the housing, its north face the
   front, so they meet edge to edge (it began as two plates, a zero-thick side and a 0.5 px front; any offset between
-  separate plates showed a gap). A layered brow cap was dropped: its
+  separate plates showed a gap); its top (the lamp, then lit slate) and bottom (dark slate) carry on the side's top
+  and bottom rows, its back and inner side see-through. A layered brow cap was dropped: its
   swept side is painted into the helmet instead, the winged ridge over the glass, the side seam run into it in the
   same two rows and shaded like it (`HELMET_SEAM=ridge`, its dark row a step lighter). Bolts only on the sides, as
   the top's rivets (none on the front or back).
