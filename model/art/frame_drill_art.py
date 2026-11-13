@@ -93,21 +93,42 @@ DOWN = ['pppppppppppp', 'phllllllllhp'] + ['plxxxxxxxxlp'] * 8 + ['phllllllllhp'
 UP = ['nnnnnnnnnnnn'] + ['nkkkkkkkkkkn'] * 10 + ['nnnnnnnnnnnn']
 
 
-def body(art, lamp):
+# The base open behind and inside (DRILL_BASE=open, 2026-11-13, user, picking B: the inner and back sides without the
+# dark band, see-through, for an asymmetric look): the clamp wraps only the front and outer side, a plate 0.5 px off
+# the arm like the shoulder plate's decal, and the arm's end shows behind and inside. 'wrap' keeps the closed band.
+# So the block is two boxes, base over motor, the same outside: open, one box let the eye down the 0.5 px gap into
+# its inside (the bit's top and the block's bottom, back to back there, flickered); the motor's own top closes it,
+# its 1-texel rim round the arm a lit ledge.
+OPEN = ('south', 'west')   # the back, and the inner side (the right arm's west; the left mirrors it)
+LEDGE = ['eeeeeeeeeeee'] + ['ellllllllllp'] * 10 + ['pppppppppppp']
+
+
+def _pal(lamp):
     W_, L_, r_ = LAMPS[lamp]
-    pal = S | SL | {'x': _c('1a1d1f'), 'n': _c('4c5559')} | CU | {'W': _c(W_), 'L': _c(L_), 'r': _c(r_)}
-    side = BASE + MOTOR[art]
-    front = [LAMP_AT.get(j, r) for j, r in enumerate(side)]
-    return lambda f, w, h: _rows({'north': front, 'up': UP, 'down': DOWN}.get(f, side), pal)
+    return S | SL | {'x': _c('1a1d1f'), 'n': _c('4c5559')} | CU | {'W': _c(W_), 'L': _c(L_), 'r': _c(r_), '.': '.'}
 
 
-def build(c, top, lamp='red', art='A'):
+def base(lamp, mode='open'):
+    faces = {'north': [LAMP_AT.get(j, r) for j, r in enumerate(BASE)], 'up': UP, 'down': ['.' * 12] * 12}
+    if mode == 'open':
+        for f in OPEN: faces[f] = ['.' * 12] * len(BASE)
+        # the top's rim along the open sides goes too (rows front -> back, columns inner -> outer on the right arm)
+        faces['up'] = ['.' + r[1:] for r in UP[:-1]] + ['.' * 12]
+    return lambda f, w, h: _rows(faces.get(f, BASE), _pal(lamp))
+
+
+def motor(art, lamp):
+    faces = {'up': LEDGE, 'down': DOWN}
+    return lambda f, w, h: _rows(faces.get(f, MOTOR[art]), _pal(lamp))
+
+
+def build(c, top, lamp='red', art='B', mode='open'):
     """The drill's parts on an arm centred at x c (right side) whose end (the socket) is at y top: name, box (raw),
-    faces, rot (deg about the arm's axis, y), bone ('tool': still; 'bit': spins). The body (base + motor) is still,
+    faces, rot (deg about the arm's axis, y), bone ('tool': still; 'bit': spins). The body (base, motor) is still,
     the steps under it spin."""
     sq = lambda n, y0, y1: ((c - n / 2, y0, -n / 2), (c + n / 2, y1, n / 2))
     t = top
-    parts = [part('base', sq(6, t - 2, t + 2), body(art, lamp))]
+    parts = [part('base', sq(6, t, t + 2), base(lamp, mode)), part('motor', sq(6, t - 2, t), motor(art, lamp))]
     bit = [part('s2', sq(4, t - 4, t - 2), studded, -22.5),
            part('s3', sq(3, t - 6, t - 4), lambda f, w, h: step(f, w, h, 'diamond'), 22.5),
            part('tip', sq(1, t - 7, t - 6), lambda f, w, h: step(f, w, h, 'diamond'), 45)]

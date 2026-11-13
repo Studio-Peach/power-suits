@@ -793,7 +793,8 @@ if ARMOR != 'none': SHELLS['arm_socket_armor'] = dict(SHELLS['arm_armor'], below
 TOOL_PARTS = []
 if TOOL == 'drill':
     import frame_drill_art as drill_art
-    TOOL_PARTS = drill_art.build(6.25 + ARM_OUT, SOCKET_Y, os.environ.get('LAMP', 'red'), os.environ.get('DRILL_ART', 'A'))
+    TOOL_PARTS = drill_art.build(6.25 + ARM_OUT, SOCKET_Y, os.environ.get('LAMP', 'red'), os.environ.get('DRILL_ART', 'B'),
+                                 os.environ.get('DRILL_BASE', 'open'))
     for p in TOOL_PARTS: SHELLS[f"tl_{p['name']}"] = dict(faces=p['faces'])
 # where each shell's faces sit in the texture (below / beside nothing else), one strip per shell
 SHELL_AT = {'arm_shell': (0, 64), 'leg_shell': (0, 80),
@@ -1080,6 +1081,8 @@ for side in ('r', 'l'):
             g_ = bones[tp.get('bone', 'tool')]
             e = painted(g_, 'l', f"tl_{tp['name']}", f"tl_{TOOL}_{tp['name']}", *tp['box'])
             if tp['rot']: e['rotation'], e['origin'] = [0, -tp['rot'], 0], list(g_['origin'])
+            for f in FACES:   # a face all see-through isn't drawn (the drill's open base: its bottom lies in the socket's plane)
+                if all(c == '.' for r in tp['faces'][f] for c in r): e['faces'][f]['texture'] = None
     p = group(f'pilot_{nm}_arm', ((6 + ARM_OUT) * s, 26, 0), arm)
     st = steve(p, f'st_arm_{side}', *sx((4 + ARM_OUT, 14, -2), (4 + AW + ARM_OUT, 26, 2)), STEVE[f'arm_{side}'])
     if side == 'l': st['faces']['down']['texture'] = None   # in the socket's plane, under it (SOCKET)
