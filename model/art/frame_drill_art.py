@@ -86,8 +86,9 @@ def _rows(rows, pal):
 def BASE(w):
     bolts = list('m' * (w - 1) + 'k'); bolts[2] = bolts[w - 3] = 'h'
     return ['n' * (w - 1) + 'm', 'm' * (w - 1) + 'k', ''.join(bolts), 'x' * w]
-def LAMP_AT(w):   # the front's base rows 1-2 (its outer end first)
-    return {1: 'mWL' + 'm' * (w - 4) + 'k', 2: 'mLr' + BASE(w)[2][3:]}
+def LAMP_AT(w):   # the front's base rows 1-2 (its outer end first): the lamp 2 x 1 texels, its top row (2026-11-13,
+    # user: the 2 x 2 lamp's bottom row gone, band colour there, no bolt under it)
+    return {1: 'mWL' + 'm' * (w - 4) + 'k', 2: 'mmm' + BASE(w)[2][3:]}
 def MOTOR(art, w):
     vents = list('e' + 'l' * (w - 2) + 'p')
     for i in (2, 4, w - 5, w - 3): vents[i] = 'z'
@@ -134,7 +135,8 @@ def motor(art, lamp):
 # from the other; the right arm's hand is 4 px tall and 5 wide, so the body as the arm instead of round it, the drill
 # its extension): the body a 5 x 4 x 5 box flush with the arm where the right arm's fist is (the arm's own footprint,
 # under the socket), base over motor painted as before (closed all round: nothing of the arm is inside it to show),
-# the bit under it. 'sleeve' is the 6 x 4 x 6 body round the arm's end.
+# the bit under it. Picked (2026-11-13: the arms match from behind, every tool can take the fist's place and grow from
+# its bottom, the bit stands out). 'sleeve' is the 6 x 4 x 6 body round the arm's end.
 def fist(art, lamp):
     side = BASE(10) + MOTOR(art, 10)
     front = [LAMP_AT(10).get(j, r) for j, r in enumerate(side)]
