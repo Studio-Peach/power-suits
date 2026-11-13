@@ -241,6 +241,15 @@ u = 0
 for f in FACES:
     GAUNT_UV['boot', f] = (u, 8 + len(GAUNT) * 8, len(BOOT[f][0]), len(BOOT[f]))
     u += len(BOOT[f][0])
+# The tool arm's end (TOOL, 2026-11-13): a tool replaces the fist (frame_drill_art.py), its motor housing painted where
+# the fist's art is (5 x 4, the fist's faces' layout): a lit seam under the cage, a body with vent slots, a dark chuck
+# rim; underneath, the chuck round the bit.
+HOUSING = {f: ['CBBBA', 'BMBMB', 'BMBMB', 'DDDDD'] for f in ('north', 'east', 'south', 'west')}
+HOUSING.update(up=['DDDDD'] * 5, down=['DDDDD', 'DMMMD', 'DMXMD', 'DMMMD', 'DDDDD'])
+u = 0
+for f in FACES:
+    GAUNT_UV['housing', f] = (u, 8 + (len(GAUNT) + 1) * 8, len(HOUSING[f][0]), len(HOUSING[f]))
+    u += len(HOUSING[f][0])
 
 # ---------------------------------------------------------------- shells
 # A limb's faces are composed top to bottom from its painted frame (ARM_ART / LEG_ART: PAL letters, '#' a bar texel,
@@ -383,6 +392,7 @@ ARMOR_BOX = {'helmet': ((-4.5, 25.5, -4.5), (4.5, 34.5, 4.5)),
              'arm': ((3.75 + ARM_OUT, 10, -2.5), (8.75 + ARM_OUT, 26.1, 2.5)),
              'leg': ((-0.25 + LEG_OUT, 0, -2.5), (4.75 + LEG_OUT, 17, 2.5)),   # raw (legs)
              'hip': ((-4.75, 13.9, -2.25), (4.75, 15.1, 2.25))}
+ARMOR_BOX['arm_tool'] = ARMOR_BOX['arm']
 # The waist steps in (2026-11-05, user: more steps from the chest down to the waist): a band halfway between the chest
 # and the waist at the sides (wide: 12 -> 11 -> 10 px across; slim 11 -> 10.5 -> 10) and 0.25 px shallower than the
 # chest front and back, y 20-22, over the waist (y 17-20). Picked over one step (the waist straight under the chest)
@@ -767,6 +777,18 @@ if ENGINE == 'firebox':
         ENGINE_BOX[k] = p['box']
         ENGINE_META[k] = p
         if p['faces']: SHELLS[f'en_{k}'] = dict(faces=p['faces'])
+# Draft knob TOOL ('none' / 'drill'; 2026-11-13, user: the big suit's power tools, sized down and redesigned, the drill
+# first) and DRILL (its drafts A / B / C, frame_drill_art.py): the tool on the left arm (the big suit's tool arm) in
+# place of its fist (HOUSING), its bit on a `tool` bone under it.
+TOOL = os.environ.get('TOOL', 'none')
+assert TOOL in ('none', 'drill'), TOOL
+TOOL_PARTS = []
+if TOOL == 'drill':
+    import frame_drill_art as drill_art
+    TOOL_PARTS = drill_art.build(os.environ.get('DRILL', 'A'), 6.25 + ARM_OUT)
+    SHELLS['arm_tool_shell'] = dict(SHELLS['arm_shell'], below=['housing'])
+    if ARMOR != 'none': SHELLS['arm_tool_armor'] = dict(SHELLS['arm_armor'], below=['housing'])
+    for p in TOOL_PARTS: SHELLS[f"tl_{p['name']}"] = dict(faces=p['faces'])
 # where each shell's faces sit in the texture (below / beside nothing else), one strip per shell
 SHELL_AT = {'arm_shell': (0, 64), 'leg_shell': (0, 80),
             'chest_armor': (35, 87), 'waist_armor': (128, 40), 'helmet_armor': (70, 112), 'arm_armor': (128, 0),
@@ -809,6 +831,8 @@ SHELL_UV, _used = {}, set()
 # Parts without a fixed place (SHELL_AT None) go into the first free strip, scanning the texture row by row (the
 # flat pauldron, 2026-11-12, outgrew the solid one's place).
 if ARMOR_FORM == 'flat': SHELL_AT['pauldron_armor'] = None
+for _k in SHELLS:
+    if _k.startswith('tl_') or _k in ('arm_tool_shell', 'arm_tool_armor'): SHELL_AT[_k] = None
 if HELMET_STYLE != 'suit': SHELL_AT['helmet_armor'] = None
 for _p in HELMET_EXTRAS: SHELL_AT[f"hx_{_p['name']}"] = None
 # A compact part (the helmet's see-through outer layer) is mostly empty: its all-see-through faces take no room, they
@@ -905,6 +929,11 @@ def paint_gauntlet(px):
     for f in FACES:
         u, v, w, h = GAUNT_UV['boot', f]
         for j, line in enumerate(BOOT[f]):
+            for i, ch in enumerate(line):
+                px[v + j][u + i] = PAL[ch] + (255,)
+    for f in FACES:
+        u, v, w, h = GAUNT_UV['housing', f]
+        for j, line in enumerate(HOUSING[f]):
             for i, ch in enumerate(line):
                 px[v + j][u + i] = PAL[ch] + (255,)
 
@@ -1035,7 +1064,14 @@ for side in ('r', 'l'):
     # One box: the fist (the big suit's, sized down: 5x4x5 over his hand, so 2 px past it) and the cage above it, up to
     # his shoulder's top. Its footprint is 0.5 px round his arm front and back, 0.25 px inside (the closest encloses()
     # allows) and 0.75 px outside.
-    hollow(arm, side, 'arm_shell', f'fr_arm_shell_{side}', (3.75 + ARM_OUT, 10, -2.5), (8.75 + ARM_OUT, 26, 2.5))
+    tool_arm = side == 'l' and TOOL != 'none'   # the tool arm: its fist's place the tool's housing
+    hollow(arm, side, 'arm_tool_shell' if tool_arm else 'arm_shell', f'fr_arm_shell_{side}',
+           (3.75 + ARM_OUT, 10, -2.5), (8.75 + ARM_OUT, 26, 2.5))
+    if tool_arm:   # the bit, on its own bone (it spins about y in game), its pivot on the arm's axis at the arm's bottom
+        tg = group('tool', (-(6.25 + ARM_OUT), 10, 0), arm)
+        for tp in TOOL_PARTS:
+            e = painted(tg, 'l', f"tl_{tp['name']}", f"tl_{TOOL}_{tp['name']}", *tp['box'])
+            if tp['rot']: e['rotation'], e['origin'] = [0, -tp['rot'], 0], list(tg['origin'])
     p = group(f'pilot_{nm}_arm', ((6 + ARM_OUT) * s, 26, 0), arm)
     steve(p, f'st_arm_{side}', *sx((4 + ARM_OUT, 14, -2), (4 + AW + ARM_OUT, 26, 2)), STEVE[f'arm_{side}'])
     # the shoulder plate on the arm box's top, its inner side over the arm box's inner wall
@@ -1239,7 +1275,7 @@ if ARMOR != 'none':
     _armor('body', 'r', 'hip', 'ar_hip')
     for side, nm in (('r', 'right'), ('l', 'left')):
         for frame in (f'fr_arm_shell_{side}', f'fr_shoulder_plate_{side}', f'fr_leg_shell_{side}'): unlink(frame)
-        _armor(f'{nm}_arm', side, 'arm', f'ar_arm_{side}')
+        _armor(f'{nm}_arm', side, 'arm_tool' if side == 'l' and TOOL != 'none' else 'arm', f'ar_arm_{side}')
         if ARMOR_FORM == 'solid': _armor(f'{nm}_arm', side, 'pauldron', f'ar_pauldron_{side}', addon=True)
         else:   # the decal: 0.5 px off the arm piece's top, outer side, front and back, its inner edge where the solid
             # pauldron's was (1 px off the arm's inner wall: clear of the helmet's corners turned 50 deg)
