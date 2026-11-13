@@ -79,4 +79,7 @@ live on `experimental/frame-concept`; the frame isn't in the game yet (model onl
   flat layer's look, in line with the flat armour and engine. A layered brow cap was dropped: its
   swept side is painted into the helmet instead, the winged ridge over the glass, the side seam run into it in the
   same two rows and shaded like it (`HELMET_SEAM=ridge`, its dark row a step lighter). Bolts only on the sides, as
-  the top's rivets (none on the front or back).
+  the top's rivets (none on the front or back). The seam rings the whole head (`HELMET_FLOW=ring`, 2026-11-13: carried
+  across the back, so the top and back stopped reading as separate from the front and sides); no crest (with the ring
+  it was too much; a crest down the forehead more so), the top plain with 4 rivets in a square 3 texels in from its
+  edges, in the side bolts' rows. `crest` (an unbroken crest over the top and down the back, no ring) stays a knob.

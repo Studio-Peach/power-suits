@@ -197,9 +197,50 @@ def wrap(back_style='plain'):
     for i in (3, 14): side[3][i] = 'p'          # bolts as the top's rivets (user), a row lower than first drawn
     # (no ear disc, no side vents: 2026-11-12, user: helmets don't usually have ear discs; the neck guard wraps here)
     if back_style == 'guard': neck_guard(side, GUARD_WRAP)
+    back, top = wrap_back(back_style), top_crest()
+    flow(f, side, back, top)
     east = side
     west = [r[::-1] for r in side]
-    return dict(north=out(f), south=out(wrap_back(back_style)), east=out(east), west=out(west), up=out(top_crest()))
+    return dict(north=out(f), south=out(back), east=out(east), west=out(west), up=out(top))
+
+
+# Draft knob HELMET_FLOW (2026-11-13, user: the top and the back "feel a little disconnected from the rest of the
+# faces"): the front and sides share a language (the ridge / seam band at rows 5-6 round the visor, bolts at row 3,
+# the neck guard wrapping round), the top and back don't: the band dead-ends at the back corners, the crest breaks for
+# the back's 2 lit edge rows (and changes colour there), the top's rivets don't line up with the side bolts, and the
+# top's body is a step lighter than every other face (and the game shades a top face brightest anyway: a lid).
+# Two concepts (2026-11-13, user: the brow crest was too much; crest and ring both is too much, try one without the
+# crest and one without the ring): 'crest' (one crest, the top's colours, unbroken over the top-back edge down to the
+# neck guard), 'ring' (no crest anywhere: the side seam carried across the back, a band round the whole head; the top
+# plain). Both put the top's rivets in the side bolts' rows. 'none' is as picked 2026-11-12.
+# Picked: 'ring' (2026-11-13, user).
+FLOW = os.environ.get('HELMET_FLOW', 'ring')
+assert FLOW in ('none', 'crest', 'ring'), FLOW
+
+
+def flow(f, side, back, top):
+    if FLOW == 'none': return
+    # the top's rivets in the rows of the side bolts (side columns 3 / 14 from the back: top rows 14 / 3); with the
+    # crest gone (ring) out to columns 3 / 14 as well, a square inset 3 texels from every edge (2026-11-13, user:
+    # respace them now the line is gone; beside the crest they were at columns 5 / 12)
+    for j in range(N):
+        for i in (5, 12):
+            if top[j][i] == 'p': top[j][i] = 'h'
+    cols = (3, 14) if FLOW == 'ring' else (5, 12)
+    for j in (3, 14):
+        for i in cols: top[j][i] = 'p'
+    if FLOW == 'crest':   # the top's columns (7 e, 8 g, 9 l, 10 e; -x lit, as the back seen from behind, column 0 at -x)
+        for j in range(GUARD_ROWS[0][0]):
+            back[j][7], back[j][8], back[j][9], back[j][10] = 'e', 'g', 'l', 'e'
+    if FLOW == 'ring':
+        clean = shade(blank())                         # the back's crest gone (its plain body back)
+        for j in range(GUARD_ROWS[0][0]):
+            for i in range(7, 11): back[j][i] = clean[j][i]
+        for i in range(N): back[5][i], back[6][i] = SEAM
+        side[5][0], side[6][0] = SEAM                 # (east column 0 is the back edge; west is its mirror)
+        for j in range(1, N - 1):                      # the top's crest gone: its body, the edges kept
+            for i in range(7, 11): top[j][i] = 'h'
+        top[0][7:11], top[-1][7:11] = ['g'] * 4, ['l'] * 4
 
 
 def bands(g, rows):
