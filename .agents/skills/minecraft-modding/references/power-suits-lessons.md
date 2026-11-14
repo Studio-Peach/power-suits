@@ -130,6 +130,10 @@ to Minecraft 26.3 / GeckoLib 5. Add a new lesson to the right section when somet
   forever and never reached the chained slump. Chain after a looping animation with `then(name, LoopType.PLAY_ONCE)`.
 
 ## Cockpit and viewmodel
+- *(26.3)* **The hand pass's pose stack doesn't start at identity** (RenderHandEvent: it holds a half turn about y).
+  Vanilla's arm numbers are in the space under it; a pose worked out from `pose.last().pose()` directly (the frame's
+  tool arm aimed at the crosshair) put the arm behind the camera. Take the matrix at entry as the base and do the math
+  in base⁻¹ · pose.
 - **The cockpit shows a viewmodel, not the suit's arms.** Looking at the external model from inside never lined up
   (hands raised where yours aren't, tools hidden behind their base, pads clipping), so in first person only the
   suit's legs are drawn and `CockpitHands` draws the tool + gauntlet in the hand pass (`geo/view`, rebuilt by

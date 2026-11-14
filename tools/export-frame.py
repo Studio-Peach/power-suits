@@ -12,6 +12,7 @@ mod as GeckoLib files, without Blockbench (the frame is script-built: model/art/
       reactor's light on the heart until they have frame art, tinted in their own colours)
   geckolib/animations/entity/power_frame.animation.json
   geckolib/models/view/frame_arm.geo.json, frame_arm_slim.geo.json (the cockpit's right arm, below)
+  geckolib/models/view/frame_tool.geo.json, frame_tool_slim.geo.json (the cockpit's socket tool, below)
 
 Run: python3 tools/export-frame.py        (no dependencies)
 
@@ -36,6 +37,11 @@ What the game needs that the design file doesn't hold:
 The cockpit's arm (client/CockpitHands): the right arm bone's cubes (its shell and shoulder plate) under one bone
 `view_arm`, moved so the pilot's arm pivot (pilot_right_arm, vanilla's) is the origin. The cockpit draws his skin arm
 where vanilla draws a player's empty hand and this round it: one transform for both.
+
+The cockpit's tool arm (client/CockpitHands): the left arm's shell and shoulder plate and every tool bone (with its
+moving parts, the same names as on the frame, so the run animations play there too) under one bone `view_tool`, moved
+so the pilot's left arm pivot (pilot_left_arm, vanilla's) is the origin, like the right arm's: the cockpit draws his
+left arm where vanilla draws a left hand and this round it, the tool at its end.
 
 The animation file holds every animation name the suit's controllers ask for (SuitAnimator, the tools' run loops).
 The frame is posed in code (PowerSuitRenderer), so an animation keying any bone the frame hasn't (the big suit's body,
@@ -180,6 +186,37 @@ def arm_view(model, ident):
     return {'format_version': '1.12.0', 'minecraft:geometry': [built]}
 
 
+TOOL_BONES = ('drill', 'chainsaw', 'chaingun', 'flamethrower')
+
+
+def tool_view(model, ident):
+    """The left arm and its tools about the pilot's left arm pivot (see the docstring)."""
+    built = geo(model, ident)['minecraft:geometry'][0]
+    keep, bones = set(TOOL_BONES), []
+    by_name = {b['name']: b for b in built['bones']}
+    for b in built['bones']:
+        if b['name'] in keep or b.get('parent') in keep:
+            keep.add(b['name'])
+            bones.append(json.loads(json.dumps(b)))
+    sx, sy, sz = by_name['pilot_left_arm']['pivot']
+    arm = json.loads(json.dumps(by_name['left_arm']['cubes']))
+    shift = lambda v: [r(v[0] - sx), r(v[1] - sy), r(v[2] - sz)]
+    for b in bones:
+        b['pivot'] = shift(b['pivot'])
+        if b['name'] in TOOL_BONES:
+            b['parent'] = 'view_tool'
+        for c in b.get('cubes', []):
+            c['origin'] = shift(c['origin'])
+            if 'pivot' in c:
+                c['pivot'] = shift(c['pivot'])
+    built['description'] = dict(built['description'], identifier='geometry.' + ident,
+                                visible_bounds_width=2, visible_bounds_height=2, visible_bounds_offset=[0, 0, 0])
+    for c in arm:
+        c['origin'] = shift(c['origin'])
+    built['bones'] = [{'name': 'view_tool', 'pivot': [0, 0, 0], 'cubes': arm}] + bones
+    return {'format_version': '1.12.0', 'minecraft:geometry': [built]}
+
+
 def animations(bones):
     names = json.load(open(SUIT_ANIMS))['animations']
     out = {}
@@ -290,6 +327,8 @@ if __name__ == '__main__':
         write(f'geckolib/models/entity/{ident}.geo.json', json.dumps(geo(model, ident), indent=1).encode())
         arm = ident.replace('power_frame', 'frame_arm')
         write(f'geckolib/models/view/{arm}.geo.json', json.dumps(arm_view(model, arm), indent=1).encode())
+        tool = ident.replace('power_frame', 'frame_tool')
+        write(f'geckolib/models/view/{tool}.geo.json', json.dumps(tool_view(model, tool), indent=1).encode())
         source = model['textures'][0]['source']
         opaque, glass, visor, fire, core = textures(base64.b64decode(source.split(',', 1)[1]))
         slim = ident[len('power_frame'):]

@@ -130,6 +130,11 @@ final class ExhaustSmoke {
     /** perPipe particles at each of the two spots (left and right, sideDist from the centre, up blocks high, behind the
      *  body), rising at lift and carried along with the suit. */
     private static void puff(PowerSuitEntity suit, ParticleOptions type, int perPipe, double lift, double up, double sideDist) {
+        if (ClientView.inCockpit.test(suit)) {
+            // The frame's caps are just behind its pilot's head (the big suit's rose a block over it): from the cockpit
+            // their smoke drifted past the camera as big blobs over the view. He can't see his own back anyway.
+            return;
+        }
         Level level = suit.level();
         RandomSource random = suit.getRandom();
         // The pipes are on the torso, which turns toward the pilot's view (yHeadRot) from the legs (yBodyRot).

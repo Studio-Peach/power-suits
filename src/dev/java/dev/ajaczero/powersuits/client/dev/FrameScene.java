@@ -133,7 +133,16 @@ final class FrameScene {
             case 604 -> AutoPilot.shot(mc, "frame_cockpit_arm");
             case 606 -> AutoPilot.setView(0, 60);
             case 622 -> AutoPilot.shot(mc, "frame_cockpit_down");
-            case 624 -> { AutoPilot.setView(0, 0); close(); return false; }
+            // The socket tool in the cockpit (the off hand's place), at rest and raised to aim; then from outside, raised.
+            case 624 -> { phase = "cockpit_tool"; AutoPilot.setView(0, 0); socket(mc, 0); }
+            case 638 -> AutoPilot.shot(mc, "frame_cockpit_tool");
+            case 640 -> AutoPilot.hold(o.keyUse, true);
+            case 654 -> AutoPilot.shot(mc, "frame_cockpit_tool_raised");
+            case 656 -> { phase = "tool_raised"; o.setCameraType(CameraType.THIRD_PERSON_FRONT); DevUtil.hideGui(mc, true); AutoPilot.setView(-30, 0); }
+            case 670 -> AutoPilot.shot(mc, "frame_tool_raised_front");
+            case 672 -> AutoPilot.setView(-30, 30);
+            case 686 -> AutoPilot.shot(mc, "frame_tool_raised_down30");
+            case 688 -> { AutoPilot.hold(o.keyUse, false); socket(mc, -1); AutoPilot.setView(0, 0); o.setCameraType(CameraType.FIRST_PERSON); DevUtil.hideGui(mc, false); close(); return false; }
             default -> {}
         }
         if (s >= 1) {

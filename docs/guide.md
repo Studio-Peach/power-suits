@@ -376,8 +376,9 @@ src/main/java/dev/ajaczero/powersuits/
     HelmetGlassLayer.java    the helmet's visor glass (a translucent pass over his face)
     SuitRenderData.java      what the renderer and its layers read from the suit each frame (GeckoLib DataTickets)
     PilotView.java           hides vanilla's pilot (PilotLayer draws him) and hands, pulls the camera back
-    CockpitHands.java        first-person viewmodel: socket tool on the left; on the right the held item (vanilla's) or,
-                             empty, his skin arm in the frame's arm (geckolib/models/view/frame_arm, export-frame.py)
+    CockpitHands.java        first-person viewmodel: his left arm in the frame's with the socket tool on its end
+                             (geckolib/models/view/frame_tool); on the right the held item (vanilla's) or, empty, his
+                             skin arm in the frame's arm (geckolib/models/view/frame_arm; both from export-frame.py)
     CockpitView*.java        its GeckoLib animatable/renderer (geckolib/models/view, cut from the suit by tools/extract-view-geo.py)
     PowerSuitScreen.java    draws the suit menu (the inventory screen with the suit: preview, flame, status screen, keys)
     SuitKey.java             the menu's slot-sized keys (Power latches pushed in while on; Pack)
@@ -442,9 +443,13 @@ the same heart teal / violet until they get frame art), smoke and bubbles from t
 blower looking far up (user: fine, it rarely happens). Step 5a: the tools in the left arm's socket (the drill, the
 chainsaw, the chaingun and the flamethrower, each in the fist's place; the EM projector, TNT launcher and rail cannon
 show the drill's body until they get frame art); the drill's bit spins and the chain runs (their run animations, kept
-from the big suit's file: the frame names those bones the same), the chaingun's barrels turn (ToolRotors). Still the
-big suit's or off until their steps: the socket tool's cockpit viewmodel, the muzzles (the big suit's positions), the
-tool arm's raise, the tools' lights, paint and helmet styles. The notes below are the big suit's.
+from the big suit's file: the frame names those bones the same), the chaingun's barrels turn (ToolRotors). Step 5b: using a tool raises the left arm
+until the tool points along the view (pitch and head yaw; a player's one-armed aiming pose), and the muzzle
+(SocketAim) is the shoulder plus 20.5 px along the view; in the cockpit his left arm in the frame's, the tool at its
+end, where vanilla draws a left hand, turned about the shoulder toward a point low left of the crosshair at rest and
+at the crosshair 10 blocks out when raised (CockpitHands.toolArmTransform; the hand pass's pose isn't identity in
+26.3, so the turn is worked out under it). No exhaust smoke in the pilot's own first-person view (it drifted past the
+camera). Still the big suit's or off until their steps: the tools' lights, paint and helmet styles. The notes below are the big suit's.
 
 ### The big suit
 

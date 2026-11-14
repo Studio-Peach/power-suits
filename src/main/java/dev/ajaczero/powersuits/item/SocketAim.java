@@ -16,19 +16,22 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Where socket tools fire from and what their operator is aiming at. Works on both sides. The operator is the pilot,
- * or the suit itself while its machine mind drives (then its head is the "camera": eye height 2.6, head yaw and pitch).
+ * or the suit itself while its machine mind drives (then its head is the "camera": eye height 1.98, head yaw and pitch).
  */
 public final class SocketAim {
-    // Muzzle in the torso's frame, in blocks (measured in Blockbench from the chaingun's muzzle bone with the tool
-    // arm raised to aim, which it always is while a tool works (PowerSuitModel.raiseTool; the rest pose is a hip carry);
-    // the EM projector's tip is within a few pixels): left of centre (the tool arm is the suit's left),
-    // up from the feet, forward.
+    // The frame (2026-11-14, step 5b): the tool arm swings up from its shoulder until the tool points along the view
+    // (PowerSuitRenderer.raiseTool, which it always is while a tool works), so the muzzle is the shoulder plus the arm's
+    // reach along the view. The shoulder pivot (model/power_frame.bbmodel, left_arm): 8.25 px left of the centre, 28 px up
+    // from the feet; the reach to the chaingun's muzzle (its muzzle block's bottom, y 7.5 under the shoulder's 28): 20.5
+    // px. The other tools end within a px of it (the drill's tip 21, the chainsaw's chain 22.5); their
+    // muzzleInsetPixels are still the big suit's small corrections. The shoulder turns with the torso, which faces the
+    // view within the head's 50 degrees: taking the view's yaw puts it at most ~0.2 blocks off, for a shot that goes for
+    // the crosshair anyway (aimPoint).
+    // (The big suit's: its raised elbow's muzzle 0.709 left, 2.226 up, 1.738 forward of the feet, the torso pivot
+    // 1.695 up, pitching with the view at 55%.)
     // That's where everyone else sees the gun; the pilot's own first-person view draws its bullets from the cockpit
     // viewmodel's muzzle instead (visualMuzzle + Bullet.visualOffset).
-    // The torso pivot is 1.695 up (27.125 px); the torso faces the view and pitches with it (55%).
-    // Re-measured for the 2026-10-19 export (model rework: upright torso, new arms) by forward kinematics on the .bbmodel:
-    // muzzle bone at (-11.34, 35.61, -27.81) px with the arm raised.
-    private static final double MUZZLE_LEFT = 0.709, MUZZLE_UP = 2.226, MUZZLE_FORWARD = 1.738, TORSO_PIVOT_UP = 1.695;
+    private static final double SHOULDER_LEFT = 8.25 / 16, SHOULDER_UP = 28.0 / 16, REACH = 20.5 / 16;
 
     /** Where muzzle effects (EM beam particles) start on this client. The client points it at the cockpit viewmodel's
      *  muzzle for its own pilot in first person (CockpitHands); everywhere else it's the suit's muzzle. */
@@ -36,15 +39,11 @@ public final class SocketAim {
 
     public static Vec3 muzzlePosition(PowerSuitEntity suit, LivingEntity operator) {
         float yaw = aimYaw(operator) * Mth.DEG_TO_RAD;
-        float lean = Mth.clamp(operator.getXRot() * 0.55F, -25F, 25F) * Mth.DEG_TO_RAD; // + = looking down
-        double up = MUZZLE_UP - TORSO_PIVOT_UP;
-        // Shorter tools end before the chaingun's muzzle; the raised tool points along the view, i.e. forward here.
-        double reach = MUZZLE_FORWARD - (suit.getSocketStack().getItem() instanceof PowerTool tool ? tool.muzzleInsetPixels() / 16.0 : 0);
-        double leanedForward = reach * Mth.cos(lean) + up * Mth.sin(lean);
-        double leanedUp = up * Mth.cos(lean) - reach * Mth.sin(lean);
-        Vec3 forward = new Vec3(-Mth.sin(yaw), 0, Mth.cos(yaw));
-        Vec3 right = new Vec3(-Mth.cos(yaw), 0, -Mth.sin(yaw));
-        return suit.position().add(0, TORSO_PIVOT_UP + leanedUp, 0).add(forward.scale(leanedForward)).add(right.scale(-MUZZLE_LEFT));
+        float pitch = operator.getXRot() * Mth.DEG_TO_RAD; // + = looking down
+        double reach = REACH - (suit.getSocketStack().getItem() instanceof PowerTool tool ? tool.muzzleInsetPixels() / 16.0 : 0);
+        Vec3 view = new Vec3(-Mth.sin(yaw) * Mth.cos(pitch), -Mth.sin(pitch), Mth.cos(yaw) * Mth.cos(pitch));
+        Vec3 left = new Vec3(Mth.cos(yaw), 0, Mth.sin(yaw));
+        return suit.position().add(0, SHOULDER_UP, 0).add(left.scale(SHOULDER_LEFT)).add(view.scale(reach));
     }
 
     /** Which way the operator faces. A player's yaw is their view; a mob's view is its head (yRot is where it walks). */

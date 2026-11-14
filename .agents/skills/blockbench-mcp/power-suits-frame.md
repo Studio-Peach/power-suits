@@ -174,4 +174,9 @@ the end and `docs/guide.md` Notes).
   flamethrower), shell keys `tl_<tool>_<part>`; the game shows the installed one (a tool without frame art: the
   drill's). The build takes ~4 min (the texture packing's free-space scan). The exporter keeps an animation whose
   bones the frame all has (drill_run, chainsaw_run); the others are written empty.
-- Not yet in game (later steps): the tools' cockpit view, muzzles, raise and lights; the iron armour. Re-run the exporter after rebuilding the saved files.
+- Step 5b, aiming: raised, the left arm swings forward 90 deg less the view's pitch and turns with the head
+  (PowerSuitRenderer.raiseTool); the muzzle is the shoulder (8.25 px left, 28 up) plus 20.5 px along the view
+  (SocketAim). The cockpit draws his left arm, the frame's left arm and the tool (`view/frame_tool`: about
+  pilot_left_arm's pivot) where vanilla draws a left hand, turned about the shoulder toward the aim. A tool alone at
+  the screen's corner (the big suit's way) had to sit 0.1 blocks from the camera at twice its size to hide its cut end.
+- Not yet in game (later steps): the tools' lights; the iron armour. Re-run the exporter after rebuilding the saved files.

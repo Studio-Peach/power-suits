@@ -33,6 +33,8 @@ final class CockpitViewRenderer extends GeoObjectRenderer<CockpitView, Void, Geo
     private static final DataTicket<int[]> GLOW = DataTicket.create("power_suits_view_glow", int[].class);
     /** The tool's lights, like on the suit (SuitGlowLayer: one mask per ToolLight). */
     private static final Identifier[] MASKS = SuitGlowLayer.TOOL_MASKS;
+    /** The frame's tools have no glowmasks yet (step 5c). */
+    private static final boolean TOOL_LIGHTS = false;
 
     CockpitViewRenderer() {
         super(new Model());
@@ -60,16 +62,13 @@ final class CockpitViewRenderer extends GeoObjectRenderer<CockpitView, Void, Geo
 
     @Override
     public void adjustModelBonesForRender(RenderPassInfo<GeoRenderState> info, BoneSnapshots bones) {
-        boolean tool = info.getOrDefaultGeckolibData(PART, Part.TOOL) == Part.TOOL;
-        bones.ifPresent("view_tool", b -> b.skipRender(!tool).skipChildrenRender(!tool));
-        bones.ifPresent("view_gauntlet", b -> b.skipRender(true).skipChildrenRender(true)); // the big suit's (the frame's arm: ARM)
+        // The installed tool (one without frame art: the drill's body, as on the frame, PowerSuitRenderer).
         String installed = info.getOrDefaultGeckolibData(TOOL_BONE, "");
+        String shown = installed.isEmpty() || info.model().getBone(installed).isPresent() ? installed : "drill";
         for (String name : ToolBones.all()) {
-            boolean show = name.equals(installed);
+            boolean show = name.equals(shown);
             bones.ifPresent(name, b -> b.skipRender(!show).skipChildrenRender(!show));
         }
-        boolean bare = installed.isEmpty();
-        bones.ifPresent("socket", b -> b.skipRender(!bare).skipChildrenRender(!bare));
         ToolRotors.pose(bones, info.getOrDefaultGeckolibData(BARREL_ANGLE, 0F)); // turns with the suit's spin
         float[] shake = info.getGeckolibData(RAIL_SHAKE);
         if (shake != null) {
@@ -85,9 +84,10 @@ final class CockpitViewRenderer extends GeoObjectRenderer<CockpitView, Void, Geo
 
     private static final class Model extends GeoModel<CockpitView> {
         // GeckoLib 5 ids: assets/power_suits/geckolib/models/<id>.geo.json and geckolib/animations/<id>.animation.json.
-        private static final Identifier GEO = Identifier.fromNamespaceAndPath(PowerSuits.MODID, "view/power_suit_view");
-        private static final Identifier TEXTURE = Identifier.fromNamespaceAndPath(PowerSuits.MODID, "textures/entity/power_suit.png");
-        private static final Identifier ANIMATIONS = Identifier.fromNamespaceAndPath(PowerSuits.MODID, "entity/power_suit");
+        // The frame's tools about the socket (tools/export-frame.py), per build; the frame's animations (the tools' run loops).
+        private static final Identifier TOOL = Identifier.fromNamespaceAndPath(PowerSuits.MODID, "view/frame_tool");
+        private static final Identifier TOOL_SLIM = Identifier.fromNamespaceAndPath(PowerSuits.MODID, "view/frame_tool_slim");
+        private static final Identifier ANIMATIONS = Identifier.fromNamespaceAndPath(PowerSuits.MODID, "entity/power_frame");
         // The frame's arm (tools/export-frame.py), per build.
         private static final Identifier ARM = Identifier.fromNamespaceAndPath(PowerSuits.MODID, "view/frame_arm");
         private static final Identifier ARM_SLIM = Identifier.fromNamespaceAndPath(PowerSuits.MODID, "view/frame_arm_slim");
@@ -104,12 +104,12 @@ final class CockpitViewRenderer extends GeoObjectRenderer<CockpitView, Void, Geo
 
         @Override
         public Identifier getModelResource(GeoRenderState state) {
-            return arm(state) ? (slim(state) ? ARM_SLIM : ARM) : GEO;
+            return arm(state) ? (slim(state) ? ARM_SLIM : ARM) : slim(state) ? TOOL_SLIM : TOOL;
         }
 
         @Override
         public Identifier getTextureResource(GeoRenderState state) {
-            return arm(state) ? (slim(state) ? FRAME_SLIM : FRAME) : TEXTURE;
+            return slim(state) ? FRAME_SLIM : FRAME;
         }
 
         @Override
@@ -126,7 +126,8 @@ final class CockpitViewRenderer extends GeoObjectRenderer<CockpitView, Void, Geo
         @Override
         public void submitRenderTask(RenderPassInfo<GeoRenderState> info, SubmitNodeCollector renderTasks) {
             int[] tints = info.getGeckolibData(GLOW);
-            if (info.willRender() && tints != null && info.getOrDefaultGeckolibData(PART, Part.TOOL) == Part.TOOL) {
+            // (Off until the frame's tools have their own glowmasks: these are the big suit's texture layout.)
+            if (TOOL_LIGHTS && info.willRender() && tints != null && info.getOrDefaultGeckolibData(PART, Part.TOOL) == Part.TOOL) {
                 SuitGlowLayer.drawMasks(this.renderer, info, renderTasks, MASKS, tints);
             }
         }

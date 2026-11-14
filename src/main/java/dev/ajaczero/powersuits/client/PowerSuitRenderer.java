@@ -136,17 +136,18 @@ public class PowerSuitRenderer extends GeoEntityRenderer<PowerSuitEntity, Living
      */
     private void aim(RenderPassInfo<LivingEntityRenderState> info, BoneSnapshots bones) {
         LivingEntityRenderState state = info.renderState();
-        walk(state, bones);
+        boolean aiming = info.getOrDefaultGeckolibData(SuitRenderData.AIMING, false);
+        float raise = aiming ? info.getOrDefaultGeckolibData(SuitRenderData.TOOL_RAISE, 0F) : 0F;
+        walk(state, bones, raise);
         float slump = info.getOrDefaultGeckolibData(SuitRenderData.SLUMP, 0F);
         if (slump > 0F) {
             // Out of power the pilot's weight hangs in the frame: head down, the torso tipped a little forward.
             bones.ifPresent("head", head -> head.setRotX(head.getRotX() - 25F * slump * Mth.DEG_TO_RAD));
             bones.ifPresent("torso", torso -> torso.setRotX(torso.getRotX() - 6F * slump * Mth.DEG_TO_RAD));
         }
-        if (!info.getOrDefaultGeckolibData(SuitRenderData.AIMING, false)) {
+        if (!aiming) {
             return; // parked: rest pose
         }
-        // (The tool arm's raise comes back with the frame's tools: the big suit's raised an elbow the frame hasn't.)
         // aimBlend fades the aiming out when the suit powers down and back in after it boots up.
         float aim = info.getOrDefaultGeckolibData(SuitRenderData.AIM_BLEND, 1F);
         // Look yaw relative to the legs (Minecraft already wraps it to -180..180; unwrapped, a pilot who had turned round
@@ -159,6 +160,24 @@ public class PowerSuitRenderer extends GeoEntityRenderer<PowerSuitEntity, Living
             head.setRotY(head.getRotY() - headYaw * Mth.DEG_TO_RAD);
             head.setRotX(head.getRotX() - pitch * Mth.DEG_TO_RAD); // the whole look, like a player's head
         });
+        if (raise > 0F) {
+            raiseTool(info, bones, raise, headYaw, pitch);
+        }
+    }
+
+    /**
+     * Using the tool raises the tool arm by the suit's toolRaise blend (SocketVisuals: like raising a shield) until the
+     * tool points along the view: the arm swings forward 90 degrees less the view's pitch (looking straight down, it hangs;
+     * looking up, it points up), then turns with the head (the torso has already turned the rest). The frame's arm is
+     * one rigid bone, like a player's, so this is a player's aiming pose (a bow's, one-armed); SocketAim fires from where
+     * it puts the muzzle. Each shot kicks the muzzle up a little (recoil; at full spin a shudder).
+     */
+    private static void raiseTool(RenderPassInfo<LivingEntityRenderState> info, BoneSnapshots bones, float w, float headYaw, float pitch) {
+        float kick = info.getOrDefaultGeckolibData(SuitRenderData.RECOIL, 0F) * w;
+        bones.ifPresent("left_arm", arm -> {
+            arm.setRotX(arm.getRotX() + ((90F - pitch) * w + 4F * kick) * Mth.DEG_TO_RAD);
+            arm.setRotY(arm.getRotY() - headYaw * w * Mth.DEG_TO_RAD);
+        });
     }
 
     /**
@@ -166,14 +185,14 @@ public class PowerSuitRenderer extends GeoEntityRenderer<PowerSuitEntity, Living
      * distance walked and speed, which Minecraft keeps for every mob, ridden ones too). Vanilla's x turns are the other
      * way round (its models are y-down, x-mirrored), hence the minus.
      */
-    private static void walk(LivingEntityRenderState state, BoneSnapshots bones) {
+    private static void walk(LivingEntityRenderState state, BoneSnapshots bones, float raise) {
         float pos = state.walkAnimationPos * 0.6662F, speed = state.walkAnimationSpeed;
         if (speed <= 0F) {
             return;
         }
         float swing = Mth.cos(pos) * speed, counter = Mth.cos(pos + Mth.PI) * speed;
         bones.ifPresent("right_arm", arm -> arm.setRotX(arm.getRotX() - counter));
-        bones.ifPresent("left_arm", arm -> arm.setRotX(arm.getRotX() - swing));
+        bones.ifPresent("left_arm", arm -> arm.setRotX(arm.getRotX() - swing * (1F - raise))); // a raised tool stays on aim
         bones.ifPresent("right_leg", leg -> leg.setRotX(leg.getRotX() - 1.4F * swing));
         bones.ifPresent("left_leg", leg -> leg.setRotX(leg.getRotX() - 1.4F * counter));
     }

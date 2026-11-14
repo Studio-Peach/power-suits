@@ -20,7 +20,10 @@ T, ASP = np.tan(np.radians(35)), 16 / 9
 # cut end corners and tip, model pixels (geckolib/models/view/power_suit_view.geo.json): tools start at the socket face (y 0),
 # the gauntlet at the wrist (y -6, the elbow cuff is left out); the widest tool section is the cannon/saw body.
 PARTS = {'tool': ([(x, 0, z) for x in (-4.5, 5.5) for z in (-5.5, 6.5)], (0, -16, 0)),
-         'gauntlet': ([(x, -6, z) for x in (-3, 4) for z in (-3.5, 3.5)], (0, -15, 0))}
+         'gauntlet': ([(x, -6, z) for x in (-3, 4) for z in (-3.5, 3.5)], (0, -15, 0)),
+         # the frame's tools (geckolib/models/view/frame_tool.geo.json, 2026-11-14): 5 x 5 at the socket face (y 0), the
+         # chaingun's muzzle 8.5 px under it
+         'frame_tool': ([(x, 0, z) for x in (-2.5, 2.5) for z in (-2.5, 2.5)], (0, -8.5, 0))}
 
 
 def rot(yaw, pitch, roll):

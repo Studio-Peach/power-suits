@@ -27,7 +27,9 @@ import net.minecraft.world.entity.player.PlayerModelType;
 import net.minecraft.world.entity.player.PlayerSkin;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.client.event.RenderHandEvent;
+import org.joml.Matrix3f;
 import org.joml.Matrix4f;
+import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import org.joml.Vector3fc;
 import org.jspecify.annotations.Nullable;
@@ -46,20 +48,19 @@ import org.jspecify.annotations.Nullable;
 public final class CockpitHands {
     private static final CockpitViewRenderer RENDERER = new CockpitViewRenderer();
 
-    // Placement rules (tools/viewmodel-fit.py checks and solves them; the hand pass always uses a 70 degree FOV):
-    //  - the tool's cut end (its socket face) stays below the bottom edge of the screen, so it reaches in from the corner
-    //    instead of floating;
-    //  - the raised tool's axis points at the crosshair 10 blocks out (`viewmodel-fit.py aim`), so its barrels line up
-    //    with where the shots go (the first poses pointed 20-40 degrees up and the tracers looked off);
-    //  - the corners: the hotbar covers the middle of the bottom edge.
+    // The tool arm (2026-11-14, the frame): his left arm in the frame's left arm, the socket tool at its end, drawn where
+    // vanilla draws a left hand (vanillaArmTransform mirrored), like the right arm. Raised to aim, the arm turns about its
+    // shoulder until the tool's axis points at the crosshair TOOL_AIM_DISTANCE out (the shots go there; a tool pointing
+    // elsewhere looked off, the big suit's first poses taught), the hotbar left clear. At rest the arm keeps vanilla's
+    // pose, turned toward REST_AIM (a point low and left of the crosshair) by REST_TURN of the way.
     // Not final: the dev view tuner (autopilot "view" mode) reloads them from run/view/tuning.json.
-    // Socket tool at rest (lowered: its axis points just below the crosshair, 16 blocks out) and raised (aiming).
-    static Vector3f toolPos = new Vector3f(-0.58F, -0.57F, -0.19F);
-    static float toolYaw = -2.1F, toolPitch = 88.4F, toolRoll = 15F, toolScale = 1.0F;
-    static Vector3f toolRaisedPos = new Vector3f(-0.55F, -0.54F, -0.19F);
-    static float toolRaisedYaw = -3.2F, toolRaisedPitch = 93.1F;
-    /** The chaingun's muzzle (barrel tips) in the view model (pixels below the socket; the muzzle bone's pivot). */
-    private static final float MUZZLE_PX = -15F;
+    static float toolAimDistance = 10F;
+    static Vector3f restAim = new Vector3f(-2.5F, -3.5F, -10F);
+    static float restTurn = 0.6F;
+    /** The chaingun's muzzle about the pilot's left arm pivot, in vanilla's arm space (y down the arm, x mirrored; px):
+     *  the socket is 10 px down the arm and 1.25 px off its pivot's axis (tools/export-frame.py), the muzzle block's
+     *  bottom 8.5 px under the socket. */
+    private static final Vector3f MUZZLE_PX = new Vector3f(1.25F, 18.5F, 0F);
     private static final float RECOIL_TICKS = 6F;
 
     private static boolean wasShooting;
@@ -70,9 +71,18 @@ public final class CockpitHands {
         PoseStack pose = event.getPoseStack();
         CockpitView view = CockpitView.INSTANCE;
         view.suit = suit;
+        view.slim = Minecraft.getInstance().player != null && Minecraft.getInstance().player.getSkin().model() == PlayerModelType.SLIM;
         pollShot(suit, view);
+        float partial = event.getPartialTick();
+        float kick = Math.max(recoil(partial), suit.socketVisuals().recoil(partial)); // EM push / chaingun shots
         pose.pushPose();
-        toolTransform(pose, suit, event.getPartialTick(), suit.socketVisuals().raise(event.getPartialTick()));
+        toolArmTransform(pose, suit, suit.socketVisuals().raise(partial), kick);
+        PlayerSkin skin = Minecraft.getInstance().player != null ? Minecraft.getInstance().player.getSkin() : null;
+        if (skin != null) {
+            event.getSubmitNodeCollector().submitModelPart(arm(view.slim, true), pose, RenderTypes.entityTranslucent(skin.body().texturePath()),
+                    event.getPackedLight(), OverlayTexture.NO_OVERLAY, null);
+        }
+        pose.scale(-1F, -1F, 1F); // into the frame's axes (see renderArm)
         drawPart(pose, event, CockpitViewRenderer.Part.TOOL);
         pose.popPose();
     }
@@ -89,8 +99,8 @@ public final class CockpitHands {
         boolean slim = skin.model() == PlayerModelType.SLIM;
         PoseStack pose = event.getPoseStack();
         pose.pushPose();
-        vanillaArmTransform(pose, event.getSwingProgress(), event.getEquipProgress());
-        event.getSubmitNodeCollector().submitModelPart(arm(slim), pose, RenderTypes.entityTranslucent(skin.body().texturePath()),
+        vanillaArmTransform(pose, event.getSwingProgress(), event.getEquipProgress(), 1F);
+        event.getSubmitNodeCollector().submitModelPart(arm(slim, false), pose, RenderTypes.entityTranslucent(skin.body().texturePath()),
                 event.getPackedLight(), OverlayTexture.NO_OVERLAY, null);
         // (Picked 2026-11-14 over his bare arm, vanilla's.) Vanilla's model axes are y-down and x-mirrored; the frame's
         // (GeckoLib's) aren't: turn 180 about Z.
@@ -101,26 +111,24 @@ public final class CockpitHands {
         pose.popPose();
     }
 
-    private static @Nullable ModelPart wideArm, slimArm;
+    /** Our own player models, wide and slim (their arms' poses are set once). */
+    private static final PlayerModel[] MODELS = new PlayerModel[2];
 
-    /** The pilot's right arm, vanilla's part with no pose of its own (vanillaArmTransform places it) and no sleeve (the
-     *  skin's outer layer lies in the cage's wall planes, as in third person: PilotLayer). */
-    private static ModelPart arm(boolean slim) {
-        ModelPart arm = slim ? slimArm : wideArm;
-        if (arm == null) {
+    /** The pilot's right or left arm, vanilla's part with no pose of its own (vanillaArmTransform places it) and no
+     *  sleeve (the skin's outer layer lies in the cage's wall planes, as in third person: PilotLayer). */
+    private static ModelPart arm(boolean slim, boolean left) {
+        int i = slim ? 1 : 0;
+        if (MODELS[i] == null) {
             PlayerModel model = new PlayerModel(Minecraft.getInstance().getEntityModels()
                     .bakeLayer(slim ? ModelLayers.PLAYER_SLIM : ModelLayers.PLAYER), slim);
-            model.rightSleeve.visible = false;
-            arm = model.rightArm;
-            arm.setPos(0F, 0F, 0F);
-            arm.setRotation(0F, 0F, 0F);
-            if (slim) {
-                slimArm = arm;
-            } else {
-                wideArm = arm;
+            model.rightSleeve.visible = model.leftSleeve.visible = false;
+            for (ModelPart arm : new ModelPart[] {model.rightArm, model.leftArm}) {
+                arm.setPos(0F, 0F, 0F);
+                arm.setRotation(0F, 0F, 0F);
             }
+            MODELS[i] = model;
         }
-        return arm;
+        return left ? MODELS[i].leftArm : MODELS[i].rightArm;
     }
 
     private static void drawPart(PoseStack pose, RenderHandEvent event, CockpitViewRenderer.Part part) {
@@ -131,27 +139,29 @@ public final class CockpitHands {
                 event.getPackedLight(), event.getPartialTick());
     }
 
-    /** Tool: low on the left, raised toward the middle while used, bobbing with the gait, kicking back and up when
-     *  it fires. */
-    private static void toolTransform(PoseStack pose, PowerSuitEntity suit, float partial, float raise) {
-        float kick = Math.max(recoil(partial), suit.socketVisuals().recoil(partial)); // EM push / chaingun shots
-        Vector3f p = new Vector3f(toolPos).lerp(toolRaisedPos, raise);
-        pose.translate(p.x, p.y + bob(suit), p.z + kick * 0.10F);
-        pose.rotateDegrees(Axis.YP, Mth.lerp(raise, toolYaw, toolRaisedYaw));
-        pose.rotateDegrees(Axis.XP, Mth.lerp(raise, toolPitch, toolRaisedPitch) + kick * 8F);
-        pose.rotateDegrees(Axis.YP, toolRoll);
-        pose.scale(toolScale, toolScale, toolScale);
-    }
-
-    /** Same as toolTransform, as a matrix (no kick), to find the muzzle. */
-    private static Matrix4f toolMatrix(PowerSuitEntity suit, float raise) {
-        Vector3f p = new Vector3f(toolPos).lerp(toolRaisedPos, raise);
-        return new Matrix4f()
-                .translate(p.x, p.y + bob(suit), p.z)
-                .rotateY(Mth.lerp(raise, toolYaw, toolRaisedYaw) * Mth.DEG_TO_RAD)
-                .rotateX(Mth.lerp(raise, toolPitch, toolRaisedPitch) * Mth.DEG_TO_RAD)
-                .rotateY(toolRoll * Mth.DEG_TO_RAD)
-                .scale(toolScale);
+    /**
+     * The tool arm: vanilla's left-hand pose (no swing: the off hand), then turned about the shoulder toward the aim: at
+     * rest REST_TURN of the way to REST_AIM, raised (the suit's toolRaise blend) until the tool points at the crosshair,
+     * a kick lifting it with each shot. The turn is worked out in view space (where the arm's pivot is and where its
+     * axis points now) and put in front of the arm's transform.
+     */
+    private static void toolArmTransform(PoseStack pose, PowerSuitEntity suit, float raise, float kick) {
+        // The hand pass's pose stack doesn't start at identity (26.3: it holds a half turn about y), so the turn is
+        // worked out in the hand space under it: the space vanilla's arm numbers are in (x right, y up, -z forward).
+        Matrix4f base = new Matrix4f(pose.last().pose());
+        Matrix3f baseNormal = new Matrix3f(pose.last().normal());
+        pose.translate(0F, bob(suit), 0F);
+        vanillaArmTransform(pose, 0F, 0F, -1F);
+        Matrix4f local = new Matrix4f(base).invert().mul(pose.last().pose());
+        Vector3f pivot = local.transformPosition(new Vector3f());
+        Vector3f axis = local.transformDirection(new Vector3f(0F, 1F, 0F)).normalize(); // down vanilla's arm, to the tool
+        Quaternionf rest = new Quaternionf().slerp(new Quaternionf().rotationTo(axis, new Vector3f(restAim).sub(pivot).normalize()), restTurn);
+        Vector3f target = new Vector3f(0F, kick * 0.8F, -toolAimDistance);
+        Quaternionf aimed = new Quaternionf().rotationTo(axis, target.sub(pivot).normalize());
+        Quaternionf turn = rest.slerp(aimed, raise);
+        pose.last().pose().set(new Matrix4f(base).translate(pivot).rotate(turn).translate(-pivot.x, -pivot.y, -pivot.z).mul(local));
+        Matrix3f localNormal = new Matrix3f(baseNormal).invert().mul(pose.last().normal());
+        pose.last().normal().set(new Matrix3f(baseNormal).rotate(turn).mul(localNormal));
     }
 
     /** Gait bob (the suit's hip drop, model pixels) plus a slow breathing drift; both off with vanilla's View Bobbing
@@ -163,24 +173,24 @@ public final class CockpitHands {
         return suit.animator().getHipBob() * 0.008F + Mth.sin((float) ClientUtil.getCurrentTick() * 0.07F) * 0.004F;
     }
 
-    /** Vanilla's right-arm transform (ItemInHandRenderer.renderPlayerArm + PlayerModel's right arm, to its pivot, in
-     *  vanilla's model axes: y runs down the arm). */
-    private static void vanillaArmTransform(PoseStack pose, float swing, float equip) {
+    /** Vanilla's arm transform (ItemInHandRenderer.renderPlayerArm + PlayerModel's arm, to its pivot, in vanilla's
+     *  model axes: y runs down the arm); side 1 the right arm, -1 the left (vanilla mirrors it the same way). */
+    private static void vanillaArmTransform(PoseStack pose, float swing, float equip, float side) {
         float sq = Mth.sqrt(swing);
-        pose.translate(-0.3F * Mth.sin(sq * Mth.PI) + 0.64F, 0.4F * Mth.sin(sq * Mth.TWO_PI) - 0.6F - equip * 0.6F,
+        pose.translate(side * (-0.3F * Mth.sin(sq * Mth.PI) + 0.64F), 0.4F * Mth.sin(sq * Mth.TWO_PI) - 0.6F - equip * 0.6F,
                 -0.4F * Mth.sin(swing * Mth.PI) - 0.72F);
-        pose.rotateDegrees(Axis.YP, 45.0F);
-        pose.rotateDegrees(Axis.YP, Mth.sin(sq * Mth.PI) * 70.0F);
-        pose.rotateDegrees(Axis.ZP, Mth.sin(swing * swing * Mth.PI) * -20.0F);
-        pose.translate(-1.0F, 3.6F, 3.5F);
-        pose.rotateDegrees(Axis.ZP, 120.0F);
+        pose.rotateDegrees(Axis.YP, side * 45.0F);
+        pose.rotateDegrees(Axis.YP, side * Mth.sin(sq * Mth.PI) * 70.0F);
+        pose.rotateDegrees(Axis.ZP, side * Mth.sin(swing * swing * Mth.PI) * -20.0F);
+        pose.translate(side * -1.0F, 3.6F, 3.5F);
+        pose.rotateDegrees(Axis.ZP, side * 120.0F);
         pose.rotateDegrees(Axis.XP, 200.0F);
-        pose.rotateDegrees(Axis.YP, -135.0F);
-        pose.translate(5.6F, 0.0F, 0.0F);
-        // PlayerModel's right arm (wide): pivot (-5, 2, 0) px, idle sway zRot 0.1 rad (AnimationUtils.bobModelPart, age 0).
-        // Its box runs x -3..1, y -2..10 (model Y runs down the arm, toward the fist at y 10).
-        pose.translate(-5F / 16F, 2F / 16F, 0F);
-        pose.rotate(Axis.ZP, 0.1F);
+        pose.rotateDegrees(Axis.YP, side * -135.0F);
+        pose.translate(side * 5.6F, 0.0F, 0.0F);
+        // PlayerModel's arm (wide): pivot (-5, 2, 0) px for the right, (5, 2, 0) the left, idle sway zRot +-0.1 rad
+        // (AvatarRenderer.renderHand). Its box runs y -2..10 (model Y runs down the arm, toward the fist at y 10).
+        pose.translate(side * -5F / 16F, 2F / 16F, 0F);
+        pose.rotate(Axis.ZP, side * 0.1F);
     }
 
     /** The suit plays tool_recoil when the EM projector pushes; start the kick here too. (Chaingun shots kick through
@@ -219,7 +229,9 @@ public final class CockpitHands {
         PowerTool tool = suit.getSocketStack().getItem() instanceof PowerTool t ? t : null;
         float inset = tool != null ? tool.muzzleInsetPixels() : 0F;
         float forward = tool != null ? tool.barrelForwardPixels() : 0F; // the model's front is -z
-        Vector3f p = toolMatrix(suit, suit.socketVisuals().raise(1F)).transformPosition(new Vector3f(0, (MUZZLE_PX + inset) / 16F, -forward / 16F));
+        PoseStack arm = new PoseStack();
+        toolArmTransform(arm, suit, suit.socketVisuals().raise(1F), 0F);
+        Vector3f p = arm.last().pose().transformPosition(new Vector3f(MUZZLE_PX.x, MUZZLE_PX.y - inset, -forward).div(16F));
         double k = Math.tan(Math.toRadians(mc.options.fov().get()) / 2) / Math.tan(Math.toRadians(70) / 2);
         Camera camera = mc.gameRenderer.mainCamera();
         Vector3fc look = camera.forwardVector(), up = camera.upVector(), left = camera.leftVector();
@@ -239,11 +251,9 @@ public final class CockpitHands {
                 var a = j.getAsJsonArray(k);
                 return new Vector3f(a.get(0).getAsFloat(), a.get(1).getAsFloat(), a.get(2).getAsFloat());
             };
-            if (j.has("toolPos")) toolPos = v.apply("toolPos");
-            if (j.has("toolRaisedPos")) toolRaisedPos = v.apply("toolRaisedPos");
-            toolRaisedYaw = f.apply("toolRaisedYaw", toolRaisedYaw); toolRaisedPitch = f.apply("toolRaisedPitch", toolRaisedPitch);
-            toolYaw = f.apply("toolYaw", toolYaw); toolPitch = f.apply("toolPitch", toolPitch);
-            toolRoll = f.apply("toolRoll", toolRoll); toolScale = f.apply("toolScale", toolScale);
+            toolAimDistance = f.apply("toolAimDistance", toolAimDistance);
+            if (j.has("restAim")) restAim = v.apply("restAim");
+            restTurn = f.apply("restTurn", restTurn);
         } catch (Exception e) {
             PowerSuits.LOGGER.warn("[view] can't read {}: {}", file, e.toString());
         }
