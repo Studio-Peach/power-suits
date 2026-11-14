@@ -172,7 +172,7 @@ the end and `docs/guide.md` Notes).
 - Step 5a, the tools: `TOOL=all` (the saved files' default) builds every tool at once on the left arm, each on bones
   named as the game's tool (`GAME_BONES`: drill / drill_bit, chainsaw / chainsaw_chain, chaingun / chaingun_barrels,
   flamethrower), shell keys `tl_<tool>_<part>`; the game shows the installed one (a tool without frame art: the
-  drill's). The build takes ~4 min (the texture packing's free-space scan). The exporter keeps an animation whose
+  drill's). The build takes ~4 min (~15 min with ARMOR=game: the texture packing's free-space scan). The exporter keeps an animation whose
   bones the frame all has (drill_run, chainsaw_run); the others are written empty.
 - Step 5b, aiming: raised, the left arm swings forward 90 deg less the view's pitch and turns with the head
   (PowerSuitRenderer.raiseTool); the muzzle is the shoulder (8.25 px left, 28 up) plus 20.5 px along the view
@@ -185,12 +185,13 @@ the end and `docs/guide.md` Notes).
   has no heat colours in its art: its barrels don't glow with heat yet.
 - Step 6 (decided 2026-11-14, Notion spec sec. 10): the frame is made on its own (golem-style blocks maybe later; the
   recipe stands), armour goes on the spawned frame one piece per part from its menu, pieces carry a tier (iron now,
-  copper planned), protection per piece, sealed = all five pieces + helmet + powered. 6a (items, slots 5-9, protection,
-  synced tiers, the seal: `entity/SuitArmour`) is in, no looks; 6b the menu (vanilla's inventory screen, armour round the
-  preview, status as potion-style panels: `.scratch/menu6b`) is in. Left: 6c the pieces on the frame: the saved files must carry frame +
-  iron pieces + both engine variants in one file and texture, as `TOOL=all` does for tools (frame_model builds ONE
-  variant today: `ARMOR=iron`, `ARMOR_FORM=flat`); the pieces REPLACE the frame's boxes in place, so the renderer hides
-  a part's frame shell while its piece is worn; the armoured engine (`frame_heart_art.build(armored=True)`: upper hoses
-  under the breastplate, the core's radiator grille `GUARD=hot`); the cockpit arms (`view/frame_arm`, `view/frame_tool`)
-  with armour; check `check_armor()`. 6d FrameScene shots per piece on/off and the full set, docs.
+  copper planned), protection per piece, sealed = all five pieces + helmet + powered. 6a items / slots / protection /
+  seal (`entity/SuitArmour`), 6b the menu (vanilla's inventory screen, `.scratch/menu6b`), 6c the pieces on the frame:
+  `ARMOR=game` (the saved files' default) builds the bare frame AND the iron pieces, each part's frame cubes moved into
+  `frame_<bone>` (`unlink` regroups instead of dropping them), its piece in `armor_<bone>`, and the engine's front both
+  ways (`engine_open` = the bare build's ht_ parts, `engine_armored` = ha_, `heart_art.build(armored=True)`). The
+  renderer picks per part (`client/ArmourBones`). The checks skip pairs never drawn together (`ALT` / `apart`: a part's
+  frame vs its piece, the two engine fronts), so every mix of worn and bare parts is checked. The one clash that found:
+  a leg piece's top and outer side lay in the bare belt's planes; the belt and the hip block now go with the LEGS (the
+  hip shows with either leg piece on), as the hip was drawn as the leg pieces' part. A full build takes ~15 min now.
 - Re-run the exporter after rebuilding the saved files.

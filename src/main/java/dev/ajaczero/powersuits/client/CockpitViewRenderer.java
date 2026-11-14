@@ -31,6 +31,8 @@ final class CockpitViewRenderer extends GeoObjectRenderer<CockpitView, Void, Geo
     /** The rail cannon's charge and the time (ticks), for its shake. */
     private static final DataTicket<float[]> RAIL_SHAKE = DataTicket.create("power_suits_view_rail_shake", float[].class);
     private static final DataTicket<int[]> GLOW = DataTicket.create("power_suits_view_glow", int[].class);
+    /** The suit's armour (SuitArmour.wornMask): the arm in view shows its piece or its bare frame (ArmourBones). */
+    private static final DataTicket<Integer> ARMOUR = DataTicket.create("power_suits_view_armour", Integer.class);
 
 
     CockpitViewRenderer() {
@@ -45,6 +47,7 @@ final class CockpitViewRenderer extends GeoObjectRenderer<CockpitView, Void, Geo
         var suit = view.suit;
         state.addGeckolibData(TOOL_BONE, suit != null && suit.getSocketStack().getItem() instanceof PowerTool tool ? tool.suitBone() : "");
         state.addGeckolibData(BARREL_ANGLE, suit == null ? 0F : suit.socketVisuals().rotorAngle(partialTick));
+        state.addGeckolibData(ARMOUR, suit == null ? 0 : suit.armour().wornMask());
         if (suit != null && view.part == Part.TOOL) {
             float time = (float) ClientUtil.getCurrentTick(partialTick);
             state.addGeckolibData(GLOW, SuitGlowLayer.toolTints(suit, time, partialTick));
@@ -66,6 +69,7 @@ final class CockpitViewRenderer extends GeoObjectRenderer<CockpitView, Void, Geo
             boolean show = name.equals(shown);
             bones.ifPresent(name, b -> b.skipRender(!show).skipChildrenRender(!show));
         }
+        ArmourBones.show(bones, info.getOrDefaultGeckolibData(ARMOUR, 0)); // the arm's piece, or its bare frame
         ToolRotors.pose(bones, info.getOrDefaultGeckolibData(BARREL_ANGLE, 0F)); // turns with the suit's spin
         float[] shake = info.getGeckolibData(RAIL_SHAKE);
         if (shake != null) {

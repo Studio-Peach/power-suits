@@ -37,8 +37,8 @@ import net.neoforged.fml.loading.FMLPaths;
  * fire lit, smoke from the caps; a star reactor frame, its light violet on the same heart), every socket tool (the
  * EM projector, TNT launcher and rail cannon stand in with the drill's body), the drill and chaingun running, then the cockpit: the empty right hand (his arm in
  * the frame's arm) and looking down (nothing of his body, like vanilla), then the iron armour going on piece by piece
- * (step 6a: counted, no looks yet; the full set and the helmet seal it: the visor's seal mark) and a leg piece off
- * again. Shots ap_frame_*.png.
+ * from the bare frame (each in its part's frame's place), the full set from behind, the side and at night, the cockpit
+ * in it (the seal mark lit) and a leg piece off again. Shots ap_frame_*.png.
  * Log run/autopilot_frame.csv per tick: the suit's hitbox, how high the pilot's eyes ride above the suit (1.98: his
  * own eyes in the frame, ModEntities), the client's walk animation (position, speed), the parked frame's power and
  * the pilot's skin model (wide / slim: which frame build is drawn), the armour (pieces, points, sealed) on the client and
@@ -148,16 +148,32 @@ final class FrameScene {
             case 670 -> AutoPilot.shot(mc, "frame_tool_raised_front");
             case 672 -> AutoPilot.setView(-30, 30);
             case 686 -> AutoPilot.shot(mc, "frame_tool_raised_down30");
-            case 688 -> { AutoPilot.hold(o.keyUse, false); socket(mc, -1); AutoPilot.setView(0, 0); o.setCameraType(CameraType.FIRST_PERSON); DevUtil.hideGui(mc, false);
+            // The armour (frame step 6, 2026-11-14): from the bare frame the five iron pieces go on one by one, each
+            // taking its part's frame's place (torso: the breastplate and the waist, the engine's front swapped for its
+            // armoured one; the legs bring the hip block); the full set from behind and the side, the radiator grille
+            // glowing at night, the cockpit's arms in their pieces (the seal mark on the visor lit), one leg piece off
+            // again (unsealed). The CSV's armour columns count them on both sides.
+            case 688 -> { AutoPilot.hold(o.keyUse, false); socket(mc, -1); AutoPilot.setView(0, 0); phase = "armour_bare";
                           for (int i = 0; i < 5; i++) { armour(mc, i, false); } } // the scene's suit came armoured: start bare
-            // The armour (step 6a, 2026-11-14: no looks yet): the five iron pieces go on one by one (the CSV's armour columns
-            // count them on both sides, the armour points follow); with the helmet that seals the frame (the visor's seal
-            // mark lights up), one leg off unseals it.
-            case 692, 696, 700, 704, 708 -> { phase = "armour"; armour(mc, (s - 692) / 4, true); }
-            case 720 -> AutoPilot.shot(mc, "frame_armour_sealed");
-            case 722 -> { phase = "armour_leg_off"; armour(mc, 4, false); }
-            case 736 -> AutoPilot.shot(mc, "frame_armour_unsealed");
-            case 738 -> { armour(mc, 4, true); close(); return false; } // the full set again
+            case 692 -> around(mc, mc.player.getVehicle(), 3.2);
+            case 702 -> AutoPilot.shot(mc, "frame_armour_0_bare");
+            case 704, 720, 736, 752, 768 -> { int i = (s - 704) / 16; phase = "armour_" + i; armour(mc, i, true); }
+            case 716, 732, 748, 764, 780 -> AutoPilot.shot(mc, "frame_armour_" + ((s - 716) / 16 + 1) + "_"
+                    + SuitArmour.Part.values()[(s - 716) / 16].name().toLowerCase(java.util.Locale.ROOT));
+            case 782 -> { phase = "armour_full"; around(mc, mc.player.getVehicle(), -3.2); }
+            case 796 -> AutoPilot.shot(mc, "frame_armour_full_back");
+            case 798 -> { Vec3 at = mc.player.getVehicle().position(); camera(mc, at.add(3.6, 1.2, 0), at.add(0, 1.15, 0)); }
+            case 812 -> AutoPilot.shot(mc, "frame_armour_full_side");
+            case 814 -> { phase = "armour_night"; AutoPilot.onServer(mc, p -> DevUtil.setTime(p.level(), 18000)); around(mc, mc.player.getVehicle(), 2.2); }
+            case 830 -> AutoPilot.shot(mc, "frame_armour_night");
+            case 832 -> { phase = "armour_cockpit"; AutoPilot.onServer(mc, p -> DevUtil.setTime(p.level(), 6000)); mc.setCameraEntity(mc.player);
+                          DevUtil.hideGui(mc, false); o.setCameraType(CameraType.FIRST_PERSON); socket(mc, 0); }
+            case 846 -> AutoPilot.shot(mc, "frame_armour_sealed"); // the arms in their pieces, the seal mark lit
+            case 848 -> AutoPilot.hold(o.keyUse, true);
+            case 862 -> AutoPilot.shot(mc, "frame_armour_cockpit_tool");
+            case 864 -> { AutoPilot.hold(o.keyUse, false); socket(mc, -1); phase = "armour_leg_off"; armour(mc, 4, false); }
+            case 878 -> AutoPilot.shot(mc, "frame_armour_unsealed");
+            case 880 -> { armour(mc, 4, true); close(); return false; } // the full set again
             default -> {}
         }
         if (s >= 1) {
@@ -235,7 +251,7 @@ final class FrameScene {
 
     /** A camera {@code ahead} blocks in front of a suit (negative: behind it) by the way its body faces now, a little to
      *  its side and above, looking at its chest (the client's copy: what is drawn). */
-    private static void around(Minecraft mc, PowerSuitEntity suit, double ahead) {
+    private static void around(Minecraft mc, net.minecraft.world.entity.Entity suit, double ahead) {
         var c = mc.level.getEntity(suit.getId());
         if (!(c instanceof PowerSuitEntity drawn)) {
             return;

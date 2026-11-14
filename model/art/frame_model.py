@@ -111,9 +111,14 @@ ARM_OUT = CHEST_X - 3.75                      # the arm box's inner wall (3.75 +
 # (shoulder platforms) and at the sides.
 TX, TZ = 4.75 + LEG_OUT, 3   # the abdomen box's (the waist's) half width, the torso boxes' half depth
 assert (TX * 2) % 1 == 0 and (CHEST_X * 2) % 1 == 0, (TX, CHEST_X)   # fronts are 2 texels per px: whole texels outside his torso
-# Draft knob: the iron armour ('none' / 'iron'): helmet, torso, arms, legs. See ARMOR_BOX.
-ARMOR = os.environ.get('ARMOR', 'none')
-assert ARMOR in ('none', 'iron'), ARMOR
+# Knob ARMOR: the iron armour ('none' / 'iron' / 'game'): helmet, torso, arms, legs. See ARMOR_BOX. 'none' builds the
+# bare frame, 'iron' the frame fully armoured (the pieces replace its boxes: a review). 'game' (the saved files' default
+# since 2026-11-14, frame step 6c; the game shows what's worn, one piece per part): both, each part's frame cubes in a
+# `frame_<bone>` group and its piece in `armor_<bone>`, and the engine's front both ways (`engine_open` under a bare
+# chest, `engine_armored` under the breastplate). The checks skip pairs that are never drawn together (ALT: a part's
+# frame and its piece, the engine's two fronts); every mix of worn and bare parts is checked.
+ARMOR = os.environ.get('ARMOR', 'game')
+assert ARMOR in ('none', 'iron', 'game'), ARMOR
 # Draft knob ARMOR_FORM (2026-11-12, user: no mix of 3D and 2D armour; the engine went 2D, the armour should too):
 # 'solid' (the pieces as built 11-04/05: the waist 0.5 px shallower than the chest, a step band between them, the
 # pauldron a box 1 px proud) or 'flat' (nothing proud of the frame's boxes: the waist as deep as the chest, the step
@@ -729,12 +734,14 @@ if ENGINE == 'heart':
     # Draft knob GUARD ('ring' / 'grille' / 'radiator' / 'hot'): the core's guard (frame_heart_art.bezel). Picked:
     # hot (2026-11-12, user), with flat armour.
     GUARD = os.environ.get('GUARD', 'hot')
-    for p in heart_art.build(CHEST_X, PX, UP_Y, LOW_Y, PACK_TOP, armored=ARMOR != 'none', guard=GUARD,
-                             side_x=(WAIST_STEPS[0][1][0] + CHEST_X) / 2, flat=ARMOR_FORM == 'flat'):
-        k = 'ht_' + p['name']
-        ENGINE_BOX[k] = p['box']
-        ENGINE_META[k] = p
-        if p['faces']: SHELLS[f'en_{k}'] = dict(faces=p['faces'])
+    # ('game': both fronts, ht_ the open one, ha_ the armoured; one name per part, so their strips are their own)
+    for armored, prefix in ((False, 'ht_'), (True, 'ha_')) if ARMOR == 'game' else ((ARMOR != 'none', 'ht_'),):
+        for p in heart_art.build(CHEST_X, PX, UP_Y, LOW_Y, PACK_TOP, armored=armored, guard=GUARD,
+                                 side_x=(WAIST_STEPS[0][1][0] + CHEST_X) / 2, flat=ARMOR_FORM == 'flat'):
+            k = prefix + p['name']
+            ENGINE_BOX[k] = p['box']
+            ENGINE_META[k] = p
+            if p['faces']: SHELLS[f'en_{k}'] = dict(faces=p['faces'])
 if ENGINE == 'heart' and BACK == 'pistons':
     # the back: the twin-cylinder pack and the old suit's exhausts (commit 4eec4a8, where their picks are told;
     # 2026-11-11, user: "the original firebox with the furnace face and exhausts", over the radial)
@@ -1277,7 +1284,7 @@ def check_armor():
                 bad.append((a['name'], 'does not enclose', st['name']))
         fa, ca = [A for x in a.get('_hollow', [a]) for A in quads(x)], _centre(a)
         for o in others:
-            if o['name'] == a['name']: continue
+            if o['name'] == a['name'] or apart(a, o): continue
             co = _centre(o)
             for B in quads(o):
                 if any(coplanar(A, B) and side(A, ca) * side(A, co) >= 0 for A in fa):
@@ -1296,6 +1303,7 @@ def check():
     bad = []
     for i, a in enumerate(items):
         for b in items[i + 1:]:
+            if apart(a, b): continue
             if limb(a) == limb(b) and (a['uuid'] in of or b['uuid'] in of):   # a shell's texel and his part
                 sh, st = (of[a['uuid']], b) if a['uuid'] in of else (of[b['uuid']], a)
                 if st['name'].startswith(('fr_', 'ar_')) or encloses(sh, st, W): continue
@@ -1324,8 +1332,42 @@ def _armor(bone, side, piece, name, raw=False, box=None, addon=False):
     e['_armor'] = 'addon' if addon else True
 def unlink(name):
     e = next(x for x in elements if x['name'] == name)
+    if ARMOR == 'game':   # kept, in the part's frame group (shown while the part is bare)
+        return regroup(e, f"frame_{e['_g']['name']}")
     elements.remove(e)
     e['_g']['children'].remove(e['uuid'])
+
+def regroup(e, name):
+    """Moves cube e into its bone's child group `name` (made at the bone's pivot: nothing moves)."""
+    g = e['_g']
+    ng = next((x for x in groups if x['name'] == name), None) or \
+        group(name, [g['origin'][0], g['origin'][1] - FY, g['origin'][2]], g)
+    g['children'].remove(e['uuid'])
+    ng['children'].append(e['uuid'])
+    e['_g'] = ng
+    for slab in e.get('_hollow', []): slab['_g'] = ng
+    return e
+
+# ALT (ARMOR=game): what is never drawn together. A cube's alternative: (slot, variant), the slot an armour part (torso
+# / arm / leg, per side), the variant 'frame' (shown while it's bare) or 'armour' (while worn); two cubes of one slot
+# and different variants are never both drawn, so the checks skip them.
+# The belt and its piece, the hip (the slate block round his pelvis), go with the LEGS (the hip is the leg pieces' part,
+# as vanilla's leggings have a body part): the hip shows with either leg piece on, the belt with both legs bare. (With
+# the belt kept under a leg piece, the piece's top and outer side lay in the belt's top and side planes.)
+ALT_SLOT = {'torso': 'torso', 'body': 'hip', 'right_arm': 'arm_r', 'left_arm': 'arm_l', 'right_leg': 'leg_r', 'left_leg': 'leg_l'}
+def alt(e):
+    g = e['_g']
+    if g['name'].startswith(('frame_', 'armor_')) and g['_parent']['name'] in ALT_SLOT:
+        return ALT_SLOT[g['_parent']['name']], g['name'].split('_')[0]
+    if g['name'] in ('engine_open', 'engine_armored'):
+        return 'torso', 'frame' if g['name'] == 'engine_open' else 'armor'
+    return None
+def apart(a, b):
+    """Never drawn together (ALT)."""
+    x, y = alt(a), alt(b)
+    if x is not None and y is not None and {x, y} & {('hip', 'frame')} and {x, y} & {('leg_r', 'armor'), ('leg_l', 'armor')}:
+        return True   # the belt goes when a leg piece goes on
+    return x is not None and y is not None and x[0] == y[0] and x[1] != y[1]
 if 'helmet_armor' in SHELLS:
     _armor('head', 'r', 'helmet', 'ar_helmet')
     _gh = next(x for x in groups if x['name'] == 'armor_head')
@@ -1356,12 +1398,14 @@ if ARMOR != 'none':
 if ENGINE_BOX:
     _t = next(x for x in groups if x['name'] == 'torso')
     eng = group('engine', (0, 14, 0), _t)
+    fronts = {'ht_': group('engine_open', (0, 14, 0), eng), 'ha_': group('engine_armored', (0, 14, 0), eng)} \
+        if ARMOR == 'game' else {}
     for k, box in ENGINE_BOX.items():
         meta = ENGINE_META.get(k)
         if meta:   # a radial part (mirrored: the left one's turns about y and z flip)
             for side in (('r', 'l') if meta['mirror'] else ('r',)):
                 s_ = 1 if side == 'r' else -1
-                e = painted(eng, side, 'en_fb_' + meta['shell'] if meta['shell'] else f'en_{k}',
+                e = painted(fronts.get(k[:3], eng), side, 'en_fb_' + meta['shell'] if meta['shell'] else f'en_{k}',
                             f'en_{k}' + (f'_{side}' if meta['mirror'] else ''), *box)
                 if meta['rot']:
                     rx, ry, rz = meta['rot']

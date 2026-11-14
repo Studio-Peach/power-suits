@@ -49,6 +49,7 @@ public class PowerSuitRenderer extends GeoEntityRenderer<PowerSuitEntity, Living
         state.addGeckolibData(SuitRenderData.HELMET, suit.hasHelmet());
         state.addGeckolibData(SuitRenderData.HELMET_STYLE, suit.getHelmetStyle() == null ? -1 : suit.getHelmetStyle().ordinal());
         state.addGeckolibData(SuitRenderData.ENGINE, suit.getEngine() == null ? -1 : suit.getEngine().ordinal());
+        state.addGeckolibData(SuitRenderData.ARMOUR, suit.armour().wornMask());
         state.addGeckolibData(SuitRenderData.PAINT, suit.getPaint() == null ? -1 : suit.getPaint().getId());
         state.addGeckolibData(SuitRenderData.STEP_OFFSET, (float) suit.animator().getStepOffset(partialTick));
         state.addGeckolibData(SuitRenderData.AIMING, suit.isDriven() && !suit.isDeadOrDying());
@@ -115,6 +116,9 @@ public class PowerSuitRenderer extends GeoEntityRenderer<PowerSuitEntity, Living
         // (SuitGlowLayer) until they get frame art of their own.
         boolean engine = info.getOrDefaultGeckolibData(SuitRenderData.ENGINE, -1) >= 0;
         bones.ifPresent("engine", bone -> bone.skipRender(!engine).skipChildrenRender(!engine));
+        // Armour slots (frame step 6c): each part shows its piece while worn, its bare frame otherwise (ArmourBones);
+        // the breastplate also swaps the engine's front for its armoured one.
+        ArmourBones.show(bones, info.getOrDefaultGeckolibData(SuitRenderData.ARMOUR, 0));
         ToolRotors.pose(bones, info.getOrDefaultGeckolibData(SuitRenderData.BARREL_ANGLE, 0F)); // turn (and coast) always
         float[] shake = info.getGeckolibData(SuitRenderData.RAIL_SHAKE);
         if (shake != null) {

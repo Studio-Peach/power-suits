@@ -87,6 +87,17 @@ public final class SuitArmour {
         return ArmourTier.byId(id - 1);
     }
 
+    /** Both sides: which parts are armoured, one bit per Part (1 << ordinal): what the renderer shows. */
+    public int wornMask() {
+        int mask = 0;
+        for (Part part : Part.values()) {
+            if (this.worn(part) != null) {
+                mask |= 1 << part.ordinal();
+            }
+        }
+        return mask;
+    }
+
     /** Both sides: how many of the five parts are armoured. */
     public int pieces() {
         int count = 0;

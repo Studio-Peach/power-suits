@@ -37,7 +37,8 @@ What the game needs that the design file doesn't hold:
 - Draft groups (proto_*) never ship (GeckoLib would draw them, hidden or not).
 
 The cockpit's arm (client/CockpitHands): the right arm bone's cubes (its shell and shoulder plate) under one bone
-`view_arm`, moved so the pilot's arm pivot (pilot_right_arm, vanilla's) is the origin. The cockpit draws his skin arm
+`view_arm`, moved so the pilot's arm pivot (pilot_right_arm, vanilla's) is the origin; since the armour (frame step
+6c) its bare frame and its piece under it as `frame_right_arm` / `armor_right_arm`, shown by what's worn. The cockpit draws his skin arm
 where vanilla draws a player's empty hand and this round it: one transform for both.
 
 The cockpit's tool arm (client/CockpitHands): the left arm's shell and shoulder plate and every tool bone (with its
@@ -159,8 +160,8 @@ def geo(model, ident):
         if kept:
             bone['cubes'] = [cube_json(c) for c in kept]
         bones.append(bone)
-        if g['name'] == 'right_arm':
-            shell = next(c for c in kept if c['name'].startswith('fr_arm_shell'))
+        if g['name'] == 'right_arm':   # (its shell may sit in a frame_right_arm group: ARMOR=game)
+            shell = next(c for c in model['elements'] if c['name'] == 'fr_arm_shell_r')
             x = (shell['from'][0] + shell['to'][0]) / 2
             bones.append({'name': 'right_hand', 'parent': 'right_arm', 'pivot': [r(-x), GRIP_Y, 0]})
     res = model['resolution']
@@ -170,21 +171,34 @@ def geo(model, ident):
         'bones': bones}]}
 
 
+def arm_parts(bones, arm, root, shift):
+    """An arm bone's cubes for the cockpit: its own under the view's root bone, its bare frame's and its armour piece's
+    (ARMOR=game: frame_<arm> / armor_<arm>, which the cockpit shows by what's worn, client/ArmourBones) as child bones of
+    the same names, every cube moved by `shift`."""
+    def moved(cubes):
+        out = []
+        for c in json.loads(json.dumps(cubes)):
+            c['origin'] = shift(c['origin'])
+            if 'pivot' in c:
+                c['pivot'] = shift(c['pivot'])
+            out.append(c)
+        return out
+    parts = [{'name': root, 'pivot': [0, 0, 0], 'cubes': moved(bones[arm].get('cubes', []))}]
+    for name in (f'frame_{arm}', f'armor_{arm}'):
+        if name in bones:
+            parts.append({'name': name, 'parent': root, 'pivot': [0, 0, 0], 'cubes': moved(bones[name].get('cubes', []))})
+    return parts
+
+
 def arm_view(model, ident):
     """The right arm's cubes about the pilot's arm pivot (see the docstring)."""
     built = geo(model, ident)['minecraft:geometry'][0]
     bones = {b['name']: b for b in built['bones']}
     px, py, pz = bones['pilot_right_arm']['pivot']   # geo axes (x negated), like the cubes' origins
-    cubes = []
-    for c in bones['right_arm']['cubes']:
-        c = json.loads(json.dumps(c))
-        c['origin'] = [r(c['origin'][0] - px), r(c['origin'][1] - py), r(c['origin'][2] - pz)]
-        if 'pivot' in c:
-            c['pivot'] = [r(c['pivot'][0] - px), r(c['pivot'][1] - py), r(c['pivot'][2] - pz)]
-        cubes.append(c)
+    shift = lambda v: [r(v[0] - px), r(v[1] - py), r(v[2] - pz)]
     built['description'] = dict(built['description'], identifier='geometry.' + ident,
                                 visible_bounds_width=2, visible_bounds_height=2, visible_bounds_offset=[0, 0, 0])
-    built['bones'] = [{'name': 'view_arm', 'pivot': [0, 0, 0], 'cubes': cubes}]
+    built['bones'] = arm_parts(bones, 'right_arm', 'view_arm', shift)
     return {'format_version': '1.12.0', 'minecraft:geometry': [built]}
 
 
@@ -201,7 +215,6 @@ def tool_view(model, ident):
             keep.add(b['name'])
             bones.append(json.loads(json.dumps(b)))
     sx, sy, sz = by_name['pilot_left_arm']['pivot']
-    arm = json.loads(json.dumps(by_name['left_arm']['cubes']))
     shift = lambda v: [r(v[0] - sx), r(v[1] - sy), r(v[2] - sz)]
     for b in bones:
         b['pivot'] = shift(b['pivot'])
@@ -213,9 +226,7 @@ def tool_view(model, ident):
                 c['pivot'] = shift(c['pivot'])
     built['description'] = dict(built['description'], identifier='geometry.' + ident,
                                 visible_bounds_width=2, visible_bounds_height=2, visible_bounds_offset=[0, 0, 0])
-    for c in arm:
-        c['origin'] = shift(c['origin'])
-    built['bones'] = [{'name': 'view_tool', 'pivot': [0, 0, 0], 'cubes': arm}] + bones
+    built['bones'] = arm_parts(by_name, 'left_arm', 'view_tool', shift) + bones
     return {'format_version': '1.12.0', 'minecraft:geometry': [built]}
 
 
