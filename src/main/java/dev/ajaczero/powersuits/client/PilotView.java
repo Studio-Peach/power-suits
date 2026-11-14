@@ -62,7 +62,7 @@ public final class PilotView {
 
     /**
      * The hand pass while piloting: the socket tool takes the off hand's place (vanilla's off-hand item isn't drawn), and
-     * the main hand stays vanilla's: a held item is left to vanilla, an empty hand becomes the suit's gauntlet
+     * the main hand stays vanilla's: a held item is left to vanilla, an empty hand is the pilot's arm in the frame's
      * (CockpitHands). The tool is drawn with whichever hand vanilla renders first this frame (with a bow or crossbow in
      * use vanilla renders only one hand).
      */
@@ -81,15 +81,15 @@ public final class PilotView {
             event.setCanceled(true);
         } else if (event.getItemStack().isEmpty()) {
             event.setCanceled(true);
-            CockpitHands.renderGauntlet(event, suit);
+            CockpitHands.renderArm(event, suit);
         }
     }
 
-    /** Pull the third-person camera back so the whole 3-block suit fits on screen. */
+    /** Pull the third-person camera back so the whole frame (2.3 blocks, a player's 1.8) fits on screen. */
     @SubscribeEvent
     public static void cameraDistance(CalculateDetachedCameraDistanceEvent event) {
         if (Minecraft.getInstance().player != null && Minecraft.getInstance().player.getVehicle() instanceof PowerSuitEntity) {
-            event.setDistance(Math.max(event.getDistance(), 6.5F));
+            event.setDistance(Math.max(event.getDistance(), CockpitDrafts.cameraDistance));
         }
     }
 

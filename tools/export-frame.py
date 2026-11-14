@@ -5,6 +5,7 @@ mod as GeckoLib files, without Blockbench (the frame is script-built: model/art/
   geckolib/models/entity/power_frame.geo.json, power_frame_slim.geo.json
   textures/entity/power_frame.png, power_frame_slim.png
   geckolib/animations/entity/power_frame.animation.json
+  geckolib/models/view/frame_arm.geo.json, frame_arm_slim.geo.json (the cockpit's right arm, below)
 
 Run: python3 tools/export-frame.py        (no dependencies)
 
@@ -21,6 +22,10 @@ What the game needs that the design file doesn't hold:
   with no rotation and no cubes changes nothing else.
 - `right_hand`: the grip where the pilot's held item is drawn (HeldItemLayer), in the right fist.
 - Draft groups (proto_*) never ship (GeckoLib would draw them, hidden or not).
+
+The cockpit's arm (client/CockpitHands): the right arm bone's cubes (its shell and shoulder plate) under one bone
+`view_arm`, moved so the pilot's arm pivot (pilot_right_arm, vanilla's) is the origin. The cockpit draws his skin arm
+where vanilla draws a player's empty hand and this round it: one transform for both.
 
 The animation file holds every animation name the suit's controllers ask for (SuitAnimator, the tools' run loops),
 each empty: the frame is posed in code (PowerSuitRenderer), and an empty animation keeps GeckoLib's controllers and
@@ -145,6 +150,24 @@ def geo(model, ident):
         'bones': bones}]}
 
 
+def arm_view(model, ident):
+    """The right arm's cubes about the pilot's arm pivot (see the docstring)."""
+    built = geo(model, ident)['minecraft:geometry'][0]
+    bones = {b['name']: b for b in built['bones']}
+    px, py, pz = bones['pilot_right_arm']['pivot']   # geo axes (x negated), like the cubes' origins
+    cubes = []
+    for c in bones['right_arm']['cubes']:
+        c = json.loads(json.dumps(c))
+        c['origin'] = [r(c['origin'][0] - px), r(c['origin'][1] - py), r(c['origin'][2] - pz)]
+        if 'pivot' in c:
+            c['pivot'] = [r(c['pivot'][0] - px), r(c['pivot'][1] - py), r(c['pivot'][2] - pz)]
+        cubes.append(c)
+    built['description'] = dict(built['description'], identifier='geometry.' + ident,
+                                visible_bounds_width=2, visible_bounds_height=2, visible_bounds_offset=[0, 0, 0])
+    built['bones'] = [{'name': 'view_arm', 'pivot': [0, 0, 0], 'cubes': cubes}]
+    return {'format_version': '1.12.0', 'minecraft:geometry': [built]}
+
+
 def animations():
     names = json.load(open(SUIT_ANIMS))['animations']
     out = {}
@@ -194,6 +217,8 @@ if __name__ == '__main__':
     for ident, rel in BUILDS.items():
         model = json.load(open(os.path.join(ROOT, rel)))
         write(f'geckolib/models/entity/{ident}.geo.json', json.dumps(geo(model, ident), indent=1).encode())
+        arm = ident.replace('power_frame', 'frame_arm')
+        write(f'geckolib/models/view/{arm}.geo.json', json.dumps(arm_view(model, arm), indent=1).encode())
         source = model['textures'][0]['source']
         write(f'textures/entity/{ident}.png', base64.b64decode(source.split(',', 1)[1]))
     write('geckolib/animations/entity/power_frame.animation.json', json.dumps(animations(), indent=1).encode())

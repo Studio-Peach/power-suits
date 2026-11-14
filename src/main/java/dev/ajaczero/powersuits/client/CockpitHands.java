@@ -16,22 +16,30 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.model.geom.ModelLayers;
+import net.minecraft.client.model.geom.ModelPart;
+import net.minecraft.client.model.player.PlayerModel;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
+import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.PlayerModelType;
+import net.minecraft.world.entity.player.PlayerSkin;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.client.event.RenderHandEvent;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.joml.Vector3fc;
+import org.jspecify.annotations.Nullable;
 
 /**
  * What the pilot sees of the suit's arms, drawn in the hand pass like vanilla's first-person hands. The suit's own
  * upper body is hidden in the cockpit (only the legs are drawn), because looking at its arms from inside never lined
  * up with the view: the arm raised a hand where your hand isn't, the tool hid behind its own base, pads clipped.
  * Instead: the socket tool low on the left (CockpitView, animated like the suit's tool), and on the right your main
- * hand exactly as vanilla draws it, except that the suit's gauntlet replaces the player's arm: a held item is vanilla's
- * own first-person item (same place, swing, eat / bow / shield / crossbow motions; no arm, as in vanilla), and an
- * empty hand is the gauntlet in vanilla's empty-arm pose (PilotView decides which).
+ * hand exactly as vanilla draws it: a held item is vanilla's own first-person item (same place, swing, eat / bow /
+ * shield / crossbow motions; no arm, as in vanilla), and an empty hand is your own arm in the frame's arm (renderArm;
+ * the big suit's gauntlet until 2026-11-14). PilotView decides which.
  *
  * <p>Positions are in view space (blocks; x right, y up, -z forward), like vanilla's hand transforms.
  */
@@ -50,10 +58,6 @@ public final class CockpitHands {
     static float toolYaw = -2.1F, toolPitch = 88.4F, toolRoll = 15F, toolScale = 1.0F;
     static Vector3f toolRaisedPos = new Vector3f(-0.55F, -0.54F, -0.19F);
     static float toolRaisedYaw = -3.2F, toolRaisedPitch = 93.1F;
-    // Gauntlet: stands in for the player's arm, so it only shows when vanilla would show the arm (an empty hand; with an item
-    // vanilla draws just the item, and so do we). It's laid along the player's right arm in vanilla's own empty-hand pose
-    // (ItemInHandRenderer.renderPlayerArm): its fingertips where the player's fist is, a little bulkier than the arm.
-    static float gauntletScale = 0.7F;
     /** The chaingun's muzzle (barrel tips) in the view model (pixels below the socket; the muzzle bone's pivot). */
     private static final float MUZZLE_PX = -15F;
     private static final float RECOIL_TICKS = 6F;
@@ -73,14 +77,51 @@ public final class CockpitHands {
         pose.popPose();
     }
 
-    /** The gauntlet where vanilla draws the empty right hand, with vanilla's swing and equip motion. */
-    static void renderGauntlet(RenderHandEvent event, PowerSuitEntity suit) {
+    /** The frame's right arm: the pilot's own skin arm exactly where vanilla draws an empty right hand (its swing and
+     *  equip motion too), with the frame's arm shell round it (tools/export-frame.py: the same cubes about the same
+     *  pivot as on the frame), so the cage and the fist under his hand move with it. */
+    static void renderArm(RenderHandEvent event, PowerSuitEntity suit) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) {
+            return;
+        }
+        PlayerSkin skin = mc.player.getSkin();
+        boolean slim = skin.model() == PlayerModelType.SLIM;
         PoseStack pose = event.getPoseStack();
-        CockpitView.INSTANCE.suit = suit;
         pose.pushPose();
-        gauntletTransform(pose, event.getSwingProgress(), event.getEquipProgress());
-        drawPart(pose, event, CockpitViewRenderer.Part.GAUNTLET);
+        vanillaArmTransform(pose, event.getSwingProgress(), event.getEquipProgress());
+        event.getSubmitNodeCollector().submitModelPart(arm(slim), pose, RenderTypes.entityTranslucent(skin.body().texturePath()),
+                event.getPackedLight(), OverlayTexture.NO_OVERLAY, null);
+        if (CockpitDrafts.armCage) {
+            // Vanilla's model axes are y-down and x-mirrored; the frame's (GeckoLib's) aren't: turn 180 about Z.
+            pose.scale(-1F, -1F, 1F);
+            CockpitView.INSTANCE.suit = suit;
+            CockpitView.INSTANCE.slim = slim;
+            drawPart(pose, event, CockpitViewRenderer.Part.ARM);
+        }
         pose.popPose();
+    }
+
+    private static @Nullable ModelPart wideArm, slimArm;
+
+    /** The pilot's right arm, vanilla's part with no pose of its own (vanillaArmTransform places it) and no sleeve (the
+     *  skin's outer layer lies in the cage's wall planes, as in third person: PilotLayer). */
+    private static ModelPart arm(boolean slim) {
+        ModelPart arm = slim ? slimArm : wideArm;
+        if (arm == null) {
+            PlayerModel model = new PlayerModel(Minecraft.getInstance().getEntityModels()
+                    .bakeLayer(slim ? ModelLayers.PLAYER_SLIM : ModelLayers.PLAYER), slim);
+            model.rightSleeve.visible = false;
+            arm = model.rightArm;
+            arm.setPos(0F, 0F, 0F);
+            arm.setRotation(0F, 0F, 0F);
+            if (slim) {
+                slimArm = arm;
+            } else {
+                wideArm = arm;
+            }
+        }
+        return arm;
     }
 
     private static void drawPart(PoseStack pose, RenderHandEvent event, CockpitViewRenderer.Part part) {
@@ -123,9 +164,9 @@ public final class CockpitHands {
         return suit.animator().getHipBob() * 0.008F + Mth.sin((float) ClientUtil.getCurrentTick() * 0.07F) * 0.004F;
     }
 
-    /** Vanilla's right-arm transform (ItemInHandRenderer.renderPlayerArm + PlayerModel's right arm), then the gauntlet
-     *  laid along that arm. */
-    private static void gauntletTransform(PoseStack pose, float swing, float equip) {
+    /** Vanilla's right-arm transform (ItemInHandRenderer.renderPlayerArm + PlayerModel's right arm, to its pivot, in
+     *  vanilla's model axes: y runs down the arm). */
+    private static void vanillaArmTransform(PoseStack pose, float swing, float equip) {
         float sq = Mth.sqrt(swing);
         pose.translate(-0.3F * Mth.sin(sq * Mth.PI) + 0.64F, 0.4F * Mth.sin(sq * Mth.TWO_PI) - 0.6F - equip * 0.6F,
                 -0.4F * Mth.sin(swing * Mth.PI) - 0.72F);
@@ -141,13 +182,6 @@ public final class CockpitHands {
         // Its box runs x -3..1, y -2..10 (model Y runs down the arm, toward the fist at y 10).
         pose.translate(-5F / 16F, 2F / 16F, 0F);
         pose.rotate(Axis.ZP, 0.1F);
-        // Into the gauntlet's space: entity models are turned 180 degrees about Z into the world (Y up), GeckoLib models
-        // aren't, so the gauntlet (hanging -Y, fingertips at y -17, centred on x 0.5) turns 180 about Z; then its
-        // fingertips go where the player's fist ends (-1, 10, 0).
-        float k = gauntletScale;
-        pose.translate((-1F + 0.5F * k) / 16F, (10F - 17F * k) / 16F, 0F);
-        pose.rotateDegrees(Axis.ZP, 180.0F);
-        pose.scale(k, k, k);
     }
 
     /** The suit plays tool_recoil when the EM projector pushes; start the kick here too. (Chaingun shots kick through
@@ -211,7 +245,6 @@ public final class CockpitHands {
             toolRaisedYaw = f.apply("toolRaisedYaw", toolRaisedYaw); toolRaisedPitch = f.apply("toolRaisedPitch", toolRaisedPitch);
             toolYaw = f.apply("toolYaw", toolYaw); toolPitch = f.apply("toolPitch", toolPitch);
             toolRoll = f.apply("toolRoll", toolRoll); toolScale = f.apply("toolScale", toolScale);
-            gauntletScale = f.apply("gauntletScale", gauntletScale);
         } catch (Exception e) {
             PowerSuits.LOGGER.warn("[view] can't read {}: {}", file, e.toString());
         }

@@ -16,13 +16,16 @@ import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.resources.Identifier;
 import org.jspecify.annotations.Nullable;
 
-/** Draws one half of the cockpit viewmodel (CockpitView): the socket tool or the empty gauntlet. */
+/** Draws one part of the cockpit viewmodel (CockpitView): the socket tool, or the frame's right arm round the pilot's
+ *  own (CockpitHands). */
 final class CockpitViewRenderer extends GeoObjectRenderer<CockpitView, Void, GeoRenderState> {
-    enum Part { TOOL, GAUNTLET }
+    enum Part { TOOL, ARM }
 
 
     // Copied from CockpitView / its suit when the frame is extracted (the model is posed and drawn later).
     private static final DataTicket<Part> PART = DataTicket.create("power_suits_view_part", Part.class);
+    /** The pilot's skin is Alex's: the frame's slim arm (the same cubes about his arm, the slim build's texture). */
+    private static final DataTicket<Boolean> SLIM = DataTicket.create("power_suits_view_slim", Boolean.class);
     private static final DataTicket<String> TOOL_BONE = DataTicket.create("power_suits_view_tool_bone", String.class);
     private static final DataTicket<Float> BARREL_ANGLE = DataTicket.create("power_suits_view_barrel_angle", Float.class);
     /** The rail cannon's charge and the time (ticks), for its shake. */
@@ -39,6 +42,7 @@ final class CockpitViewRenderer extends GeoObjectRenderer<CockpitView, Void, Geo
     @Override
     public void addRenderData(CockpitView view, @Nullable Void ignored, GeoRenderState state, float partialTick) {
         state.addGeckolibData(PART, view.part);
+        state.addGeckolibData(SLIM, view.slim);
         var suit = view.suit;
         state.addGeckolibData(TOOL_BONE, suit != null && suit.getSocketStack().getItem() instanceof PowerTool tool ? tool.suitBone() : "");
         state.addGeckolibData(BARREL_ANGLE, suit == null ? 0F : suit.socketVisuals().rotorAngle(partialTick));
@@ -58,7 +62,7 @@ final class CockpitViewRenderer extends GeoObjectRenderer<CockpitView, Void, Geo
     public void adjustModelBonesForRender(RenderPassInfo<GeoRenderState> info, BoneSnapshots bones) {
         boolean tool = info.getOrDefaultGeckolibData(PART, Part.TOOL) == Part.TOOL;
         bones.ifPresent("view_tool", b -> b.skipRender(!tool).skipChildrenRender(!tool));
-        bones.ifPresent("view_gauntlet", b -> b.skipRender(tool).skipChildrenRender(tool));
+        bones.ifPresent("view_gauntlet", b -> b.skipRender(true).skipChildrenRender(true)); // the big suit's (the frame's arm: ARM)
         String installed = info.getOrDefaultGeckolibData(TOOL_BONE, "");
         for (String name : ToolBones.all()) {
             boolean show = name.equals(installed);
@@ -84,15 +88,28 @@ final class CockpitViewRenderer extends GeoObjectRenderer<CockpitView, Void, Geo
         private static final Identifier GEO = Identifier.fromNamespaceAndPath(PowerSuits.MODID, "view/power_suit_view");
         private static final Identifier TEXTURE = Identifier.fromNamespaceAndPath(PowerSuits.MODID, "textures/entity/power_suit.png");
         private static final Identifier ANIMATIONS = Identifier.fromNamespaceAndPath(PowerSuits.MODID, "entity/power_suit");
+        // The frame's arm (tools/export-frame.py), per build.
+        private static final Identifier ARM = Identifier.fromNamespaceAndPath(PowerSuits.MODID, "view/frame_arm");
+        private static final Identifier ARM_SLIM = Identifier.fromNamespaceAndPath(PowerSuits.MODID, "view/frame_arm_slim");
+        private static final Identifier FRAME = Identifier.fromNamespaceAndPath(PowerSuits.MODID, "textures/entity/power_frame.png");
+        private static final Identifier FRAME_SLIM = Identifier.fromNamespaceAndPath(PowerSuits.MODID, "textures/entity/power_frame_slim.png");
+
+        private static boolean arm(GeoRenderState state) {
+            return state.getOrDefaultGeckolibData(PART, Part.TOOL) == Part.ARM;
+        }
+
+        private static boolean slim(GeoRenderState state) {
+            return state.getOrDefaultGeckolibData(SLIM, false);
+        }
 
         @Override
         public Identifier getModelResource(GeoRenderState state) {
-            return GEO;
+            return arm(state) ? (slim(state) ? ARM_SLIM : ARM) : GEO;
         }
 
         @Override
         public Identifier getTextureResource(GeoRenderState state) {
-            return TEXTURE;
+            return arm(state) ? (slim(state) ? FRAME_SLIM : FRAME) : TEXTURE;
         }
 
         @Override

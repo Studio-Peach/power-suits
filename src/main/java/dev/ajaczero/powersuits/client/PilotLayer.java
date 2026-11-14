@@ -64,7 +64,8 @@ public class PilotLayer extends GeoRenderLayer<PowerSuitEntity, Void, LivingEnti
         boolean cockpit = info.getOrDefaultGeckolibData(SuitRenderData.COCKPIT, false);
         Map<String, ModelPart> parts = info.getOrDefaultGeckolibData(SuitRenderData.PILOT_SLIM, false) ? this.slim : this.wide;
         parts.forEach((boneName, part) -> {
-            if (cockpit && !boneName.endsWith("_leg")) {
+            if (cockpit && (CockpitDrafts.down == 0 || boneName.equals("pilot_head") || boneName.endsWith("_arm")
+                    || (CockpitDrafts.down == 1 && boneName.equals("pilot_torso")))) {
                 return; // the camera is in his head; his arms are the cockpit viewmodel's
             }
             info.model().getBone(boneName).ifPresent(bone -> consumer.accept(bone, (pass, b, tasks) -> {

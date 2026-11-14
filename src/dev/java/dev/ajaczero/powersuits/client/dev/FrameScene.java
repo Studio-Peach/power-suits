@@ -1,6 +1,7 @@
 package dev.ajaczero.powersuits.client.dev;
 
 import dev.ajaczero.powersuits.PowerSuits;
+import dev.ajaczero.powersuits.client.CockpitDrafts;
 import dev.ajaczero.powersuits.entity.PowerSuitEntity;
 import dev.ajaczero.powersuits.registry.ModEntities;
 import java.io.BufferedWriter;
@@ -62,7 +63,29 @@ final class FrameScene {
             case 222 -> AutoPilot.shot(mc, "frame_look_up40");
             case 224 -> { phase = "parked"; AutoPilot.setView(0, 0); camera(mc, home.add(-3.6, 1.3, 3.2), home.add(-3, 1.1, 0)); }
             case 240 -> AutoPilot.shot(mc, "frame_parked");
-            case 244 -> { close(); mc.setCameraEntity(mc.player); DevUtil.hideGui(mc, false); return false; }
+            // Step 2 drafts (CockpitDrafts): the empty right hand, looking down, the third-person distance.
+            case 244 -> { phase = "cockpit"; mc.setCameraEntity(mc.player); DevUtil.hideGui(mc, false); o.setCameraType(CameraType.FIRST_PERSON); CockpitDrafts.armCage = true; }
+            case 258 -> AutoPilot.shot(mc, "frame_cockpit_arm_cage");
+            case 260 -> CockpitDrafts.armCage = false;
+            case 272 -> AutoPilot.shot(mc, "frame_cockpit_arm_bare");
+            case 274 -> CockpitDrafts.armCage = true;
+            case 280 -> { phase = "cockpit_down"; AutoPilot.setView(0, 60); CockpitDrafts.down = 0; }
+            case 296 -> AutoPilot.shot(mc, "frame_cockpit_down_0");
+            case 298 -> CockpitDrafts.down = 1;
+            case 306 -> AutoPilot.shot(mc, "frame_cockpit_down_1");
+            case 308 -> CockpitDrafts.down = 2;
+            case 316 -> AutoPilot.shot(mc, "frame_cockpit_down_2");
+            case 318 -> AutoPilot.setView(0, 35);
+            case 332 -> AutoPilot.shot(mc, "frame_cockpit_down_2_35");
+            case 334 -> CockpitDrafts.down = 1;
+            case 340 -> AutoPilot.shot(mc, "frame_cockpit_down_1_35");
+            case 342 -> { phase = "distance"; CockpitDrafts.down = 1; AutoPilot.setView(0, 15); o.setCameraType(CameraType.THIRD_PERSON_BACK); CockpitDrafts.cameraDistance = 4F; }
+            case 356 -> AutoPilot.shot(mc, "frame_tp_4");
+            case 358 -> CockpitDrafts.cameraDistance = 5F;
+            case 372 -> AutoPilot.shot(mc, "frame_tp_5");
+            case 374 -> CockpitDrafts.cameraDistance = 6.5F;
+            case 388 -> AutoPilot.shot(mc, "frame_tp_6_5");
+            case 390 -> { CockpitDrafts.cameraDistance = 5F; AutoPilot.setView(0, 0); close(); return false; }
             default -> {}
         }
         if (s >= 1) {

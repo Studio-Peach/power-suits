@@ -10,9 +10,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
-import net.minecraft.client.renderer.rendertype.RenderType;
-import net.minecraft.client.renderer.rendertype.RenderTypes;
-import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.PlayerModelType;
 import net.minecraft.world.entity.player.PlayerSkin;
@@ -96,7 +93,17 @@ public class PowerSuitRenderer extends GeoEntityRenderer<PowerSuitEntity, Living
         // feet when looking down); the arms come from the cockpit viewmodel (CockpitHands), which lines up with the
         // view. The body bone holds everything above the hips: torso, arms, head.
         boolean cockpit = info.getOrDefaultGeckolibData(SuitRenderData.COCKPIT, false);
-        bones.ifPresent("body", body -> body.skipRender(cockpit).skipChildrenRender(cockpit));
+        if (cockpit) {
+            switch (CockpitDrafts.down) {
+                case 0 -> bones.ifPresent("marine", root -> root.skipRender(true).skipChildrenRender(true));
+                case 1 -> bones.ifPresent("body", body -> body.skipRender(true).skipChildrenRender(true));
+                default -> {
+                    for (String bone : new String[] {"head", "right_arm", "left_arm"}) {
+                        bones.ifPresent(bone, b -> b.skipRender(true).skipChildrenRender(true));
+                    }
+                }
+            }
+        }
         // Socket: show the installed tool's bone and hide the others; the bare coupling only when empty.
         String installed = info.getOrDefaultGeckolibData(SuitRenderData.TOOL_BONE, "");
         for (String toolBone : ToolBones.all()) {
@@ -183,14 +190,5 @@ public class PowerSuitRenderer extends GeoEntityRenderer<PowerSuitEntity, Living
         bones.ifPresent("left_leg", leg -> leg.setRotX(leg.getRotX() - 1.4F * counter));
     }
 
-    /** GeckoLib draws both sides of every face by default. From inside the suit that exposes the
-     *  insides of overlapping cubes (which flicker as parts move), so cull back faces there. */
-    @Override
-    public @Nullable RenderType getRenderType(LivingEntityRenderState state, Identifier texture) {
-        if (state.getOrDefaultGeckolibData(SuitRenderData.COCKPIT, false)) {
-            return RenderTypes.entityCutoutCull(texture);
-        }
-        return super.getRenderType(state, texture);
-    }
 
 }

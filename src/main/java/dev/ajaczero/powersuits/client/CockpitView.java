@@ -27,6 +27,8 @@ final class CockpitView implements GeoAnimatable {
     PowerSuitEntity suit;
     /** Which half the next render pass draws (copied into its render state: the model is drawn later). */
     CockpitViewRenderer.Part part = CockpitViewRenderer.Part.TOOL;
+    /** The pilot's skin is Alex's (the frame's slim arm), set before each render. */
+    boolean slim;
 
     private CockpitView() {}
 
