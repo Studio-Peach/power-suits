@@ -131,10 +131,10 @@ def ring_cap(w, h):  # its top / bottom: the plate, an edge round it
     return [''.join('D' if i in (0, w - 1) or j in (0, h - 1) else 'C' for i in range(w)) for j in range(h)]
 
 
-def build(c, top, lamp='red', kind='A', body='ref', look='old'):
+def build(c, top, lamp='red', kind='A', body='ref', look='old', barrels='4', handle='paint'):
     """The chaingun's parts on an arm centred at x c (right side) whose socket is at y top: the receiver (bone 'tool')
     and the barrels with their rings under it (bone 'bit': they spin). look: GUN_LOOK (below), 'old' the first drafts."""
-    if look != 'old': return doom_build(c, top, look)
+    if look != 'old': return doom_build(c, top, look, barrels, handle)
     metal = 'steel' if kind == 'C' else 'black'
     P = pal(metal, lamp)
     part = lambda name, box, faces, bone='tool', rot=0: dict(drill.part(name, box, _paint(faces, P), rot), bone=bone)
@@ -218,28 +218,55 @@ def ring_d(w, h):        # the clamp ring's side, dimmer than ring() (a bright r
     return ['B' * (w - 1) + 'C'] + ['C' * (w - 1) + 'D'] * (h - 1)
 
 
-def muzzle_side(w, h):   # the block's side: a lit top edge, its first column a green light (one per corner)
-    return ['W' + 'B' * (w - 2) + 'C'] + ['L' + 'C' * (w - 2) + 'D'] * (h - 2) + ['l' + 'D' * (w - 2) + 'E']
+# Round 2 (2026-11-14, user: the four barrels; no clamp ring halfway; a more detailed muzzle, its green light in the
+# middle of each side; three barrels maybe, but straight, not turned). GUN_BARRELS=4 (the square) | 3 (a straight row
+# across, x: all three seen from behind) | 3z (the row front to back, z: the reference's side view); GUN_HANDLE=paint
+# (on the back's art) | 3d (the loop, doom3d). The muzzle, stepped: a collar 3.5 x 0.5 x 3.5 where the barrels go in,
+# the block 4.5 x 2 x 4.5 (a lit chamfer round its top, a bolt at each upper corner of a side, the green light 1 x 3 in
+# a dark housing in each side's middle, a shadow row under it), the barrels' ends 0.5 px under it.
+def muzzle_side(w, h):   # 9 x 4: chamfer, bolts, the light in its housing (cols 3-5), the bottom's shadow
+    m = w // 2
+    rows = ['D' + 'B' * (w - 2) + 'D',
+            'B' + 'h' + 'C' * (m - 3) + 'EWE' + 'C' * (w - m - 4) + 'h' + 'D'] + \
+           ['B' + 'C' * (m - 2) + 'ELE' + 'C' * (w - m - 3) + 'D'] * (h - 3) + \
+           ['E' + 'D' * (m - 2) + 'ElE' + 'D' * (w - m - 3) + 'E']
+    assert all(len(r) == w for r in rows), rows
+    return rows
 
 
-def doom_build(c, top, look):
+def muzzle_top(w, h):    # the chamfer round the top, a bolt head inset at each corner, the collar's shadow inside
+    return [''.join('B' if i in (0, w - 1) or j in (0, h - 1) else 'h' if i in (1, w - 2) and j in (1, h - 2)
+                    else 'C' if i in (1, w - 2) or j in (1, h - 2) else 'D' for i in range(w)) for j in range(h)]
+
+
+def muzzle_bottom(w, h):  # the face the barrels poke through: a rim, recessed dark inside
+    return [''.join('C' if i in (0, w - 1) or j in (0, h - 1) else 'E' for i in range(w)) for j in range(h)]
+
+
+def collar(w, h):        # the collar's side: lit top row, dark under
+    return ['C' * (w - 1) + 'D'] + ['D' * (w - 1) + 'E'] * (h - 1)
+
+
+def doom_build(c, top, look, barrels='4', handle='paint'):
+    if look == 'doom4': barrels = '4'                       # (round 1's names)
+    if look == 'doom3d': handle = '3d'
     part = lambda name, box, faces, bone='tool', rot=0: dict(drill.part(name, box, _paint(faces, DOOM), rot), bone=bone)
     t, L = top - 4, 5
     parts = [part('body', ((c - 2.5, t, -2.5), (c + 2.5, top, 2.5)), D_FACES)]
     one = lambda ch: (lambda w, h: [ch * w] * h)
     bfaces = {'north': one('K'), 'south': one('K'), 'east': one('K'), 'west': one('K'), 'up': one('D'), 'down': one('x')}
-    if look == 'doom4':
-        for k, (dx, dz) in enumerate(((-1, -1), (1, -1), (1, 1), (-1, 1))):
-            parts.append(part(f'barrel{k}', ((c + dx - 0.5, t - L, dz - 0.5), (c + dx + 0.5, t, dz + 0.5)), bfaces, 'bit'))
-    else:   # three, 1 px off the axis, each turned to face out (90: one on the gun's top, the back)
-        for k in range(3):
-            parts.append(part(f'barrel{k}', ((c + 0.5, t - L, -0.5), (c + 1.5, t, 0.5)), bfaces, 'bit', rot=90 + 120 * k))
-    ring_f = {'north': ring_d, 'south': ring_d, 'east': ring_d, 'west': ring_d, 'up': ring_cap, 'down': ring_cap}
-    parts.append(part('ring_mid', ((c - 2.25, t - 2, -2.25), (c + 2.25, t - 1.5, 2.25)), ring_f, 'bit'))
-    mf = {'north': muzzle_side, 'south': muzzle_side, 'east': muzzle_side, 'west': muzzle_side,
-          'up': ring_cap, 'down': ring_cap}
-    parts.append(part('muzzle', ((c - 2, t - L + 0.5, -2), (c + 2, t - L + 2, 2)), mf, 'bit'))
-    if look == 'doom3d':   # the carry handle, a loop 1 px proud of the back over the housing (rows 0-2 + 1 px)
+    at = {'4': ((-1, -1), (1, -1), (1, 1), (-1, 1)),        # centres (dx, dz), all 1 x 1 px, none turned
+          '3': ((-1.5, 0), (0, 0), (1.5, 0)), '3z': ((0, -1.5), (0, 0), (0, 1.5))}[barrels]
+    for k, (dx, dz) in enumerate(at):
+        parts.append(part(f'barrel{k}', ((c + dx - 0.5, t - L, dz - 0.5), (c + dx + 0.5, t, dz + 0.5)), bfaces, 'bit'))
+    y0 = t - L + 0.5                                         # the block's bottom
+    parts.append(part('muzzle', ((c - 2.25, y0, -2.25), (c + 2.25, y0 + 2, 2.25)),
+                      {'north': muzzle_side, 'south': muzzle_side, 'east': muzzle_side, 'west': muzzle_side,
+                       'up': muzzle_top, 'down': muzzle_bottom}, 'bit'))
+    # the collar (a straight row of three reaches z / x +-2: it stands through the collar's sides, fine)
+    parts.append(part('muzzle_collar', ((c - 1.75, y0 + 2, -1.75), (c + 1.75, y0 + 2.5, 1.75)),
+                      {'north': collar, 'south': collar, 'east': collar, 'west': collar, 'up': one('C'), 'down': one('E')}, 'bit'))
+    if handle == '3d':   # the carry handle, a loop 1 px proud of the back over the housing (rows 0-2 + 1 px)
         side_e = lambda w, h: ['AB'] + ['B.'] * (h - 2) + ['BD']      # (back -> front: the bar, then the gap)
         side_w = lambda w, h: ['BA'] + ['.B'] * (h - 2) + ['DB']
         parts.append(part('handle', ((c - 0.5, top - 2.5, 2.5), (c + 0.5, top - 0.5, 3.5)),

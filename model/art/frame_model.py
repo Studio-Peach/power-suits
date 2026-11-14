@@ -807,7 +807,8 @@ if TOOL == 'saw':
 if TOOL == 'gun':   # the chaingun (frame_gun_art.py, drafts GUN=A|B|C, GUN_LOOK=doom|doom4|doom3d)
     import frame_gun_art as gun_art
     TOOL_PARTS = gun_art.build(6.25 + ARM_OUT, SOCKET_Y, os.environ.get('LAMP', 'red'), os.environ.get('GUN', 'A'),
-                               os.environ.get('GUN_BODY', 'ref'), os.environ.get('GUN_LOOK', 'old'))
+                               os.environ.get('GUN_BODY', 'ref'), os.environ.get('GUN_LOOK', 'old'),
+                               os.environ.get('GUN_BARRELS', '4'), os.environ.get('GUN_HANDLE', 'paint'))
 for p in TOOL_PARTS: SHELLS[f"tl_{p['name']}"] = dict(faces=p['faces'])
 # where each shell's faces sit in the texture (below / beside nothing else), one strip per shell
 SHELL_AT = {'arm_shell': (0, 64), 'leg_shell': (0, 80),
