@@ -230,7 +230,9 @@ to Minecraft 26.3 / GeckoLib 5. Add a new lesson to the right section when somet
   climb out) or a reactor. Swapping the engine drops the half-burnt item one tick later (`SuitPower.tick` notices the swap),
   so set burn values after a swap has been seen, not in the same tick.
 - **The helmet (2026-10-19) seals the suit and lets the mind run**: anything that needs the seal or the mind (tests,
-  autopilot scenes) must put a `SUIT_HELMET` in `HELMET_SLOT` next to the fuel (GameTests' `suitAt` does).
+  autopilot scenes) must put a `SUIT_HELMET` in `HELMET_SLOT` next to the fuel (GameTests' `suitAt` does). Since the
+  frame's armour (2026-11-14) the seal also needs all five armour pieces: tests call `armoured(suit)` (suitAt doesn't:
+  the bare frame is the default), scenes `DevUtil.ironArmour` (the scenes' piloted suits get it next to the helmet).
 
 ## GameTests
 - *(26.3)* **GameTest structures start at the test origin** (1.21.1 placed them one block higher): `test_pad` keeps its

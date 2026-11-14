@@ -85,7 +85,7 @@ final class PaintScene {
             player.teleportTo(x + 0.5, y, z - 4.5); // north of the suit: it looks at the player, its back to the camera
             PowerSuitEntity s = ModEntities.POWER_SUIT.get().create(level, EntitySpawnReason.COMMAND);
             DevUtil.firebox(s); s.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.BLAZE_ROD, 4));
-            s.getInventory().setItem(PowerSuitEntity.HELMET_SLOT, new ItemStack(ModItems.SUIT_HELMET.get()));
+            s.getInventory().setItem(PowerSuitEntity.HELMET_SLOT, new ItemStack(ModItems.SUIT_HELMET.get())); DevUtil.ironArmour(s);
             s.snapTo(x + 0.5, y, z + 0.5, 180, 0);
             s.setYBodyRot(180);
             s.setYHeadRot(180);

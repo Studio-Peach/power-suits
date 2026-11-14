@@ -64,7 +64,7 @@ API: grep the sources.
 |---|---|
 | `./gradlew build` | compiles (also compiles `src/dev`) |
 | `./gradlew runGameTestServer` | "All N required tests passed" |
-| `./gradlew runGameTestOnly -Prepeat=5` | the whole suite 5 times side by side: all 715 pass (hunts flaky tests; `-Ptests='power_suits:name*'` narrows it) |
+| `./gradlew runGameTestOnly -Prepeat=5` | the whole suite 5 times side by side: all 735 pass (hunts flaky tests; `-Ptests='power_suits:name*'` narrows it) |
 | the autopilot scene for the area you touched | screenshots + CSV look right: pick it from `power-suits-runs.md` (`runAutopilot`, `...Mech`, `...Gait`, `...Pose`, `...Terrain`, `...Hud`, a tool's own scene...) |
 
 - Run game tasks in the background under `caffeinate -d -u -i` and poll the log (no `timeout` on macOS; the game can't
@@ -107,7 +107,7 @@ Why each rule exists is in `power-suits-lessons.md`.
 - **GameTests:** no shared mutable state (tests and their copies run side by side; world settings go in the batch's test
   environment); turn mock pilots with `lookAt` / `turn`; create mock server players with `mockServerPlayer`; search for
   entities near your own position only. A suit that should run needs an engine, fuel and a helmet (`suitAt` gives the
-  engine and helmet; scenes call `DevUtil.firebox`); a powered suit's mind acts: switch it off (`flipPowerSwitch`) or take the fuel out to park one.
+  engine and helmet; scenes call `DevUtil.firebox`); a sealed one also all five armour pieces (tests `armoured`, scenes `DevUtil.ironArmour`); a powered suit's mind acts: switch it off (`flipPowerSwitch`) or take the fuel out to park one.
 - **Autopilot worlds are peaceful** (set the difficulty in a scene that needs monsters); scripts that use a tool empty the
   pilot's hand first; call `setSprinting(false)` after a sprint.
 

@@ -92,6 +92,9 @@ public class PowerSuits {
             event.accept(ModItems.SUIT_TORSO);
             event.accept(ModItems.SUIT_ARM);
             event.accept(ModItems.SUIT_LEG);
+            event.accept(ModItems.IRON_TORSO_ARMOUR);
+            event.accept(ModItems.IRON_ARM_ARMOUR);
+            event.accept(ModItems.IRON_LEG_ARMOUR);
             event.accept(ModItems.FIREBOX);
             event.accept(ModItems.TIDAL_ENGINE);
             event.accept(ModItems.STAR_REACTOR);

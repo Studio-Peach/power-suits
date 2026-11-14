@@ -3,6 +3,8 @@ package dev.ajaczero.powersuits.registry;
 import dev.ajaczero.powersuits.PowerSuits;
 import dev.ajaczero.powersuits.entity.PowerSuitEntity;
 import dev.ajaczero.powersuits.entity.SuitEngine;
+import dev.ajaczero.powersuits.item.ArmourPiece;
+import dev.ajaczero.powersuits.item.ArmourTier;
 import dev.ajaczero.powersuits.item.ChaingunItem;
 import dev.ajaczero.powersuits.item.ChainsawItem;
 import dev.ajaczero.powersuits.item.DrillItem;
@@ -13,6 +15,7 @@ import dev.ajaczero.powersuits.item.HelmetStyle;
 import dev.ajaczero.powersuits.item.HelmetTemplateItem;
 import dev.ajaczero.powersuits.item.PowerSuitItem;
 import dev.ajaczero.powersuits.item.RailCannonItem;
+import dev.ajaczero.powersuits.item.SuitArmourItem;
 import dev.ajaczero.powersuits.item.SuitHelmetItem;
 import dev.ajaczero.powersuits.item.SuitPartItem;
 import dev.ajaczero.powersuits.item.TntLauncherItem;
@@ -89,6 +92,18 @@ public final class ModItems {
             props -> new EngineItem(props, SuitEngine.TIDAL), props -> props.stacksTo(1).rarity(Rarity.RARE));
     public static final DeferredItem<EngineItem> STAR_REACTOR = ITEMS.registerItem("star_reactor",
             props -> new EngineItem(props, SuitEngine.REACTOR), props -> props.stacksTo(1).rarity(Rarity.EPIC));
+
+    // The frame's armour (design sec. 10, 2026-11-14): one item per piece and tier, fitting either side; it goes on a
+    // deployed suit, one per part (SuitArmour). Iron now, copper planned.
+    public static final DeferredItem<SuitArmourItem> IRON_TORSO_ARMOUR = armour(ArmourPiece.TORSO, ArmourTier.IRON);
+    public static final DeferredItem<SuitArmourItem> IRON_ARM_ARMOUR = armour(ArmourPiece.ARM, ArmourTier.IRON);
+    public static final DeferredItem<SuitArmourItem> IRON_LEG_ARMOUR = armour(ArmourPiece.LEG, ArmourTier.IRON);
+
+    /** "iron_torso_armour" etc. Stack to 1 like vanilla armour. */
+    private static DeferredItem<SuitArmourItem> armour(ArmourPiece piece, ArmourTier tier) {
+        return ITEMS.registerItem(tier.getName() + "_" + piece.getName() + "_armour", props -> new SuitArmourItem(props, piece, tier),
+                props -> props.stacksTo(1));
+    }
 
     private static DeferredItem<HelmetTemplateItem> template(HelmetStyle style) {
         return ITEMS.registerItem(style.getSerializedName() + "_template", props -> new HelmetTemplateItem(props, style),

@@ -706,7 +706,7 @@ public final class AutoPilot {
             int x = player.getBlockX() + 60, z = player.getBlockZ();
             Vec3 pos = new Vec3(x + 0.5, level.getHeight(Heightmap.Types.MOTION_BLOCKING, x, z), z + 0.5);
             PowerSuitEntity suit = ModEntities.POWER_SUIT.get().create(level, EntitySpawnReason.COMMAND);
-            DevUtil.firebox(suit); suit.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.BLAZE_ROD, 8)); suit.getInventory().setItem(PowerSuitEntity.HELMET_SLOT, new ItemStack(ModItems.SUIT_HELMET.get()));
+            DevUtil.firebox(suit); suit.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.BLAZE_ROD, 8)); suit.getInventory().setItem(PowerSuitEntity.HELMET_SLOT, new ItemStack(ModItems.SUIT_HELMET.get())); DevUtil.ironArmour(suit);
             suit.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, new ItemStack(ModItems.CHAINGUN.get()));
             suit.snapTo(pos.x, pos.y, pos.z, 0, 0);
             suit.setYBodyRot(0);
@@ -1189,7 +1189,7 @@ public final class AutoPilot {
             level.getGameRules().set(GameRules.SPAWN_MOBS, false, server);
             PowerSuitEntity suit = ModEntities.POWER_SUIT.get().create(level, EntitySpawnReason.COMMAND);
             // A full stack of blaze rods (~4 hours of walking): enough for any scripted drive.
-            DevUtil.firebox(suit); suit.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.BLAZE_ROD, 64)); suit.getInventory().setItem(PowerSuitEntity.HELMET_SLOT, new ItemStack(ModItems.SUIT_HELMET.get()));
+            DevUtil.firebox(suit); suit.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.BLAZE_ROD, 64)); suit.getInventory().setItem(PowerSuitEntity.HELMET_SLOT, new ItemStack(ModItems.SUIT_HELMET.get())); DevUtil.ironArmour(suit);
             suit.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, new ItemStack(ModItems.CHAINGUN.get()));
             suit.snapTo(player.getX() + 0.5, player.getY(), player.getZ() + 0.5, 0, 0);
             level.addFreshEntity(suit);
@@ -1437,7 +1437,7 @@ public final class AutoPilot {
                 }
             }
             PowerSuitEntity suit = ModEntities.POWER_SUIT.get().create(level, EntitySpawnReason.COMMAND);
-            DevUtil.firebox(suit); suit.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.BLAZE_ROD, 16)); suit.getInventory().setItem(PowerSuitEntity.HELMET_SLOT, new ItemStack(ModItems.SUIT_HELMET.get()));
+            DevUtil.firebox(suit); suit.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.BLAZE_ROD, 16)); suit.getInventory().setItem(PowerSuitEntity.HELMET_SLOT, new ItemStack(ModItems.SUIT_HELMET.get())); DevUtil.ironArmour(suit);
             suit.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, new ItemStack(ModItems.DRILL.get()));
             suit.snapTo(x + 0.5, y, z + 0.5, 0, 0);
             suit.setYBodyRot(0);
@@ -1587,7 +1587,7 @@ public final class AutoPilot {
             BlockPos base = new BlockPos(x, y, z);
             mechBase = base;
             PowerSuitEntity suit = ModEntities.POWER_SUIT.get().create(level, EntitySpawnReason.COMMAND);
-            DevUtil.firebox(suit); suit.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.BLAZE_ROD, 32)); suit.getInventory().setItem(PowerSuitEntity.HELMET_SLOT, new ItemStack(ModItems.SUIT_HELMET.get()));
+            DevUtil.firebox(suit); suit.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.BLAZE_ROD, 32)); suit.getInventory().setItem(PowerSuitEntity.HELMET_SLOT, new ItemStack(ModItems.SUIT_HELMET.get())); DevUtil.ironArmour(suit);
             suit.snapTo(x + 0.5, y, z + 0.5, 0, 0);
             suit.setYBodyRot(0);
             level.addFreshEntity(suit);

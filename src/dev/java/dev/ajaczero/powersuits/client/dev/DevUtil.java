@@ -1,6 +1,7 @@
 package dev.ajaczero.powersuits.client.dev;
 
 import dev.ajaczero.powersuits.entity.PowerSuitEntity;
+import dev.ajaczero.powersuits.entity.SuitArmour;
 import dev.ajaczero.powersuits.registry.ModItems;
 import net.minecraft.client.Minecraft;
 import net.minecraft.server.level.ServerLevel;
@@ -25,6 +26,18 @@ final class DevUtil {
         if (suit.getInventory().getItem(PowerSuitEntity.ENGINE_SLOT).isEmpty()) {
             suit.getInventory().setItem(PowerSuitEntity.ENGINE_SLOT,
                     new ItemStack(ModItems.FIREBOX.get()));
+        }
+    }
+
+    /** The frame's iron armour on all five parts (2026-11-14): with the helmet it seals the suit (fire, poison, air under
+     *  water), as a suit in use is. */
+    static void ironArmour(PowerSuitEntity suit) {
+        for (SuitArmour.Part part : SuitArmour.Part.values()) {
+            suit.getInventory().setItem(part.slot, new ItemStack(switch (part.piece) {
+                case TORSO -> ModItems.IRON_TORSO_ARMOUR.get();
+                case ARM -> ModItems.IRON_ARM_ARMOUR.get();
+                case LEG -> ModItems.IRON_LEG_ARMOUR.get();
+            }));
         }
     }
 

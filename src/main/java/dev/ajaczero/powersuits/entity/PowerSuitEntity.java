@@ -14,6 +14,8 @@ import dev.ajaczero.powersuits.item.SuitHelmetItem;
 import dev.ajaczero.powersuits.item.SuitLoadout;
 import dev.ajaczero.powersuits.menu.PowerSuitMenu;
 import dev.ajaczero.powersuits.registry.ModItems;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import net.minecraft.core.BlockPos;
@@ -104,6 +106,9 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
     /** Where the ammo slot was (2026-10-25 .. 2026-10-27): the tools now take their ammo from the pilot's inventory
      *  (item/SuitAmmo). An old suit's ammo still loads here and comes back out as items ({@link #returnOldAmmo}). */
     public static final int OLD_AMMO_SLOT = 4;
+    /** The frame's armour (design sec. 10, 2026-11-14): one piece per part, after the old slots (saves keep their
+     *  numbers). See SuitArmour. */
+    public static final int TORSO_SLOT = 5, LEFT_ARM_SLOT = 6, RIGHT_ARM_SLOT = 7, LEFT_LEG_SLOT = 8, RIGHT_LEG_SLOT = 9;
     // Drain per tick (idle / walking / sprinting), energy per jump and the low-fuel warning level are balance
     // knobs in PowerSuitsConfig. Walking = 1 per tick, so SuitFuel values read as ticks of walking.
     /** Length of the startup animation (1.4 s): the suit can't move until it has stood up. */
@@ -167,6 +172,9 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
     /** The plates' paint: a dye's id (DyeColor.getId, 0..15), or -1 for bare steel. Synced: clients pick the texture by it. */
     private static final EntityDataAccessor<Byte> PAINT =
             SynchedEntityData.defineId(PowerSuitEntity.class, EntityDataSerializers.BYTE);
+    /** The armour worn on each part (SuitArmour: its tier per part, packed): clients draw the pieces and count the seal. */
+    static final EntityDataAccessor<Integer> ARMOUR =
+            SynchedEntityData.defineId(PowerSuitEntity.class, EntityDataSerializers.INT);
     /** The installed engine (SuitEngine ordinal, -1 = none): clients draw its backpack, smoke and gauge. */
     private static final EntityDataAccessor<Byte> ENGINE =
             SynchedEntityData.defineId(PowerSuitEntity.class, EntityDataSerializers.BYTE);
@@ -191,10 +199,12 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
     private final SuitLights lights = new SuitLights(this);
     /** Server: the machine mind's state (owner, home, aim, which job its tool gives it, a rogue's lifetime): see SuitBrain. */
     private final SuitBrain brain = new SuitBrain(this);
+    /** The armour on the frame, one piece per part: protection and the seal's full set: see SuitArmour. */
+    private final SuitArmour armour = new SuitArmour(this);
     /** The suit's own slots: fuel, the left-arm socket, the helmet and the engine (and the old ammo slot, emptied on
-     *  load). Real contents only exist on the server. Old saves load fine with fewer: each saved item carries its slot
-     *  number. */
-    private final SimpleContainer inventory = new SimpleContainer(5) {
+     *  load), then the five armour parts. Real contents only exist on the server. Old saves load fine with fewer: each
+     *  saved item carries its slot number. */
+    private final SimpleContainer inventory = new SimpleContainer(10) {
         @Override
         public void setChanged() {
             super.setChanged();
@@ -249,6 +259,7 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
         builder.define(SWITCHED_ON, true);
         builder.define(PAINT, (byte) -1);
         builder.define(ENGINE, (byte) -1);
+        builder.define(ARMOUR, 0);
         builder.define(ENGINE_UNDER_WATER, false);
         builder.define(FREE_POWER, false);
     }
@@ -263,7 +274,9 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
     /** Base stats. The single source of truth: also re-applied to suits loaded from old saves. */
     private static final Map<Holder<Attribute>, Double> BASE_STATS = Map.of(
             Attributes.MAX_HEALTH, (double) MAX_HEALTH,
-            Attributes.ARMOR, 12.0,
+            // The bare frame has no armour (design sec. 10, 2026-11-14: protection per piece, SuitArmour): 12 until the
+            // frame. Its steel keeps the toughness, which only counts once there are armour points.
+            Attributes.ARMOR, 0.0,
             Attributes.ARMOR_TOUGHNESS, 4.0,
             Attributes.KNOCKBACK_RESISTANCE, 1.0,
             Attributes.MOVEMENT_SPEED, SuitDriving.WALK_SPEED,
@@ -452,6 +465,11 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
         return this.brain;
     }
 
+    /** The armour on the frame. */
+    public SuitArmour armour() {
+        return this.armour;
+    }
+
     /** Server: the mind's goals (SuitBrain adds and removes the tool's own; dev logs and tests read them). */
     public GoalSelector goals() {
         return this.goalSelector;
@@ -479,6 +497,8 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
             this.entityData.set(HELMET_STYLE, (byte) (style == null ? -1 : style.ordinal()));
             SuitEngine engine = SuitEngine.of(this.inventory.getItem(ENGINE_SLOT));
             this.entityData.set(ENGINE, (byte) (engine == null ? -1 : engine.ordinal()));
+            this.entityData.set(ARMOUR, SuitArmour.encode(this.inventory));
+            this.armour.applyProtection();
         }
     }
 
@@ -510,9 +530,10 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
         return HelmetStyle.byId(this.entityData.get(HELMET_STYLE));
     }
 
-    /** Both sides: running with its helmet on, so fire, frost, harmful effects and water are kept out (SuitSeal). */
+    /** Both sides: running with its helmet and all five armour pieces on (design sec. 10, 2026-11-14; the helmet alone
+     *  until then), so fire, frost, harmful effects and water are kept out (SuitSeal). */
     public boolean isSealed() {
-        return this.isPowered() && this.hasHelmet();
+        return this.isPowered() && this.hasHelmet() && this.armour.fullSet();
     }
 
     /** Powered and finished standing up: allowed to move, jump and use tools. */
@@ -568,7 +589,16 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
         return new SuitLoadout(this.inventory.getItem(FUEL_SLOT).copy(), this.inventory.getItem(SOCKET_SLOT).copy(),
                 Mth.ceil(this.power.getBurnLeftExact()), this.power.getBurnTotal(), this.oldNuggets, this.inventory.getItem(HELMET_SLOT).copy(),
                 Optional.of(this.inventory.getItem(ENGINE_SLOT).copy()), this.inventory.getItem(OLD_AMMO_SLOT).copy(),
-                this.power.isSwitchedOn());
+                this.power.isSwitchedOn(), this.armourStacks());
+    }
+
+    /** The armour slots' contents, in SuitArmour.Part order (what a packed suit carries); none worn: an empty list. */
+    private List<ItemStack> armourStacks() {
+        List<ItemStack> stacks = new ArrayList<>();
+        for (SuitArmour.Part part : SuitArmour.Part.values()) {
+            stacks.add(this.inventory.getItem(part.slot).copy());
+        }
+        return stacks.stream().allMatch(ItemStack::isEmpty) ? List.of() : stacks;
     }
 
     public void applyLoadout(SuitLoadout loadout) {
@@ -576,6 +606,10 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
         this.inventory.setItem(SOCKET_SLOT, loadout.socket().copy());
         this.inventory.setItem(HELMET_SLOT, loadout.helmet().copy());
         this.inventory.setItem(OLD_AMMO_SLOT, loadout.ammo().copy()); // an item packed with ammo: handed back next tick
+        SuitArmour.Part[] parts = SuitArmour.Part.values();
+        for (int i = 0; i < parts.length; i++) { // items packed before the armour carry none: a bare frame
+            this.inventory.setItem(parts[i].slot, i < loadout.armour().size() ? loadout.armour().get(i).copy() : ItemStack.EMPTY);
+        }
         // Items packed (or crafted) before the engines carry none: they had their firebox built in.
         this.inventory.setItem(ENGINE_SLOT, loadout.engine().map(ItemStack::copy)
                 .orElseGet(() -> new ItemStack(ModItems.FIREBOX.get())));
@@ -1059,6 +1093,7 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
         if (!this.level().isClientSide() && this.isAlive()) {
             this.brain.equipRogue();
             this.checkSlotCopies();
+            this.armour.applyProtection(); // follows config edits (only changed numbers touch the attribute)
             this.returnOldAmmo();
             this.power.tick();
             this.socket.tick();

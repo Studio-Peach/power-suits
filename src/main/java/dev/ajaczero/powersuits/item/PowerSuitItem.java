@@ -124,6 +124,10 @@ public class PowerSuitItem extends Item implements ModTooltip {
             if (!loadout.socket().isEmpty()) {
                 tooltip.accept(Component.translatable("item.power_suits.power_suit.socket", loadout.socket().getHoverName()).withStyle(ChatFormatting.AQUA));
             }
+            long armour = loadout.armour().stream().filter(piece -> !piece.isEmpty()).count();
+            if (armour > 0) {
+                tooltip.accept(Component.translatable("item.power_suits.power_suit.armour", armour).withStyle(ChatFormatting.GRAY));
+            }
         }
     }
 

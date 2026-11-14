@@ -204,6 +204,20 @@ public final class PowerSuitsConfig {
                     "breaks glass and ice (power_suits:suit_smashes_sprinting). Nothing drops.").translation(key("smash_blocks"))
             .define("smash_blocks", true);
 
+    // ---- Armour (design sec. 10, 2026-11-14): the bare frame has none; each piece on it adds its own
+    public static final ModConfigSpec.DoubleValue IRON_TORSO_ARMOUR = B.pop().translation(key("armour")).push("armour")
+            .comment("Armour points an Iron Torso Armour adds to the suit (vanilla's full diamond set is 20). The bare frame has none.").translation(key("iron_torso_armour"))
+            .defineInRange("iron_torso", 6.0, 0, 30);
+    public static final ModConfigSpec.DoubleValue IRON_ARM_ARMOUR = B
+            .comment("Armour points each Iron Arm Armour adds (one per arm).").translation(key("iron_arm_armour"))
+            .defineInRange("iron_arm", 2.0, 0, 30);
+    public static final ModConfigSpec.DoubleValue IRON_LEG_ARMOUR = B
+            .comment("Armour points each Iron Leg Armour adds (one per leg).").translation(key("iron_leg_armour"))
+            .defineInRange("iron_leg", 3.0, 0, 30);
+    public static final ModConfigSpec.DoubleValue HELMET_ARMOUR = B
+            .comment("Armour points the helmet adds.").translation(key("helmet_armour"))
+            .defineInRange("helmet", 2.0, 0, 30);
+
     // ---- The machine mind (design sec. 8): what a powered suit does with nobody inside
     // (nugget_store_max went 2026-10-27 with the hidden nugget store: the mind's tools never run out of ammo.)
     public static final ModConfigSpec.DoubleValue GUARD_RANGE = B.pop().translation(key("mind")).push("mind")

@@ -2,6 +2,7 @@ package dev.ajaczero.powersuits.client.dev;
 
 import dev.ajaczero.powersuits.PowerSuits;
 import dev.ajaczero.powersuits.entity.PowerSuitEntity;
+import dev.ajaczero.powersuits.entity.SuitArmour;
 import dev.ajaczero.powersuits.item.ToolLight;
 import dev.ajaczero.powersuits.registry.ModEntities;
 import dev.ajaczero.powersuits.registry.ModItems;
@@ -18,6 +19,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityTypes;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -34,10 +36,13 @@ import net.neoforged.fml.loading.FMLPaths;
  * his own head and hat layer), the engine (the blower on the back, the core and hoses on the front, by day and by night:
  * fire lit, smoke from the caps; a star reactor frame, its light violet on the same heart), every socket tool (the
  * EM projector, TNT launcher and rail cannon stand in with the drill's body), the drill and chaingun running, then the cockpit: the empty right hand (his arm in
- * the frame's arm) and looking down (nothing of his body, like vanilla). Shots ap_frame_*.png.
+ * the frame's arm) and looking down (nothing of his body, like vanilla), then the iron armour going on piece by piece
+ * (step 6a: counted, no looks yet; the full set and the helmet seal it: the visor's seal mark) and a leg piece off
+ * again. Shots ap_frame_*.png.
  * Log run/autopilot_frame.csv per tick: the suit's hitbox, how high the pilot's eyes ride above the suit (1.98: his
  * own eyes in the frame, ModEntities), the client's walk animation (position, speed), the parked frame's power and
- * the pilot's skin model (wide / slim: which frame build is drawn).
+ * the pilot's skin model (wide / slim: which frame build is drawn), the armour (pieces, points, sealed) on the client and
+ * the server.
  */
 final class FrameScene {
     private static BufferedWriter csv;
@@ -143,7 +148,16 @@ final class FrameScene {
             case 670 -> AutoPilot.shot(mc, "frame_tool_raised_front");
             case 672 -> AutoPilot.setView(-30, 30);
             case 686 -> AutoPilot.shot(mc, "frame_tool_raised_down30");
-            case 688 -> { AutoPilot.hold(o.keyUse, false); socket(mc, -1); AutoPilot.setView(0, 0); o.setCameraType(CameraType.FIRST_PERSON); DevUtil.hideGui(mc, false); close(); return false; }
+            case 688 -> { AutoPilot.hold(o.keyUse, false); socket(mc, -1); AutoPilot.setView(0, 0); o.setCameraType(CameraType.FIRST_PERSON); DevUtil.hideGui(mc, false);
+                          for (int i = 0; i < 5; i++) { armour(mc, i, false); } } // the scene's suit came armoured: start bare
+            // The armour (step 6a, 2026-11-14: no looks yet): the five iron pieces go on one by one (the CSV's armour columns
+            // count them on both sides, the armour points follow); with the helmet that seals the frame (the visor's seal
+            // mark lights up), one leg off unseals it.
+            case 692, 696, 700, 704, 708 -> { phase = "armour"; armour(mc, (s - 692) / 4, true); }
+            case 720 -> AutoPilot.shot(mc, "frame_armour_sealed");
+            case 722 -> { phase = "armour_leg_off"; armour(mc, 4, false); }
+            case 736 -> AutoPilot.shot(mc, "frame_armour_unsealed");
+            case 738 -> { armour(mc, 4, true); close(); return false; } // the full set again
             default -> {}
         }
         if (s >= 1) {
@@ -180,7 +194,7 @@ final class FrameScene {
         });
         try {
             csv = Files.newBufferedWriter(FMLPaths.GAMEDIR.get().resolve("autopilot_frame.csv"));
-            csv.write("tick,phase,bb_width,bb_height,eye_above_suit,walk_pos,walk_speed,speed,parked_powered,pilot_skin,tool,tool_running,rotor,lamp\n");
+            csv.write("tick,phase,bb_width,bb_height,eye_above_suit,walk_pos,walk_speed,speed,parked_powered,pilot_skin,tool,tool_running,rotor,lamp,armour_pieces,armour_points,sealed,server_armour_pieces,server_armour_points,server_sealed\n");
         } catch (IOException e) {
             PowerSuits.LOGGER.error("frame csv", e);
         }
@@ -191,6 +205,21 @@ final class FrameScene {
         AutoPilot.onServer(mc, p -> {
             if (p.getVehicle() instanceof PowerSuitEntity suit) {
                 suit.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, i < 0 ? ItemStack.EMPTY : new ItemStack(TOOLS.get(i).get()));
+            }
+        });
+    }
+
+    /** Puts the iron piece for SuitArmour.Part i on the pilot's suit, or takes it off (on the server; the state syncs). */
+    private static void armour(Minecraft mc, int i, boolean on) {
+        AutoPilot.onServer(mc, p -> {
+            if (p.getVehicle() instanceof PowerSuitEntity suit) {
+                SuitArmour.Part part = SuitArmour.Part.values()[i];
+                Item piece = switch (part.piece) {
+                    case TORSO -> ModItems.IRON_TORSO_ARMOUR.get();
+                    case ARM -> ModItems.IRON_ARM_ARMOUR.get();
+                    case LEG -> ModItems.IRON_LEG_ARMOUR.get();
+                };
+                suit.getInventory().setItem(part.slot, on ? new ItemStack(piece) : ItemStack.EMPTY);
             }
         });
     }
@@ -232,14 +261,21 @@ final class FrameScene {
         }
         PowerSuitEntity p = parked;
         var parkedClient = p == null || mc.level == null ? null : mc.level.getEntity(p.getId());
+        // the server's copy of the pilot's suit (integrated server; read across threads: fine for a log)
+        var server = mc.getSingleplayerServer() == null ? null : mc.getSingleplayerServer().getPlayerList().getPlayer(mc.player.getUUID());
+        PowerSuitEntity serverSuit = server != null && server.getVehicle() instanceof PowerSuitEntity v ? v : null;
         try {
-            csv.write(String.format(Locale.ROOT, "%d,%s,%.3f,%.3f,%.3f,%.3f,%.3f,%.2f,%s,%s,%s,%s,%.1f,%s%n", s, phase, suit.getBbWidth(), suit.getBbHeight(),
+            csv.write(String.format(Locale.ROOT, "%d,%s,%.3f,%.3f,%.3f,%.3f,%.3f,%.2f,%s,%s,%s,%s,%.1f,%s,%d,%.1f,%s,%s,%s,%s%n", s, phase, suit.getBbWidth(), suit.getBbHeight(),
                     mc.player.getEyeY() - suit.getY(), suit.walkAnimation.position(), suit.walkAnimation.speed(),
                     suit.animator().getVisualSpeed(), parkedClient instanceof PowerSuitEntity c ? c.isPowered() : "-",
                     mc.player.getSkin().model().getSerializedName(), // slim = the frame's slim build
                     suit.getSocketStack().isEmpty() ? "-" : BuiltInRegistries.ITEM.getKey(suit.getSocketStack().getItem()).getPath(),
                     suit.socket().isRunning(), suit.socketVisuals().rotorAngle(1F),
-                    suit.socketVisuals().light(ToolLight.LAMP_RUN, 0F) > 0 ? "green" : suit.socketVisuals().light(ToolLight.LAMP_IDLE, 0F) > 0 ? "red" : "off"));
+                    suit.socketVisuals().light(ToolLight.LAMP_RUN, 0F) > 0 ? "green" : suit.socketVisuals().light(ToolLight.LAMP_IDLE, 0F) > 0 ? "red" : "off",
+                    suit.armour().pieces(), suit.getAttributeValue(Attributes.ARMOR), suit.isSealed(),
+                    serverSuit == null ? "-" : serverSuit.armour().pieces(),
+                    serverSuit == null ? "-" : String.format(Locale.ROOT, "%.1f", serverSuit.getAttributeValue(Attributes.ARMOR)),
+                    serverSuit == null ? "-" : serverSuit.isSealed()));
         } catch (IOException ignored) {
             // closed
         }

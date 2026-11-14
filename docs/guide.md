@@ -15,13 +15,14 @@ Working notes for agents: `AGENTS.md` (the design spec and roadmap are kept outs
 | Suit menu | Your inventory with the suit in it, laid out like the inventory screen: **press your inventory key (E) inside the suit**, or sneak + right-click a parked suit. The suit's helmet, engine, burn flame and fuel down the armour column, the suit itself in the preview window, and opposite the armour column: the **Power** key (⏻: pushed in and green while on, out and grey while off), the power tool's socket slot, and the **Pack** key (greyed out from inside). Where the crafting grid was, a status screen in your visor colour: the suit's name, HULL and FUEL with bars like the visor's, and the status (ONLINE, or why it's dark: NO FUEL, NO ENGINE, FLOODED, POWER OFF, NO HELMET; the ones to fix blink inverted). Over any item, the swap-hands key (F) swaps it with the socket tool |
 | Night vision | The powered visor lifts the dark when it's dark around you (a cave, any night outside), tinted in your visor colour like night-vision goggles; it fades in over a second and goes with the visor's power. **N** switches it on and off while you pilot a suit with a helmet (rebind it in Options > Controls > Key Binds > Power Suits > *Night vision*); **NV** under the compass, right of the clock, while it's on. Only on your screen: nothing in the world is lit |
 | Power switch | The suit's power switch, in its menu or on the **H** key while piloting (rebind it in Options > Controls > Key Binds > Power Suits > *Power switch*). Off, the suit acts exactly like one with nothing to burn (it slumps, the mind stops, the visor goes completely dark; the menu's status reads POWER OFF) but keeps its fuel; it stays off when packed up. On again, it stands back up |
-| Helmet | Right-click a suit with a Power Suit Helmet (or use the menu's helmet slot) to put it on. It seals the suit, and the machine mind only runs with it: without one the suit still runs with you inside (unsealed: fire, poison and water reach you, and you can eat), and an empty one stands powered down. Switching it off (below) or taking the helmet off parks a suit. Rogues always wear one |
+| Helmet | Right-click a suit with a Power Suit Helmet (or use the menu's helmet slot) to put it on. With the five armour pieces on it seals the suit (see *Armour*), and the machine mind only runs with it: without one the suit still runs with you inside (unsealed: fire, poison and water reach you, and you can eat), and an empty one stands powered down. Switching it off (below) or taking the helmet off parks a suit. Rogues always wear one |
+| Armour | The bare frame has no armour of its own: it takes one piece per part, torso, each arm, each leg (an arm or leg piece fits either side), in the suit's armour slots. Each piece adds its own protection to the suit (Iron: torso +6, arm +2, leg +3; the helmet +2: 18 with the full set and helmet; config `armour`). **All five pieces and the helmet** seal a running suit (*Sealed suit*). Pieces carry a tier (iron now). The menu's armour slots come next (frame step 6b) |
 | Fuel | Put anything a furnace burns in the fuel slot; it lasts as many ticks as in a furnace (coal 1:20 of walking, blaze rod 2:00, lava bucket 16:40 and the bucket stays, planks 0:15) (for the standard Firebox engine; see *Engines* below) |
 | Engines | The backpack is the suit's engine, swapped in the menu's engine slot. **Firebox** (a new suit has no engine: craft one): burns fuel, floods and dies when water covers it (no pack-up while flooded: drain the water or swap the engine). **Tidal Engine** (crafted with a Heart of the Sea; twin diving tanks that bubble under water): free while wet (its backpack under water, or in rain); on land it drinks water buckets (0:15) or bottles (0:05) from the fuel slot, so carry some to climb out of the water. **Star Reactor** (diamonds + an end crystal; glowing energy canisters drawing in ender particles): a Nether Star in the fuel slot runs everything, tools included, forever (bullets still take iron nuggets). Each engine is its own backpack on the suit |
 | Walk / run | WASD (3.0 blocks/s walk; S backs up at half speed) / sprint (6.25 blocks/s; double-tap W or tap Ctrl once, it keeps going while W is held) |
 | Jump | Hold Space to charge (the suit crouches), release |
 | Climb out | Shift |
-| Pack it up | **Pack** key in the suit menu, from outside (keeps damage, name, fuel, tool, helmet, engine and the power switch) |
+| Pack it up | **Pack** key in the suit menu, from outside (keeps damage, name, fuel, tool, helmet, engine, armour and the power switch) |
 | Install a tool | Put a power tool (Chaingun, EM Projector, Mining Drill, Chainsaw, Flamethrower, TNT Launcher, Rail Cannon) in the menu's socket slot (right of the suit preview, between the Power and Pack keys); it appears on the suit's left arm. **While piloting, the swap-hands key (F) swaps the tool in your hand with the socket's**: keep your tools on the hotbar and change them with F (an empty hand takes the tool out) |
 | Your hand | Works as normal while piloting: the suit's right hand holds your selected item; left click punches, fights and mines, right click places, opens doors, throws potions... 1.5 blocks extra reach. No eating or drinking (you're sealed in): food in your hand counts as nothing to do, so right click goes to the tool |
 | Use the tool | Right-click when your hand has nothing to do (empty hand, a sword, aiming at the air with blocks...), like a shield in the off hand; hold it as long as you need. The tool arm raises while in use |
@@ -33,7 +34,7 @@ Working notes for agents: `AGENTS.md` (the design spec and roadmap are kept outs
 | Rail Cannon | Hold right-click to charge (1.5 s, the core between its prongs glows brighter, the HUD shows a charge bar), let go at full charge: an instant beam along your crosshair, 20 hearts to every mob on the line (it goes through them all), breaking glass, panes, leaves and ice on the way; it stops at anything solid. Let go early and nothing fires. Each shot is an iron ingot from your inventory; charging (and holding the charge) burns 3 fuel a tick |
 | Fire | Right-click while piloting (Chaingun): tap for heavy single shots, hold to spin up to a 10-a-second barrage toward your crosshair; one iron nugget per bullet from your inventory |
 | Repair | Anvil + iron ingots (the item's durability bar is the suit's health) |
-| Sealed suit | While powered and wearing its helmet: fire, frost, magma, cactus/berry bushes and harmful effects (poison, wither, slowness...) don't reach you or the hull; keeping them out costs fuel. You breathe under water (0.5 fuel/tick extra). A running suit never catches fire (lava excepted: it burns while in it, the flames die as it steps out). Lava still eats the hull (wade through at a third of your speed). No power, no seal: an empty or knocked-out suit burns like anything else. What's already inside you stays yours: poison or wither you had when you climbed in (food poisoning) hurts you, not the suit |
+| Sealed suit | While powered and wearing its helmet and all five armour pieces: fire, frost, magma, cactus/berry bushes and harmful effects (poison, wither, slowness...) don't reach you or the hull; keeping them out costs fuel. You breathe under water (0.5 fuel/tick extra). A running suit never catches fire (lava excepted: it burns while in it, the flames die as it steps out). Lava still eats the hull (wade through at a third of your speed). No power, no seal: an empty or knocked-out suit burns like anything else. What's already inside you stays yours: poison or wither you had when you climbed in (food poisoning) hurts you, not the suit |
 | Strength | Every melee hit from inside (bare hand, sword, axe...) does +4 damage |
 | Stomp | Landing from 3.5+ blocks hurts everything around you (not you): 2 damage per block fallen, up to 30, half at the edge of the shock wave (2-3.5 blocks); things get thrown. A normal jump doesn't stomp |
 | Smashing through | Walking breaks leaves, glass panes, cobwebs, snow layers, berry bushes, bamboo...; sprinting also breaks glass and ice. Nothing drops. Block tags `power_suits:suit_smashes_walking` / `_sprinting`; can be switched off in the config |
@@ -59,6 +60,15 @@ Each part is crafted on its own, then torso, arms and legs are assembled like a 
 The helmet isn't part of the assembly: put it on the finished suit (see *Helmet* above). A whole suit with its helmet
 takes 12 iron blocks, 8 copper blocks, 2 redstone blocks, 4 pistons and glass (no lapis or furnaces since 2026-10-23). It comes out bare polished steel; paint it with dyes
 (blue gives back the suit's old lapis blue).
+
+The frame's armour (one piece per part: craft one torso, two arm and two leg pieces for the full set), iron ingots
+round an iron block, shaped like vanilla's armour (the block keeps them apart from vanilla's iron armour):
+
+| Item | Recipe |
+|---|---|
+| Iron Torso Armour | like a chestplate (ingots), with an iron block in the middle |
+| Iron Arm Armour (x2) | like a helmet (ingots), with an iron block in the middle of the top row |
+| Iron Leg Armour (x2) | like leggings (ingots), with an iron block in the middle of the top row |
 
 The engines (swapped in the menu's engine slot; a new suit has none, so craft one before you fuel it):
 
@@ -108,7 +118,7 @@ dark. It's terminal green by default: pick another under **Mods > Power Suits > 
 amber, blue, white, red, or Custom for any `#RRGGBB` in *Custom colour*; `visor_preset` / `visor_colour` in
 `config/power_suits-client.toml`; only you see it).
 - **Top left, the suit:** a blocky figure of the suit (one block per armour piece), **HULL** (its health, % and a bar)
-  with a **shield** that's lit while the suit is sealed (running with the helmet on) and faded when not, and **FUEL**: how long it lasts at walking pace (∞ on a wet
+  with a **shield** that's lit while the suit is sealed (running with the helmet and all five armour pieces on) and faded when not, and **FUEL**: how long it lasts at walking pace (∞ on a wet
   tidal engine or a star reactor), a bar for how full the fuel slot is, and three
   **embers** for how fast it burns, about one per walking's worth: one idling or walking, two sprinting, three with a
   hungry tool at work (a charging rail cannon, the chaingun at full spin, the flamethrower; the chaingun's climb from one
@@ -321,6 +331,7 @@ src/main/java/dev/ajaczero/powersuits/
     entity/SuitPower.java    the engine and its energy: burning fuel, flooding, free power, the lightning knock-out
     entity/SuitSocket.java   the arm socket's tool as the suit works it: trigger (pilot / mind), cooldown, synced spin/shots
     entity/SuitBrain.java    the machine mind's state: owner, home, aim, the job its tool gives it, rogues' gear and lifetime
+  entity/SuitArmour.java   the frame's armour: one piece per part (slots 5-9), protection modifiers, the synced worn tiers, the full set
     entity/SocketVisuals.java   client: the tool arm's raise and recoil, the installed tool's ToolEffects
     entity/SuitAnimator.java    client: measured speed, jumps/landings, step easing, which animation plays and how fast
     entity/SuitLights.java      client: fire, visor, engine glass, lightning sparks
@@ -330,7 +341,8 @@ src/main/java/dev/ajaczero/powersuits/
   entity/ExhaustSmoke.java   client-side smoke from the back pipes
   menu/PowerSuitMenu.java   menu logic: socket, fuel, helmet + engine slots, shift-click, F swaps with the
                              socket, Power + Pack keys; opened by E inside (PowerSuitEntity.openCustomInventoryScreen)
-  item/SuitLoadout.java      fuel/tool/helmet/engine/half-burnt item carried by a packed suit item
+  item/SuitLoadout.java      fuel/tool/helmet/engine/armour/half-burnt item carried by a packed suit item
+  item/SuitArmourItem.java   a frame armour piece (ArmourPiece: torso/arm/leg; ArmourTier: iron, copper planned)
   item/HelmetStyle.java      the helmet styles (design sec. 4c); SuitHelmetItem: name + flavour line, HelmetTemplateItem: the templates
   item/PowerTool.java        what a socket tool is: fuel per use, cooldown, model bone, use(); worked by an operator
                              (the pilot, or the suit itself while its mind drives: aim, ammo, credit); its mind job
@@ -452,7 +464,12 @@ at the crosshair 10 blocks out when raised (CockpitHands.toolArmTransform; the h
 camera). Step 5c: the tools' lights: a status lamp on the drill's and chainsaw's base (red ready, green running,
 dark without power: ToolLight.LAMP_IDLE / LAMP_RUN, painted in reserved dark colours, LAMP=dark), the chaingun's green
 muzzle lights (on with the power) and the flamethrower's blue pilot light, on the suit and the cockpit viewmodel. Not
-on the frame's tools yet: the chaingun's barrel heat glow, the EM projector's and rail cannon's lights (no art). Still
+on the frame's tools yet: the chaingun's barrel heat glow, the EM projector's and rail cannon's lights (no art). Step 6a
+(2026-11-14, design sec. 10): the frame's armour as items and slots, no looks yet: Iron Torso / Arm / Leg Armour (one item
+per piece, either side, a tier each), five slots after the old ones (torso, left/right arm, left/right leg: 5-9), each
+piece's armour points as an attribute modifier (transient: rebuilt from the slots on load and following config edits),
+the bare frame at 0 armour (the big suit had 12), the worn tiers synced in one int (SuitArmour), sealed = powered + helmet +
+all five pieces, the pieces packed with the suit. Next: 6b the menu's armour slots, 6c the pieces on the frame. Still
 the big suit's or off until their steps: paint and helmet styles. The notes below are the big suit's.
 
 ### The big suit

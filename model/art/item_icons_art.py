@@ -274,6 +274,43 @@ def suit_leg(ic):
     ic.set(12, 13, STEEL[5])
 
 
+# ---- frame armour (2026-11-14): plain plates, like the frame's iron armour (flat steel, no feet) ------------------------
+IRON_PLATE = ramp('3b3d40', '5e6166', '83878c', 'a6aaae', 'c8cbcd', 'eceeee')  # vanilla iron armour's greys
+
+
+def iron_torso_armour(ic):
+    r = IRON_PLATE
+    ic.box(1, 1, 14, 8, r, 3, cut=1)             # breastplate, shoulder to shoulder
+    ic.rect(6, 1, 9, 2, SLATE[1])                # the neck opening
+    ic.rect(2, 4, 13, 4, r[2])                   # plate seam
+    ic.box(3, 9, 12, 12, r, 2)                   # abdomen plate, narrower (the stepped torso)
+    ic.rect(3, 9, 12, 9, r[1])                   # under the breastplate's edge
+    ic.box(4, 13, 11, 15, r, 2, edge=False)      # waist band
+    ic.rect(4, 13, 11, 13, r[3])
+    for x, y in ((3, 6), (12, 6), (5, 11), (10, 11)):
+        ic.set(x, y, r[5])                       # rivets
+
+
+def iron_arm_armour(ic):
+    r = IRON_PLATE
+    ic.box(2, 1, 13, 6, r, 3, cut=1)             # pauldron
+    ic.rect(3, 1, 12, 1, r[5])
+    ic.rect(2, 4, 13, 4, r[2])
+    ic.box(4, 7, 11, 15, r, 2)                   # the arm piece down to the wrist
+    ic.rect(4, 7, 11, 7, r[1])                   # under the pauldron
+    ic.rect(4, 11, 11, 11, r[1])                 # elbow seam
+    ic.set(5, 9, r[5]); ic.set(10, 9, r[5]); ic.set(5, 13, r[5]); ic.set(10, 13, r[5])
+
+
+def iron_leg_armour(ic):
+    r = IRON_PLATE
+    ic.box(4, 0, 11, 15, r, 3)                   # one plate, hip to the ground (no foot)
+    ic.rect(4, 5, 11, 5, r[1])                   # hip band's edge
+    ic.box(3, 7, 12, 9, r, 3, cut=1)             # knee plate
+    ic.rect(4, 12, 11, 12, r[1])                 # shin seam
+    ic.set(5, 2, r[5]); ic.set(10, 2, r[5]); ic.set(5, 14, r[5]); ic.set(10, 14, r[5])
+
+
 # ---- engines --------------------------------------------------------------------------------------------------------
 def firebox(ic):
     ic.cyl_v(2, 0, 4, 5, STEEL, 4)               # exhausts
@@ -512,6 +549,9 @@ ICONS = {
     'suit_torso': suit_torso,
     'suit_arm': suit_arm,
     'suit_leg': suit_leg,
+    'iron_torso_armour': iron_torso_armour,
+    'iron_arm_armour': iron_arm_armour,
+    'iron_leg_armour': iron_leg_armour,
     'firebox': firebox,
     'tidal_engine': tidal_engine,
     'star_reactor': star_reactor,

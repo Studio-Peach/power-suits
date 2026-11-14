@@ -214,7 +214,7 @@ public final class TerrainPilot {
             level.getGameRules().set(GameRules.SPAWN_MOBS, false, server);
             PowerSuitEntity suit = ModEntities.POWER_SUIT.get().create(level, EntitySpawnReason.COMMAND);
             // A full stack of blaze rods (~4 hours of walking): enough for any scripted drive.
-            DevUtil.firebox(suit); suit.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.BLAZE_ROD, 64)); suit.getInventory().setItem(PowerSuitEntity.HELMET_SLOT, new ItemStack(ModItems.SUIT_HELMET.get()));
+            DevUtil.firebox(suit); suit.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.BLAZE_ROD, 64)); suit.getInventory().setItem(PowerSuitEntity.HELMET_SLOT, new ItemStack(ModItems.SUIT_HELMET.get())); DevUtil.ironArmour(suit);
             suit.snapTo(player.getX(), player.getY(), player.getZ(), player.getYRot(), 0);
             level.addFreshEntity(suit);
             player.startRiding(suit);
@@ -230,7 +230,7 @@ public final class TerrainPilot {
         server.execute(() -> {
             ServerPlayer player = server.getPlayerList().getPlayer(uuid);
             if (player != null && player.getVehicle() instanceof PowerSuitEntity suit) {
-                DevUtil.firebox(suit); suit.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.BLAZE_ROD, 64)); suit.getInventory().setItem(PowerSuitEntity.HELMET_SLOT, new ItemStack(ModItems.SUIT_HELMET.get()));
+                DevUtil.firebox(suit); suit.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.BLAZE_ROD, 64)); suit.getInventory().setItem(PowerSuitEntity.HELMET_SLOT, new ItemStack(ModItems.SUIT_HELMET.get())); DevUtil.ironArmour(suit);
             }
         });
     }

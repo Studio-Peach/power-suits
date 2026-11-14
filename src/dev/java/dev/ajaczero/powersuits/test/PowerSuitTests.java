@@ -4,6 +4,10 @@ import dev.ajaczero.powersuits.HudAlert;
 import dev.ajaczero.powersuits.PilotHands;
 import dev.ajaczero.powersuits.PowerSuits;
 import dev.ajaczero.powersuits.PowerSuitsConfig;
+import dev.ajaczero.powersuits.entity.SuitArmour;
+import dev.ajaczero.powersuits.item.ArmourPiece;
+import dev.ajaczero.powersuits.item.ArmourTier;
+import dev.ajaczero.powersuits.item.SuitArmourItem;
 import dev.ajaczero.powersuits.entity.Bullet;
 import dev.ajaczero.powersuits.entity.FlameJet;
 import dev.ajaczero.powersuits.entity.PowerSuitEntity;
@@ -1492,6 +1496,7 @@ public final class PowerSuitTests {
     @SuitTest(timeoutTicks = 40)
     public static void sealKeepsFireOutForFuel(GameTestHelper helper) {
         PowerSuitEntity suit = fueledSuit(helper, new ItemStack(Items.COAL, 4));
+        armoured(suit); // the seal needs the full set (and the helmet: suitAt's)
         Player pilot = boardedPilot(helper, suit);
         helper.runAfterDelay(5, () -> {
             var sources = helper.getLevel().damageSources();
@@ -1545,6 +1550,7 @@ public final class PowerSuitTests {
     @SuitTest(timeoutTicks = 20)
     public static void sealBlocksHarmfulEffectsAndFeedsAir(GameTestHelper helper) {
         PowerSuitEntity suit = fueledSuit(helper, new ItemStack(Items.COAL, 4));
+        armoured(suit); // the seal needs the full set (and the helmet: suitAt's)
         Player pilot = boardedPilot(helper, suit);
         helper.runAfterDelay(2, () -> {
             float before = suit.power().getBurnLeftExact();
@@ -2561,6 +2567,143 @@ public final class PowerSuitTests {
         });
     }
 
+    // =========================================================================================
+    // Frame armour (design sec. 10, 2026-11-14): one piece per part, protection per piece, the full set seals
+    // =========================================================================================
+
+    /** Puts the iron set on all five parts (the helmet is suitAt's). */
+    private static void armoured(PowerSuitEntity suit) {
+        for (SuitArmour.Part part : SuitArmour.Part.values()) {
+            suit.getInventory().setItem(part.slot, ironPiece(part.piece));
+        }
+    }
+
+    private static ItemStack ironPiece(ArmourPiece piece) {
+        return new ItemStack(switch (piece) {
+            case TORSO -> ModItems.IRON_TORSO_ARMOUR.get();
+            case ARM -> ModItems.IRON_ARM_ARMOUR.get();
+            case LEG -> ModItems.IRON_LEG_ARMOUR.get();
+        });
+    }
+
+    /** The whole iron set and the helmet, in armour points (the config's numbers). */
+    private static double fullIronArmour() {
+        return PowerSuitsConfig.IRON_TORSO_ARMOUR.get() + 2 * PowerSuitsConfig.IRON_ARM_ARMOUR.get()
+                + 2 * PowerSuitsConfig.IRON_LEG_ARMOUR.get() + PowerSuitsConfig.HELMET_ARMOUR.get();
+    }
+
+    private static void assertArmour(GameTestHelper helper, PowerSuitEntity suit, double expected, String what) {
+        double armour = suit.getAttributeValue(Attributes.ARMOR);
+        helper.assertTrue(Math.abs(armour - expected) < 1e-6, what + ": expected " + expected + " armour, got " + armour);
+    }
+
+    /** The bare frame has no armour; each piece adds its own points, the helmet too; an arm piece fits either arm and
+     *  no leg (and counts for nothing if it's forced into a leg's slot). */
+    @SuitTest(timeoutTicks = 20)
+    public static void armourProtectsPerPiece(GameTestHelper helper) {
+        PowerSuitEntity suit = spawnSuit(helper);
+        helper.runAfterDelay(1, () -> {
+            assertArmour(helper, suit, PowerSuitsConfig.HELMET_ARMOUR.get(), "a frame with only its helmet");
+            suit.getInventory().setItem(PowerSuitEntity.HELMET_SLOT, ItemStack.EMPTY);
+            assertArmour(helper, suit, 0, "the bare frame");
+            suit.getInventory().setItem(PowerSuitEntity.TORSO_SLOT, ironPiece(ArmourPiece.TORSO));
+            assertArmour(helper, suit, PowerSuitsConfig.IRON_TORSO_ARMOUR.get(), "the torso piece");
+            helper.assertTrue(suit.armour().worn(SuitArmour.Part.TORSO) == ArmourTier.IRON && suit.armour().pieces() == 1,
+                    "the synced copy knows the iron torso");
+            ItemStack arm = ironPiece(ArmourPiece.ARM);
+            helper.assertTrue(SuitArmour.Part.LEFT_ARM.fits(arm) && SuitArmour.Part.RIGHT_ARM.fits(arm), "an arm piece fits either arm");
+            helper.assertTrue(!SuitArmour.Part.LEFT_LEG.fits(arm) && !SuitArmour.Part.TORSO.fits(arm), "and nothing else");
+            helper.assertTrue(!SuitArmour.Part.TORSO.fits(new ItemStack(Items.IRON_CHESTPLATE)), "vanilla armour doesn't fit the frame");
+            suit.getInventory().setItem(PowerSuitEntity.LEFT_LEG_SLOT, arm.copy()); // forced in (not through the menu)
+            assertArmour(helper, suit, PowerSuitsConfig.IRON_TORSO_ARMOUR.get(), "an arm piece in a leg's slot adds nothing");
+            helper.assertTrue(suit.armour().worn(SuitArmour.Part.LEFT_LEG) == null, "and isn't worn");
+            armoured(suit);
+            suit.getInventory().setItem(PowerSuitEntity.HELMET_SLOT, new ItemStack(ModItems.SUIT_HELMET.get()));
+            assertArmour(helper, suit, fullIronArmour(), "the full iron set and the helmet");
+            helper.assertTrue(suit.armour().fullSet(), "all five parts are armoured");
+            suit.getInventory().setItem(PowerSuitEntity.RIGHT_ARM_SLOT, ItemStack.EMPTY);
+            assertArmour(helper, suit, fullIronArmour() - PowerSuitsConfig.IRON_ARM_ARMOUR.get(), "one arm bare");
+            helper.assertTrue(!suit.armour().fullSet() && suit.armour().pieces() == 4, "four pieces left");
+            helper.succeed();
+        });
+    }
+
+    /** Sealed = powered, helmet on and all five pieces (the helmet alone sealed it until the frame). */
+    @SuitTest(timeoutTicks = 30)
+    public static void fullArmourAndHelmetSealTheSuit(GameTestHelper helper) {
+        PowerSuitEntity suit = fueledSuit(helper, new ItemStack(Items.COAL, 4));
+        Player pilot = boardedPilot(helper, suit);
+        helper.runAfterDelay(3, () -> {
+            helper.assertTrue(suit.isPowered() && suit.hasHelmet() && !suit.isSealed(), "helmet on, no armour: not sealed");
+            pilot.addEffect(new MobEffectInstance(MobEffects.POISON, 100));
+            helper.assertTrue(pilot.hasEffect(MobEffects.POISON), "the poison reaches the pilot");
+            pilot.removeEffect(MobEffects.POISON);
+            armoured(suit);
+            helper.assertTrue(suit.isSealed(), "the full set and the helmet seal it");
+            pilot.addEffect(new MobEffectInstance(MobEffects.POISON, 100));
+            helper.assertTrue(!pilot.hasEffect(MobEffects.POISON), "sealed: the poison is kept out");
+            suit.getInventory().setItem(PowerSuitEntity.RIGHT_LEG_SLOT, ItemStack.EMPTY);
+            helper.assertTrue(!suit.isSealed(), "one leg bare: not sealed");
+            suit.getInventory().setItem(PowerSuitEntity.RIGHT_LEG_SLOT, ironPiece(ArmourPiece.LEG));
+            suit.getInventory().setItem(PowerSuitEntity.HELMET_SLOT, ItemStack.EMPTY);
+            helper.assertTrue(!suit.isSealed(), "the full set without the helmet: not sealed");
+            helper.succeed();
+        });
+    }
+
+    /** The armour stays on through saving (protection re-applied on load: the modifiers aren't saved), packing and
+     *  deploying; suits and items from before the armour come back bare; dying drops it. */
+    @SuitTest(timeoutTicks = 20)
+    public static void armourSurvivesSavingAndPacking(GameTestHelper helper) {
+        PowerSuitEntity suit = spawnSuit(helper);
+        armoured(suit);
+        PowerSuitEntity loaded = ModEntities.POWER_SUIT.get().create(helper.getLevel(), EntitySpawnReason.LOAD);
+        loadTag(helper, loaded, saveTag(helper, suit));
+        helper.assertTrue(loaded.armour().fullSet() && loaded.getInventory().getItem(PowerSuitEntity.TORSO_SLOT).is(ModItems.IRON_TORSO_ARMOUR.get()),
+                "the armour survives saving");
+        assertArmour(helper, loaded, fullIronArmour(), "a loaded suit");
+
+        Player player = helper.makeMockPlayer(GameType.SURVIVAL);
+        helper.assertTrue(suit.packUp(player), "it packs up");
+        SuitLoadout loadout = packedSuit(player).get(ModDataComponents.LOADOUT.get());
+        helper.assertTrue(loadout != null && loadout.armour().size() == 5 && loadout.armour().get(4).is(ModItems.IRON_LEG_ARMOUR.get()),
+                "the packed item carries the armour, got " + loadout);
+        var ops = helper.getLevel().registryAccess().createSerializationContext(NbtOps.INSTANCE);
+        SuitLoadout back = SuitLoadout.CODEC.parse(ops, SuitLoadout.CODEC.encodeStart(ops, loadout).getOrThrow()).getOrThrow();
+        helper.assertTrue(back.equals(loadout), "the armour survives the item's codec");
+        PowerSuitEntity deployed = ModEntities.POWER_SUIT.get().create(helper.getLevel(), EntitySpawnReason.LOAD);
+        deployed.applyLoadout(loadout);
+        helper.assertTrue(deployed.armour().fullSet(), "and deploys with it");
+        assertArmour(helper, deployed, fullIronArmour(), "a deployed suit");
+        deployed.applyLoadout(SuitLoadout.EMPTY);
+        helper.assertTrue(deployed.armour().pieces() == 0, "an item from before the armour deploys a bare frame");
+
+        PowerSuitEntity wreck = suitAt(helper, new BlockPos(2, 2, 2));
+        armoured(wreck);
+        helper.runAfterDelay(2, () -> {
+            wreck.hurtServer(helper.getLevel(), helper.getLevel().damageSources().genericKill(), Float.MAX_VALUE);
+        });
+        helper.runAfterDelay(4, () -> {
+            var drops = helper.getLevel().getEntitiesOfClass(ItemEntity.class, wreck.getBoundingBox().inflate(3),
+                    item -> SuitArmourItem.of(item.getItem()) != null);
+            helper.assertTrue(drops.size() == 5, "a destroyed suit drops its five pieces, got " + drops.size());
+            helper.succeed();
+        });
+    }
+
+    /** Each piece from iron ingots round an iron block, shaped like vanilla armour (the block keeps them apart from
+     *  vanilla's iron armour, which still crafts). */
+    @SuitTest
+    public static void ironArmourIsCraftedFromIron(GameTestHelper helper) {
+        ItemStack i = new ItemStack(Items.IRON_INGOT), b = new ItemStack(Items.IRON_BLOCK), e = ItemStack.EMPTY;
+        checkCraft(helper, 3, 3, List.of(i, e, i, i, b, i, i, i, i), ModItems.IRON_TORSO_ARMOUR.get());
+        checkCraft(helper, 3, 2, List.of(i, b, i, i, e, i), ModItems.IRON_ARM_ARMOUR.get());
+        checkCraft(helper, 3, 3, List.of(i, b, i, i, e, i, i, e, i), ModItems.IRON_LEG_ARMOUR.get());
+        checkCraft(helper, 3, 3, List.of(i, e, i, i, i, i, i, i, i), Items.IRON_CHESTPLATE);
+        checkCraft(helper, 3, 3, List.of(i, i, i, i, e, i, i, e, i), Items.IRON_LEGGINGS);
+        helper.succeed();
+    }
+
     private static ItemStack craft(GameTestHelper helper, int w, int h, List<ItemStack> grid) {
         CraftingInput input = CraftingInput.of(w, h, grid);
         return helper.getLevel().recipeAccess().getRecipeFor(RecipeType.CRAFTING, input, helper.getLevel())
@@ -2824,7 +2967,7 @@ public final class PowerSuitTests {
                 "the packed item carries its engine, got " + loadout);
         // A loadout's codec must keep "taken out" (an empty stack) apart from "from before the engines" (no field).
         var ops = helper.getLevel().registryAccess().createSerializationContext(NbtOps.INSTANCE);
-        SuitLoadout noEngine = new SuitLoadout(ItemStack.EMPTY, ItemStack.EMPTY, 0, 0, 0, ItemStack.EMPTY, Optional.of(ItemStack.EMPTY), ItemStack.EMPTY, true);
+        SuitLoadout noEngine = new SuitLoadout(ItemStack.EMPTY, ItemStack.EMPTY, 0, 0, 0, ItemStack.EMPTY, Optional.of(ItemStack.EMPTY), ItemStack.EMPTY, true, List.of());
         SuitLoadout back = SuitLoadout.CODEC.parse(ops, SuitLoadout.CODEC.encodeStart(ops, noEngine).getOrThrow()).getOrThrow();
         helper.assertTrue(back.engine().isPresent() && back.engine().get().isEmpty(), "an empty engine slot survives the codec, got " + back);
         SuitLoadout before = SuitLoadout.CODEC.parse(ops, SuitLoadout.CODEC.encodeStart(ops, SuitLoadout.EMPTY).getOrThrow()).getOrThrow();

@@ -2,6 +2,7 @@ package dev.ajaczero.powersuits.item;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import java.util.List;
 import java.util.Optional;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
@@ -15,14 +16,16 @@ import net.minecraft.world.item.ItemStack;
  * the built-in firebox, while a present but empty stack means the engine was taken out. {@code nuggets} (the hidden
  * ammo store) and {@code ammo} (the ammo slot) are gone from the suit since 2026-10-27: items packed with them still
  * carry them, and the deployed suit drops them as items (PowerSuitEntity.returnOldAmmo); new items carry none.
- * {@code switchedOn} is the power switch (2026-10-27): items from before it load switched on.
+ * {@code switchedOn} is the power switch (2026-10-27): items from before it load switched on. {@code armour} (2026-11-14)
+ * is the frame's armour, one stack per part in SuitArmour.Part order (torso, left arm, right arm, left leg, right leg);
+ * items from before it carry an empty list (a bare frame).
  * Stored on the item stack as a "data component" (1.21's replacement for item NBT). A component
  * needs a Codec (how to save it to disk) and a StreamCodec (how to send it over the network).
  */
 public record SuitLoadout(ItemStack fuel, ItemStack socket, int burnLeft, int burnTotal, int nuggets, ItemStack helmet,
-        Optional<ItemStack> engine, ItemStack ammo, boolean switchedOn) {
+        Optional<ItemStack> engine, ItemStack ammo, boolean switchedOn, List<ItemStack> armour) {
     public static final SuitLoadout EMPTY = new SuitLoadout(ItemStack.EMPTY, ItemStack.EMPTY, 0, 0, 0, ItemStack.EMPTY, Optional.empty(),
-            ItemStack.EMPTY, true);
+            ItemStack.EMPTY, true, List.of());
 
     public static final Codec<SuitLoadout> CODEC = RecordCodecBuilder.create(i -> i.group(
             ItemStack.OPTIONAL_CODEC.optionalFieldOf("fuel", ItemStack.EMPTY).forGetter(SuitLoadout::fuel),
@@ -34,7 +37,8 @@ public record SuitLoadout(ItemStack fuel, ItemStack socket, int burnLeft, int bu
             // an empty stack saves as {} (so it stays "taken out"); a missing field loads as Optional.empty()
             ItemStack.OPTIONAL_CODEC.optionalFieldOf("engine").forGetter(SuitLoadout::engine),
             ItemStack.OPTIONAL_CODEC.optionalFieldOf("ammo", ItemStack.EMPTY).forGetter(SuitLoadout::ammo),
-            Codec.BOOL.optionalFieldOf("switched_on", true).forGetter(SuitLoadout::switchedOn)
+            Codec.BOOL.optionalFieldOf("switched_on", true).forGetter(SuitLoadout::switchedOn),
+            ItemStack.OPTIONAL_CODEC.listOf().optionalFieldOf("armour", List.of()).forGetter(SuitLoadout::armour)
     ).apply(i, SuitLoadout::new));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, SuitLoadout> STREAM_CODEC = StreamCodec.composite(
@@ -47,6 +51,7 @@ public record SuitLoadout(ItemStack fuel, ItemStack socket, int burnLeft, int bu
             ByteBufCodecs.optional(ItemStack.OPTIONAL_STREAM_CODEC), SuitLoadout::engine,
             ItemStack.OPTIONAL_STREAM_CODEC, SuitLoadout::ammo,
             ByteBufCodecs.BOOL, SuitLoadout::switchedOn,
+            ItemStack.OPTIONAL_LIST_STREAM_CODEC, SuitLoadout::armour,
             SuitLoadout::new);
 
     // ItemStack has no equals(), but components are compared to decide whether two stacks are the same.
@@ -57,13 +62,27 @@ public record SuitLoadout(ItemStack fuel, ItemStack socket, int burnLeft, int bu
                 && this.nuggets == other.nuggets && ItemStack.matches(this.helmet, other.helmet)
                 && this.engine.isPresent() == other.engine.isPresent()
                 && (this.engine.isEmpty() || ItemStack.matches(this.engine.get(), other.engine.get()))
-                && ItemStack.matches(this.ammo, other.ammo) && this.switchedOn == other.switchedOn;
+                && ItemStack.matches(this.ammo, other.ammo) && this.switchedOn == other.switchedOn
+                && stacksMatch(this.armour, other.armour);
+    }
+
+    /** ItemStack.listMatches is deprecated: the same, by hand. */
+    private static boolean stacksMatch(List<ItemStack> a, List<ItemStack> b) {
+        if (a.size() != b.size()) {
+            return false;
+        }
+        for (int i = 0; i < a.size(); i++) {
+            if (!ItemStack.matches(a.get(i), b.get(i))) {
+                return false;
+            }
+        }
+        return true;
     }
 
     @Override
     public int hashCode() {
         return 31 * (31 * ItemStack.hashItemAndComponents(this.fuel) + ItemStack.hashItemAndComponents(this.socket)) + this.burnLeft + 17 * this.nuggets
                 + 7 * ItemStack.hashItemAndComponents(this.helmet) + 3 * this.engine.map(ItemStack::hashItemAndComponents).orElse(-1)
-                + 5 * ItemStack.hashItemAndComponents(this.ammo) + (this.switchedOn ? 0 : 11);
+                + 5 * ItemStack.hashItemAndComponents(this.ammo) + (this.switchedOn ? 0 : 11) + 13 * this.armour.stream().mapToInt(ItemStack::hashItemAndComponents).sum();
     }
 }

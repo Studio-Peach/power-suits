@@ -164,7 +164,7 @@ final class TntScene {
             PowerSuitEntity s = ModEntities.POWER_SUIT.get().create(level, EntitySpawnReason.COMMAND);
             DevUtil.firebox(s);
             s.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.COAL, 16));
-            s.getInventory().setItem(PowerSuitEntity.HELMET_SLOT, new ItemStack(ModItems.SUIT_HELMET.get()));
+            s.getInventory().setItem(PowerSuitEntity.HELMET_SLOT, new ItemStack(ModItems.SUIT_HELMET.get())); DevUtil.ironArmour(s);
             ItemStack launcher = new ItemStack(ModItems.TNT_LAUNCHER.get());
             launcher.set(ModDataComponents.LOADED_ROUNDS.get(), TntLauncherItem.DRUM); // a loaded drum: the scene fires at once
             s.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, launcher);

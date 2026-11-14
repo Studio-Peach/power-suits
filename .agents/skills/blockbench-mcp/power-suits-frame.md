@@ -183,4 +183,14 @@ the end and `docs/guide.md` Notes).
   red / green for reviews) and lit as two masks, red ready / green running; the chaingun's green lights and the
   flamethrower's pilot light (its reserved colours) have masks of their own (`TOOL_GLOW` in the exporter). The chaingun
   has no heat colours in its art: its barrels don't glow with heat yet.
-- Not yet in game (later steps): the iron armour. Re-run the exporter after rebuilding the saved files.
+- Step 6 (decided 2026-11-14, Notion spec sec. 10): the frame is made on its own (golem-style blocks maybe later; the
+  recipe stands), armour goes on the spawned frame one piece per part from its menu, pieces carry a tier (iron now,
+  copper planned), protection per piece, sealed = all five pieces + helmet + powered. 6a (items, slots 5-9, protection,
+  synced tiers, the seal: `entity/SuitArmour`) is in, no looks. Left: 6b the menu (mock 2-3 layouts for the five slots in
+  `PowerSuitScreen` / `tools/make-gui.py`, user picks); 6c the pieces on the frame: the saved files must carry frame +
+  iron pieces + both engine variants in one file and texture, as `TOOL=all` does for tools (frame_model builds ONE
+  variant today: `ARMOR=iron`, `ARMOR_FORM=flat`); the pieces REPLACE the frame's boxes in place, so the renderer hides
+  a part's frame shell while its piece is worn; the armoured engine (`frame_heart_art.build(armored=True)`: upper hoses
+  under the breastplate, the core's radiator grille `GUARD=hot`); the cockpit arms (`view/frame_arm`, `view/frame_tool`)
+  with armour; check `check_armor()`. 6d FrameScene shots per piece on/off and the full set, docs.
+- Re-run the exporter after rebuilding the saved files.

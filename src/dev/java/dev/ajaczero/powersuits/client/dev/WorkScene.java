@@ -97,7 +97,7 @@ final class WorkScene {
             level.setBlock(home.offset(HOLE), Blocks.AIR.defaultBlockState(), 3);
             level.setBlock(home.offset(HOLE).below(), Blocks.AIR.defaultBlockState(), 3);
             PowerSuitEntity s = ModEntities.POWER_SUIT.get().create(level, EntitySpawnReason.COMMAND);
-            DevUtil.firebox(s); s.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.BLAZE_ROD, 16)); s.getInventory().setItem(PowerSuitEntity.HELMET_SLOT, new ItemStack(ModItems.SUIT_HELMET.get()));
+            DevUtil.firebox(s); s.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.BLAZE_ROD, 16)); s.getInventory().setItem(PowerSuitEntity.HELMET_SLOT, new ItemStack(ModItems.SUIT_HELMET.get())); DevUtil.ironArmour(s);
             s.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, new ItemStack(ModItems.DRILL.get()));
             s.snapTo(x + 0.5, y, z + 0.5, 0, 0);
             s.brain().setOwnerId(player.getUUID());
