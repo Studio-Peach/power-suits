@@ -802,7 +802,8 @@ if TOOL == 'saw':
     TOOL_PARTS = saw_art.build(6.25 + ARM_OUT, SOCKET_Y, os.environ.get('LAMP', 'red'), os.environ.get('SAW', 'B'),
                                os.environ.get('SAW_ART', 'B'), os.environ.get('SAW_FINS', 'A'),
                                os.environ.get('SAW_COWL', 'slate'), os.environ.get('SAW_BARREL', 'copper'),
-                               os.environ.get('SAW_BAR', 'box'), os.environ.get('SAW_LOW', 'fins'))
+                               os.environ.get('SAW_BAR', 'box'), os.environ.get('SAW_LOW', 'fins'),
+                               os.environ.get('SAW_LOOK', 'old'))
 for p in TOOL_PARTS: SHELLS[f"tl_{p['name']}"] = dict(faces=p['faces'])
 # where each shell's faces sit in the texture (below / beside nothing else), one strip per shell
 SHELL_AT = {'arm_shell': (0, 64), 'leg_shell': (0, 80),

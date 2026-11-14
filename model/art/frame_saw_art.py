@@ -215,13 +215,82 @@ def toothed_parts(c, t, shape, part):
     return parts
 
 
-def build(c, top, lamp='red', kind='B', art='B', fins='A', cowl='slate', barrel='copper', bar_shape='box', low='fins'):
+# A new body (SAW_LOOK; 2026-11-14, user: still not a chainsaw; a reference, a Husqvarna 455 Rancher; anything goes
+# but the body's size, 5 x 4 x 5). Its parts mapped onto the block with the bar down: the saw's front (where the bar
+# leaves it) at the body's bottom, its rear up at the arm, its top (the handles) facing back (when the arm swings up
+# the bar points forward, its cutting underside down, as a saw is held), its clutch side (the bar nuts) outward:
+# - the wrap-around front handle, the reference's grey tube: a 1 px band round the whole body (rows 2-3);
+# - the rear handle on the back's top, a loop (a dark gap in it); the chain brake's hand guard, a grey frame, standing
+#   on the back's bottom (rows 5-7, 1 px round onto the sides): the reference turned bar-down has the guard there;
+# - the clutch cover (outer side): the muffler (silver, a hole) next to the guard, two black bar nuts; the starter
+#   cover (inner): vent slits; underneath, the muffler's face between the bar slot and the guard;
+# - the felling dogs (the spikes beside the bar) along the front's bottom; the status lamp stays (front, outer top).
+# Drafts: rancher (the reference's orange and grey) | copper (the game's copper and slate) | hoop (rancher, the wrap
+# handle a real hoop 0.5 px proud round a 4 x 4 x 4 core: its outline the envelope); 'old' the body so far.
+LOOKS = {'rancher': dict(O='f28a3a', o='e0621f', u='a9461a', v='6b2a10', G='7d8389', H='5a5f65', J='3b3f44'),
+         'copper': dict(O='e09868', o='c07440', u='804426', v='5a2e18', G='4c5559', H='3b4246', J='2a2e31')}
+LOOKS['hoop'] = LOOKS['rancher']
+
+
+def rancher_faces(w, band=True):
+    """Rows of the body's faces, w texels wide (10: the 5 px block; 8: the hoop's 4 px core), 8 tall; band False
+    leaves the handle band's rows in the housing's shade (under the hoop)."""
+    m, n = w // 2, w - 10                                   # n: columns more than the 10 the art is drawn for
+    G, H = ('G' * (w - 1) + 'H', 'H' * (w - 1) + 'J') if band else ('u' * w, 'v' * w)
+    back = ['O' * (m - 2) + 'GGGG' + 'O' * (w - m - 3) + 'o',            # the rear handle's top
+            'o' * (m - 2) + 'HxxJ' + 'o' * (w - m - 3) + 'u',            # its loop, the gap dark
+            G, H, 'u' * (w - 1) + 'v',                                   # the wrap handle, its shadow
+            'G' * (w - 1) + 'H', 'HH' + 'x' * (w - 4) + 'HJ', 'J' * (w - 1) + 'z']   # the hand guard, a frame
+    nuts = 'O' + 'o' * (w - 6) + 'u'
+    outer = ['G' + 'O' * (w - 1), 'J' + 'o' * (w - 2) + 'u', G, H,                   # (back -> front)
+             'GH' + 'u' * (w - 3) + 'v',                                             # the guard's side
+             'HJghh' + nuts[:w - 5],
+             'HJhxh' + ''.join('x' if i in (1, 3) else ch for i, ch in enumerate(nuts[1:w - 4])),   # muffler, bar nuts
+             'JJppp' + 'u' * (w - 6) + 'v']
+    vents = 'o' + ''.join('x' if i % 2 else 'o' for i in range(w - 3)) + 'oJ'
+    inner = ['O' * (w - 1) + 'G', vents, G, H, 'v' + 'u' * (w - 3) + 'HG',          # (front -> back)
+             'o' * (w - 2) + 'JH', 'o' * (w - 2) + 'JH', 'u' * (w - 2) + 'JJ']
+    dogs = ''.join('l' if i % 2 else 'z' for i in range(w))
+    front = ['O' * (w - 1) + 'o', 'oWL' + 'o' * (w - 4) + 'u', G, H, 'u' * (w - 1) + 'v',
+             'o' * (w - 1) + 'u', 'o' * (w - 1) + 'u', dogs]
+    slot = lambda a, b: a * (m - 2) + 'JxxJ' + b * (w - m - 2)
+    holes = lambda: 'h' * (m - 2) + 'JxxJ' + 'h' * (w - m - 2)
+    down = [dogs] + [slot("o", "o")] * (w - 5) + [slot('g', 'g'), ''.join('x' if i % 2 and r == 'h' else r for i, r in enumerate(holes())),
+                                                   'G' * (w - 1) + 'H', 'J' * w]
+    for f in (back, outer, inner, front, down): assert all(len(r) == w for r in f) and len(f) == (w if f is down else 8), f
+    return {'south': back, 'east': outer, 'west': inner, 'north': front, 'up': ['J' * w] * w, 'down': down}
+
+
+def look_pal(look, lamp):
+    W_, L_, r_ = drill.LAMPS[lamp]
+    return PAL | {k: _c(v) for k, v in LOOKS[look].items()} | {'x': _c('1a1d1f'), 'W': _c(W_), 'L': _c(L_), '.': '.'}
+
+
+def rancher_parts(c, t, look, lamp, part):
+    pal = look_pal(look, lamp)
+    paint = lambda faces: (lambda f, w, h: [[pal[ch] for ch in r] for r in faces[f]])
+    sq = lambda n, y0, y1: ((c - n / 2, y0, -n / 2), (c + n / 2, y1, n / 2))
+    if look != 'hoop': return [part('body', sq(5, t, t + 4), paint(rancher_faces(10)))]
+    parts = [part('body', sq(4, t, t + 4), paint(rancher_faces(8, band=False)))]
+    y0, y1 = t + 4 - 2, t + 4 - 1                        # the band's rows 2-3
+    def band(f, w, h):
+        if f == 'up': return [[pal['G']] * w for _ in range(h)]
+        if f == 'down': return [[pal['J']] * w for _ in range(h)]
+        return [[pal['G' if j == 0 and i < w - 1 else 'H' if j == 0 or i < w - 1 else 'J'] for i in range(w)] for j in range(h)]
+    for k, box in (('hoop_f', ((c - 2.5, y0, -2.5), (c + 2.5, y1, -2))), ('hoop_b', ((c - 2.5, y0, 2), (c + 2.5, y1, 2.5))),
+                   ('hoop_o', ((c + 2, y0, -2), (c + 2.5, y1, 2))), ('hoop_i', ((c - 2.5, y0, -2), (c - 2, y1, 2)))):
+        parts.append(part(k, box, band))
+    return parts
+
+
+def build(c, top, lamp='red', kind='B', art='B', fins='A', cowl='slate', barrel='copper', bar_shape='box', low='fins', look='old'):
     """The chainsaw's parts on an arm centred at x c (right side) whose socket is at y top: the body (the drill's)
     and the bar under it (SAW, picked: B), its paint SAW_ART; bone 'tool' still, 'bit' the chain (it runs)."""
     sq = lambda n, y0, y1: ((c - n / 2, y0, -n / 2), (c + n / 2, y1, n / 2))
     t = top - 4                                         # the body's bottom: the bar hangs from it
     part = lambda name, box, faces, bone='tool': dict(drill.part(name, box, _paint(faces) if isinstance(faces, dict) else faces), bone=bone)
-    parts = [part('body', sq(5, t, top), saw_body(art, lamp, fins, cowl, barrel, low))]
+    parts = ([part('body', sq(5, t, top), saw_body(art, lamp, fins, cowl, barrel, low))] if look == 'old' else
+             rancher_parts(c, t, look, lamp, part))
     if BARS[bar_shape]:
         parts += toothed_parts(c, t, BARS[bar_shape], part)
         for p in parts: p.setdefault('rot', 0)
