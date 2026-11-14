@@ -244,6 +244,22 @@ DRUM_ROUND = ['E' * 10,                  # the seam between the halves
               CYLD, CYLD,
               'ytttttttty']              # its bottom edge into the barrel carrier
 
+# Round 5 (2026-11-14, user: not the drum, the top half was to be replaced; the drum stays round 3's banded black).
+# The housing set apart from the drum by its tone and shape, the back's carry handle cut into each (cols 3-6):
+# - steel: the iron armour's steel (the arm's metal running into the gun; the black drum below);
+# - panel: a lighter matte grey (the reference's rear block is lighter than its drum), worn top edge, bolts;
+# - angular: the black, a chamfered plate (lit bevels narrowing to the arm: the reference's angled cowl).
+DOOM.update({k: _c(v) for k, v in {'M': '9fa4a9', 'm': '757c85', 'n': '58606a', 'N': '3c424c', 'Z': '22262e',
+                                    'P': '6a655e', 'p': '57534d'}.items()})
+# The housing a real half: rows 0-3 (as drawn first, rows 0-2, it read as a band over the drum); the drum rows 4-7
+# (DRUM4: its ring, a band, a groove, a band).
+DRUM4 = ['DBBBBBBBBD', 'DCBBCCCCDE', 'EDDDDDDDDE', 'DCBBCCCCDE']
+def _handle(rows, edge='D'): return [r[:3] + edge + 'AB' + edge + r[7:] for r in rows]
+for _k, _side in {'steel': ['MmmmmmmmmN', 'mgnnnnnngN', 'mnnnnnnnnN', 'NNNNNNNNNZ'],
+                  'panel': ['APPPPPPPPB', 'PgppppppgB', 'PppppppppB', 'BBBBBBBBBD'],
+                  'angular': ['DDDABBADDD', 'DDABBBBADD', 'DABBBBBBAD', 'ABCCCCCCBA']}.items():
+    TOPS[_k] = dict(side=_side, back=_handle(_side, 'Z' if _k == 'steel' else 'D'), drum=DRUM4)
+
 def doom_faces(top, drum='dark'):
     if drum != 'dark':
         t = TOPS[top]
@@ -254,7 +270,8 @@ def doom_faces(top, drum='dark'):
         f['east'] = D_OUTER[:3] + DRUM
         return f
     t = TOPS[top]
-    return dict(D_FACES, east=t['side'] + DRUM, west=t['side'] + DRUM, north=t['side'] + DRUM, south=t['back'] + DRUM)
+    d = t.get('drum', DRUM)
+    return dict(D_FACES, east=t['side'] + d, west=t['side'] + d, north=t['side'] + d, south=t['back'] + d)
 
 def ring_d(w, h):        # the clamp ring's side, dimmer than ring() (a bright ring read as a white band)
     return ['B' * (w - 1) + 'C'] + ['C' * (w - 1) + 'D'] * (h - 1)
