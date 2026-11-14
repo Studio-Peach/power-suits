@@ -126,3 +126,18 @@ live on `experimental/frame-concept`; the frame isn't in the game yet (model onl
   smallest legible digit at 2 texels a px, so two digits fill a whole face (smaller needs finer pixels or a light bar).
   Lessons: a reference gives the tool's signature, not a parts list; when the user says "the top half", ask or draft
   both halves (round 4 replaced the drum by mistake).
+- The flamethrower (`TOOL=flame`, `model/art/frame_flame_art.py`, picked 2026-11-14 after eight rounds): from the big
+  suit's (perforated barrel, red tank with a hazard band, blue pilot light). Its parts hang side by side under the
+  body: the perforated 3 x 3 barrel at the front, the red tank behind it with daylight between. Under them is the
+  matchstick: a slate rod down from the tank, then a foot forward under the barrel, its blue head at the bore (the
+  user's word; "meet the fire hole"). The body is a **solid pump**: a strap, and the copper fuel line painted round
+  it from the tank through a red valve wheel into the barrel, centred on its faces. What didn't work: the tank as
+  the body; a plain steel body (B: "wasted space"); any see-through fire in the body (glowing slots, holes, a porthole,
+  a grille: "see-through doesn't make sense for a flamethrower"); the tank strapped on the arm.
+- **A tool's body height is its own** (2026-11-14, user: "not all tools benefit from the same tall base"): the
+  flamethrower's is 2 px (`FLAME_BODY_H`), and the freed px went to the barrel, the muzzle kept 9 px under the socket
+  (`MUZZLE_DROP`). Its body, barrel and tank are painted for any size (`pump_faces`, `barrel_rows`, `tank_rows`): the
+  holes keep the 5 px barrel's rhythm (a hole, two plain rows), and three a row apart looked smushed. The drill,
+  chainsaw and chaingun still hard-code 4 px.
+- **A down face's rows run back -> front** in the frame's art (up faces front -> back; checked from straight below):
+  the matchstick's head, written front -> back on its bottom, came out at the back, off from its sides.

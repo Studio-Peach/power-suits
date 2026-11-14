@@ -1,5 +1,14 @@
 """The flamethrower for the frame (frame_model.py, TOOL=flame): the fourth power tool brought over from the big suit.
 
+PICKED (2026-11-14, after eight rounds; user: "definitely 5 tall"; frame_model's defaults): FLAME=D, FLAME_BODY=pump,
+FLAME_BODY_H=2, FLAME_HOLES=even, FLAME_TANK_H=5. Under the socket: a 2 px steel body (a lit strap with two bolts, the
+copper fuel line painted round it: up out of the tank on the back, along the outer side through a red valve wheel,
+across the front and down into the barrel); under it the perforated 3 x 3 barrel at the front (7 px, three 1 px holes
+a face two plain rows apart, the sooty muzzle 9 px under the socket), the red tank behind it (3 x 5 x 1.5, its hazard
+band under the lit top, 0.5 px of daylight between), the matchstick: a slate rod down from the tank's bottom and a foot
+forward under the barrel, its blue head (the reserved pilot colours) at the bore's back edge. The sections below are
+the rounds, oldest first; their knobs rebuild them.
+
 2026-11-14 (user: the flamethrower next, the previous model as the reference). The big suit's (11f1db0,
 model/art/flame_drafts_art.py: Fallout's flamer, "the barrel with holes, the tank underneath"): a 5 x 1 x 5 socket
 base, a slim 3 x 3 barrel 9 px long in worn steel, perforated (a column of 1 px holes down each face, black inside),

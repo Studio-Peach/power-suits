@@ -783,7 +783,7 @@ if ENGINE == 'firebox':
         ENGINE_BOX[k] = p['box']
         ENGINE_META[k] = p
         if p['faces']: SHELLS[f'en_{k}'] = dict(faces=p['faces'])
-# Knob TOOL ('none' / 'drill' / 'saw'; 2026-11-13, user: the big suit's power tools, sized down and redesigned, the drill
+# Knob TOOL ('none' / 'drill' / 'saw' / 'gun' / 'flame'; 2026-11-13, user: the big suit's power tools, sized down and redesigned, the drill
 # first): the tool in the left arm's socket (SOCKET), on a `tool` bone under it. Tools are the exception to the simple
 # boxes (user, 2026-11-13): they may be models of several parts. The drill: frame_drill_art.py; the chainsaw:
 # frame_saw_art.py (its drafts SAW=A|B|C); the chaingun ('gun'): frame_gun_art.py; the flamethrower ('flame'):
@@ -813,13 +813,16 @@ if TOOL == 'gun':
                                os.environ.get('GUN_BODY', 'ref'), os.environ.get('GUN_LOOK', 'doom'),
                                os.environ.get('GUN_BARRELS', '4'), os.environ.get('GUN_HANDLE', 'paint'),
                                os.environ.get('GUN_COUNTER') or os.environ.get('GUN_TOP', 'stack'), os.environ.get('GUN_DRUM', 'dark'))
-# The flamethrower (frame_flame_art.py; 2026-11-14, user: next, the big suit's as the reference): drafts FLAME=A|B|C, round 2 D|E|F.
+# The flamethrower (frame_flame_art.py): picked 2026-11-14 after eight rounds (user: "definitely 5 tall"): FLAME=D (the
+# barrel at the front, the red tank behind it, both under the body), FLAME_BODY=pump at FLAME_BODY_H=2, the 7 px barrel
+# FLAME_HOLES=even, FLAME_TANK_H=5 (the defaults); the other knobs are the rounds' drafts, kept to rebuild them.
+# FLAME_PILOT=dark (the reserved pilot colours, as in game) | lit (review).
 if TOOL == 'flame':
     import frame_flame_art as flame_art
-    TOOL_PARTS = flame_art.build(6.25 + ARM_OUT, SOCKET_Y, os.environ.get('FLAME', 'A'), os.environ.get('FLAME_PILOT', 'dark'),
-                                   os.environ.get('FLAME_GLOW', 'lit'), os.environ.get('FLAME_BODY', 'burner'),
-                                   float(os.environ.get('FLAME_BODY_H', '4')), os.environ.get('FLAME_HOLES', 'keep'),
-                                   float(os.environ.get('FLAME_TANK_H', '4')), float(os.environ.get('FLAME_TANK_W', '3')))
+    TOOL_PARTS = flame_art.build(6.25 + ARM_OUT, SOCKET_Y, os.environ.get('FLAME', 'D'), os.environ.get('FLAME_PILOT', 'dark'),
+                                   os.environ.get('FLAME_GLOW', 'lit'), os.environ.get('FLAME_BODY', 'pump'),
+                                   float(os.environ.get('FLAME_BODY_H', '2')), os.environ.get('FLAME_HOLES', 'even'),
+                                   float(os.environ.get('FLAME_TANK_H', '5')), float(os.environ.get('FLAME_TANK_W', '3')))
 for p in TOOL_PARTS: SHELLS[f"tl_{p['name']}"] = dict(faces=p['faces'])
 # where each shell's faces sit in the texture (below / beside nothing else), one strip per shell
 SHELL_AT = {'arm_shell': (0, 64), 'leg_shell': (0, 80),
