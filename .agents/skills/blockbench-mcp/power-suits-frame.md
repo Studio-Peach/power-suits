@@ -137,7 +137,9 @@ live on `experimental/frame-concept`; the frame isn't in the game yet (model onl
 - **A tool's body height is its own** (2026-11-14, user: "not all tools benefit from the same tall base"): the
   flamethrower's is 2 px (`FLAME_BODY_H`), and the freed px went to the barrel, the muzzle kept 9 px under the socket
   (`MUZZLE_DROP`). Its body, barrel and tank are painted for any size (`pump_faces`, `barrel_rows`, `tank_rows`): the
-  holes keep the 5 px barrel's rhythm (a hole, two plain rows), and three a row apart looked smushed. The drill,
-  chainsaw and chaingun still hard-code 4 px.
+  holes keep the 5 px barrel's rhythm (a hole, two plain rows), and three a row apart looked smushed. The others
+  stay 4 px (reviewed 2026-11-14): the drill's band + motor and the chainsaw's Husqvarna body each need it, and the
+  chaingun's drum at 3 px (`GUN_BODY_H=3`, the pair twice; `GUN_BARREL_L` kept as a knob) lost the stacked weight the
+  user asked for: kept at 4. The drill and chainsaw still hard-code it.
 - **A down face's rows run back -> front** in the frame's art (up faces front -> back; checked from straight below):
   the matchstick's head, written front -> back on its bottom, came out at the back, off from its sides.
