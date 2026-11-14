@@ -2277,7 +2277,7 @@ public final class PowerSuitTests {
 
     /** It leaves after its lifetime, but only unwatched. Own batch: other tests' mock players must not be around. */
     @SuppressWarnings("removal")
-    @SuitTest(timeoutTicks = 100, batch = "rogue_lifetime")
+    @SuitTest(timeoutTicks = 160, batch = "rogue_lifetime")
     public static void rogueLeavesAfterItsTimeWhenUnwatched(GameTestHelper helper) {
         PowerSuitEntity suit = rogue(helper, SUIT_POS, true);
         suit.brain().setRogueAge(PowerSuitsConfig.ROGUE_LIFETIME.get());
@@ -2287,10 +2287,10 @@ public final class PowerSuitTests {
         helper.runAfterDelay(40, () -> {
             helper.assertTrue(!suit.isRemoved(), "not while a player watches");
             dismiss(helper, watcher);
-        });
-        helper.runAfterDelay(80, () -> {
-            helper.assertTrue(suit.isRemoved(), "gone once nobody is near");
-            helper.succeed();
+            // Gone once nobody is near: it looks every second, and with -Prepeat its copies' watchers (64 blocks count
+            // as near) leave a few ticks apart, so wait for it rather than check at one tick (2026-11-14: failed 1 in 3
+            // whole-suite x5 runs at a fixed tick 80, passed 80 / 80 alone).
+            helper.succeedWhen(() -> helper.assertTrue(suit.isRemoved(), "gone once nobody is near"));
         });
     }
 
