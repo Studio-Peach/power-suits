@@ -2,6 +2,7 @@ package dev.ajaczero.powersuits.client;
 
 import com.geckolib.constant.dataticket.DataTicket;
 import java.util.function.Consumer;
+import net.minecraft.resources.Identifier;
 
 /**
  * What the suit's renderer needs to know about the suit this frame, copied from the entity while Minecraft "extracts"
@@ -12,6 +13,13 @@ import java.util.function.Consumer;
 final class SuitRenderData {
     /** Drawn from inside: the local pilot's own suit in first person (only the legs show). */
     static final DataTicket<Boolean> COCKPIT = DataTicket.create("power_suits_cockpit", Boolean.class);
+    /** The pilot's skin texture (a player inside, not in our own first-person view's head), else absent: the frame
+     *  stands empty (PilotLayer). */
+    static final DataTicket<Identifier> PILOT_SKIN = DataTicket.create("power_suits_pilot_skin", Identifier.class);
+    /** The pilot's skin is Alex's slim build: the frame's slim build (narrower chest) and his 3 px arms. */
+    static final DataTicket<Boolean> PILOT_SLIM = DataTicket.create("power_suits_pilot_slim", Boolean.class);
+    /** 0..1: how far an unpowered suit has slumped (the head bowed, the torso tipped forward). */
+    static final DataTicket<Float> SLUMP = DataTicket.create("power_suits_slump", Float.class);
     /** The installed tool's bone (PowerTool.suitBone), or "" for the bare socket. */
     static final DataTicket<String> TOOL_BONE = DataTicket.create("power_suits_tool_bone", String.class);
     /** The helmet is on (else its bone isn't drawn). */

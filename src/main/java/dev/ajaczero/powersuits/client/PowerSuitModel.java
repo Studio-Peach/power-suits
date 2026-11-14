@@ -1,36 +1,46 @@
 package dev.ajaczero.powersuits.client;
 
-import com.geckolib.model.DefaultedEntityGeoModel;
+import com.geckolib.model.GeoModel;
 import com.geckolib.renderer.base.GeoRenderState;
 import dev.ajaczero.powersuits.PowerSuits;
 import dev.ajaczero.powersuits.entity.PowerSuitEntity;
 import net.minecraft.resources.Identifier;
-import net.minecraft.world.item.DyeColor;
 
 /**
- * Points GeckoLib at our three asset files (by naming convention):
- *   geo/entity/power_suit.geo.json, animations/entity/power_suit.animation.json,
- *   textures/entity/power_suit.png
- * The code-driven bone offsets (torso aim, tool raise, barrel spin) live in PowerSuitRenderer.adjustModelBonesForRender.
+ * Points GeckoLib at the frame's files (written by tools/export-frame.py from model/power_frame*.bbmodel):
+ *   geckolib/models/entity/power_frame.geo.json (or power_frame_slim, for a pilot with Alex's slim arms: its chest is
+ *   1 px narrower so the arms hang beside his), textures/entity/power_frame(_slim).png, and
+ *   geckolib/animations/entity/power_frame.animation.json (every animation name, all empty: the frame is posed in code,
+ *   PowerSuitRenderer.adjustModelBonesForRender).
+ * Both builds have the same bones, so animations, layers and code poses work on either.
  */
-public class PowerSuitModel extends DefaultedEntityGeoModel<PowerSuitEntity> {
-    /** A painted suit's texture per dye (by DyeColor id): the steel texture with its plates in the dye's colours, built
-     *  by tools/make-paint-textures.py. The paint is only a texture swap: same model, same glowmasks. */
-    private static final Identifier[] PAINTED = new Identifier[DyeColor.values().length];
+public class PowerSuitModel extends GeoModel<PowerSuitEntity> {
+    private static final Identifier WIDE = id("entity/power_frame"), SLIM = id("entity/power_frame_slim");
+    private static final Identifier WIDE_TEXTURE = id("textures/entity/power_frame.png");
+    private static final Identifier SLIM_TEXTURE = id("textures/entity/power_frame_slim.png");
+    // (Paint, design sec. 4d, comes back with the frame's armour: the painted textures in textures/entity/paint are
+    // the big suit's.)
 
-    static {
-        for (DyeColor dye : DyeColor.values()) {
-            PAINTED[dye.getId()] = Identifier.fromNamespaceAndPath(PowerSuits.MODID, "textures/entity/paint/power_suit_" + dye.getName() + ".png");
-        }
+    private static Identifier id(String path) {
+        return Identifier.fromNamespaceAndPath(PowerSuits.MODID, path);
     }
 
-    public PowerSuitModel() {
-        super(Identifier.fromNamespaceAndPath(PowerSuits.MODID, "power_suit"));
+    private static boolean slim(GeoRenderState state) {
+        return state.getOrDefaultGeckolibData(SuitRenderData.PILOT_SLIM, false);
+    }
+
+    @Override
+    public Identifier getModelResource(GeoRenderState state) {
+        return slim(state) ? SLIM : WIDE;
     }
 
     @Override
     public Identifier getTextureResource(GeoRenderState state) {
-        int paint = state.getOrDefaultGeckolibData(SuitRenderData.PAINT, -1);
-        return paint >= 0 && paint < PAINTED.length ? PAINTED[paint] : super.getTextureResource(state);
+        return slim(state) ? SLIM_TEXTURE : WIDE_TEXTURE;
+    }
+
+    @Override
+    public Identifier getAnimationResource(PowerSuitEntity suit) {
+        return WIDE;
     }
 }

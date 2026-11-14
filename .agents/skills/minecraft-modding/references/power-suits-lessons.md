@@ -255,6 +255,9 @@ to Minecraft 26.3 / GeckoLib 5. Add a new lesson to the right section when somet
   the pad plains (`FillBiomeCommand.fill`).
 
 ## Running the game and autopilot scenes
+- **The player only moves while the camera is his own**: vanilla reads movement keys for the camera entity, so a scene
+  that drives the suit with a still camera (an armour stand) stands still (FrameScene's first walk: speed 0 in the
+  CSV). Shoot driving with the game's own views (third person back / front) instead.
 - **Server and client tick independently in the autopilot**: a server-side event can show up a few client
   ticks later; screenshot every tick around an event instead of guessing the frame. Server-side CSV
   columns can lead the screenshots.

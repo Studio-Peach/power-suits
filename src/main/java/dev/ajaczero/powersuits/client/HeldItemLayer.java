@@ -19,12 +19,12 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * Draws the pilot's selected item in the suit's right hand (the "right_hand" grip bone), the way a player's
- * held item is drawn, only bigger. Skipped in the pilot's own cockpit view: the suit's upper body
+ * held item is drawn (the bone is the grip in the frame's right fist, tools/export-frame.py). Skipped in the pilot's own cockpit view: the suit's upper body
  * isn't drawn there; the cockpit viewmodel's gauntlet holds the item instead (CockpitHands).
  */
 public class HeldItemLayer extends BlockAndItemGeoLayer<PowerSuitEntity, Void, LivingEntityRenderState> {
-    /** The suit's hand is about 1.5x a player's. */
-    private static final float SCALE = 1.5F;
+    /** The frame's fist is about a player's hand (5 px round his 4): the item at its vanilla size. */
+    private static final float SCALE = 1.0F;
 
     public HeldItemLayer(EntityRendererProvider.Context context, GeoRenderer<PowerSuitEntity, Void, LivingEntityRenderState> renderer) {
         super(context, renderer);

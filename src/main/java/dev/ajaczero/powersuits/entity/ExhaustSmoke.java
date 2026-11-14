@@ -14,6 +14,9 @@ import net.minecraft.world.phys.Vec3;
  * fuel left, engine under water); the server never hears about them.
  */
 final class ExhaustSmoke {
+    /** The frame (2026-11-14) has no engine parts on its back yet: the positions below are the big suit's (its pipes 3 blocks
+     *  up, over the frame's head). Off until the frame's engine goes in game with its own cap positions. */
+    private static final boolean FRAME_ENGINE_DRAWN = false;
     /** Pipe tops in the model, in blocks: 3.04 up (48.6 px), 0.53 behind the centre, 0.31 to each side. */
     private static final double PIPE_UP = 3.04, PIPE_BACK = 0.53, PIPE_SIDE = 0.31;
     /** The tidal engine's tank valves (pack_tidal): 2.79 up (44.6 px), over the same spots as the pipes. */
@@ -23,6 +26,9 @@ final class ExhaustSmoke {
 
     /** Called every client tick. Smoke only while someone is driving: a parked suit's engine is off. */
     static void tick(PowerSuitEntity suit) {
+        if (!FRAME_ENGINE_DRAWN) {
+            return;
+        }
         if (suit.getEngine() == SuitEngine.TIDAL) {
             tidalBubbles(suit);
             return;
@@ -76,6 +82,9 @@ final class ExhaustSmoke {
 
     /** A thick black cough when the engine starts. */
     static void startupBurst(PowerSuitEntity suit) {
+        if (!FRAME_ENGINE_DRAWN) {
+            return;
+        }
         if (suit.getEngine() == SuitEngine.TIDAL && suit.power().isEngineUnderWater()) {
             puff(suit, ParticleTypes.BUBBLE, 8, 0.15, VALVE_UP); // the pump kicks in
             return;

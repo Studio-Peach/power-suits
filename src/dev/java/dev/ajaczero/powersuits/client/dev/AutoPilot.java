@@ -94,6 +94,8 @@ public final class AutoPilot {
     private static final boolean MECH_ONLY = "mech".equals(System.getProperty("power_suits.autopilot"));
     /** "pose" mode: only the pose check (PoseScene: torso lean, tool raise and twist from fixed cameras), ~30 s. */
     private static final boolean POSE_ONLY = "pose".equals(System.getProperty("power_suits.autopilot"));
+    /** "frame" mode: only the frame check (FrameScene: the frame and its pilot from every side, walking, looking), ~25 s. */
+    private static final boolean FRAME_ONLY = "frame".equals(System.getProperty("power_suits.autopilot"));
     /** "gait" mode: only the foot-slip / leg-turning drive (GaitScene), ~45 s. */
     private static final boolean GAIT_ONLY = "gait".equals(System.getProperty("power_suits.autopilot"));
     /** "paint" mode: only the paint scene (PaintScene: dyes and a wet sponge on a suit), ~20 s. */
@@ -175,6 +177,10 @@ public final class AutoPilot {
             viewTuner(mc, tick++);
         } else if (POSE_ONLY) {
             if (!PoseScene.step(mc, tick++)) {
+                mc.stop();
+            }
+        } else if (FRAME_ONLY) {
+            if (!FrameScene.step(mc, tick++)) {
                 mc.stop();
             }
         } else if (GAIT_ONLY) {

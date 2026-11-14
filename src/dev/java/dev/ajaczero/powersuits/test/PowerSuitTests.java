@@ -155,12 +155,15 @@ public final class PowerSuitTests {
 
         suit.positionRider(pilot);
         double eye = pilot.getEyeY() - suit.getY();
-        helper.assertTrue(eye > 2.4 && eye < 2.8, "pilot's eyes should be at the visor, got " + eye);
+        // he stands in the frame: his eyes where the frame draws his head (ModEntities: 1.98)
+        helper.assertTrue(eye > 1.9 && eye < 2.05, "pilot's eyes should be in the frame's head, got " + eye);
 
         pilot.stopRiding();
         helper.assertTrue(pilot.getVehicle() == null, "pilot should be out");
         helper.assertTrue(pilot.getY() < suit.getY() + 1.0, "pilot should step out at ground level, got " + pilot.position().subtract(suit.position()));
-        helper.assertTrue(pilot.distanceTo(suit) > 0.9, "pilot should step out beside/behind the suit");
+        // beside / behind it, clear of its box (not inside the frame he just left)
+        helper.assertTrue(!pilot.getBoundingBox().deflate(0.01).intersects(suit.getBoundingBox()),
+                "pilot should step out beside/behind the suit, got " + pilot.position().subtract(suit.position()));
         helper.succeed();
     }
 
@@ -1456,7 +1459,7 @@ public final class PowerSuitTests {
      */
     @SuitTest
     public static void stepsDoNotJerkTheModelAgainstTheCamera(GameTestHelper helper) {
-        final double eye = 2.6;
+        final double eye = 1.98; // the pilot's eyes above the suit's feet (ModEntities)
         double[] heights = {0, 0, 0, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
         StepSmoothing steps = new StepSmoothing(2.1);
         double lastModel = heights[0], lastCamera = heights[0] + eye, maxJump = 0, maxDrift = 0;
@@ -1638,7 +1641,7 @@ public final class PowerSuitTests {
         suit.setYRot(0);
         Player pilot = boardedPilot(helper, suit);
         turn(pilot, 0F, 0F);
-        BlockPos pane = new BlockPos(4, 3, 3), leaves = new BlockPos(5, 4, 3), glass = new BlockPos(4, 2, 4), wall = new BlockPos(4, 2, 7);
+        BlockPos pane = new BlockPos(4, 3, 3), leaves = new BlockPos(4, 4, 3), glass = new BlockPos(4, 2, 4), wall = new BlockPos(4, 2, 7);
         helper.setBlock(pane, Blocks.GLASS_PANE);
         helper.setBlock(leaves, Blocks.OAK_LEAVES);
         helper.setBlock(glass, Blocks.GLASS);

@@ -286,8 +286,10 @@ upgrades a world the first time it's opened and there's no way back: let it make
 | `./gradlew runClient` | Starts Minecraft with the mod (offline dev account) |
 | `./gradlew runGameTestServer` | Runs the automated in-game tests headless, prints pass/fail |
 | `./gradlew build` | Builds the mod jar into `build/libs/` (put it in a real `mods/` folder, plus GeckoLib) |
-| `node tools/export-model.mjs` | Re-exports model, animations and texture from the open Blockbench project |
+| `node tools/export-model.mjs` | Re-exports model, animations and texture from the open Blockbench project (the big suit) |
+| `python3 tools/export-frame.py` | Exports the frame (`model/power_frame.bbmodel` + `_slim`, built by `model/art/frame_model.py`) into the mod without Blockbench: `geckolib/models/entity/power_frame(_slim).geo.json`, their textures, and `power_frame.animation.json` (every animation name, empty: the frame is posed in code) |
 | `./gradlew runAutopilot` | Dev tool: scripted test drive in a fresh flat world (pool, running out of fuel, chaingun range, right hand, EM projector, drill + chainsaw, tool items on foot), saves `run/screenshots/ap_*.png`, `run/autopilot_{water,fuel,cannon,em,mine}.csv`, quits |
+| `./gradlew runAutopilotFrame` | Dev tool (~25 s): the frame with the player inside from the front, back and side, the third-person and cockpit views, a walk and a sprint, the head following the view, an empty frame slumped beside it; `run/screenshots/ap_frame_*.png`, `run/autopilot_frame.csv` (hitbox, the pilot's eye height, the walk animation) |
 | `./gradlew runAutopilotPose` | Dev tool (~30 s): the code-driven pose from fixed cameras (torso lean with the view pitch, tool raise, torso twist with the view yaw toward marker blocks); `run/screenshots/ap_pose_*.png`, `run/autopilot_pose.csv` |
 | `./gradlew runAutopilotGait` | Dev tool (~45 s): foot slip and leg turning while walking, backing up, strafing, turning, sprinting; `run/autopilot_gait.csv`, `python3 tools/gait-report.py` |
 | `./gradlew runAutopilotMech` | Dev tool: only the autopilot's last scene (~25 s): smashing through panes/leaves/glass/ice, a 9-block stomp on mobs, lightning, a punch, wading through lava + poison; `run/screenshots/ap_mech_*.png`, `run/autopilot_mech.csv`. A file `run/cleanzap` keeps the bolt's fire away (to see the knock-out animation) |
@@ -366,11 +368,13 @@ src/main/java/dev/ajaczero/powersuits/
   PowerSuitsConfig.java      balance knobs (config/power_suits-common.toml)
   registry/ModSounds.java    engine + tool sound events (audio picked in assets/power_suits/sounds.json)
   client/                    rendering only (never loaded on servers)
-    PowerSuitModel.java     points GeckoLib at the asset files
-    PowerSuitRenderer.java  copies the suit's state for the frame (SuitRenderData), aims the torso/head, raises the tool
-                             arm, shows the installed tool; draws only the legs in first person (cockpit)
+    PowerSuitModel.java     points GeckoLib at the frame's files (power_frame, or power_frame_slim for an Alex skin)
+    PowerSuitRenderer.java  copies the suit's state for the frame (SuitRenderData), poses it in code (vanilla's limb
+                             swing, the head following the view, the slump without power); draws only the legs in
+                             first person (cockpit)
+    PilotLayer.java          the pilot inside the frame: vanilla's player parts in his own skin at the pilot_* bones
     SuitRenderData.java      what the renderer and its layers read from the suit each frame (GeckoLib DataTickets)
-    PilotView.java           hides the pilot and vanilla hands, pulls the camera back
+    PilotView.java           hides vanilla's pilot (PilotLayer draws him) and hands, pulls the camera back
     CockpitHands.java        first-person viewmodel: socket tool on the left, gauntlet + held item on the right
     CockpitView*.java        its GeckoLib animatable/renderer (geckolib/models/view, cut from the suit by tools/extract-view-geo.py)
     PowerSuitScreen.java    draws the suit menu (the inventory screen with the suit: preview, flame, status screen, keys)
@@ -387,7 +391,8 @@ src/main/java/dev/ajaczero/powersuits/
     VisorPower.java          the visor's warm-up and shutdown scan (lines sweeping from the screen's middle)
     ToolInput.java           right click the hand passes on -> socket tool (vanilla's off-hand turn)
     HeldItemLayer.java       draws the pilot's selected item in the suit's right hand (third person)
-    SuitGlowLayer.java       the suit's lights + the tool's ToolLights (glowmasks, tinted per frame)
+    SuitGlowLayer.java       the suit's lights + the tool's ToolLights (glowmasks, tinted per frame); not registered while
+                             the frame has no engine / helmet / tools of its own (its masks are the big suit's layout)
     BulletRenderer.java      the glowing tracer streak
     ToolRotors.java          turns the chaingun's barrels / the TNT drum, shakes the rail cannon (suit + cockpit viewmodel)
     ClientSetup.java         registers the renderer
@@ -416,6 +421,19 @@ src/main/resources/
 ```
 
 ## Notes
+
+### The frame (branch experimental/frame-concept, going in game step by step)
+
+The frame replaces the big suit's looks inside the same `power_suit` entity (same items, save data, mechanics): an
+exosuit the player stands in, drawn in his own skin. Step 1 (2026-11-14) is in: the frame's model (`tools/export-frame.py`),
+the pilot (`PilotLayer`: Steve's wide arms or Alex's slim ones, the frame's slim build with them), the code pose
+(vanilla's walk swing, the head turning up to 50 deg off the torso and the torso the next 40, a 25 deg slump without
+power), a 0.9 x 2.3 hitbox (fits 1-wide and 3-high gaps; the big suit was 1.4 x 2.95) and the pilot's eyes at his
+own, 1.98 up. Still the big suit's or off until their steps: the cockpit viewmodel and camera distance, the helmet and
+its glass, the engine (lights and exhaust smoke off), the tools on the left arm (they work, with the big suit's muzzle
+positions and no model), paint and helmet styles. The notes below are the big suit's.
+
+### The big suit
 
 - Animation playback rates follow the real speed along the legs so the feet don't slide (backing up plays the walk in
   reverse, `walk_back`). The authored ground speeds were measured in Blockbench: walk 2.218, run 6.249 blocks/s; the game

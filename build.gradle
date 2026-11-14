@@ -97,6 +97,13 @@ neoForge {
             systemProperty 'power_suits.autopilot', 'pose'
         }
 
+        // Dev tool: only the frame check (the frame and its pilot from the front, back and side, walking, looking round,
+        // an empty one slumped; ap_frame_*.png, run/autopilot_frame.csv), ~25 s.
+        autopilotFrame {
+            client()
+            systemProperty 'power_suits.autopilot', 'frame'
+        }
+
         // Dev tool: only the foot-slip / leg-turning drive (run/autopilot_gait.csv, tools/gait-report.py), ~45 s.
         autopilotGait {
             client()

@@ -1,0 +1,102 @@
+{
+ "format_version": "1.8.0",
+ "animations": {
+  "animation.power_suit.attack": {
+   "animation_length": 0.88,
+   "bones": {}
+  },
+  "animation.power_suit.hit": {
+   "animation_length": 0.55,
+   "bones": {}
+  },
+  "animation.power_suit.idle_fidget": {
+   "animation_length": 3,
+   "bones": {}
+  },
+  "animation.power_suit.drill_run": {
+   "animation_length": 0.5,
+   "bones": {},
+   "loop": true
+  },
+  "animation.power_suit.chainsaw_run": {
+   "animation_length": 0.5,
+   "bones": {},
+   "loop": true
+  },
+  "animation.power_suit.tool_recoil": {
+   "animation_length": 0.5,
+   "bones": {}
+  },
+  "animation.power_suit.hold_item": {
+   "animation_length": 2,
+   "bones": {},
+   "loop": true
+  },
+  "animation.power_suit.use_item": {
+   "animation_length": 0.3,
+   "bones": {}
+  },
+  "animation.power_suit.walk": {
+   "animation_length": 1,
+   "bones": {},
+   "loop": true
+  },
+  "animation.power_suit.idle": {
+   "animation_length": 4,
+   "bones": {},
+   "loop": true
+  },
+  "animation.power_suit.jump_charge": {
+   "animation_length": 0.35,
+   "bones": {},
+   "loop": "hold_on_last_frame"
+  },
+  "animation.power_suit.jump": {
+   "animation_length": 0.36,
+   "bones": {}
+  },
+  "animation.power_suit.fall": {
+   "animation_length": 1.2,
+   "bones": {},
+   "loop": true
+  },
+  "animation.power_suit.land": {
+   "animation_length": 0.6,
+   "bones": {}
+  },
+  "animation.power_suit.death": {
+   "animation_length": 2.68,
+   "bones": {},
+   "loop": "hold_on_last_frame"
+  },
+  "animation.power_suit.electrified": {
+   "animation_length": 1.2,
+   "bones": {},
+   "loop": true
+  },
+  "animation.power_suit.shutdown": {
+   "animation_length": 1.6,
+   "bones": {},
+   "loop": "hold_on_last_frame"
+  },
+  "animation.power_suit.powered_off": {
+   "animation_length": 0.05,
+   "bones": {},
+   "loop": "hold_on_last_frame"
+  },
+  "animation.power_suit.startup": {
+   "animation_length": 1.4,
+   "bones": {}
+  },
+  "animation.power_suit.run": {
+   "animation_length": 0.7,
+   "bones": {},
+   "loop": true
+  },
+  "animation.power_suit.walk_back": {
+   "animation_length": 1,
+   "bones": {},
+   "loop": true
+  }
+ }
+}

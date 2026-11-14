@@ -2,7 +2,8 @@
 
 The frame is the experimental successor to the big suit: an exosuit the player's own Steve / Alex stands in, built
 entirely by script (SKILL.md §0). What it taught us, so the next round starts where this one stopped. The files below
-live on `experimental/frame-concept`; the frame isn't in the game yet (model only).
+live on `experimental/frame-concept`. In game since 2026-11-14 (step 1 of 8: the frame and its pilot; see "In game" at
+the end and `docs/guide.md` Notes).
 
 ## Files
 - `model/art/frame_model.py` builds `model/power_frame.bbmodel` (Steve, `BUILD=wide`) and `power_frame_slim.bbmodel`
@@ -143,3 +144,15 @@ live on `experimental/frame-concept`; the frame isn't in the game yet (model onl
   user asked for: kept at 4. The drill and chainsaw still hard-code it.
 - **A down face's rows run back -> front** in the frame's art (up faces front -> back; checked from straight below):
   the matchstick's head, written front -> back on its bottom, came out at the back, off from its sides.
+
+## In game (2026-11-14, step 1: the frame and its pilot)
+- The frame took over the `power_suit` entity's looks (user: replace, not a second entity; the pilot drawn by the frame;
+  code poses, not baked animations; tools without frame art reuse something easy until they get their round).
+- `tools/export-frame.py` exports the saved files (no Blockbench): the st_* cubes stay out, the game draws the pilot with
+  vanilla's player parts in his skin (`client/PilotLayer`) at the pilot_* bones, which the exporter moves to vanilla's
+  part pivots (head: bottom centre; body, legs: top centre; arms 2 px under the top, 1 px in from the inner side). It
+  adds `right_hand` (the held item's grip, in the right fist). Only the skin's base layer: its outer layer (0.25 px
+  out) lies in the cage walls' planes.
+- Wide or slim follows the pilot's skin (`PlayerSkin.model()`); an empty frame (or a mob inside) is the wide build.
+- Not yet in game (later steps): the helmet, the engine (the drafts are knobs, off in the saved files), the tools and
+  the iron armour. Re-run the exporter after rebuilding the saved files.
