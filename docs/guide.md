@@ -439,9 +439,12 @@ helmet his own head with its hat layer. The frame's left hand is the socket (the
 porthole core and copper hoses painted on the front, the hot-rod blower on the back with its fire window, supercharger
 and exhaust caps) with any engine installed; its fire lights with the burn (the tidal engine and the star reactor light
 the same heart teal / violet until they get frame art), smoke and bubbles from the caps. The helmet clips into the
-blower looking far up (user: fine, it rarely happens). Still the big suit's or
-off until their steps: the socket tool's viewmodel, the tools on the left arm (they work, with the big suit's muzzle
-positions and no model), paint and helmet styles. The notes below are the big suit's.
+blower looking far up (user: fine, it rarely happens). Step 5a: the tools in the left arm's socket (the drill, the
+chainsaw, the chaingun and the flamethrower, each in the fist's place; the EM projector, TNT launcher and rail cannon
+show the drill's body until they get frame art); the drill's bit spins and the chain runs (their run animations, kept
+from the big suit's file: the frame names those bones the same), the chaingun's barrels turn (ToolRotors). Still the
+big suit's or off until their steps: the socket tool's cockpit viewmodel, the muzzles (the big suit's positions), the
+tool arm's raise, the tools' lights, paint and helmet styles. The notes below are the big suit's.
 
 ### The big suit
 

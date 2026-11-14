@@ -21,6 +21,9 @@ import org.jspecify.annotations.Nullable;
  * posed and drawn from that snapshot alone (adjustModelBonesForRender, the layers).
  */
 public class PowerSuitRenderer extends GeoEntityRenderer<PowerSuitEntity, LivingEntityRenderState> {
+    /** What a tool without frame art shows in the socket (see adjustModelBonesForRender). */
+    private static final String STAND_IN_TOOL = "drill";
+
     public PowerSuitRenderer(EntityRendererProvider.Context context) {
         super(context, new PowerSuitModel());
         this.shadowRadius = 0.6F;
@@ -91,14 +94,16 @@ public class PowerSuitRenderer extends GeoEntityRenderer<PowerSuitEntity, Living
         // his eyes, filled the view like a table top.)
         boolean cockpit = info.getOrDefaultGeckolibData(SuitRenderData.COCKPIT, false);
         bones.ifPresent("marine", root -> root.skipRender(cockpit).skipChildrenRender(cockpit));
-        // Socket: show the installed tool's bone and hide the others; the bare coupling only when empty.
+        // Socket (the left arm's end): show the installed tool's bone and hide the others; empty, the socket plate painted
+        // on the arm's underside shows. The frame has the drill, chainsaw, chaingun and flamethrower so far; a tool
+        // without frame art (the EM projector, rail cannon, TNT launcher) shows the drill's body until it gets its own
+        // (user, 2026-11-14: "reuse the drill model or something, whatever is easiest").
         String installed = info.getOrDefaultGeckolibData(SuitRenderData.TOOL_BONE, "");
+        String shown = installed.isEmpty() || info.model().getBone(installed).isPresent() ? installed : STAND_IN_TOOL;
         for (String toolBone : ToolBones.all()) {
-            boolean hide = !toolBone.equals(installed);
+            boolean hide = !toolBone.equals(shown);
             bones.ifPresent(toolBone, bone -> bone.skipRender(hide).skipChildrenRender(hide));
         }
-        boolean socketHidden = !installed.isEmpty();
-        bones.ifPresent("socket", bone -> bone.skipRender(socketHidden));
         // Helmet slot: the frame's helmet (armor_head: the box, its glass and its outer layer with the radio and camera)
         // only when one is worn; without it the pilot's own head shows (PilotLayer). (The helmet styles, design sec. 4c,
         // are the big suit's helmets for now: any style shows the frame's helmet until the styles get theirs.)

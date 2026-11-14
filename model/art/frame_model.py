@@ -793,17 +793,25 @@ if ENGINE == 'firebox':
 # boxes (user, 2026-11-13): they may be models of several parts. The drill: frame_drill_art.py; the chainsaw:
 # frame_saw_art.py (its drafts SAW=A|B|C); the chaingun ('gun'): frame_gun_art.py; the flamethrower ('flame'):
 # frame_flame_art.py.
-TOOL = os.environ.get('TOOL', 'none')
-assert TOOL in ('none', 'drill', 'saw', 'gun', 'flame'), TOOL
+# 'all' (the saved files' default since 2026-11-14, step 5: the game shows the installed one): every tool at once, each
+# on its own bones, named as the game's tools (GAME_BONES), in one texture.
+TOOL = os.environ.get('TOOL', 'all')
+assert TOOL in ('none', 'drill', 'saw', 'gun', 'flame', 'all'), TOOL
+TOOLS = ('drill', 'saw', 'gun', 'flame') if TOOL == 'all' else () if TOOL == 'none' else (TOOL,)
+# Each tool's bones: (the tool, its moving part) named as the game's (PowerTool.suitBone; the drill's bit and the chain
+# spin / run by animation, the chaingun's barrels in code: ToolRotors).
+GAME_BONES = {'drill': ('drill', 'drill_bit'), 'saw': ('chainsaw', 'chainsaw_chain'),
+              'gun': ('chaingun', 'chaingun_barrels'), 'flame': ('flamethrower', 'flamethrower_bit')}
 SHELLS['arm_socket_shell'] = dict(SHELLS['arm_shell'], below=[], end='socket')
 if ARMOR != 'none': SHELLS['arm_socket_armor'] = dict(SHELLS['arm_armor'], below=[], end='socket')
-TOOL_PARTS = []
-if TOOL == 'drill':
+def _tool_parts(TOOL):
+  TOOL_PARTS = []
+  if TOOL == 'drill':
     import frame_drill_art as drill_art
     TOOL_PARTS = drill_art.build(6.25 + ARM_OUT, SOCKET_Y, os.environ.get('LAMP', 'red'), os.environ.get('DRILL_ART', 'B'),
                                  os.environ.get('DRILL_BASE', 'open'), os.environ.get('DRILL_FIT', 'fist'),
                                  os.environ.get('DRILL_BAND', 'slate'))
-if TOOL == 'saw':
+  if TOOL == 'saw':
     import frame_saw_art as saw_art
     TOOL_PARTS = saw_art.build(6.25 + ARM_OUT, SOCKET_Y, os.environ.get('LAMP', 'red'), os.environ.get('SAW', 'B'),
                                os.environ.get('SAW_ART', 'B'), os.environ.get('SAW_FINS', 'A'),
@@ -812,7 +820,7 @@ if TOOL == 'saw':
                                os.environ.get('SAW_LOOK', 'rancher'))
 # The chaingun (frame_gun_art.py): picked 2026-11-14 (user: "this is the one"): GUN_LOOK=doom, GUN_BARRELS=4,
 # GUN_TOP=stack (the defaults); the other knobs are the rounds' drafts, kept to rebuild them.
-if TOOL == 'gun':
+  if TOOL == 'gun':
     import frame_gun_art as gun_art
     TOOL_PARTS = gun_art.build(6.25 + ARM_OUT, SOCKET_Y, os.environ.get('LAMP', 'red'), os.environ.get('GUN', 'A'),
                                os.environ.get('GUN_BODY', 'ref'), os.environ.get('GUN_LOOK', 'doom'),
@@ -823,13 +831,16 @@ if TOOL == 'gun':
 # barrel at the front, the red tank behind it, both under the body), FLAME_BODY=pump at FLAME_BODY_H=2, the 7 px barrel
 # FLAME_HOLES=even, FLAME_TANK_H=5 (the defaults); the other knobs are the rounds' drafts, kept to rebuild them.
 # FLAME_PILOT=dark (the reserved pilot colours, as in game) | lit (review).
-if TOOL == 'flame':
+  if TOOL == 'flame':
     import frame_flame_art as flame_art
     TOOL_PARTS = flame_art.build(6.25 + ARM_OUT, SOCKET_Y, os.environ.get('FLAME', 'D'), os.environ.get('FLAME_PILOT', 'dark'),
                                    os.environ.get('FLAME_GLOW', 'lit'), os.environ.get('FLAME_BODY', 'pump'),
                                    float(os.environ.get('FLAME_BODY_H', '2')), os.environ.get('FLAME_HOLES', 'even'),
                                    float(os.environ.get('FLAME_TANK_H', '5')), float(os.environ.get('FLAME_TANK_W', '3')))
-for p in TOOL_PARTS: SHELLS[f"tl_{p['name']}"] = dict(faces=p['faces'])
+  return TOOL_PARTS
+TOOL_PARTS = {t: _tool_parts(t) for t in TOOLS}
+for t, parts_ in TOOL_PARTS.items():
+    for p in parts_: SHELLS[f"tl_{t}_{p['name']}"] = dict(faces=p['faces'])
 # where each shell's faces sit in the texture (below / beside nothing else), one strip per shell
 SHELL_AT = {'arm_shell': (0, 64), 'leg_shell': (0, 80),
             'chest_armor': (35, 87), 'waist_armor': (128, 40), 'helmet_armor': (70, 112), 'arm_armor': (128, 0),
@@ -1108,12 +1119,13 @@ for side in ('r', 'l'):
     # the left arm (the tool arm) ends in the socket instead of the fist (SOCKET)
     hollow(arm, side, 'arm_socket_shell' if side == 'l' else 'arm_shell', f'fr_arm_shell_{side}',
            (3.75 + ARM_OUT, SOCKET_Y if side == 'l' else 10, -2.5), (8.75 + ARM_OUT, 26, 2.5))
-    if side == 'l' and TOOL_PARTS:   # the tool, its pivot on the arm's axis at the socket (a drill's bit spins about y)
-        tg = group('tool', (-(6.25 + ARM_OUT), SOCKET_Y, 0), arm)
-        bones = {'tool': tg, 'bit': group('tool_bit', (-(6.25 + ARM_OUT), SOCKET_Y, 0), tg)}   # the bit spins, the rest not
-        for tp in TOOL_PARTS:
+    for t, parts_ in (TOOL_PARTS.items() if side == 'l' else ()):   # each tool, its pivot on the arm's axis at the
+        # socket (a drill's bit spins about y)
+        tg = group(GAME_BONES[t][0], (-(6.25 + ARM_OUT), SOCKET_Y, 0), arm)
+        bones = {'tool': tg, 'bit': group(GAME_BONES[t][1], (-(6.25 + ARM_OUT), SOCKET_Y, 0), tg)}   # the bit moves, the rest not
+        for tp in parts_:
             g_ = bones[tp.get('bone', 'tool')]
-            e = painted(g_, 'l', f"tl_{tp['name']}", f"tl_{TOOL}_{tp['name']}", *tp['box'])
+            e = painted(g_, 'l', f"tl_{t}_{tp['name']}", f"tl_{t}_{tp['name']}", *tp['box'])
             if tp['rot']: e['rotation'], e['origin'] = [0, -tp['rot'], 0], list(g_['origin'])
             for f in FACES:   # a face all see-through isn't drawn (the drill's open base: its bottom lies in the socket's plane)
                 if all(c == '.' for r in tp['faces'][f] for c in r): e['faces'][f]['texture'] = None

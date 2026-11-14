@@ -169,4 +169,9 @@ the end and `docs/guide.md` Notes).
   `power_frame_glow_fire` and writes them white -> grey into `power_frame_glow_core` for the tidal engine and the star
   reactor (tinting the fire's yellow -> red mask violet came out pink). Smoke from the caps' tops (`ExhaustSmoke`: 29.5 px
   up, 6 back, 3.5 out). The helmet clipping the blower looking up stays (user, 2026-11-14: "the cost of gameplay").
-- Not yet in game (later steps): the tools and the iron armour. Re-run the exporter after rebuilding the saved files.
+- Step 5a, the tools: `TOOL=all` (the saved files' default) builds every tool at once on the left arm, each on bones
+  named as the game's tool (`GAME_BONES`: drill / drill_bit, chainsaw / chainsaw_chain, chaingun / chaingun_barrels,
+  flamethrower), shell keys `tl_<tool>_<part>`; the game shows the installed one (a tool without frame art: the
+  drill's). The build takes ~4 min (the texture packing's free-space scan). The exporter keeps an animation whose
+  bones the frame all has (drill_run, chainsaw_run); the others are written empty.
+- Not yet in game (later steps): the tools' cockpit view, muzzles, raise and lights; the iron armour. Re-run the exporter after rebuilding the saved files.

@@ -37,9 +37,11 @@ The cockpit's arm (client/CockpitHands): the right arm bone's cubes (its shell a
 `view_arm`, moved so the pilot's arm pivot (pilot_right_arm, vanilla's) is the origin. The cockpit draws his skin arm
 where vanilla draws a player's empty hand and this round it: one transform for both.
 
-The animation file holds every animation name the suit's controllers ask for (SuitAnimator, the tools' run loops),
-each empty: the frame is posed in code (PowerSuitRenderer), and an empty animation keeps GeckoLib's controllers and
-their states (hold the last frame, loop, play once) as they were without moving a bone.
+The animation file holds every animation name the suit's controllers ask for (SuitAnimator, the tools' run loops).
+The frame is posed in code (PowerSuitRenderer), so an animation keying any bone the frame hasn't (the big suit's body,
+elbows, feet) is written empty: that keeps GeckoLib's controllers and their states (hold the last frame, loop, play
+once) as they were without moving a bone. One keying only the frame's bones is kept as it is: the tools' run loops
+(drill_run spins drill_bit, chainsaw_run runs chainsaw_chain), whose bones the frame names the same.
 """
 import base64, json, os, struct, sys, zlib
 
@@ -178,10 +180,13 @@ def arm_view(model, ident):
     return {'format_version': '1.12.0', 'minecraft:geometry': [built]}
 
 
-def animations():
+def animations(bones):
     names = json.load(open(SUIT_ANIMS))['animations']
     out = {}
     for name, a in names.items():
+        if a.get('bones') and set(a['bones']) <= bones:
+            out[name] = a
+            continue
         empty = {'animation_length': a.get('animation_length', 0.05), 'bones': {}}
         if 'loop' in a:
             empty['loop'] = a['loop']
@@ -293,4 +298,7 @@ if __name__ == '__main__':
         write(f'textures/entity/power_frame_glow_visor{slim}.png', visor)
         write(f'textures/entity/power_frame_glow_fire{slim}.png', fire)
         write(f'textures/entity/power_frame_glow_core{slim}.png', core)
-    write('geckolib/animations/entity/power_frame.animation.json', json.dumps(animations(), indent=1).encode())
+    bones = {b['name'] for b in geo(json.load(open(os.path.join(ROOT, BUILDS['power_frame']))), 'x')['minecraft:geometry'][0]['bones']}
+    anims = animations(bones)
+    write('geckolib/animations/entity/power_frame.animation.json', json.dumps(anims, indent=1).encode())
+    print('kept animations:', ', '.join(k for k, v in anims['animations'].items() if v['bones']))
