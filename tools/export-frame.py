@@ -3,7 +3,9 @@
 mod as GeckoLib files, without Blockbench (the frame is script-built: model/art/frame_model.py writes the .bbmodels):
 
   geckolib/models/entity/power_frame.geo.json, power_frame_slim.geo.json
-  textures/entity/power_frame.png, power_frame_slim.png
+  textures/entity/power_frame.png, power_frame_slim.png (the opaque texels; see-through ones are alpha 0)
+  textures/entity/power_frame_glass(_slim).png (only the partly see-through texels: the helmet's visor glass)
+  textures/entity/power_frame_glow_visor(_slim).png (the visor's glowmask: the glass texels, opaque white)
   geckolib/animations/entity/power_frame.animation.json
   geckolib/models/view/frame_arm.geo.json, frame_arm_slim.geo.json (the cockpit's right arm, below)
 
@@ -13,6 +15,10 @@ The geometry follows Blockbench's own Bedrock exporter (Codecs.bedrock): x negat
 (GeckoLib negates it back), cube origin = its corner at (-to.x, from.y, from.z), per-face UVs as [u, v] + size with the
 up and down faces flipped (their uv at the far corner, a negative size). `--check model.bbmodel geo.json` compares this
 exporter with a Blockbench export of the same model, cube by cube (run on the big suit, 2026-11-14: identical).
+
+The glass is split out of the texture because the frame is drawn in a cutout pass (a texel is drawn opaque or not at
+all): the glass gets a translucent pass of its own (client/HelmetGlassLayer), drawn over the pilot's face, and the
+visor's light is drawn over the glass (SuitGlowLayer).
 
 What the game needs that the design file doesn't hold:
 - The pilot (st_* cubes) is left out: the game draws the player's own skin with vanilla's player model parts at the
@@ -31,7 +37,7 @@ The animation file holds every animation name the suit's controllers ask for (Su
 each empty: the frame is posed in code (PowerSuitRenderer), and an empty animation keeps GeckoLib's controllers and
 their states (hold the last frame, loop, play once) as they were without moving a bone.
 """
-import base64, json, os, sys
+import base64, json, os, struct, sys, zlib
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 ASSETS = os.path.join(ROOT, 'src', 'main', 'resources', 'assets', 'power_suits')
@@ -179,6 +185,53 @@ def animations():
     return {'format_version': '1.8.0', 'animations': out}
 
 
+def unpng(data):
+    """An 8-bit RGBA PNG (what frame_model.py writes) -> (width, height, rows of RGBA tuples)."""
+    pos, idat, head = 8, b'', None
+    while pos < len(data):
+        n, t = struct.unpack('>I4s', data[pos:pos + 8])
+        if t == b'IHDR':
+            head = struct.unpack('>IIBBBBB', data[pos + 8:pos + 8 + 13])
+        elif t == b'IDAT':
+            idat += data[pos + 8:pos + 8 + n]
+        pos += 12 + n
+    w, h, depth, ctype = head[:4]
+    assert depth == 8 and ctype == 6, head   # RGBA
+    raw, rows, prev, stride = zlib.decompress(idat), [], bytearray(w * 4), w * 4
+    for y in range(h):
+        f, line = raw[y * (stride + 1)], bytearray(raw[y * (stride + 1) + 1:(y + 1) * (stride + 1)])
+        for x in range(stride):
+            a = line[x - 4] if x >= 4 else 0
+            b, c = prev[x], (prev[x - 4] if x >= 4 else 0)
+            if f == 1: line[x] = (line[x] + a) & 255
+            elif f == 2: line[x] = (line[x] + b) & 255
+            elif f == 3: line[x] = (line[x] + (a + b) // 2) & 255
+            elif f == 4:
+                pa, pb, pc = abs(b - c), abs(a - c), abs(a + b - 2 * c)
+                line[x] = (line[x] + (a if pa <= pb and pa <= pc else b if pb <= pc else c)) & 255
+        rows.append([tuple(line[i:i + 4]) for i in range(0, stride, 4)])
+        prev = line
+    return w, h, rows
+
+
+def png(w, h, rows):
+    raw = b''.join(b'\x00' + b''.join(bytes(p) for p in row) for row in rows)
+    def chunk(t, d): return struct.pack('>I', len(d)) + t + d + struct.pack('>I', zlib.crc32(t + d) & 0xffffffff)
+    return b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('>IIBBBBB', w, h, 8, 6, 0, 0, 0)) + \
+        chunk(b'IDAT', zlib.compress(raw, 9)) + chunk(b'IEND', b'')
+
+
+def textures(data):
+    """The texture split three ways (see the docstring): opaque, glass, the visor's glowmask."""
+    w, h, rows = unpng(data)
+    glass = lambda p: 0 < p[3] < 255
+    clear = (0, 0, 0, 0)
+    opaque = [[clear if glass(p) else p for p in row] for row in rows]
+    panes = [[p if glass(p) else clear for p in row] for row in rows]
+    visor = [[(255, 255, 255, 255) if glass(p) else clear for p in row] for row in rows]
+    return png(w, h, opaque), png(w, h, panes), png(w, h, visor)
+
+
 def write(rel, data):
     path = os.path.join(ASSETS, rel)
     os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -220,5 +273,9 @@ if __name__ == '__main__':
         arm = ident.replace('power_frame', 'frame_arm')
         write(f'geckolib/models/view/{arm}.geo.json', json.dumps(arm_view(model, arm), indent=1).encode())
         source = model['textures'][0]['source']
-        write(f'textures/entity/{ident}.png', base64.b64decode(source.split(',', 1)[1]))
+        opaque, glass, visor = textures(base64.b64decode(source.split(',', 1)[1]))
+        slim = ident[len('power_frame'):]
+        write(f'textures/entity/{ident}.png', opaque)
+        write(f'textures/entity/power_frame_glass{slim}.png', glass)
+        write(f'textures/entity/power_frame_glow_visor{slim}.png', visor)
     write('geckolib/animations/entity/power_frame.animation.json', json.dumps(animations(), indent=1).encode())

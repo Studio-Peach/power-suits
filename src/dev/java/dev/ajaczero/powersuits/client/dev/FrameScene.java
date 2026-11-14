@@ -3,6 +3,7 @@ package dev.ajaczero.powersuits.client.dev;
 import dev.ajaczero.powersuits.PowerSuits;
 import dev.ajaczero.powersuits.entity.PowerSuitEntity;
 import dev.ajaczero.powersuits.registry.ModEntities;
+import dev.ajaczero.powersuits.registry.ModItems;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -21,7 +22,9 @@ import net.neoforged.fml.loading.FMLPaths;
  * inside, drawn in his own skin, from the front, the back and the side (GUI hidden), the game's own third-person view,
  * a walk and a sprint from the front (the limbs swing like a player's), the head
  * following the view (45 right: the head only; 80 left: the torso turns the last 30; up 40), and an empty frame
- * without an engine beside it (it slumps: head bowed, torso tipped), then the cockpit: the empty right hand (his arm in
+ * without an engine beside it (it slumps: head bowed, torso tipped; its helmet's visor dark), the helmet up close (his
+ * face behind the visor glass, lit in the visor's colour; at night; the parked frame's dark visor; without a helmet:
+ * his own head and hat layer), then the cockpit: the empty right hand (his arm in
  * the frame's arm) and looking down (nothing of his body, like vanilla). Shots ap_frame_*.png.
  * Log run/autopilot_frame.csv per tick: the suit's hitbox, how high the pilot's eyes ride above the suit (1.98: his
  * own eyes in the frame, ModEntities), the client's walk animation (position, speed), the parked frame's power and
@@ -61,12 +64,24 @@ final class FrameScene {
             case 222 -> AutoPilot.shot(mc, "frame_look_up40");
             case 224 -> { phase = "parked"; AutoPilot.setView(0, 0); camera(mc, home.add(-3.6, 1.3, 3.2), home.add(-3, 1.1, 0)); }
             case 240 -> AutoPilot.shot(mc, "frame_parked");
+            // The helmet up close: his face behind the visor glass, lit in the visor's colour; at night; without it.
+            case 242 -> { phase = "helmet"; Vec3 at = mc.player.getVehicle().position(); camera(mc, at.add(0.9, 2.0, 1.5), at.add(0, 1.95, 0)); }
+            case 256 -> AutoPilot.shot(mc, "frame_helmet_front");
+            case 258 -> { Vec3 at = mc.player.getVehicle().position(); camera(mc, at.add(1.7, 2.0, 0.2), at.add(0, 1.95, 0)); }
+            case 272 -> AutoPilot.shot(mc, "frame_helmet_side");
+            case 274 -> { phase = "helmet_night"; AutoPilot.onServer(mc, p -> DevUtil.setTime(p.level(), 18000)); Vec3 at = mc.player.getVehicle().position(); camera(mc, at.add(0.9, 2.0, 1.5), at.add(0, 1.95, 0)); }
+            case 290 -> AutoPilot.shot(mc, "frame_helmet_night");
+            case 292 -> { Vec3 at = parked.position(); camera(mc, at.add(0.9, 1.9, 1.6), at.add(0, 1.85, 0)); }
+            case 306 -> AutoPilot.shot(mc, "frame_helmet_night_parked"); // no power: a dark visor
+            case 308 -> { phase = "no_helmet"; AutoPilot.onServer(mc, p -> DevUtil.setTime(p.level(), 6000)); helmet(mc, false); Vec3 at = mc.player.getVehicle().position(); camera(mc, at.add(0.9, 2.0, 1.5), at.add(0, 1.95, 0)); }
+            case 322 -> AutoPilot.shot(mc, "frame_no_helmet");
+            case 324 -> helmet(mc, true);
             // The cockpit: the empty right hand (his arm in the frame's), nothing of the body looking down.
-            case 244 -> { phase = "cockpit"; mc.setCameraEntity(mc.player); DevUtil.hideGui(mc, false); o.setCameraType(CameraType.FIRST_PERSON); }
-            case 258 -> AutoPilot.shot(mc, "frame_cockpit_arm");
-            case 260 -> AutoPilot.setView(0, 60);
-            case 276 -> AutoPilot.shot(mc, "frame_cockpit_down");
-            case 278 -> { AutoPilot.setView(0, 0); close(); return false; }
+            case 330 -> { phase = "cockpit"; mc.setCameraEntity(mc.player); DevUtil.hideGui(mc, false); o.setCameraType(CameraType.FIRST_PERSON); }
+            case 344 -> AutoPilot.shot(mc, "frame_cockpit_arm");
+            case 346 -> AutoPilot.setView(0, 60);
+            case 362 -> AutoPilot.shot(mc, "frame_cockpit_down");
+            case 364 -> { AutoPilot.setView(0, 0); close(); return false; }
             default -> {}
         }
         if (s >= 1) {
@@ -86,6 +101,7 @@ final class FrameScene {
             s.snapTo(home.x - 3, home.y, home.z, 0, 0);
             s.setYBodyRot(0);
             s.setYHeadRot(0);
+            s.getInventory().setItem(PowerSuitEntity.HELMET_SLOT, new ItemStack(ModItems.SUIT_HELMET.get())); // its visor dark: no power
             p.level().addFreshEntity(s);
             parked = s;
         });
@@ -95,6 +111,15 @@ final class FrameScene {
         } catch (IOException e) {
             PowerSuits.LOGGER.error("frame csv", e);
         }
+    }
+
+    /** Puts the pilot's suit's helmet on or takes it off (on the server; the slot syncs). */
+    private static void helmet(Minecraft mc, boolean on) {
+        AutoPilot.onServer(mc, p -> {
+            if (p.getVehicle() instanceof PowerSuitEntity suit) {
+                suit.getInventory().setItem(PowerSuitEntity.HELMET_SLOT, on ? new ItemStack(ModItems.SUIT_HELMET.get()) : ItemStack.EMPTY);
+            }
+        });
     }
 
     /** A still camera (GUI hidden: the screenshot shows the frame, not the visor). */

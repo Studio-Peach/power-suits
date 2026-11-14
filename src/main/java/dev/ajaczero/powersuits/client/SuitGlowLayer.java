@@ -87,7 +87,7 @@ public class SuitGlowLayer extends GeoRenderLayer<PowerSuitEntity, Void, LivingE
         float on = suit.lights().getVisorFlicker(time);
         int[] suitTints = {
                 tint(fire, 1F, 1F, 1F),
-                tint(on, visor[0], visor[1], visor[2]),
+                glass(on * VISOR_GLOW, visor[0], visor[1], visor[2]),
                 tint(suit.lights().getTidalGlow(time), 1F, 1F, 1F),
                 tint(suit.lights().getReactorGlow(time), 1F, 1F, 1F)};
         int[] toolTints = toolTints(suit, time, partialTick);
@@ -97,15 +97,31 @@ public class SuitGlowLayer extends GeoRenderLayer<PowerSuitEntity, Void, LivingE
         state.addGeckolibData(SuitRenderData.RAIL_SHAKE, new float[] {suit.socketVisuals().effects().shake(suit), time});
     }
 
-    /** Render: draw the model once per lit mask, after (on top of) the suit itself. */
+    /** The frame's visor glowmask per build (tools/export-frame.py: its glass texels). */
+    private static final Identifier FRAME_VISOR = frameMask("visor"), FRAME_VISOR_SLIM = frameMask("visor_slim");
+    /** How strongly the lit visor covers the glass: part strength, so the pilot's face still shows through. */
+    private static final float VISOR_GLOW = 0.45F;
+
+    private static Identifier frameMask(String name) {
+        return Identifier.fromNamespaceAndPath(PowerSuits.MODID, "textures/entity/power_frame_glow_" + name + ".png");
+    }
+
+    /**
+     * Render: draw the model once per lit mask, after (on top of) the suit itself. The frame (2026-11-14) lights only its
+     * visor so far: the engine's and the tools' masks are the big suit's texture layout (they come with their steps).
+     * The frame's visor is glass with his face behind it, so its light fades by opacity in the visor's colour
+     * (energy-style, see energy()), not by darkening an opaque colour as on the big suit's dark visor.
+     */
     @Override
     public void submitRenderTask(RenderPassInfo<LivingEntityRenderState> info, SubmitNodeCollector renderTasks) {
-        if (!info.willRender() || info.getOrDefaultGeckolibData(SuitRenderData.COCKPIT, false)) {
-            return; // the upper body isn't drawn from inside
+        if (!info.willRender() || info.getOrDefaultGeckolibData(SuitRenderData.COCKPIT, false)
+                || !info.getOrDefaultGeckolibData(SuitRenderData.HELMET, false)) {
+            return; // nothing is drawn from inside; no helmet, no visor
         }
         int[] tints = info.getGeckolibData(SuitRenderData.GLOW);
         if (tints != null) {
-            drawMasks(this.renderer, info, renderTasks, MASKS, tints);
+            boolean slim = info.getOrDefaultGeckolibData(SuitRenderData.PILOT_SLIM, false);
+            drawMasks(this.renderer, info, renderTasks, new Identifier[] {slim ? FRAME_VISOR_SLIM : FRAME_VISOR}, new int[] {tints[1]});
         }
     }
 
@@ -139,6 +155,14 @@ public class SuitGlowLayer extends GeoRenderLayer<PowerSuitEntity, Void, LivingE
             return 0xFF000000;
         }
         return channel(brightness) << 24 | 0xFFFFFF;
+    }
+
+    /** (r, g, b) at full colour, faded in by opacity (light over glass); black (= nothing to draw) below 1%. */
+    static int glass(float opacity, float r, float g, float b) {
+        if (opacity <= 0.01F) {
+            return 0xFF000000;
+        }
+        return channel(opacity) << 24 | channel(r) << 16 | channel(g) << 8 | channel(b);
     }
 
     /** Opaque ARGB of (r, g, b) x brightness; black (= nothing to draw) below 1%. */

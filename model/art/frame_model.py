@@ -71,7 +71,9 @@ LEG_SPLAY = float(os.environ.get('LEG_SPLAY', 0))
 # Its visor is glass, so his face shows 0.5 px behind it: partly transparent texels (in game a translucent pass of its
 # own), picked over an open slot (the visor lights up in game: the glow needs a pane to sit on). In game the skin's hat
 # layer (hair, hats) must hide under a helmet: it lies in the helmet's planes.
-HELMET = os.environ.get('HELMET', 'none')
+# In game since 2026-11-14 (step 3): the saved files carry the helmet (armor_head; the game hides it when the suit has
+# none), so the exported model and texture hold everything the game draws. HELMET=none builds the bare frame.
+HELMET = os.environ.get('HELMET', 'glass')
 # Shoulder plates (2026-11-04, user: platforms over the shoulders where pauldrons go, as on the Fallout 4 frame): a
 # 1 px plate on top of each arm, on the arm bone, so it swings with the arm and can never clip it (one on the torso
 # would: the arm turns about the top of its shoulder, so a forward swing lifts its top corners up to 2.5 px), and a

@@ -25,18 +25,27 @@ import net.minecraft.resources.Identifier;
  * design file has for it (st_*).
  *
  * Only the skin's base layer: the outer layer (jacket, sleeves, trousers) sits 0.25 px out, in the planes of the
- * frame's cage walls, and would flicker through them. The hat layer stays (the frame has no head cage).
+ * frame's cage walls, and would flicker through them. The hat layer only without a helmet (it lies in the helmet's
+ * planes; under the helmet his face shows through the visor glass).
  * Not in the pilot's own first-person view (his arm there is the cockpit viewmodel's, CockpitHands); never anyone else
  * in a suit (mobs ride without a skin: the frame stands empty).
  */
 public class PilotLayer extends GeoRenderLayer<PowerSuitEntity, Void, LivingEntityRenderState> {
     /** Per build, the frame bone -> the vanilla part drawn there. Our own model instances: their poses are set once. */
     private final Map<String, ModelPart> wide, slim;
+    /** His head without the hat layer, for under the helmet (the hat layer lies in the helmet box's planes). A part of its
+     *  own, not a visibility switch on the other: parts are drawn after every suit has submitted them. */
+    private final ModelPart bareHead;
 
     public PilotLayer(EntityRendererProvider.Context context, GeoRenderer<PowerSuitEntity, Void, LivingEntityRenderState> renderer) {
         super(renderer);
         this.wide = parts(new PlayerModel(context.bakeLayer(ModelLayers.PLAYER), false));
         this.slim = parts(new PlayerModel(context.bakeLayer(ModelLayers.PLAYER_SLIM), true));
+        PlayerModel spare = new PlayerModel(context.bakeLayer(ModelLayers.PLAYER), false); // heads are the same in both builds
+        spare.hat.visible = false;
+        this.bareHead = spare.head;
+        this.bareHead.setPos(0F, 0F, 0F);
+        this.bareHead.setRotation(0F, 0F, 0F);
     }
 
     private static Map<String, ModelPart> parts(PlayerModel model) {
@@ -62,7 +71,9 @@ public class PilotLayer extends GeoRenderLayer<PowerSuitEntity, Void, LivingEnti
             return;
         }
         Map<String, ModelPart> parts = info.getOrDefaultGeckolibData(SuitRenderData.PILOT_SLIM, false) ? this.slim : this.wide;
-        parts.forEach((boneName, part) -> {
+        boolean helmet = info.getOrDefaultGeckolibData(SuitRenderData.HELMET, false);
+        parts.forEach((boneName, built) -> {
+            ModelPart part = helmet && boneName.equals("pilot_head") ? this.bareHead : built;
             info.model().getBone(boneName).ifPresent(bone -> consumer.accept(bone, (pass, b, tasks) -> {
                 var poseStack = pass.poseStack(); // at the bone's pivot, in the frame's model space
                 // Vanilla models are built y-down and drawn through scale(-1, -1, 1) (LivingEntityRenderer does the same).

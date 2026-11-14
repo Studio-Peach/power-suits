@@ -158,5 +158,11 @@ the end and `docs/guide.md` Notes).
   floated as two squares a block under the view; the chest's top, 4 px under the eyes, filled it like a table top);
   the empty right hand is his skin arm where vanilla draws it with the frame's arm shell round it (the exporter's
   `view/frame_arm`: the right arm's cubes about the pilot's arm pivot); third person 5 blocks back.
-- Not yet in game (later steps): the helmet, the engine (the drafts are knobs, off in the saved files), the tools and
+- Step 3, the helmet: the saved files carry it now (`HELMET` defaults to `glass`; the game hides `armor_head` without
+  one). Rebuilding them also brought the left hand's socket in (the files were last saved before it, at e521b9b).
+  The cutout pass draws a texel opaque or not at all, so the exporter splits the glass (alpha strictly between 0 and
+  255) into `power_frame_glass` (a translucent pass, `HelmetGlassLayer`, after his face) and its glowmask
+  `power_frame_glow_visor` (the visor's colour faded in by opacity, `SuitGlowLayer.VISOR_GLOW` 0.45: his eyes still
+  show through, faintly). His hat layer hides under the helmet (it lies in the helmet's planes).
+- Not yet in game (later steps): the engine (the drafts are knobs, off in the saved files), the tools and
   the iron armour. Re-run the exporter after rebuilding the saved files.
