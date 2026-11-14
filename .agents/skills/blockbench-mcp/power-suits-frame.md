@@ -106,3 +106,13 @@ live on `experimental/frame-concept`; the frame isn't in the game yet (model onl
   spinning), a dark seam, a steel motor with a copper winding window (`DRILL_ART=B`, picked over vents and fins).
 - A face whose art is all see-through isn't drawn (texture None) and `quads()` skips it, so the clearance check
   doesn't count it as a shared plane.
+- The chainsaw (`TOOL=saw`, `model/art/frame_saw_art.py`): the body in the fist's place, a 6 px bar straight down in
+  the arm's y-z plane and the chain its own box round it (`tool_bit`, so it runs). Bodies in the frame's grey palette
+  (slate / copper / brass cowls, cooling fins, heat shields, sprockets) never read as a chainsaw. What did
+  (`SAW_LOOK=rancher`, 2026-11-14, from a Husqvarna 455 Rancher photo, "zero notes"): the real saw's parts mapped onto
+  the block with the bar down (its front at the bottom, its handles facing back, the clutch side outward), in its
+  **orange** with grey handles: the wrap-around handle a band round the body, the rear handle and the hand guard on
+  the back, the muffler and two bar nuts on the outer side, vent slits inside, spikes along the front's bottom. The
+  colour does most of the work: it is the only body that stands out from the grey armour in third person. Lesson: for
+  a tool people must recognise, start from a photo of the real thing (rotated to the tool's pose and downsampled to
+  the face's texels, `.scratch/saw/ph_*.png`), and use its signature colour even outside the palette.

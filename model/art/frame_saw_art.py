@@ -227,6 +227,8 @@ def toothed_parts(c, t, shape, part):
 # - the felling dogs (the spikes beside the bar) along the front's bottom; the status lamp stays (front, outer top).
 # Drafts: rancher (the reference's orange and grey) | copper (the game's copper and slate) | hoop (rancher, the wrap
 # handle a real hoop 0.5 px proud round a 4 x 4 x 4 core: its outline the envelope); 'old' the body so far.
+# rancher picked (2026-11-14, user: "looks great, zero notes"; the default): the orange is what makes it read as a
+# chainsaw, and the only body that stands out from the grey armour in third person. copper / hoop / old stay knobs.
 LOOKS = {'rancher': dict(O='f28a3a', o='e0621f', u='a9461a', v='6b2a10', G='7d8389', H='5a5f65', J='3b3f44'),
          'copper': dict(O='e09868', o='c07440', u='804426', v='5a2e18', G='4c5559', H='3b4246', J='2a2e31')}
 LOOKS['hoop'] = LOOKS['rancher']
@@ -283,7 +285,7 @@ def rancher_parts(c, t, look, lamp, part):
     return parts
 
 
-def build(c, top, lamp='red', kind='B', art='B', fins='A', cowl='slate', barrel='copper', bar_shape='box', low='fins', look='old'):
+def build(c, top, lamp='red', kind='B', art='B', fins='A', cowl='slate', barrel='copper', bar_shape='box', low='fins', look='rancher'):
     """The chainsaw's parts on an arm centred at x c (right side) whose socket is at y top: the body (the drill's)
     and the bar under it (SAW, picked: B), its paint SAW_ART; bone 'tool' still, 'bit' the chain (it runs)."""
     sq = lambda n, y0, y1: ((c - n / 2, y0, -n / 2), (c + n / 2, y1, n / 2))
