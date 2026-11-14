@@ -10,6 +10,8 @@ mod as GeckoLib files, without Blockbench (the frame is script-built: model/art/
       tools/make-glowmasks.py, painted dark in the texture (frame_model.py FIRE=dark), each lit to its glow colour)
   textures/entity/power_frame_glow_core(_slim).png (the same texels in white -> grey: the tidal engine's and the star
       reactor's light on the heart until they have frame art, tinted in their own colours)
+  textures/entity/power_frame_glow_<light>(_slim).png for the tools' lights (TOOL_GLOW below): the flamethrower's pilot
+      light, the status lamp red (idle) and green (running), the chaingun's green muzzle lights
   geckolib/animations/entity/power_frame.animation.json
   geckolib/models/view/frame_arm.geo.json, frame_arm_slim.geo.json (the cockpit's right arm, below)
   geckolib/models/view/frame_tool.geo.json, frame_tool_slim.geo.json (the cockpit's socket tool, below)
@@ -271,6 +273,16 @@ def png(w, h, rows):
 FIRE = {(0x3f, 0x21, 0x1b): (0xff, 0xdc, 0x6e), (0x37, 0x1d, 0x19): (0xff, 0x96, 0x32), (0x2f, 0x1a, 0x17): (0xd2, 0x46, 0x19)}
 
 
+# The tools' lights (client/SuitGlowLayer FRAME_TOOL_MASKS): mask name -> {texel colour: glow colour}.
+_h = lambda v: tuple(int(v[i:i + 2], 16) for i in (0, 2, 4))
+TOOL_GLOW = {
+    'pilot': {_h('1b2638'): _h('2a6cff'), _h('22304a'): _h('8ec2ff')},   # make-glowmasks.py's pilot colours
+    'lamp_idle': {_h('3d2622'): _h('ffb0a0'), _h('2e1915'): _h('e8402a')},   # frame_drill_art LAMPS dark -> red
+    'lamp_run': {_h('3d2622'): _h('c8ffc0'), _h('2e1915'): _h('4fe05a')},    # ... -> green
+    'gun_light': {_h('c8ffc0'): _h('c8ffc0'), _h('3cf060'): _h('3cf060')},  # the chaingun's green lights, as painted
+}
+
+
 def textures(data):
     """The texture split (see the docstring): opaque, glass, the visor's glowmask, the fire's glowmask."""
     w, h, rows = unpng(data)
@@ -284,7 +296,12 @@ def textures(data):
     assert lit, 'no fire texels: build the saved files with the engine (ENGINE=heart, FIRE=dark)'
     grey = {k: (v,) * 3 for k, v in zip(FIRE, (255, 225, 190))}   # hottest -> coolest, as the fire's yellow -> red
     core = [[grey[p[:3]] + (255,) if p[3] == 255 and p[:3] in FIRE else clear for p in row] for row in rows]
-    return png(w, h, opaque), png(w, h, panes), png(w, h, visor), png(w, h, fire), png(w, h, core)
+    tools = {}
+    for name, colours in TOOL_GLOW.items():
+        mask = [[colours[p[:3]] + (255,) if p[3] == 255 and p[:3] in colours else clear for p in row] for row in rows]
+        assert any(p != clear for row in mask for p in row), f'no {name} texels: build the saved files with every tool (TOOL=all, LAMP=dark)'
+        tools[name] = png(w, h, mask)
+    return png(w, h, opaque), png(w, h, panes), png(w, h, visor), png(w, h, fire), png(w, h, core), tools
 
 
 def write(rel, data):
@@ -330,13 +347,15 @@ if __name__ == '__main__':
         tool = ident.replace('power_frame', 'frame_tool')
         write(f'geckolib/models/view/{tool}.geo.json', json.dumps(tool_view(model, tool), indent=1).encode())
         source = model['textures'][0]['source']
-        opaque, glass, visor, fire, core = textures(base64.b64decode(source.split(',', 1)[1]))
+        opaque, glass, visor, fire, core, tools = textures(base64.b64decode(source.split(',', 1)[1]))
         slim = ident[len('power_frame'):]
         write(f'textures/entity/{ident}.png', opaque)
         write(f'textures/entity/power_frame_glass{slim}.png', glass)
         write(f'textures/entity/power_frame_glow_visor{slim}.png', visor)
         write(f'textures/entity/power_frame_glow_fire{slim}.png', fire)
         write(f'textures/entity/power_frame_glow_core{slim}.png', core)
+        for name, mask in tools.items():
+            write(f'textures/entity/power_frame_glow_{name}{slim}.png', mask)
     bones = {b['name'] for b in geo(json.load(open(os.path.join(ROOT, BUILDS['power_frame']))), 'x')['minecraft:geometry'][0]['bones']}
     anims = animations(bones)
     write('geckolib/animations/entity/power_frame.animation.json', json.dumps(anims, indent=1).encode())

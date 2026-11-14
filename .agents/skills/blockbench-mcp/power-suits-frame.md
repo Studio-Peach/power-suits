@@ -179,4 +179,8 @@ the end and `docs/guide.md` Notes).
   (SocketAim). The cockpit draws his left arm, the frame's left arm and the tool (`view/frame_tool`: about
   pilot_left_arm's pivot) where vanilla draws a left hand, turned about the shoulder toward the aim. A tool alone at
   the screen's corner (the big suit's way) had to sit 0.1 blocks from the camera at twice its size to hide its cut end.
-- Not yet in game (later steps): the tools' lights; the iron armour. Re-run the exporter after rebuilding the saved files.
+- Step 5c, the tools' lights: the status lamp is painted in reserved dark colours (`LAMP=dark`, the saved files';
+  red / green for reviews) and lit as two masks, red ready / green running; the chaingun's green lights and the
+  flamethrower's pilot light (its reserved colours) have masks of their own (`TOOL_GLOW` in the exporter). The chaingun
+  has no heat colours in its art: its barrels don't glow with heat yet.
+- Not yet in game (later steps): the iron armour. Re-run the exporter after rebuilding the saved files.

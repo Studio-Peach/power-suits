@@ -64,7 +64,10 @@ def studded(f, w, h):
 
 
 # The status lamp's colours (red idle, green spinning: LAMP): highlight, lit, rim.
-LAMPS = {'red': ('ffb0a0', 'e8402a', '9a2418'), 'green': ('c8ffc0', '4fe05a', '2a8a34')}
+# 'dark' (the saved files', 2026-11-14: in game): the lamp's highlight and lit texels in reserved colours (an unlit
+# lamp, dark red), which tools/export-frame.py turns into two glowmasks, the red ('idle') and the green ('run') lamp:
+# the game lights one by the suit's state (ToolLight.LAMP_IDLE / LAMP_RUN).
+LAMPS = {'red': ('ffb0a0', 'e8402a', '9a2418'), 'green': ('c8ffc0', '4fe05a', '2a8a34'), 'dark': ('3d2622', '2e1915', '9a2418')}
 # copper (frame_heart_art.EXTRA, frame_model.PAL Q / R): lit, mid, shade
 CU = {'f': _c('e09868'), 'Q': _c('c07440'), 'C': _c('804426')}
 

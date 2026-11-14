@@ -2,6 +2,7 @@ package dev.ajaczero.powersuits.client.dev;
 
 import dev.ajaczero.powersuits.PowerSuits;
 import dev.ajaczero.powersuits.entity.PowerSuitEntity;
+import dev.ajaczero.powersuits.item.ToolLight;
 import dev.ajaczero.powersuits.registry.ModEntities;
 import dev.ajaczero.powersuits.registry.ModItems;
 import java.io.BufferedWriter;
@@ -179,7 +180,7 @@ final class FrameScene {
         });
         try {
             csv = Files.newBufferedWriter(FMLPaths.GAMEDIR.get().resolve("autopilot_frame.csv"));
-            csv.write("tick,phase,bb_width,bb_height,eye_above_suit,walk_pos,walk_speed,speed,parked_powered,pilot_skin,tool,tool_running,rotor\n");
+            csv.write("tick,phase,bb_width,bb_height,eye_above_suit,walk_pos,walk_speed,speed,parked_powered,pilot_skin,tool,tool_running,rotor,lamp\n");
         } catch (IOException e) {
             PowerSuits.LOGGER.error("frame csv", e);
         }
@@ -232,12 +233,13 @@ final class FrameScene {
         PowerSuitEntity p = parked;
         var parkedClient = p == null || mc.level == null ? null : mc.level.getEntity(p.getId());
         try {
-            csv.write(String.format(Locale.ROOT, "%d,%s,%.3f,%.3f,%.3f,%.3f,%.3f,%.2f,%s,%s,%s,%s,%.1f%n", s, phase, suit.getBbWidth(), suit.getBbHeight(),
+            csv.write(String.format(Locale.ROOT, "%d,%s,%.3f,%.3f,%.3f,%.3f,%.3f,%.2f,%s,%s,%s,%s,%.1f,%s%n", s, phase, suit.getBbWidth(), suit.getBbHeight(),
                     mc.player.getEyeY() - suit.getY(), suit.walkAnimation.position(), suit.walkAnimation.speed(),
                     suit.animator().getVisualSpeed(), parkedClient instanceof PowerSuitEntity c ? c.isPowered() : "-",
                     mc.player.getSkin().model().getSerializedName(), // slim = the frame's slim build
                     suit.getSocketStack().isEmpty() ? "-" : BuiltInRegistries.ITEM.getKey(suit.getSocketStack().getItem()).getPath(),
-                    suit.socket().isRunning(), suit.socketVisuals().rotorAngle(1F)));
+                    suit.socket().isRunning(), suit.socketVisuals().rotorAngle(1F),
+                    suit.socketVisuals().light(ToolLight.LAMP_RUN, 0F) > 0 ? "green" : suit.socketVisuals().light(ToolLight.LAMP_IDLE, 0F) > 0 ? "red" : "off"));
         } catch (IOException ignored) {
             // closed
         }

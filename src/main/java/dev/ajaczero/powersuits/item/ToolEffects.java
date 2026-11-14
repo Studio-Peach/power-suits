@@ -21,8 +21,25 @@ import org.jetbrains.annotations.Nullable;
  * SocketAim.visualMuzzle), never the client's classes (see entity/ClientView).
  */
 public interface ToolEffects {
-    /** Nothing to show (the drill and chainsaw move by their run animations). */
+    /** Nothing to show. */
     ToolEffects NONE = new ToolEffects() {};
+    /** Only the status lamp (the drill and chainsaw: they move by their run animations). */
+    ToolEffects LAMP_ONLY = new ToolEffects() {
+        @Override
+        public void lights(PowerSuitEntity suit, float time, float partial, float[] out) {
+            ToolEffects.statusLamp(suit, out);
+        }
+    };
+
+    /** The frame's status lamp on the tool's base: green while the tool works (running, or a chaingun spinning), red while
+     *  it's ready, dark without power. */
+    static void statusLamp(PowerSuitEntity suit, float[] out) {
+        if (!suit.canOperate()) {
+            return;
+        }
+        boolean working = suit.socket().isRunning() || suit.socket().getSpin() > 0.05F;
+        out[(working ? ToolLight.LAMP_RUN : ToolLight.LAMP_IDLE).ordinal()] = 1F;
+    }
 
     /** Client, every tick while this tool is in the socket. */
     default void tick(PowerSuitEntity suit) {

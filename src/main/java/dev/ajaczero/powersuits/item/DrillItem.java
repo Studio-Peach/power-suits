@@ -111,6 +111,12 @@ public class DrillItem extends Item implements PowerTool, ModTooltip {
         return "drill";
     }
 
+    /** Its status lamp (red ready, green running); it moves by its run animation. */
+    @Override
+    public ToolEffects createEffects() {
+        return ToolEffects.LAMP_ONLY;
+    }
+
     @Override
     public RawAnimation runAnimation() {
         return RUN;

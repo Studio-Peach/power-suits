@@ -149,6 +149,12 @@ public class ChainsawItem extends Item implements PowerTool, ModTooltip {
         return "chainsaw";
     }
 
+    /** Its status lamp (red ready, green running); it moves by its run animation. */
+    @Override
+    public ToolEffects createEffects() {
+        return ToolEffects.LAMP_ONLY;
+    }
+
     @Override
     public RawAnimation runAnimation() {
         return RUN;

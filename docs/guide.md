@@ -394,8 +394,8 @@ src/main/java/dev/ajaczero/powersuits/
     VisorPower.java          the visor's warm-up and shutdown scan (lines sweeping from the screen's middle)
     ToolInput.java           right click the hand passes on -> socket tool (vanilla's off-hand turn)
     HeldItemLayer.java       draws the pilot's selected item in the suit's right hand (third person)
-    SuitGlowLayer.java       the suit's lights + the tool's ToolLights (glowmasks, tinted per frame); on the frame so far
-                             the engine's fire and the visor (the tools' masks are the big suit's layout)
+    SuitGlowLayer.java       the suit's lights + the tool's ToolLights (the frame's glowmasks, tinted per frame): the
+                             engine's fire, the visor, the status lamp, the chaingun's lights, the pilot light
     BulletRenderer.java      the glowing tracer streak
     ToolRotors.java          turns the chaingun's barrels / the TNT drum, shakes the rail cannon (suit + cockpit viewmodel)
     ClientSetup.java         registers the renderer
@@ -449,7 +449,11 @@ until the tool points along the view (pitch and head yaw; a player's one-armed a
 end, where vanilla draws a left hand, turned about the shoulder toward a point low left of the crosshair at rest and
 at the crosshair 10 blocks out when raised (CockpitHands.toolArmTransform; the hand pass's pose isn't identity in
 26.3, so the turn is worked out under it). No exhaust smoke in the pilot's own first-person view (it drifted past the
-camera). Still the big suit's or off until their steps: the tools' lights, paint and helmet styles. The notes below are the big suit's.
+camera). Step 5c: the tools' lights: a status lamp on the drill's and chainsaw's base (red ready, green running,
+dark without power: ToolLight.LAMP_IDLE / LAMP_RUN, painted in reserved dark colours, LAMP=dark), the chaingun's green
+muzzle lights (on with the power) and the flamethrower's blue pilot light, on the suit and the cockpit viewmodel. Not
+on the frame's tools yet: the chaingun's barrel heat glow, the EM projector's and rail cannon's lights (no art). Still
+the big suit's or off until their steps: paint and helmet styles. The notes below are the big suit's.
 
 ### The big suit
 

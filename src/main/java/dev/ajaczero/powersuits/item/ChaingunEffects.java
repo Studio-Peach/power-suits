@@ -56,6 +56,8 @@ final class ChaingunEffects implements ToolEffects {
         float heat = suit.socket().getHeat();
         out[ToolLight.HEAT.ordinal()] = heatGlow(heat);
         out[ToolLight.HEAT_BARREL.ordinal()] = barrelGlow(heat);
+        ToolEffects.statusLamp(suit, out);
+        out[ToolLight.GUN_LIGHT.ordinal()] = suit.canOperate() ? 1F : 0F;
     }
 
     /** HUD: bullets left (the iron nuggets the pilot carries), low at the last {@link #LOW_BULLETS}; the barrel

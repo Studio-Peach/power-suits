@@ -793,6 +793,7 @@ if ENGINE == 'firebox':
 # boxes (user, 2026-11-13): they may be models of several parts. The drill: frame_drill_art.py; the chainsaw:
 # frame_saw_art.py (its drafts SAW=A|B|C); the chaingun ('gun'): frame_gun_art.py; the flamethrower ('flame'):
 # frame_flame_art.py.
+# The tools' status lamp (LAMP: red | green for a review, dark: the reserved colours the game lights, frame_drill_art).
 # 'all' (the saved files' default since 2026-11-14, step 5: the game shows the installed one): every tool at once, each
 # on its own bones, named as the game's tools (GAME_BONES), in one texture.
 TOOL = os.environ.get('TOOL', 'all')
@@ -808,12 +809,12 @@ def _tool_parts(TOOL):
   TOOL_PARTS = []
   if TOOL == 'drill':
     import frame_drill_art as drill_art
-    TOOL_PARTS = drill_art.build(6.25 + ARM_OUT, SOCKET_Y, os.environ.get('LAMP', 'red'), os.environ.get('DRILL_ART', 'B'),
+    TOOL_PARTS = drill_art.build(6.25 + ARM_OUT, SOCKET_Y, os.environ.get('LAMP', 'dark'), os.environ.get('DRILL_ART', 'B'),
                                  os.environ.get('DRILL_BASE', 'open'), os.environ.get('DRILL_FIT', 'fist'),
                                  os.environ.get('DRILL_BAND', 'slate'))
   if TOOL == 'saw':
     import frame_saw_art as saw_art
-    TOOL_PARTS = saw_art.build(6.25 + ARM_OUT, SOCKET_Y, os.environ.get('LAMP', 'red'), os.environ.get('SAW', 'B'),
+    TOOL_PARTS = saw_art.build(6.25 + ARM_OUT, SOCKET_Y, os.environ.get('LAMP', 'dark'), os.environ.get('SAW', 'B'),
                                os.environ.get('SAW_ART', 'B'), os.environ.get('SAW_FINS', 'A'),
                                os.environ.get('SAW_COWL', 'slate'), os.environ.get('SAW_BARREL', 'copper'),
                                os.environ.get('SAW_BAR', 'box'), os.environ.get('SAW_LOW', 'fins'),
@@ -822,7 +823,7 @@ def _tool_parts(TOOL):
 # GUN_TOP=stack (the defaults); the other knobs are the rounds' drafts, kept to rebuild them.
   if TOOL == 'gun':
     import frame_gun_art as gun_art
-    TOOL_PARTS = gun_art.build(6.25 + ARM_OUT, SOCKET_Y, os.environ.get('LAMP', 'red'), os.environ.get('GUN', 'A'),
+    TOOL_PARTS = gun_art.build(6.25 + ARM_OUT, SOCKET_Y, os.environ.get('LAMP', 'dark'), os.environ.get('GUN', 'A'),
                                os.environ.get('GUN_BODY', 'ref'), os.environ.get('GUN_LOOK', 'doom'),
                                os.environ.get('GUN_BARRELS', '4'), os.environ.get('GUN_HANDLE', 'paint'),
                                os.environ.get('GUN_COUNTER') or os.environ.get('GUN_TOP', 'stack'), os.environ.get('GUN_DRUM', 'dark'),

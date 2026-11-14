@@ -31,10 +31,7 @@ final class CockpitViewRenderer extends GeoObjectRenderer<CockpitView, Void, Geo
     /** The rail cannon's charge and the time (ticks), for its shake. */
     private static final DataTicket<float[]> RAIL_SHAKE = DataTicket.create("power_suits_view_rail_shake", float[].class);
     private static final DataTicket<int[]> GLOW = DataTicket.create("power_suits_view_glow", int[].class);
-    /** The tool's lights, like on the suit (SuitGlowLayer: one mask per ToolLight). */
-    private static final Identifier[] MASKS = SuitGlowLayer.TOOL_MASKS;
-    /** The frame's tools have no glowmasks yet (step 5c). */
-    private static final boolean TOOL_LIGHTS = false;
+
 
     CockpitViewRenderer() {
         super(new Model());
@@ -126,9 +123,11 @@ final class CockpitViewRenderer extends GeoObjectRenderer<CockpitView, Void, Geo
         @Override
         public void submitRenderTask(RenderPassInfo<GeoRenderState> info, SubmitNodeCollector renderTasks) {
             int[] tints = info.getGeckolibData(GLOW);
-            // (Off until the frame's tools have their own glowmasks: these are the big suit's texture layout.)
-            if (TOOL_LIGHTS && info.willRender() && tints != null && info.getOrDefaultGeckolibData(PART, Part.TOOL) == Part.TOOL) {
-                SuitGlowLayer.drawMasks(this.renderer, info, renderTasks, MASKS, tints);
+            // The tool's lights, like on the suit (SuitGlowLayer: one mask per ToolLight, per build).
+            if (info.willRender() && tints != null && info.getOrDefaultGeckolibData(PART, Part.TOOL) == Part.TOOL) {
+                boolean slim = info.getOrDefaultGeckolibData(SLIM, false);
+                SuitGlowLayer.drawMasks(this.renderer, info, renderTasks,
+                        slim ? SuitGlowLayer.FRAME_TOOL_MASKS_SLIM : SuitGlowLayer.FRAME_TOOL_MASKS, tints);
             }
         }
     }

@@ -11,7 +11,6 @@ import dev.ajaczero.powersuits.entity.PowerSuitEntity;
 import dev.ajaczero.powersuits.entity.SuitEngine;
 import dev.ajaczero.powersuits.item.ToolLight;
 import java.util.Arrays;
-import java.util.stream.Stream;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
@@ -22,45 +21,30 @@ import net.minecraft.util.Mth;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The suit's lights: the engine (firebox fire, tidal Heart of the Sea, reactor energy), the visor, the chaingun's hot barrels, the EM projector's redstone and the rail cannon's core, drawn on top of the model at full brightness so they glow
- * in the dark. Like GeckoLib's AutoGlowingGeoLayer, the whole model is drawn again with a glowmask texture (black
- * everywhere except the glowing pixels, made by tools/make-glowmasks.py) in vanilla's "eyes" render type (the one
+ * The suit's lights: the engine's fire (the tidal engine and the star reactor in their colours), the visor, the tools'
+ * status lamp, the chaingun's green lights and the flamethrower's pilot light, drawn on top of the model at full
+ * brightness so they glow in the dark. Like GeckoLib's AutoGlowingGeoLayer, the whole model is drawn again with a
+ * glowmask texture (empty except the glowing pixels, made from reserved colours by tools/export-frame.py; the big
+ * suit's by tools/make-glowmasks.py) in vanilla's "eyes" render type (the one
  * spider and enderman eyes use): it ignores light and draws its colour on top (blended by alpha in 26.3, not added:
  * a dimmed mask is a darker colour, fine over the dark glass and coals it sits on). Unlike AutoGlowingGeoLayer, each mask
  * is tinted every frame, so the fire flickers and fades and the visor changes colour (PowerSuitEntity.tickLights). The
  * socket tool's lights ({@link ToolLight}) are worked out by the installed tool's ToolEffects.
  */
 public class SuitGlowLayer extends GeoRenderLayer<PowerSuitEntity, Void, LivingEntityRenderState> {
-    // The suit's own lights: the firebox's fire, the visor, and the other engines' glass (design sec. 4b: the tidal
-    // engine's Heart of the Sea, the star reactor's core + canisters).
-    private static final Identifier FIRE = mask("fire");
-    private static final Identifier VISOR = mask("visor");
-    private static final Identifier TIDAL = mask("tidal");
-    private static final Identifier REACTOR = mask("reactor");
-    private static final Identifier[] SUIT_MASKS = {FIRE, VISOR, TIDAL, REACTOR};
-    /** The socket tools' lights, indexed by ToolLight.ordinal() (also drawn on the cockpit viewmodel). */
-    static final Identifier[] TOOL_MASKS = Arrays.stream(ToolLight.values()).map(SuitGlowLayer::mask).toArray(Identifier[]::new);
-    /** All masks, in the order of the tints in SuitRenderData.GLOW: the suit's, then the tool's. */
-    private static final Identifier[] MASKS = Stream.concat(Arrays.stream(SUIT_MASKS),
-            Arrays.stream(TOOL_MASKS)).toArray(Identifier[]::new);
+    /** The frame's tool lights' glowmasks (tools/export-frame.py), per build, indexed by ToolLight.ordinal(); null for a
+     *  light the frame's tools don't have yet (the chaingun's heat, the EM projector's redstone, the rail cannon's core:
+     *  the big suit's tools had them). Also drawn on the cockpit viewmodel. */
+    static final Identifier[] FRAME_TOOL_MASKS = toolMasks(""), FRAME_TOOL_MASKS_SLIM = toolMasks("_slim");
 
-    private static Identifier mask(String name) {
-        return Identifier.fromNamespaceAndPath(PowerSuits.MODID, "textures/entity/power_suit_glow_" + name + ".png");
-    }
-
-    /** A tool light's glowmask file (written by tools/make-glowmasks.py). */
-    private static Identifier mask(ToolLight light) {
-        return mask(switch (light) {
-            case HEAT -> "heat";
-            case HEAT_BARREL -> "heat_barrel";
-            case EM_CORE -> "em_core";                 // the EM projector's lens + vents
-            case EM_ARC -> "em_arc";                   // and its prong tips
-            case PILOT -> "pilot";                     // the flamethrower's pilot light (the tip of its slate rod)
-            case RAIL_FLOW_0 -> "rail_flow_0";         // the rail cannon's core rings, a third each (ring r in mask r mod 3)
-            case RAIL_FLOW_1 -> "rail_flow_1";
-            case RAIL_FLOW_2 -> "rail_flow_2";
-            case RAIL_EMIT -> "rail_emit";             // the emitter in its band (opaque: dark when off)
-        });
+    private static Identifier[] toolMasks(String build) {
+        return Arrays.stream(ToolLight.values()).map(light -> switch (light) {
+            case PILOT -> frameMask("pilot" + build);           // the flamethrower's pilot light (the matchstick's head)
+            case LAMP_IDLE -> frameMask("lamp_idle" + build);   // the status lamp, red
+            case LAMP_RUN -> frameMask("lamp_run" + build);     // and green
+            case GUN_LIGHT -> frameMask("gun_light" + build);   // the chaingun's green muzzle lights
+            default -> null;
+        }).toArray(Identifier[]::new);
     }
 
     /** This frame's tints of the socket tool's lights (ToolLight order), from the installed tool's effects. */
@@ -115,9 +99,9 @@ public class SuitGlowLayer extends GeoRenderLayer<PowerSuitEntity, Void, LivingE
     }
 
     /**
-     * Render: draw the model once per lit mask, after (on top of) the suit itself. The frame (2026-11-14) lights its
-     * engine's fire (for each engine, see TIDAL_TINT) and the visor so far: the tools' masks are the big suit's texture
-     * layout (they come with their step).
+     * Render: draw the model once per lit mask, after (on top of) the suit itself: the frame's engine fire (for each
+     * engine, see TIDAL_TINT), the visor, and the socket tool's lights (FRAME_TOOL_MASKS; a hidden tool's bone isn't
+     * drawn again, so only the installed tool's texels light).
      * The frame's visor is glass with his face behind it, so its light fades by opacity in the visor's colour
      * (energy-style, see energy()), not by darkening an opaque colour as on the big suit's dark visor.
      */
@@ -136,8 +120,17 @@ public class SuitGlowLayer extends GeoRenderLayer<PowerSuitEntity, Void, LivingE
         Identifier fireMask = firebox ? (slim ? FRAME_FIRE_SLIM : FRAME_FIRE) : (slim ? FRAME_CORE_SLIM : FRAME_CORE);
         // No helmet, no visor (its tint stays on with the power).
         int visor = info.getOrDefaultGeckolibData(SuitRenderData.HELMET, false) ? tints[1] : 0xFF000000;
-        drawMasks(this.renderer, info, renderTasks, new Identifier[] {fireMask, slim ? FRAME_VISOR_SLIM : FRAME_VISOR},
-                new int[] {fire, visor});
+        // then the tool's lights (after the suit's four tints)
+        Identifier[] tools = slim ? FRAME_TOOL_MASKS_SLIM : FRAME_TOOL_MASKS;
+        Identifier[] masks = new Identifier[2 + tools.length];
+        int[] all = new int[masks.length];
+        masks[0] = fireMask;
+        masks[1] = slim ? FRAME_VISOR_SLIM : FRAME_VISOR;
+        all[0] = fire;
+        all[1] = visor;
+        System.arraycopy(tools, 0, masks, 2, tools.length);
+        System.arraycopy(tints, 4, all, 2, tools.length);
+        drawMasks(this.renderer, info, renderTasks, masks, all);
     }
 
     /** Draws the model again in the "eyes" render type for each mask whose tint isn't black. The tint, light
@@ -148,8 +141,8 @@ public class SuitGlowLayer extends GeoRenderLayer<PowerSuitEntity, Void, LivingE
         R state = info.renderState();
         int colour = info.renderColor(), light = info.packedLight(), overlay = info.packedOverlay();
         for (int i = 0; i < masks.length; i++) {
-            if ((tints[i] & 0xFFFFFF) == 0) {
-                continue;
+            if (masks[i] == null || (tints[i] & 0xFFFFFF) == 0) {
+                continue; // off, or a light without a mask
             }
             state.addGeckolibData(DataTickets.RENDER_COLOR, tints[i]); // scaling the colour down dims the glow
             state.addGeckolibData(DataTickets.PACKED_LIGHT, LightCoordsUtil.FULL_BRIGHT);
