@@ -26,7 +26,8 @@ _c = drill._c
 # (a blue-grey black, so its shading still reads), 'steel' the iron armour's ramp (frame_iron_art.PAL).
 METAL = {'black': dict(A='6a7077', B='454a50', C='2e3237', D='202327', E='131517'),
          'steel': dict(A='9fa4a9', B='757c85', C='58606a', D='3c424c', E='22262e')}
-OTHER = {'g': 'cdcfcf', 'h': '9fa4a9', 'p': '58606a',        # bolts and the feed pipe (bare steel)
+OTHER = {'Y': 'a89160', 'b': 'd9c17a', 'Z': '6a5838', 'f': 'e09868', 'Q': 'c07440',   # brass cases (lit, mid, shade), copper tips
+         'g': 'cdcfcf', 'h': '9fa4a9', 'p': '58606a',        # bolts and the feed pipe (bare steel)
          'T': 'cdbd93', 't': 'a99a73', 'U': '7a6e52',        # the drive motor's khaki
          'x': '0b0c0d'}                                       # a bore
 
@@ -84,6 +85,36 @@ DOWN = ['EDDDDDDDDE'] + ['DC' + 'E' * 6 + 'CD'] * 8 + ['EDDDDDDDDE']
 BODY = {'south': BACK, 'east': OUTER, 'west': INNER, 'north': FRONT, 'up': UP, 'down': DOWN}
 
 
+# New bodies (GUN_BODY; 2026-11-14, user: B's four barrels, but not the body: 'ref' above, the reference's parts
+# painted on, read as a black box with a khaki patch). Drafts, all black, the four barrels under them:
+# - drum: the receiver as the reference's round housing: every side shaded as a cylinder (dark at its edges, lit left
+#   of the middle: from any side the corners read round), a riveted panel seam round it, the barrel carrier a lit
+#   band round its bottom; the top plate a flat strip down the back. Nothing else;
+# - belt: drum, an ammo belt running down the outer side into it (brass cases, copper tips, dark links: the gun's
+#   signature colour, as the chainsaw's orange; it feeds from the arm, the ammo from the pilot's inventory);
+# - split: the drive motor over the barrel carrier: its top half ribbed (cooling ribs), a dark seam, the bottom half
+#   a plain heavy band with a bolt at each end.
+CYL = 'DCBAABCCDE'                       # a side's columns, shaded round
+def _drum(seam_bolts=(2, 7)):
+    seam = ''.join('p' if i in seam_bolts else 'D' for i in range(10))   # (dark 'E' with bright bolts read as a visor slit)
+    return ['D' * 9 + 'E', CYL, CYL, seam, CYL, CYL, 'A' * 9 + 'B', 'D' * 9 + 'E']
+DRUM_BACK = ['DCCBggBCDE'] + ['DCCBAABCDE'] * 5 + ['A' * 9 + 'B', 'D' * 9 + 'E']   # the top plate strip, two bolts
+def _belt(rows):   # the outer side's columns 4-8 (back -> front): a round a row (a link, case, tip), lit and shaded in
+    # turn, the belt from the top edge (the arm) into the carrier band
+    return [r[:4] + ('EbbYf' if j % 2 == 0 else 'EYZZQ' if j < 6 else r[4:9]) + r[9:] if j < 6 else r for j, r in enumerate(rows)]
+RIB = 'DACACACACE'
+SPLIT = ['D' * 9 + 'E', RIB, RIB, RIB, 'E' * 10, 'A' * 9 + 'B', 'ChCCCCCChD', 'D' * 9 + 'E']
+def bodies(kind):
+    if kind == 'ref': return BODY
+    if kind == 'split':
+        f = dict(south=SPLIT, east=SPLIT, west=SPLIT, north=SPLIT)
+    else:
+        d = _drum()
+        f = dict(south=DRUM_BACK, east=_belt(d) if kind == 'belt' else d, west=d, north=d)
+    f['north'] = [f['north'][0], f['north'][1][0] + 'WL' + f['north'][1][3:]] + f['north'][2:]   # the status lamp
+    return f | {'up': UP, 'down': DOWN}
+
+
 def _paint(faces, P):
     for f, rows in faces.items(): assert callable(rows) or all(len(r) == len(rows[0]) for r in rows), f
     return lambda f, w, h: [[P[ch] for ch in r] for r in (faces[f](w, h) if callable(faces[f]) else faces[f])]
@@ -101,14 +132,14 @@ def ring_cap(w, h):  # its top / bottom: the plate, an edge round it
     return [''.join('D' if i in (0, w - 1) or j in (0, h - 1) else 'C' for i in range(w)) for j in range(h)]
 
 
-def build(c, top, lamp='red', kind='A'):
+def build(c, top, lamp='red', kind='A', body='ref'):
     """The chaingun's parts on an arm centred at x c (right side) whose socket is at y top: the receiver (bone 'tool')
     and the barrels with their rings under it (bone 'bit': they spin)."""
     metal = 'steel' if kind == 'C' else 'black'
     P = pal(metal, lamp)
     part = lambda name, box, faces, bone='tool', rot=0: dict(drill.part(name, box, _paint(faces, P), rot), bone=bone)
     t = top - 4                                            # the receiver's bottom: the barrels hang from it
-    parts = [part('body', ((c - 2.5, t, -2.5), (c + 2.5, top, 2.5)), BODY)]
+    parts = [part('body', ((c - 2.5, t, -2.5), (c + 2.5, top, 2.5)), bodies(body))]
     L = 7                                                  # the barrels' length, px (1 past the muzzle ring)
     bore = lambda w, h: ['x' * w] * h
     cap = lambda w, h: ['D' * w] * h
