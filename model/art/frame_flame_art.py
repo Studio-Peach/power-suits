@@ -92,6 +92,17 @@ TANK = ['JJJJJH', 'HHHHHF', 'NNKKNN', 'NKKNNK', 'HFFFFE', 'FFFFFE', 'FFFFFE', 'E
 TANK_SIDE = [r[:3] for r in TANK]
 
 
+# Round 8 (2026-11-14, user: the barrel grew, scale the tank a bit as well): FLAME_TANK_H / FLAME_TANK_W (px) size it;
+# tank_rows paints it at any size (lit top, the hazard band under it, red shaded to the right, a dark bottom row).
+def tank_rows(n, w):
+    def row(a, b): return a * (w - 1) + b
+    hazard = [('NNKK' * w)[:w], ('NKKN' * w)[:w]]
+    rows = [row('J', 'H'), row('H', 'F')] + hazard + [row('F', 'E')] * (n - 5) + ['E' * w]
+    rows[4] = 'H' + rows[4][1:] if n > 5 else rows[4]
+    assert len(rows) == n, rows
+    return rows
+
+
 # Round 2 (2026-11-14, user: "none are great honestly. The gas tank should not be the base, but then in B the base is
 # basically wasted space"). The body must do a flamethrower's work itself, the tank off it. Drafts:
 # - D burner: B's layout (barrel front, tank behind, under the body), the body the burner: the slate clamp band, then
@@ -237,7 +248,7 @@ def barrel_rows(n, holes='keep'):
     return ['sppppz'] + rows + ['pssssz', 'szzzsz']
 
 
-def build(c, top, kind='A', pilot='dark', glow='lit', body_art='burner', body_h=4, holes='keep'):
+def build(c, top, kind='A', pilot='dark', glow='lit', body_art='burner', body_h=4, holes='keep', tank_h=4, tank_w=3):
     """The flamethrower's parts on an arm centred at x c (right side) whose socket is at y top (bone 'tool': all still)."""
     P = PAL | PILOT[pilot] | GLOW[glow] | BRASS | BODY4
     part = lambda name, box, faces: dict(drill.part(name, box, _paint(faces, P)), bone='tool')
@@ -261,10 +272,11 @@ def build(c, top, kind='A', pilot='dark', glow='lit', body_art='burner', body_h=
         parts = [part('body', body, faces | {'up': one('k'), 'down': BURNER_DOWN})]
     if split:
         bz0, bz1 = -2.5, 0.5                                # (0.5 px of daylight to the tank)
-        parts.append(part('tank', ((c - 1.5, t - 4, 1), (c + 1.5, t, 2.5)),
-                          {'north': TANK, 'south': TANK, 'east': TANK_SIDE, 'west': TANK_SIDE, 'up': none,
-                           'down': one('E')}))
-        rbox = ((c - 0.5, t - L - 1, 1.25), (c + 0.5, t - 4, 2.25))   # under the tank, down to a px under the muzzle
+        tf = tank_rows(round(tank_h * 2), round(tank_w * 2))
+        ts = [r[-3:] for r in tf]
+        parts.append(part('tank', ((c - tank_w / 2, t - tank_h, 1), (c + tank_w / 2, t, 2.5)),
+                          {'north': tf, 'south': tf, 'east': ts, 'west': ts, 'up': none, 'down': one('E')}))
+        rbox = ((c - 0.5, t - L - 1, 1.25), (c + 0.5, t - tank_h, 2.25))   # under the tank, down to a px under the muzzle
     else:
         # the barrel 0.5 px in from the body's front, the rod flush with its back, 0.5 px of daylight between them
         bz0, bz1 = -2, 1
@@ -283,7 +295,8 @@ def build(c, top, kind='A', pilot='dark', glow='lit', body_art='burner', body_h=
                            'up': one('h'), 'down': one('p')}))
     if kind == 'D':   # (round 3) the matchstick: the rod 1 px under the tank, the foot forward to the bore's back edge
         y0 = t - L - 1                                      # the foot's bottom, a px under the muzzle
-        parts.append(part('pilot', ((c - 0.5, y0, 1), (c + 0.5, t - 4, 2)),
+        assert t - tank_h > y0 + 1, 'the tank reaches the matchstick'
+        parts.append(part('pilot', ((c - 0.5, y0, 1), (c + 0.5, t - tank_h, 2)),
                           side(one('k')) | {'west': lambda w, h: ['mk'] * h, 'up': none, 'down': one('k')}))
         # the foot: z -0.5 (the bore's back edge, MUZZLE) to the rod, its front 2 texels the blue head; its top under
         # the barrel (and the gap): not drawn; its back against the rod: not drawn

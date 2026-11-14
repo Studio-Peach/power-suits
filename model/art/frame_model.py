@@ -818,7 +818,8 @@ if TOOL == 'flame':
     import frame_flame_art as flame_art
     TOOL_PARTS = flame_art.build(6.25 + ARM_OUT, SOCKET_Y, os.environ.get('FLAME', 'A'), os.environ.get('FLAME_PILOT', 'dark'),
                                    os.environ.get('FLAME_GLOW', 'lit'), os.environ.get('FLAME_BODY', 'burner'),
-                                   float(os.environ.get('FLAME_BODY_H', '4')), os.environ.get('FLAME_HOLES', 'keep'))
+                                   float(os.environ.get('FLAME_BODY_H', '4')), os.environ.get('FLAME_HOLES', 'keep'),
+                                   float(os.environ.get('FLAME_TANK_H', '4')), float(os.environ.get('FLAME_TANK_W', '3')))
 for p in TOOL_PARTS: SHELLS[f"tl_{p['name']}"] = dict(faces=p['faces'])
 # where each shell's faces sit in the texture (below / beside nothing else), one strip per shell
 SHELL_AT = {'arm_shell': (0, 64), 'leg_shell': (0, 80),
