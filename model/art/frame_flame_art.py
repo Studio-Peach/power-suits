@@ -127,9 +127,44 @@ ARM_TANK = ['hhhhhe', 'JJJJJH', 'NNKKNN', 'NKKNNK', 'HFFFFE', 'EEEEEE', 'hhhhhe'
 ARM_TANK_SIDE = [r[:3] for r in ARM_TANK]
 
 
-def build(c, top, kind='A', pilot='dark', glow='lit'):
+# Round 3 (2026-11-14, user: D, but change the base, and make the matchstick (the pilot rod) meet the fire hole). The
+# pilot: the rod down from the tank's bottom, then a foot forward under the barrel, its blue head against the muzzle's
+# bore (it lights the fuel as it leaves). The body (FLAME_BODY; 'burner' D's):
+# - jacket: E's perforated jacket, its holes glowing in the fire's colours (the burner seen through it);
+# - porthole: worn steel, a round brass-rimmed window on each side, the fire in it (the engine core's porthole);
+# - grille: the iron armour's hot radiator (GUARD=hot): three slats across a dark slate surround, hottest in the middle.
+BRASS = {'b': _c('d9c17a'), 'Y': _c('a89160'), 'Z': _c('6a5838')}
+BODIES = {
+    'burner': BURNER,
+    'jacket': ['hhhhhhhhhe',
+               'pppppppppz',
+               'h33ll33llp',
+               'h22ll22llp',
+               'hellgllllp',
+               'hll22ll22p',
+               'hll11ll11p',
+               'ssssssssss'],
+    'porthole': ['hhhhhhhhhe',
+                 'helbbYYlep',
+                 'heb3333Zep',
+                 'heb2222Zep',
+                 'heY2211Zep',
+                 'heY1111Zep',
+                 'helZZZZlep',
+                 'ssssssssss'],
+    'grille': ['nnnnnnnnnm',
+               'mxxxxxxxxk',
+               'mx222222xk',
+               'mxxxxxxxxk',
+               'mx111111xk',
+               'mxxxxxxxxk',
+               'mx222222xk',
+               'kkkkkkkkkk']}
+
+
+def build(c, top, kind='A', pilot='dark', glow='lit', body_art='burner'):
     """The flamethrower's parts on an arm centred at x c (right side) whose socket is at y top (bone 'tool': all still)."""
-    P = PAL | PILOT[pilot] | GLOW[glow]
+    P = PAL | PILOT[pilot] | GLOW[glow] | BRASS
     part = lambda name, box, faces: dict(drill.part(name, box, _paint(faces, P)), bone='tool')
     none = one('.')                                         # a face in another part's plane: not drawn
     t, L = top - 4, 5                                       # the body's bottom; the barrel's length
@@ -144,7 +179,7 @@ def build(c, top, kind='A', pilot='dark', glow='lit'):
     elif kind == 'E':
         parts = [part('body', body, side(JACKET) | {'up': one('k'), 'down': SPLIT_DOWN})]
     else:
-        parts = [part('body', body, side(BURNER) | {'up': one('k'), 'down': BURNER_DOWN})]
+        parts = [part('body', body, side(BODIES[body_art]) | {'up': one('k'), 'down': BURNER_DOWN})]
     if split:
         bz0, bz1 = -2.5, 0.5                                # (0.5 px of daylight to the tank)
         parts.append(part('tank', ((c - 1.5, t - 4, 1), (c + 1.5, t, 2.5)),
@@ -166,6 +201,17 @@ def build(c, top, kind='A', pilot='dark', glow='lit'):
         parts.append(part('tank', ((c - 1.5, top, 2.5), (c + 1.5, top + 3.5, 4)),
                           {'north': none, 'south': ARM_TANK, 'east': ARM_TANK_SIDE, 'west': ARM_TANK_SIDE,
                            'up': one('h'), 'down': one('p')}))
-    parts.append(part('pilot', rbox, side(rod) | {'up': none, 'down': one('v')}))
+    if kind == 'D':   # (round 3) the matchstick: the rod 1 px under the tank, the foot forward to the bore's back edge
+        y0 = t - L - 1                                      # the foot's bottom, a px under the muzzle
+        parts.append(part('pilot', ((c - 0.5, y0, 1), (c + 0.5, t - 4, 2)),
+                          side(one('k')) | {'west': lambda w, h: ['mk'] * h, 'up': none, 'down': one('k')}))
+        # the foot: z -0.5 (the bore's back edge, MUZZLE) to the rod, its front 2 texels the blue head; its top under
+        # the barrel (and the gap): not drawn; its back against the rod: not drawn
+        head = lambda w, h: ['k' * (w - 2) + 'vu'] * h      # east: back -> front
+        parts.append(part('pilot_foot', ((c - 0.5, y0, -0.5), (c + 0.5, y0 + 1, 1)),
+                          {'north': one('v'), 'south': none, 'east': head, 'west': lambda w, h: [r[::-1] for r in head(w, h)],
+                           'up': none, 'down': lambda w, h: ['vv', 'uu'] + ['kk'] * (h - 2)}))
+    else:
+        parts.append(part('pilot', rbox, side(rod) | {'up': none, 'down': one('v')}))
     for p in parts: p['rot'] = 0
     return parts
