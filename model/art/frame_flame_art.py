@@ -162,9 +162,31 @@ BODIES = {
                'kkkkkkkkkk']}
 
 
+# Round 4 (2026-11-14, user: the base more solid; seeing through to the fire doesn't make sense for a flamethrower).
+# Closed steel bodies, the fire only implied (FLAME_BODY):
+# - pump: the fuel line painted on: copper, up out of the tank on the back, along the outer side through a red valve
+#   wheel, across the front and down into the barrel (tank -> body -> barrel: the body is where the fuel goes);
+# - heat: the steel heat-tinted towards the barrel (straw, bronze, blue: steel that has been hot), a sooty bottom edge;
+# - warning: a hazard band under the strap, a flame sign (an orange flame on a dark plate) on the outer side and front.
+BODY4 = {'4': _c('c9a45c'), '5': _c('8a6038'), '6': _c('6a4a8a'), '7': _c('4a3460'),   # heat tints (straw .. blue)
+         'f': drill.CU['f'], 'Q': drill.CU['Q'], 'C': drill.CU['C'], 'r': _c('9a2418')}  # copper, the wheel's shade
+TOP2 = ['hhhhhhhhhe', 'pgppppppgz']
+PLAIN = TOP2 + ['hellllllep'] * 5 + ['ssssssssss']
+BODY_FACES = {   # (north, east, south, west) a body: north column 0 is the outer side, south the last
+    'pump': (TOP2 + ['hellllllep', 'hellllllep', 'fffffellep', 'QQQQfQllep', 'CCCCfQllep', 'sssCfQssss'],
+             TOP2 + ['hellllllep', 'hellrRrlep', 'ffffRxRfff', 'QQQQrRrQQQ', 'CCCCCrCCCC', 'ssssssssss'],
+             TOP2 + ['hellllllep', 'hellllllep', 'hellffffff', 'hellfQQQQQ', 'hellfQCCCC', 'sssCfQssss'],
+             PLAIN),
+    'heat': (TOP2 + ['hellllllep', 'hellllllep', '4444444445', '5555555556', '6666666667', 'zzzzzzzzzz'],) * 4,
+    'warning': (TOP2 + ['NNKKNNKKNN', 'NKKNNKKNNK', 'hellxNxlep', 'hellNJxlep', 'helNJJNlep', 'sssxJJxsss'],
+                TOP2 + ['NNKKNNKKNN', 'NKKNNKKNNK', 'helxNxxlep', 'helxNJxlep', 'helNJJNlep', 'sssxJJxsss'],
+                TOP2 + ['NNKKNNKKNN', 'NKKNNKKNNK'] + ['hellllllep'] * 3 + ['ssssssssss'],
+                TOP2 + ['NNKKNNKKNN', 'NKKNNKKNNK'] + ['hellllllep'] * 3 + ['ssssssssss'])}
+
+
 def build(c, top, kind='A', pilot='dark', glow='lit', body_art='burner'):
     """The flamethrower's parts on an arm centred at x c (right side) whose socket is at y top (bone 'tool': all still)."""
-    P = PAL | PILOT[pilot] | GLOW[glow] | BRASS
+    P = PAL | PILOT[pilot] | GLOW[glow] | BRASS | BODY4
     part = lambda name, box, faces: dict(drill.part(name, box, _paint(faces, P)), bone='tool')
     none = one('.')                                         # a face in another part's plane: not drawn
     t, L = top - 4, 5                                       # the body's bottom; the barrel's length
@@ -179,7 +201,9 @@ def build(c, top, kind='A', pilot='dark', glow='lit', body_art='burner'):
     elif kind == 'E':
         parts = [part('body', body, side(JACKET) | {'up': one('k'), 'down': SPLIT_DOWN})]
     else:
-        parts = [part('body', body, side(BODIES[body_art]) | {'up': one('k'), 'down': BURNER_DOWN})]
+        faces = (side(BODIES[body_art]) if body_art in BODIES else
+                 dict(zip(('north', 'east', 'south', 'west'), BODY_FACES[body_art])))
+        parts = [part('body', body, faces | {'up': one('k'), 'down': BURNER_DOWN})]
     if split:
         bz0, bz1 = -2.5, 0.5                                # (0.5 px of daylight to the tank)
         parts.append(part('tank', ((c - 1.5, t - 4, 1), (c + 1.5, t, 2.5)),
