@@ -92,13 +92,12 @@ public final class CockpitHands {
         vanillaArmTransform(pose, event.getSwingProgress(), event.getEquipProgress());
         event.getSubmitNodeCollector().submitModelPart(arm(slim), pose, RenderTypes.entityTranslucent(skin.body().texturePath()),
                 event.getPackedLight(), OverlayTexture.NO_OVERLAY, null);
-        if (CockpitDrafts.armCage) {
-            // Vanilla's model axes are y-down and x-mirrored; the frame's (GeckoLib's) aren't: turn 180 about Z.
-            pose.scale(-1F, -1F, 1F);
-            CockpitView.INSTANCE.suit = suit;
-            CockpitView.INSTANCE.slim = slim;
-            drawPart(pose, event, CockpitViewRenderer.Part.ARM);
-        }
+        // (Picked 2026-11-14 over his bare arm, vanilla's.) Vanilla's model axes are y-down and x-mirrored; the frame's
+        // (GeckoLib's) aren't: turn 180 about Z.
+        pose.scale(-1F, -1F, 1F);
+        CockpitView.INSTANCE.suit = suit;
+        CockpitView.INSTANCE.slim = slim;
+        drawPart(pose, event, CockpitViewRenderer.Part.ARM);
         pose.popPose();
     }
 

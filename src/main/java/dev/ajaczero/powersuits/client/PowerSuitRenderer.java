@@ -89,21 +89,12 @@ public class PowerSuitRenderer extends GeoEntityRenderer<PowerSuitEntity, Living
      */
     @Override
     public void adjustModelBonesForRender(RenderPassInfo<LivingEntityRenderState> info, BoneSnapshots bones) {
-        // In first person the camera sits in the pilot's head. For our own suit only the legs are drawn (you see your
-        // feet when looking down); the arms come from the cockpit viewmodel (CockpitHands), which lines up with the
-        // view. The body bone holds everything above the hips: torso, arms, head.
+        // In first person the camera sits in the pilot's head and, like vanilla, he sees nothing of his own body: the
+        // arms are the cockpit viewmodel (CockpitHands), which lines up with the view. (Drafts 2026-11-14, user picked
+        // nothing: the legs alone floated a block under the view as two loose squares, and the chest's top, 4 px under
+        // his eyes, filled the view like a table top.)
         boolean cockpit = info.getOrDefaultGeckolibData(SuitRenderData.COCKPIT, false);
-        if (cockpit) {
-            switch (CockpitDrafts.down) {
-                case 0 -> bones.ifPresent("marine", root -> root.skipRender(true).skipChildrenRender(true));
-                case 1 -> bones.ifPresent("body", body -> body.skipRender(true).skipChildrenRender(true));
-                default -> {
-                    for (String bone : new String[] {"head", "right_arm", "left_arm"}) {
-                        bones.ifPresent(bone, b -> b.skipRender(true).skipChildrenRender(true));
-                    }
-                }
-            }
-        }
+        bones.ifPresent("marine", root -> root.skipRender(cockpit).skipChildrenRender(cockpit));
         // Socket: show the installed tool's bone and hide the others; the bare coupling only when empty.
         String installed = info.getOrDefaultGeckolibData(SuitRenderData.TOOL_BONE, "");
         for (String toolBone : ToolBones.all()) {

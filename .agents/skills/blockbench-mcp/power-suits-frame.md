@@ -154,5 +154,9 @@ the end and `docs/guide.md` Notes).
   adds `right_hand` (the held item's grip, in the right fist). Only the skin's base layer: its outer layer (0.25 px
   out) lies in the cage walls' planes.
 - Wide or slim follows the pilot's skin (`PlayerSkin.model()`); an empty frame (or a mob inside) is the wide build.
+- Step 2, the cockpit (drafts shot in game, user picked): looking down shows nothing of the body (the legs alone
+  floated as two squares a block under the view; the chest's top, 4 px under the eyes, filled it like a table top);
+  the empty right hand is his skin arm where vanilla draws it with the frame's arm shell round it (the exporter's
+  `view/frame_arm`: the right arm's cubes about the pilot's arm pivot); third person 5 blocks back.
 - Not yet in game (later steps): the helmet, the engine (the drafts are knobs, off in the saved files), the tools and
   the iron armour. Re-run the exporter after rebuilding the saved files.

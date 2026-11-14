@@ -26,7 +26,7 @@ import net.minecraft.resources.Identifier;
  *
  * Only the skin's base layer: the outer layer (jacket, sleeves, trousers) sits 0.25 px out, in the planes of the
  * frame's cage walls, and would flicker through them. The hat layer stays (the frame has no head cage).
- * In the pilot's own first-person view only his legs (you see them looking down, like the frame's); never anyone else
+ * Not in the pilot's own first-person view (his arm there is the cockpit viewmodel's, CockpitHands); never anyone else
  * in a suit (mobs ride without a skin: the frame stands empty).
  */
 public class PilotLayer extends GeoRenderLayer<PowerSuitEntity, Void, LivingEntityRenderState> {
@@ -58,16 +58,11 @@ public class PilotLayer extends GeoRenderLayer<PowerSuitEntity, Void, LivingEnti
     @Override
     public void addPerBoneRender(RenderPassInfo<LivingEntityRenderState> info, BiConsumer<GeoBone, PerBoneRender<LivingEntityRenderState>> consumer) {
         Identifier skin = info.renderState().getGeckolibData(SuitRenderData.PILOT_SKIN);
-        if (skin == null || !info.willRender()) {
+        if (skin == null || !info.willRender() || info.getOrDefaultGeckolibData(SuitRenderData.COCKPIT, false)) {
             return;
         }
-        boolean cockpit = info.getOrDefaultGeckolibData(SuitRenderData.COCKPIT, false);
         Map<String, ModelPart> parts = info.getOrDefaultGeckolibData(SuitRenderData.PILOT_SLIM, false) ? this.slim : this.wide;
         parts.forEach((boneName, part) -> {
-            if (cockpit && (CockpitDrafts.down == 0 || boneName.equals("pilot_head") || boneName.endsWith("_arm")
-                    || (CockpitDrafts.down == 1 && boneName.equals("pilot_torso")))) {
-                return; // the camera is in his head; his arms are the cockpit viewmodel's
-            }
             info.model().getBone(boneName).ifPresent(bone -> consumer.accept(bone, (pass, b, tasks) -> {
                 var poseStack = pass.poseStack(); // at the bone's pivot, in the frame's model space
                 // Vanilla models are built y-down and drawn through scale(-1, -1, 1) (LivingEntityRenderer does the same).

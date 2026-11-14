@@ -1,7 +1,6 @@
 package dev.ajaczero.powersuits.client.dev;
 
 import dev.ajaczero.powersuits.PowerSuits;
-import dev.ajaczero.powersuits.client.CockpitDrafts;
 import dev.ajaczero.powersuits.entity.PowerSuitEntity;
 import dev.ajaczero.powersuits.registry.ModEntities;
 import java.io.BufferedWriter;
@@ -20,9 +19,10 @@ import net.neoforged.fml.loading.FMLPaths;
 /**
  * Autopilot scene for the frame in game (2026-11-14, ./gradlew runAutopilotFrame, ~25 s): the frame with the player
  * inside, drawn in his own skin, from the front, the back and the side (GUI hidden), the game's own third-person view,
- * the cockpit looking down at his legs, a walk and a sprint from the front (the limbs swing like a player's), the head
+ * a walk and a sprint from the front (the limbs swing like a player's), the head
  * following the view (45 right: the head only; 80 left: the torso turns the last 30; up 40), and an empty frame
- * without an engine beside it (it slumps: head bowed, torso tipped). Shots ap_frame_*.png.
+ * without an engine beside it (it slumps: head bowed, torso tipped), then the cockpit: the empty right hand (his arm in
+ * the frame's arm) and looking down (nothing of his body, like vanilla). Shots ap_frame_*.png.
  * Log run/autopilot_frame.csv per tick: the suit's hitbox, how high the pilot's eyes ride above the suit (1.98: his
  * own eyes in the frame, ModEntities), the client's walk animation (position, speed), the parked frame's power and
  * the pilot's skin model (wide / slim: which frame build is drawn).
@@ -45,8 +45,6 @@ final class FrameScene {
             case 52 -> AutoPilot.shot(mc, "frame_side");
             case 54 -> { phase = "third_person"; mc.setCameraEntity(mc.player); DevUtil.hideGui(mc, false); o.setCameraType(CameraType.THIRD_PERSON_BACK); }
             case 70 -> AutoPilot.shot(mc, "frame_tp_back");
-            case 72 -> { phase = "cockpit_down"; o.setCameraType(CameraType.FIRST_PERSON); AutoPilot.setView(0, 70); }
-            case 88 -> AutoPilot.shot(mc, "frame_fp_down");
             // The player only moves while the camera is his own (vanilla reads the keys for the camera entity), so the
             // walk is shot with the game's front view (F5 twice), GUI hidden.
             case 90 -> { phase = "walk"; AutoPilot.setView(0, 0); mc.setCameraEntity(mc.player); DevUtil.hideGui(mc, true); o.setCameraType(CameraType.THIRD_PERSON_FRONT); AutoPilot.hold(o.keyUp, true); }
@@ -63,29 +61,12 @@ final class FrameScene {
             case 222 -> AutoPilot.shot(mc, "frame_look_up40");
             case 224 -> { phase = "parked"; AutoPilot.setView(0, 0); camera(mc, home.add(-3.6, 1.3, 3.2), home.add(-3, 1.1, 0)); }
             case 240 -> AutoPilot.shot(mc, "frame_parked");
-            // Step 2 drafts (CockpitDrafts): the empty right hand, looking down, the third-person distance.
-            case 244 -> { phase = "cockpit"; mc.setCameraEntity(mc.player); DevUtil.hideGui(mc, false); o.setCameraType(CameraType.FIRST_PERSON); CockpitDrafts.armCage = true; }
-            case 258 -> AutoPilot.shot(mc, "frame_cockpit_arm_cage");
-            case 260 -> CockpitDrafts.armCage = false;
-            case 272 -> AutoPilot.shot(mc, "frame_cockpit_arm_bare");
-            case 274 -> CockpitDrafts.armCage = true;
-            case 280 -> { phase = "cockpit_down"; AutoPilot.setView(0, 60); CockpitDrafts.down = 0; }
-            case 296 -> AutoPilot.shot(mc, "frame_cockpit_down_0");
-            case 298 -> CockpitDrafts.down = 1;
-            case 306 -> AutoPilot.shot(mc, "frame_cockpit_down_1");
-            case 308 -> CockpitDrafts.down = 2;
-            case 316 -> AutoPilot.shot(mc, "frame_cockpit_down_2");
-            case 318 -> AutoPilot.setView(0, 35);
-            case 332 -> AutoPilot.shot(mc, "frame_cockpit_down_2_35");
-            case 334 -> CockpitDrafts.down = 1;
-            case 340 -> AutoPilot.shot(mc, "frame_cockpit_down_1_35");
-            case 342 -> { phase = "distance"; CockpitDrafts.down = 1; AutoPilot.setView(0, 15); o.setCameraType(CameraType.THIRD_PERSON_BACK); CockpitDrafts.cameraDistance = 4F; }
-            case 356 -> AutoPilot.shot(mc, "frame_tp_4");
-            case 358 -> CockpitDrafts.cameraDistance = 5F;
-            case 372 -> AutoPilot.shot(mc, "frame_tp_5");
-            case 374 -> CockpitDrafts.cameraDistance = 6.5F;
-            case 388 -> AutoPilot.shot(mc, "frame_tp_6_5");
-            case 390 -> { CockpitDrafts.cameraDistance = 5F; AutoPilot.setView(0, 0); close(); return false; }
+            // The cockpit: the empty right hand (his arm in the frame's), nothing of the body looking down.
+            case 244 -> { phase = "cockpit"; mc.setCameraEntity(mc.player); DevUtil.hideGui(mc, false); o.setCameraType(CameraType.FIRST_PERSON); }
+            case 258 -> AutoPilot.shot(mc, "frame_cockpit_arm");
+            case 260 -> AutoPilot.setView(0, 60);
+            case 276 -> AutoPilot.shot(mc, "frame_cockpit_down");
+            case 278 -> { AutoPilot.setView(0, 0); close(); return false; }
             default -> {}
         }
         if (s >= 1) {

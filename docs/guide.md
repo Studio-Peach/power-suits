@@ -287,7 +287,7 @@ upgrades a world the first time it's opened and there's no way back: let it make
 | `./gradlew runGameTestServer` | Runs the automated in-game tests headless, prints pass/fail |
 | `./gradlew build` | Builds the mod jar into `build/libs/` (put it in a real `mods/` folder, plus GeckoLib) |
 | `node tools/export-model.mjs` | Re-exports model, animations and texture from the open Blockbench project (the big suit) |
-| `python3 tools/export-frame.py` | Exports the frame (`model/power_frame.bbmodel` + `_slim`, built by `model/art/frame_model.py`) into the mod without Blockbench: `geckolib/models/entity/power_frame(_slim).geo.json`, their textures, and `power_frame.animation.json` (every animation name, empty: the frame is posed in code) |
+| `python3 tools/export-frame.py` | Exports the frame (`model/power_frame.bbmodel` + `_slim`, built by `model/art/frame_model.py`) into the mod without Blockbench: `geckolib/models/entity/power_frame(_slim).geo.json`, their textures, `power_frame.animation.json` (every animation name, empty: the frame is posed in code) and the cockpit's arm `geckolib/models/view/frame_arm(_slim).geo.json` |
 | `./gradlew runAutopilot` | Dev tool: scripted test drive in a fresh flat world (pool, running out of fuel, chaingun range, right hand, EM projector, drill + chainsaw, tool items on foot), saves `run/screenshots/ap_*.png`, `run/autopilot_{water,fuel,cannon,em,mine}.csv`, quits |
 | `./gradlew runAutopilotFrame` | Dev tool (~25 s): the frame with the player inside from the front, back and side, the third-person and cockpit views, a walk and a sprint, the head following the view, an empty frame slumped beside it; `run/screenshots/ap_frame_*.png`, `run/autopilot_frame.csv` (hitbox, the pilot's eye height, the walk animation) |
 | `./gradlew runAutopilotPose` | Dev tool (~30 s): the code-driven pose from fixed cameras (torso lean with the view pitch, tool raise, torso twist with the view yaw toward marker blocks); `run/screenshots/ap_pose_*.png`, `run/autopilot_pose.csv` |
@@ -375,7 +375,8 @@ src/main/java/dev/ajaczero/powersuits/
     PilotLayer.java          the pilot inside the frame: vanilla's player parts in his own skin at the pilot_* bones
     SuitRenderData.java      what the renderer and its layers read from the suit each frame (GeckoLib DataTickets)
     PilotView.java           hides vanilla's pilot (PilotLayer draws him) and hands, pulls the camera back
-    CockpitHands.java        first-person viewmodel: socket tool on the left, gauntlet + held item on the right
+    CockpitHands.java        first-person viewmodel: socket tool on the left; on the right the held item (vanilla's) or,
+                             empty, his skin arm in the frame's arm (geckolib/models/view/frame_arm, export-frame.py)
     CockpitView*.java        its GeckoLib animatable/renderer (geckolib/models/view, cut from the suit by tools/extract-view-geo.py)
     PowerSuitScreen.java    draws the suit menu (the inventory screen with the suit: preview, flame, status screen, keys)
     SuitKey.java             the menu's slot-sized keys (Power latches pushed in while on; Pack)
@@ -429,7 +430,9 @@ exosuit the player stands in, drawn in his own skin. Step 1 (2026-11-14) is in: 
 the pilot (`PilotLayer`: Steve's wide arms or Alex's slim ones, the frame's slim build with them), the code pose
 (vanilla's walk swing, the head turning up to 50 deg off the torso and the torso the next 40, a 25 deg slump without
 power), a 0.9 x 2.3 hitbox (fits 1-wide and 3-high gaps; the big suit was 1.4 x 2.95) and the pilot's eyes at his
-own, 1.98 up. Still the big suit's or off until their steps: the cockpit viewmodel and camera distance, the helmet and
+own, 1.98 up. Step 2: the cockpit shows nothing of his body looking down (like vanilla), an empty right hand is his
+own arm in the frame's arm (its cage and fist), and the third-person camera sits 5 blocks back. Still the big suit's or
+off until their steps: the socket tool's viewmodel, the helmet and
 its glass, the engine (lights and exhaust smoke off), the tools on the left arm (they work, with the big suit's muzzle
 positions and no model), paint and helmet styles. The notes below are the big suit's.
 

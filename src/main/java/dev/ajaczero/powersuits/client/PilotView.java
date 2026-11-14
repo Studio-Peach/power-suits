@@ -85,11 +85,14 @@ public final class PilotView {
         }
     }
 
-    /** Pull the third-person camera back so the whole frame (2.3 blocks, a player's 1.8) fits on screen. */
+    /** Pull the third-person camera back so the whole frame fits on screen: vanilla's 4 blocks scaled to the frame's height
+     *  (2.3 blocks, a player's 1.8), with room for the tool arm (picked 2026-11-14 over 4 and the big suit's 6.5). */
+    private static final float CAMERA_DISTANCE = 5F;
+
     @SubscribeEvent
     public static void cameraDistance(CalculateDetachedCameraDistanceEvent event) {
         if (Minecraft.getInstance().player != null && Minecraft.getInstance().player.getVehicle() instanceof PowerSuitEntity) {
-            event.setDistance(Math.max(event.getDistance(), CockpitDrafts.cameraDistance));
+            event.setDistance(Math.max(event.getDistance(), CAMERA_DISTANCE));
         }
     }
 
