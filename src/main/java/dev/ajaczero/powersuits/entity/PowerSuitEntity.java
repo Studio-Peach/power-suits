@@ -109,6 +109,8 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
     /** The frame's armour (design sec. 10, 2026-11-14): one piece per part, after the old slots (saves keep their
      *  numbers). See SuitArmour. */
     public static final int TORSO_SLOT = 5, LEFT_ARM_SLOT = 6, RIGHT_ARM_SLOT = 7, LEFT_LEG_SLOT = 8, RIGHT_LEG_SLOT = 9;
+    /** How many slots the suit has (its container's size; the menu's client copy too). */
+    public static final int SLOTS = 10;
     // Drain per tick (idle / walking / sprinting), energy per jump and the low-fuel warning level are balance
     // knobs in PowerSuitsConfig. Walking = 1 per tick, so SuitFuel values read as ticks of walking.
     /** Length of the startup animation (1.4 s): the suit can't move until it has stood up. */
@@ -204,7 +206,7 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
     /** The suit's own slots: fuel, the left-arm socket, the helmet and the engine (and the old ammo slot, emptied on
      *  load), then the five armour parts. Real contents only exist on the server. Old saves load fine with fewer: each
      *  saved item carries its slot number. */
-    private final SimpleContainer inventory = new SimpleContainer(10) {
+    private final SimpleContainer inventory = new SimpleContainer(SLOTS) {
         @Override
         public void setChanged() {
             super.setChanged();

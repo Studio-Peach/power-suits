@@ -12,11 +12,11 @@ Working notes for agents: `AGENTS.md` (the design spec and roadmap are kept outs
 | Get the suit | Creative tab *Tools & Utilities*, or craft it from its parts (see *Crafting the suit* below) |
 | Deploy | Right-click the ground with the item (needs a 3-block-tall space) |
 | Climb in | Right-click the suit |
-| Suit menu | Your inventory with the suit in it, laid out like the inventory screen: **press your inventory key (E) inside the suit**, or sneak + right-click a parked suit. The suit's helmet, engine, burn flame and fuel down the armour column, the suit itself in the preview window, and opposite the armour column: the **Power** key (⏻: pushed in and green while on, out and grey while off), the power tool's socket slot, and the **Pack** key (greyed out from inside). Where the crafting grid was, a status screen in your visor colour: the suit's name, HULL and FUEL with bars like the visor's, and the status (ONLINE, or why it's dark: NO FUEL, NO ENGINE, FLOODED, POWER OFF, NO HELMET; the ones to fix blink inverted). Over any item, the swap-hands key (F) swaps it with the socket tool |
+| Suit menu | Your inventory with the suit in it, **vanilla's inventory screen** with the suit's things in vanilla's places: **press your inventory key (E) inside the suit**, or sneak + right-click a parked suit. Round the suit's preview, like a body (it faces you, so its right side is on your left): helmet, right arm, right leg and the engine (the backpack) down the armour column, torso, left arm and left leg above the off-hand slot, which holds the **power tool socket**. In the crafting corner, under the suit's name: the fuel slot, the arrow and the **Power** key where the result would be (⏻: pushed in and green while on, out and grey while off); the small **Pack** key where the recipe book's button sits (greyed out from inside). Beside the menu, drawn like potion effects: **Hull** (%), **Fuel** (time at walking pace, or why it's dark: *No engine*, *Flooded*, *No fuel*, in red), **Sealed** (only while it is), then your own effects. Over any item, the swap-hands key (F) swaps it with the socket tool |
 | Night vision | The powered visor lifts the dark when it's dark around you (a cave, any night outside), tinted in your visor colour like night-vision goggles; it fades in over a second and goes with the visor's power. **N** switches it on and off while you pilot a suit with a helmet (rebind it in Options > Controls > Key Binds > Power Suits > *Night vision*); **NV** under the compass, right of the clock, while it's on. Only on your screen: nothing in the world is lit |
-| Power switch | The suit's power switch, in its menu or on the **H** key while piloting (rebind it in Options > Controls > Key Binds > Power Suits > *Power switch*). Off, the suit acts exactly like one with nothing to burn (it slumps, the mind stops, the visor goes completely dark; the menu's status reads POWER OFF) but keeps its fuel; it stays off when packed up. On again, it stands back up |
+| Power switch | The suit's power switch, in its menu or on the **H** key while piloting (rebind it in Options > Controls > Key Binds > Power Suits > *Power switch*). Off, the suit acts exactly like one with nothing to burn (it slumps, the mind stops, the visor goes completely dark; the menu's Power key pops out) but keeps its fuel; it stays off when packed up. On again, it stands back up |
 | Helmet | Right-click a suit with a Power Suit Helmet (or use the menu's helmet slot) to put it on. With the five armour pieces on it seals the suit (see *Armour*), and the machine mind only runs with it: without one the suit still runs with you inside (unsealed: fire, poison and water reach you, and you can eat), and an empty one stands powered down. Switching it off (below) or taking the helmet off parks a suit. Rogues always wear one |
-| Armour | The bare frame has no armour of its own: it takes one piece per part, torso, each arm, each leg (an arm or leg piece fits either side), in the suit's armour slots. Each piece adds its own protection to the suit (Iron: torso +6, arm +2, leg +3; the helmet +2: 18 with the full set and helmet; config `armour`). **All five pieces and the helmet** seal a running suit (*Sealed suit*). Pieces carry a tier (iron now). The menu's armour slots come next (frame step 6b) |
+| Armour | The bare frame has no armour of its own: it takes one piece per part, torso, each arm, each leg (an arm or leg piece fits either side), in the suit's armour slots. Each piece adds its own protection to the suit (Iron: torso +6, arm +2, leg +3; the helmet +2: 18 with the full set and helmet; config `armour`). **All five pieces and the helmet** seal a running suit (*Sealed suit*). Pieces carry a tier (iron now). Put pieces on in the suit menu (shift-click sends a piece to its free slot) |
 | Fuel | Put anything a furnace burns in the fuel slot; it lasts as many ticks as in a furnace (coal 1:20 of walking, blaze rod 2:00, lava bucket 16:40 and the bucket stays, planks 0:15) (for the standard Firebox engine; see *Engines* below) |
 | Engines | The backpack is the suit's engine, swapped in the menu's engine slot. **Firebox** (a new suit has no engine: craft one): burns fuel, floods and dies when water covers it (no pack-up while flooded: drain the water or swap the engine). **Tidal Engine** (crafted with a Heart of the Sea; twin diving tanks that bubble under water): free while wet (its backpack under water, or in rain); on land it drinks water buckets (0:15) or bottles (0:05) from the fuel slot, so carry some to climb out of the water. **Star Reactor** (diamonds + an end crystal; glowing energy canisters drawing in ender particles): a Nether Star in the fuel slot runs everything, tools included, forever (bullets still take iron nuggets). Each engine is its own backpack on the suit |
 | Walk / run | WASD (3.0 blocks/s walk; S backs up at half speed) / sprint (6.25 blocks/s; double-tap W or tap Ctrl once, it keeps going while W is held) |
@@ -158,7 +158,7 @@ amber, blue, white, red, or Custom for any `#RRGGBB` in *Custom colour*; `visor_
   HULL under half (steady) and in its last 15% (blinking), FUEL when low, a tool's own: the last rounds (AMMO: 16
   bullets, the last TNT; the rail cannon's last ingot pip), a hot or overheated chaingun (HEAT, OVERHEAT). With **no
   power** the glass goes completely dark: only the helmet's edge is left. Why it went dark is in the suit menu (E):
-  its status line reads **NO FUEL**, **NO ENGINE**, **FLOODED** or **POWER OFF**.
+  its Fuel panel reads **No fuel**, **No engine** or **Flooded**, or its Power key is out.
 - While the HUD is up, vanilla's boss bars move down under the compass and the effect icons under the top right corner.
 - **Night vision**: when the light around you falls (light level 7 and under, full at 4: caves, any night outside) the
   visor lifts the dark, tinted in the visor colour, over a second; it goes off with the visor's power or the **N** key
@@ -392,7 +392,8 @@ src/main/java/dev/ajaczero/powersuits/
                              (geckolib/models/view/frame_tool); on the right the held item (vanilla's) or, empty, his
                              skin arm in the frame's arm (geckolib/models/view/frame_arm; both from export-frame.py)
     CockpitView*.java        its GeckoLib animatable/renderer (geckolib/models/view, cut from the suit by tools/extract-view-geo.py)
-    PowerSuitScreen.java    draws the suit menu (the inventory screen with the suit: preview, flame, status screen, keys)
+    PowerSuitScreen.java    draws the suit menu (vanilla's inventory screen with the suit: preview, keys) and the status
+                             panels beside it (Hull, Fuel, Sealed, the pilot's effects, like potion effects)
     SuitKey.java             the menu's slot-sized keys (Power latches pushed in while on; Pack)
     SuitKeys.java            the suit's own key bindings (the power switch, night vision)
     SuitHud.java             the pilot's HUD (suit readout, compass + clock, the tool's own HUD) + low-fuel beep; moves boss bars
@@ -469,7 +470,11 @@ on the frame's tools yet: the chaingun's barrel heat glow, the EM projector's an
 per piece, either side, a tier each), five slots after the old ones (torso, left/right arm, left/right leg: 5-9), each
 piece's armour points as an attribute modifier (transient: rebuilt from the slots on load and following config edits),
 the bare frame at 0 armour (the big suit had 12), the worn tiers synced in one int (SuitArmour), sealed = powered + helmet +
-all five pieces, the pieces packed with the suit. Next: 6b the menu's armour slots, 6c the pieces on the frame. Still
+all five pieces, the pieces packed with the suit. Step 6b (user's pick G1 of five mockup rounds): the suit menu is vanilla's inventory
+screen slot for slot (the armour round the preview like a body, the socket in the off-hand slot, fuel -> arrow -> the
+Power key in the crafting corner, Pack small at the recipe book's place), the terminal status screen and the burn flame
+gone; Hull, Fuel and Sealed as potion-effect panels beside it (Sealed only while sealed), the pilot's effects under them.
+Next: 6c the pieces on the frame. Still
 the big suit's or off until their steps: paint and helmet styles. The notes below are the big suit's.
 
 ### The big suit

@@ -2691,6 +2691,40 @@ public final class PowerSuitTests {
         });
     }
 
+    /** The menu's armour slots (frame step 6b): each takes only its part's piece, one at a time; shift-click sends a
+     *  piece to the first free slot of its kind (two arm pieces: both arms), a full set and back; vanilla armour stays out. */
+    @SuitTest
+    public static void menuArmourSlotsTakeTheirPieces(GameTestHelper helper) {
+        PowerSuitEntity suit = spawnSuit(helper);
+        Player player = helper.makeMockPlayer(GameType.SURVIVAL);
+        player.snapTo(helper.absoluteVec(new Vec3(2.5, 2, 4.5)));
+        PowerSuitMenu menu = new PowerSuitMenu(1, player.getInventory(), suit.getInventory(), suit);
+        SuitArmour.Part[] parts = SuitArmour.Part.values();
+        for (int i = 0; i < parts.length; i++) {
+            var slot = menu.getSlot(PowerSuitMenu.MENU_ARMOUR + i);
+            helper.assertTrue(slot.getContainerSlot() == parts[i].slot, "menu slot " + (PowerSuitMenu.MENU_ARMOUR + i) + " is the " + parts[i]);
+            helper.assertTrue(slot.mayPlace(ironPiece(parts[i].piece)) && !slot.mayPlace(new ItemStack(Items.IRON_CHESTPLATE)),
+                    parts[i] + " takes its piece and no vanilla armour");
+            for (ArmourPiece other : ArmourPiece.values()) {
+                helper.assertTrue(other == parts[i].piece || !slot.mayPlace(ironPiece(other)), parts[i] + " refuses a " + other + " piece");
+            }
+        }
+        // the whole set from the inventory, one shift-click each (the second arm and leg go to the free side)
+        ArmourPiece[] set = {ArmourPiece.ARM, ArmourPiece.LEG, ArmourPiece.TORSO, ArmourPiece.ARM, ArmourPiece.LEG};
+        for (int i = 0; i < set.length; i++) {
+            player.getInventory().setItem(9 + i, ironPiece(set[i]));
+            menu.quickMoveStack(player, PowerSuitMenu.INV_START + i);
+        }
+        helper.assertTrue(suit.armour().fullSet(), "five shift-clicks put the whole set on, got " + suit.armour().pieces() + " pieces");
+        player.getInventory().setItem(9, ironPiece(ArmourPiece.ARM));
+        menu.quickMoveStack(player, PowerSuitMenu.INV_START);
+        helper.assertTrue(player.getInventory().getItem(9).is(ModItems.IRON_ARM_ARMOUR.get()), "a third arm piece has nowhere to go");
+        menu.quickMoveStack(player, PowerSuitMenu.MENU_ARMOUR); // the torso back out
+        helper.assertTrue(suit.armour().worn(SuitArmour.Part.TORSO) == null && player.getInventory().countItem(ModItems.IRON_TORSO_ARMOUR.get()) == 1,
+                "shift-clicking a piece takes it off");
+        helper.succeed();
+    }
+
     /** Each piece from iron ingots round an iron block, shaped like vanilla armour (the block keeps them apart from
      *  vanilla's iron armour, which still crafts). */
     @SuitTest

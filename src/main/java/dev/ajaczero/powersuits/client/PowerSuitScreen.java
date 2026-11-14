@@ -2,63 +2,76 @@ package dev.ajaczero.powersuits.client;
 
 import dev.ajaczero.powersuits.HudAlert;
 import dev.ajaczero.powersuits.PowerSuits;
-import dev.ajaczero.powersuits.client.hud.HudView;
 import dev.ajaczero.powersuits.entity.PowerSuitEntity;
+import dev.ajaczero.powersuits.entity.SuitArmour;
+import dev.ajaczero.powersuits.entity.SuitEngine;
 import dev.ajaczero.powersuits.item.PowerSuitItem;
 import dev.ajaczero.powersuits.menu.PowerSuitMenu;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.Hud;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffectUtil;
 import net.minecraft.world.entity.player.Inventory;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * The picture half of the suit menu (client only). Slots and shift-click live in PowerSuitMenu; this draws the
- * background, a live preview of the suit, the burn flame, the status screen and the Power and Pack up keys. Numbers
+ * background, a live preview of the suit, the Power and Pack up keys and the status panels beside the menu. Numbers
  * come from the suit's synced entity data, so they update while you watch.
  * <p>
- * Since 2026-10-27 (user) it looks like vanilla's inventory screen with the suit in it (tools/make-gui.py): the suit's
- * helmet, engine and fuel down the armour column; opposite them, right of the preview, the Power key, the socket slot
- * and the Pack up key ({@link SuitKey}, slot-sized); a terminal screen where the crafting grid was. Inside the suit this
- * is your inventory (E).
+ * Since 2026-11-14 (frame step 6b, user's pick G1) it is vanilla's inventory screen with the suit in it
+ * (tools/make-gui.py): the frame's parts like a body round the preview, the tool socket in the off-hand slot, the fuel
+ * slot in the crafting corner with vanilla's arrow pointing at the Power key where the result slot was ("fuel in, power
+ * out"), the Pack up key small where the recipe book's button sits, the suit's name where "Crafting" is. Inside the
+ * suit this is your inventory (E).
  * <p>
- * The screen reads like the visor (user's pick T2, 2026-10-27), in the visor's colour: the suit's name, HULL and FUEL
- * with the HUD's segmented bars, and the status line. It's the one place that says why a suit is dark (the visor shows
- * nothing without power): NO FUEL, NO ENGINE, FLOODED (critical: inverted, blinking), POWER OFF, NO HELMET (inverted,
- * steady), NO POWER (lightning), or ONLINE. Alerts look like the HUD's ({@link HudView#label}).
+ * The status lives beside the menu in panels drawn like the inventory's potion effects (user, 2026-11-14): Hull, Fuel
+ * (time at walking pace, or why there's none: no engine, flooded, no fuel), Sealed (only while it is), then the pilot's
+ * own effects, which vanilla's inventory screen would have shown. Something wrong reads in gold (a warning) or red.
+ * The terminal-style status screen (2026-10-27) and the burn flame went with it.
  */
 public class PowerSuitScreen extends AbstractContainerScreen<PowerSuitMenu> {
     private static final Identifier BACKGROUND = Identifier.fromNamespaceAndPath(PowerSuits.MODID, "textures/gui/power_suit.png");
-    private static final Identifier LIT_PROGRESS = Identifier.withDefaultNamespace("container/furnace/lit_progress");
     /** The keys' symbols (tools/make-gui.py). Power is 9 wide for a 1 px stem (user's pick D, 2026-10-27): on an 18 px
      *  key it can't be exactly centred, so it sits half a pixel left, a pixel up (its light goes under it). Pack is 8x8,
      *  centred (x 5..12). */
-    private static final SuitKey.Symbol POWER_SYMBOL = new SuitKey.Symbol(
-            Identifier.fromNamespaceAndPath(PowerSuits.MODID, "container/power_suit/power"), 9, 8, 4, 3);
-    private static final SuitKey.Symbol PACK_SYMBOL = new SuitKey.Symbol(
-            Identifier.fromNamespaceAndPath(PowerSuits.MODID, "container/power_suit/pack"), 8, 8, 5, 4);
-    /** The flame between the engine and fuel slots; the preview window (vanilla's player box). */
-    private static final int FLAME_X = 9, FLAME_Y = 45;
-    private static final int PREVIEW_X0 = 26, PREVIEW_Y0 = 8, PREVIEW_X1 = 75, PREVIEW_Y1 = 78, PREVIEW_SCALE = 18;
-    /** The keys, in the column right of the preview: Power opposite the helmet, Pack up opposite the fuel. */
-    private static final int KEY_X = 76, POWER_Y = 7, PACK_Y = 61;
-    /** The status screen's text area (the screen itself is x 97..169, y 7..79 in the background): left and right edges
-     *  (16 bar segments wide), the rows. */
-    private static final int TEXT_X0 = 101, TEXT_X1 = 165, TITLE_Y = 11, RULE1_Y = 20, HULL_Y = 22, HULL_BAR_Y = 31,
-            FUEL_Y = 37, FUEL_BAR_Y = 46, RULE2_Y = 54, STATUS_Y = 58;
-    private static final int SEGMENTS = (TEXT_X1 - TEXT_X0 + 1) / 4;
-    /** The suit's name and the rules, as fractions of the visor colour: the name a caption, the rules faint. */
-    private static final float TITLE = 0.55F, RULE = 0.3F;
+    private static final SuitKey.Symbol POWER_SYMBOL = new SuitKey.Symbol(sprite("power"), 9, 8, 4, 3);
+    private static final SuitKey.Symbol PACK_SYMBOL = new SuitKey.Symbol(sprite("pack"), 8, 8, 5, 4);
+    /** Vanilla's preview window. The frame is 2.3 blocks tall (a player 1.8, drawn at 30, fills it to the top): 21 leaves
+     *  the frame the margin the player gets. */
+    private static final int PREVIEW_X0 = 26, PREVIEW_Y0 = 8, PREVIEW_X1 = 75, PREVIEW_Y1 = 78, PREVIEW_SCALE = 21;
+    /** The keys: Power where the crafting result slot was, Pack up where the recipe book's button sits (vanilla's
+     *  InventoryScreen: leftPos + 104, 22 above the middle = y 61). Public: the menu scene points the mouse at them. */
+    public static final int POWER_X = 153, POWER_Y = 27, PACK_X = 104, PACK_Y = 61;
+    /** The title where vanilla writes "Crafting", in vanilla's label grey. */
+    private static final int TITLE_X = 97, TITLE_W = 75, LABEL = 0xFF404040;
+
+    // ---- the status panels: vanilla's effect panels (EffectsInInventory), sizes and colours ----
+    private static final Identifier PANEL = Identifier.withDefaultNamespace("container/inventory/effect_background");
+    private static final Identifier PANEL_AMBIENT = Identifier.withDefaultNamespace("container/inventory/effect_background_ambient");
+    private static final Identifier HULL = sprite("status_hull"), SEALED = sprite("status_sealed");
+    private static final int PANEL_H = 32, PANEL_STEP = 33, ICON = 18, PAD = 7, TEXT_X = 32, GREY = 0xFF808080;
+    /** Chat's red and gold (ChatFormatting.RED / GOLD) for a value that needs attention. */
+    private static final int RED = 0xFFFF5555, GOLD = 0xFFFFAA00;
 
     public PowerSuitScreen(PowerSuitMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
+    }
+
+    private static Identifier sprite(String name) {
+        return Identifier.fromNamespaceAndPath(PowerSuits.MODID, "container/power_suit/" + name);
     }
 
     @Override
@@ -67,11 +80,11 @@ public class PowerSuitScreen extends AbstractContainerScreen<PowerSuitMenu> {
         // Buttons in container screens don't need a custom packet: vanilla sends the button id to the
         // server, which calls PowerSuitMenu.clickMenuButton.
         // A key has a symbol, no caption: its tooltip is its name, one word (user, 2026-10-27: the key shows its state).
-        SuitKey power = this.addRenderableWidget(new SuitKey(this.leftPos + KEY_X, this.topPos + POWER_Y, POWER_SYMBOL,
+        SuitKey power = this.addRenderableWidget(new SuitKey(this.leftPos + POWER_X, this.topPos + POWER_Y, POWER_SYMBOL,
                 Component.translatable("gui.power_suits.power"), () -> switchedOn(this.menu.getSuit()),
                 () -> this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId, PowerSuitMenu.BUTTON_POWER)));
         power.setTooltip(Tooltip.create(power.getMessage()));
-        SuitKey pack = this.addRenderableWidget(new SuitKey(this.leftPos + KEY_X, this.topPos + PACK_Y, PACK_SYMBOL,
+        SuitKey pack = this.addRenderableWidget(new SuitKey(this.leftPos + PACK_X, this.topPos + PACK_Y, PACK_SYMBOL,
                 Component.translatable("gui.power_suits.pack"), null,
                 () -> this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId, PowerSuitMenu.BUTTON_PACK)));
         // Packing up needs you outside: from inside the key is there but greyed out.
@@ -84,13 +97,19 @@ public class PowerSuitScreen extends AbstractContainerScreen<PowerSuitMenu> {
         return suit == null || suit.power().isSwitchedOn();
     }
 
-
     // Since 1.21.6 screens don't draw directly: each frame they "extract" what to draw (a list of quads, text, items)
     // into GuiGraphicsExtractor, and Minecraft draws that list afterwards. Hence the extract* names.
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+        this.extractPanels(graphics, mouseX, mouseY); // first, as vanilla's inventory draws its effects
         super.extractRenderState(graphics, mouseX, mouseY, partialTick); // background, slots, labels, item tooltips
         this.renderEmptySlotHints(graphics, mouseX, mouseY);
+    }
+
+    /** The panels stand in for vanilla's effect list here: the HUD leaves its effect icons out while there's room. */
+    @Override
+    public boolean showsActiveEffects() {
+        return this.width - (this.leftPos + this.imageWidth + 2) >= PANEL_H;
     }
 
     @Override
@@ -101,14 +120,6 @@ public class PowerSuitScreen extends AbstractContainerScreen<PowerSuitMenu> {
         PowerSuitEntity suit = this.menu.getSuit();
         if (suit == null) {
             return;
-        }
-        // Burning flame, shrinking as the current fuel item burns down (same sprite as the furnace).
-        if (suit.power().hasFreePower() && suit.isPowered()) {
-            // a wet tidal engine or a star reactor: burning nothing, never running down
-            graphics.blitSprite(RenderPipelines.GUI_TEXTURED, LIT_PROGRESS, 14, 14, 0, 0, x + FLAME_X, y + FLAME_Y, 14, 14);
-        } else if (suit.isPowered() && suit.power().getBurnLeft() > 0 && suit.power().getBurnTotal() > 0) {
-            int h = Mth.ceil(Mth.clamp(suit.power().getBurnLeft() / (float) suit.power().getBurnTotal(), 0F, 1F) * 13F) + 1;
-            graphics.blitSprite(RenderPipelines.GUI_TEXTURED, LIT_PROGRESS, 14, 14, 0, 14 - h, x + FLAME_X, y + FLAME_Y + 14 - h, 14, h);
         }
         // The suit itself, turning to follow the mouse (like the player in the inventory screen). The whole of it, also
         // from inside: in first person the renderer would leave out all but the legs (the cockpit view).
@@ -121,69 +132,127 @@ public class PowerSuitScreen extends AbstractContainerScreen<PowerSuitMenu> {
         }
     }
 
-    /** The status screen (labels are drawn relative to the background's corner). No vanilla title or "Inventory"
-     *  label: the suit's name is the screen's first line, and vanilla's inventory screen has no "Inventory" either. */
+    /** The suit's name where vanilla's inventory says "Crafting" (a renamed suit shows its own); no "Inventory" label,
+     *  as in vanilla's inventory screen. */
     @Override
     protected void extractLabels(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
-        PowerSuitEntity suit = this.menu.getSuit();
-        if (suit == null) {
-            return;
-        }
-        int rgb = VisorConfig.colour();
-        int main = 0xFF000000 | rgb;
-        int unlit = 0xFF000000 | VisorConfig.dim(rgb, HudView.DIM);
-        int rule = 0xFF000000 | VisorConfig.dim(rgb, RULE);
-        boolean blink = (suit.tickCount / 5) % 2 == 0;
-        var power = suit.power();
-
-        // the suit's name (a renamed suit shows its own), in capitals like the rest of the terminal
-        String name = this.font.plainSubstrByWidth(this.title.getString().toUpperCase(Locale.ROOT), TEXT_X1 - TEXT_X0);
-        graphics.text(this.font, name, TEXT_X0, TITLE_Y, 0xFF000000 | VisorConfig.dim(rgb, TITLE), false);
-        graphics.fill(TEXT_X0, RULE1_Y, TEXT_X1, RULE1_Y + 1, rule);
-
-        // HULL: like the HUD's (a warning from half, critical in the last 15%)
-        float hull = Mth.clamp(suit.getHealth() / suit.getMaxHealth(), 0F, 1F);
-        HudView.label(graphics, this.font, Component.translatable("hud.power_suits.hull"), TEXT_X0, HULL_Y, rgb, HudAlert.ofLeft(hull), blink);
-        right(graphics, Component.translatable("hud.power_suits.percent", Math.round(hull * 100)), HULL_Y, main);
-        HudView.bar(graphics, TEXT_X0, HULL_BAR_Y, SEGMENTS, 3, hull, main, unlit);
-
-        // FUEL: time left at walking pace (endless on a wet tidal engine or a star reactor), the bar how full the slot is
-        int energy = power.getTotalEnergy();
-        boolean free = power.hasFreePower();
-        boolean fuelCritical = !free && (suit.getEngine() == null || power.isFlooded() || energy == 0 || power.isLowOnFuel());
-        HudView.label(graphics, this.font, Component.translatable("hud.power_suits.fuel"), TEXT_X0, FUEL_Y, rgb, HudView.critical(fuelCritical), blink);
-        right(graphics, free ? Component.translatable("hud.power_suits.endless") : Component.literal(PowerSuitItem.formatWalkTime(energy)), FUEL_Y, main);
-        HudView.bar(graphics, TEXT_X0, FUEL_BAR_Y, SEGMENTS, 3, power.fuelGauge(), main, unlit);
-        graphics.fill(TEXT_X0, RULE2_Y, TEXT_X1, RULE2_Y + 1, rule);
-
-        // Why a suit stands down. Something to fix (no fuel, no engine, flooded, lightning) blinks; a choice (switched
-        // off, a parked suit without its helmet: its mind needs the helmet) holds steady.
-        boolean off = !power.isSwitchedOn();
-        String status;
-        HudAlert alert;
-        if (off) {
-            status = "gui.power_suits.switched_off"; alert = HudAlert.WARNING;
-        } else if (suit.getEngine() == null) {
-            status = "gui.power_suits.no_engine"; alert = HudAlert.CRITICAL;
-        } else if (power.isFlooded()) {
-            status = "gui.power_suits.flooded"; alert = HudAlert.CRITICAL;
-        } else if (!suit.hasHelmet() && !suit.isVehicle()) {
-            status = "gui.power_suits.no_helmet"; alert = HudAlert.WARNING;
-        } else if (suit.isPowered()) {
-            status = "gui.power_suits.online"; alert = HudAlert.NONE;
-        } else if (energy == 0 && !free) {
-            status = "gui.power_suits.no_fuel"; alert = HudAlert.CRITICAL;
-        } else {
-            status = "gui.power_suits.offline"; alert = HudAlert.CRITICAL;
-        }
-        // an inverted label needs a pixel of block round it: nudge it in off the left edge
-        int x = alert == HudAlert.NONE ? TEXT_X0 : TEXT_X0 + 1;
-        HudView.label(graphics, this.font, Component.translatable(status), x, STATUS_Y, rgb, alert, blink);
+        graphics.text(this.font, this.font.plainSubstrByWidth(this.title.getString(), TITLE_W), TITLE_X, this.titleLabelY, LABEL, false);
     }
 
-    /** Text flush with the right end of the bars (font.width counts the gap after the last glyph). */
-    private void right(GuiGraphicsExtractor graphics, Component text, int y, int colour) {
-        graphics.text(this.font, text, TEXT_X1 + 1 - this.font.width(text), y, colour, false);
+    // =========================================================================================
+    // The status panels (beside the menu, like the inventory's potion effects)
+    // =========================================================================================
+
+    /** One panel: a suit status (sprite in the visor's colour, a hint for its tooltip) or one of the pilot's effects. */
+    private record Panel(Identifier icon, boolean tinted, boolean ambient, Component name, Component value, int valueColour,
+            @Nullable Component hint) {}
+
+    /** What the panels say now: Hull, Fuel, Sealed (only while sealed), then the pilot's own effects. */
+    private List<Panel> panels(PowerSuitEntity suit) {
+        List<Panel> panels = new ArrayList<>();
+        var power = suit.power();
+        // Hull: its % (gold from half, red in the last 15%, like the HUD), or knocked out by lightning.
+        float hull = Mth.clamp(suit.getHealth() / suit.getMaxHealth(), 0F, 1F);
+        panels.add(suit.isStunned()
+                ? panel(HULL, "hull", Component.translatable("gui.power_suits.status.knocked_out"), HudAlert.CRITICAL)
+                : panel(HULL, "hull", Component.translatable("hud.power_suits.percent", Math.round(hull * 100)), HudAlert.ofLeft(hull)));
+        // Fuel: time left at walking pace (endless on a wet tidal engine or a star reactor), or why there's none.
+        SuitEngine engine = suit.getEngine();
+        Identifier fuelIcon = sprite("status_fuel_" + (engine == SuitEngine.TIDAL ? "tidal" : engine == SuitEngine.REACTOR ? "reactor" : "firebox"));
+        int energy = power.getTotalEnergy();
+        Panel fuel;
+        if (engine == null) {
+            fuel = panel(fuelIcon, "fuel", Component.translatable("gui.power_suits.status.no_engine"), HudAlert.CRITICAL);
+        } else if (power.isFlooded()) {
+            fuel = panel(fuelIcon, "fuel", Component.translatable("gui.power_suits.status.flooded"), HudAlert.CRITICAL);
+        } else if (power.hasFreePower()) {
+            fuel = panel(fuelIcon, "fuel", Component.translatable("hud.power_suits.endless"), HudAlert.NONE);
+        } else if (energy == 0) {
+            fuel = panel(fuelIcon, "fuel", Component.translatable("gui.power_suits.status.no_fuel"), HudAlert.CRITICAL);
+        } else {
+            fuel = panel(fuelIcon, "fuel", Component.literal(PowerSuitItem.formatWalkTime(energy)),
+                    power.isLowOnFuel() ? HudAlert.WARNING : HudAlert.NONE);
+        }
+        panels.add(fuel);
+        // Sealed: there or not (user: binary).
+        if (suit.isSealed()) {
+            panels.add(panel(SEALED, "sealed", CommonComponents.EMPTY, HudAlert.NONE));
+        }
+        // The pilot's own effects, as vanilla's inventory screen lists them (it isn't open while the suit's is).
+        List<MobEffectInstance> effects = this.minecraft.player.getActiveEffects().stream()
+                .filter(net.neoforged.neoforge.client.ClientHooks::shouldRenderEffect).sorted().toList();
+        for (MobEffectInstance effect : effects) {
+            panels.add(new Panel(Hud.getMobEffectSprite(effect.getEffect()), false, effect.isAmbient(), effectName(effect),
+                    MobEffectUtil.formatDuration(effect, 1.0F, this.minecraft.level.tickRateManager().tickrate()), GREY, null));
+        }
+        return panels;
+    }
+
+    private static Panel panel(Identifier icon, String key, Component value, HudAlert alert) {
+        int colour = alert == HudAlert.CRITICAL ? RED : alert == HudAlert.WARNING ? GOLD : GREY;
+        return new Panel(icon, true, false, Component.translatable("gui.power_suits.status." + key), value, colour,
+                Component.translatable("gui.power_suits.status." + key + ".hint"));
+    }
+
+    /** "Speed II", as vanilla's list names an effect. */
+    private static Component effectName(MobEffectInstance effect) {
+        MutableComponent name = effect.getEffect().value().getDisplayName().copy();
+        if (effect.getAmplifier() >= 1 && effect.getAmplifier() <= 9) {
+            name.append(CommonComponents.SPACE).append(Component.translatable("enchantment.level." + (effect.getAmplifier() + 1)));
+        }
+        return name;
+    }
+
+    /**
+     * Vanilla's effect list, re-done for our panels (EffectsInInventory only lists the player's effects): right of the
+     * menu, from its top, 33 px apart (closer with more than five); wide with names when there's 120 px of room, icons
+     * only (name and value in a tooltip) down to 32 px, none below that.
+     */
+    private void extractPanels(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
+        PowerSuitEntity suit = this.menu.getSuit();
+        int x0 = this.leftPos + this.imageWidth + 2;
+        int room = this.width - x0;
+        if (suit == null || room < PANEL_H) {
+            return;
+        }
+        boolean wide = room >= 120;
+        List<Panel> panels = this.panels(suit);
+        int step = panels.size() > 5 ? 132 / (panels.size() - 1) : PANEL_STEP;
+        int y = this.topPos;
+        int tint = 0xFF000000 | VisorConfig.colour();
+        for (Panel p : panels) {
+            int w = wide ? Math.min(room - PAD, Math.max(TEXT_X + this.font.width(p.name()), TEXT_X + this.font.width(p.value())) + PAD) : PANEL_H;
+            graphics.blitSprite(RenderPipelines.GUI_TEXTURED, p.ambient() ? PANEL_AMBIENT : PANEL, x0, y, w, PANEL_H);
+            if (p.tinted()) {
+                graphics.blitSprite(RenderPipelines.GUI_TEXTURED, p.icon(), x0 + PAD, y + PAD, ICON, ICON, tint);
+            } else {
+                graphics.blitSprite(RenderPipelines.GUI_TEXTURED, p.icon(), x0 + PAD, y + PAD, ICON, ICON);
+            }
+            if (wide) {
+                if (p.value().getString().isEmpty()) {
+                    graphics.text(this.font, p.name(), x0 + TEXT_X, y + 12, -1); // one line (Sealed): centred
+                } else {
+                    graphics.text(this.font, p.name(), x0 + TEXT_X, y + PAD, -1);
+                    graphics.text(this.font, p.value(), x0 + TEXT_X, y + PAD + 9, p.valueColour());
+                }
+            }
+            if (mouseX >= x0 && mouseX < x0 + w && mouseY >= y && mouseY < y + Math.min(step, PANEL_H)) {
+                List<Component> lines = new ArrayList<>();
+                if (!wide) {
+                    lines.add(p.name());
+                    if (!p.value().getString().isEmpty()) {
+                        lines.add(p.value().copy().withColor(p.valueColour()));
+                    }
+                }
+                if (p.hint() != null) {
+                    lines.add(p.hint().copy().withStyle(ChatFormatting.GRAY));
+                }
+                if (!lines.isEmpty()) {
+                    graphics.setComponentTooltipForNextFrame(this.font, lines, mouseX, mouseY);
+                }
+            }
+            y += step;
+        }
     }
 
     /** Explain the suit's slots while they're empty. */
@@ -192,10 +261,13 @@ public class PowerSuitScreen extends AbstractContainerScreen<PowerSuitMenu> {
             return;
         }
         int index = this.menu.slots.indexOf(this.hoveredSlot);
+        int armour = index - PowerSuitMenu.MENU_ARMOUR;
         String key = index == PowerSuitMenu.MENU_SOCKET ? "gui.power_suits.socket_slot"
                 : index == PowerSuitMenu.MENU_FUEL ? "gui.power_suits.fuel_slot"
                 : index == PowerSuitMenu.MENU_HELMET ? "gui.power_suits.helmet_slot"
-                : index == PowerSuitMenu.MENU_ENGINE ? "gui.power_suits.engine_slot" : null;
+                : index == PowerSuitMenu.MENU_ENGINE ? "gui.power_suits.engine_slot"
+                : armour >= 0 && armour < SuitArmour.Part.values().length
+                        ? "gui.power_suits.armour_slot." + SuitArmour.Part.values()[armour].piece.getName() : null;
         if (key != null) {
             graphics.setComponentTooltipForNextFrame(this.font, List.of(Component.translatable(key),
                     Component.translatable(key + ".hint").withStyle(ChatFormatting.GRAY)), mouseX, mouseY);

@@ -20,6 +20,8 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.ContainerInput;
@@ -35,21 +37,26 @@ import net.neoforged.fml.loading.FMLPaths;
  * ammo and coal in the inventory.
  * <ol>
  *   <li>The inventory key from inside (what vanilla does for E when the vehicle has its own screen:
- *   {@code sendOpenInventory}): the suit's menu, no Pack up ({@code ap_menu_inside}).</li>
+ *   {@code sendOpenInventory}): the suit's menu (vanilla's inventory screen with the suit in it: the armour round the
+ *   preview, the socket in the off-hand slot, fuel -> Power), no Pack up, and beside it the status panels (Hull, Fuel,
+ *   Sealed) over the pilot's own Speed effect ({@code ap_menu_inside}).</li>
+ *   <li>The right leg's piece shift-clicked off: no Sealed panel ({@code ap_menu_unsealed}); the mouse over its empty
+ *   slot ({@code ap_menu_hover_leg}); shift-clicked back on.</li>
  *   <li>F over the drill on the hotbar: the drill goes into the socket, the chaingun comes out ({@code ap_menu_swapped}).</li>
- *   <li>The Power key: switched off, it pops out and the status screen reads POWER OFF ({@code ap_menu_off}); closed, the visor is completely
+ *   <li>The Power key: switched off, it pops out ({@code ap_menu_off}); closed, the visor is completely
  *   dark, nothing on the glass ({@code ap_menu_hud_off}).</li>
  *   <li>The power switch key (H): on again, the visor warms up ({@code ap_menu_hud_on}).</li>
  *   <li>F outside the screen with the chainsaw selected: the chainsaw goes into the socket ({@code ap_menu_f_back},
  *   the in-game back view).</li>
  *   <li>Out of the suit, sneak + right-click: the same screen from outside, with Pack up ({@code ap_menu_outside}).</li>
- *   <li>Still open, the fuel taken out: the status reads NO FUEL ({@code ap_menu_no_fuel}); the engine taken out: NO
- *   ENGINE ({@code ap_menu_no_engine}). The menu is the only place that says why a suit is dark (SuitHud draws nothing).</li>
+ *   <li>Still open, the fuel taken out: the Fuel panel reads No fuel, red ({@code ap_menu_no_fuel}); the engine taken
+ *   out: No engine ({@code ap_menu_no_engine}). The menu is the only place that says why a suit is dark (SuitHud draws nothing).</li>
  *   <li>The mouse over the keys: Power ({@code ap_menu_hover_power}), Pack up from outside ({@code ap_menu_hover_pack})
  *   and, at the start, greyed out from inside ({@code ap_menu_hover_pack_inside}).</li>
  * </ol>
  * Log run/autopilot_menu.csv: per tick the screen open on the client, the server's and the client's socket tool, the
- * switch and power on both sides, the pilot's hand and whether vanilla treats the inventory key as the vehicle's.
+ * switch and power on both sides, the pilot's hand, whether vanilla treats the inventory key as the vehicle's, and the
+ * client's armour pieces and seal.
  * Runs alone with ./gradlew runAutopilotMenu (~26 s) and at the end of runAutopilotMech.
  */
 final class MenuScene {
@@ -68,29 +75,44 @@ final class MenuScene {
                          } }
             case 50 -> AutoPilot.shot(mc, "menu_inside");
             // the mouse over the Pack up key from inside: greyed out, its name as the tooltip
-            case 51 -> pointAt(mc, 76 + 9, 61 + 9);
+            case 51 -> pointAt(mc, PowerSuitScreen.PACK_X + 9, PowerSuitScreen.PACK_Y + 9);
             case 53 -> AutoPilot.shot(mc, "menu_hover_pack_inside");
+            // The armour (frame step 6b): the right leg's piece shift-clicked off: the Sealed panel goes; the mouse over its
+            // empty slot (the leggings outline, its hint); the piece shift-clicked back on.
+            case 54 -> { phase = "armour_off"; pointAt(mc, -100, -100); click(mc, PowerSuitMenu.MENU_ARMOUR + 4, 0, ContainerInput.QUICK_MOVE); }
+            case 64 -> AutoPilot.shot(mc, "menu_unsealed");
+            case 65 -> pointAt(mc, PowerSuitMenu.LEFT_X + 8, PowerSuitMenu.ROW_Y + 2 * PowerSuitMenu.ROW + 8);
+            case 67 -> AutoPilot.shot(mc, "menu_hover_leg");
+            case 68 -> { phase = "armour_on"; pointAt(mc, -100, -100);
+                         if (mc.player.containerMenu instanceof PowerSuitMenu m) {
+                             for (int i = PowerSuitMenu.INV_START; i < PowerSuitMenu.END; i++) {
+                                 if (m.getSlot(i).getItem().is(ModItems.IRON_LEG_ARMOUR.get())) {
+                                     click(mc, i, 0, ContainerInput.QUICK_MOVE);
+                                     break;
+                                 }
+                             }
+                         } }
             // F over the drill (hotbar slot 1): the screen's own swap-hands click
-            case 54 -> { phase = "swap"; pointAt(mc, -100, -100); click(mc, PowerSuitMenu.HOTBAR_START + 1, Inventory.SLOT_OFFHAND, ContainerInput.SWAP); }
-            case 60 -> AutoPilot.shot(mc, "menu_swapped");
-            case 64 -> { phase = "off"; if (mc.player.containerMenu instanceof PowerSuitMenu m) {
+            case 84 -> { phase = "swap"; pointAt(mc, -100, -100); click(mc, PowerSuitMenu.HOTBAR_START + 1, Inventory.SLOT_OFFHAND, ContainerInput.SWAP); }
+            case 90 -> AutoPilot.shot(mc, "menu_swapped");
+            case 94 -> { phase = "off"; if (mc.player.containerMenu instanceof PowerSuitMenu m) {
                              mc.gameMode.handleInventoryButtonClick(m.containerId, PowerSuitMenu.BUTTON_POWER);
                          } }
-            case 74 -> AutoPilot.shot(mc, "menu_off");
-            case 78 -> mc.player.closeContainer();
-            case 110 -> AutoPilot.shot(mc, "menu_hud_off");
+            case 104 -> AutoPilot.shot(mc, "menu_off");
+            case 108 -> mc.player.closeContainer();
+            case 140 -> AutoPilot.shot(mc, "menu_hud_off");
             // the power switch key: a press of H, through the key binding itself (SuitKeys sends the message)
-            case 114 -> { phase = "on"; KeyMapping.click(InputConstants.Type.KEYBOARD.getOrCreate(InputConstants.KEY_H)); }
-            case 160 -> AutoPilot.shot(mc, "menu_hud_on");
+            case 144 -> { phase = "on"; KeyMapping.click(InputConstants.Type.KEYBOARD.getOrCreate(InputConstants.KEY_H)); }
+            case 190 -> AutoPilot.shot(mc, "menu_hud_on");
             // F outside the screen, the chainsaw selected: vanilla's swap packet, which the suit takes over (PilotHands)
-            case 164 -> { phase = "f_key"; mc.player.getInventory().setSelectedSlot(2); // (the client tells the server next tick)
+            case 194 -> { phase = "f_key"; mc.player.getInventory().setSelectedSlot(2); // (the client tells the server next tick)
                           AutoPilot.onServer(mc, p -> p.getInventory().setSelectedSlot(2)); }
-            case 166 -> { mc.getConnection().send(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.SWAP_ITEM_WITH_OFFHAND,
+            case 196 -> { mc.getConnection().send(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.SWAP_ITEM_WITH_OFFHAND,
                                   BlockPos.ZERO, Direction.DOWN)); }
-            case 170 -> { mc.options.setCameraType(CameraType.THIRD_PERSON_BACK); DevUtil.hideGui(mc, true); }
-            case 180 -> AutoPilot.shot(mc, "menu_f_back");
+            case 200 -> { mc.options.setCameraType(CameraType.THIRD_PERSON_BACK); DevUtil.hideGui(mc, true); }
+            case 210 -> AutoPilot.shot(mc, "menu_f_back");
             // out of the suit: sneak + right-click opens the same screen, with Pack up
-            case 184 -> { phase = "outside"; mc.options.setCameraType(CameraType.FIRST_PERSON); DevUtil.hideGui(mc, false);
+            case 214 -> { phase = "outside"; mc.options.setCameraType(CameraType.FIRST_PERSON); DevUtil.hideGui(mc, false);
                           AutoPilot.onServer(mc, p -> {
                               PowerSuitEntity x = suit;
                               if (x == null) {
@@ -102,29 +124,29 @@ final class MenuScene {
                               x.interact(p, InteractionHand.MAIN_HAND, x.position());
                               p.setShiftKeyDown(false);
                           }); }
-            case 196 -> AutoPilot.shot(mc, "menu_outside");
+            case 226 -> AutoPilot.shot(mc, "menu_outside");
             // the menu is the only place that says why a suit is dark (the visor shows nothing): out of fuel, then no engine
-            case 200 -> { phase = "no_fuel"; AutoPilot.onServer(mc, p -> {
+            case 230 -> { phase = "no_fuel"; AutoPilot.onServer(mc, p -> {
                               PowerSuitEntity x = suit;
                               if (x != null) {
                                   x.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, ItemStack.EMPTY);
                                   x.power().setBurn(0, 0);
                               }
                           }); }
-            case 210 -> AutoPilot.shot(mc, "menu_no_fuel");
-            case 214 -> { phase = "no_engine"; AutoPilot.onServer(mc, p -> {
+            case 240 -> AutoPilot.shot(mc, "menu_no_fuel");
+            case 244 -> { phase = "no_engine"; AutoPilot.onServer(mc, p -> {
                               PowerSuitEntity x = suit;
                               if (x != null) {
                                   x.getInventory().setItem(PowerSuitEntity.ENGINE_SLOT, ItemStack.EMPTY);
                               }
                           }); }
-            case 224 -> AutoPilot.shot(mc, "menu_no_engine");
+            case 254 -> AutoPilot.shot(mc, "menu_no_engine");
             // the keys under the mouse: highlighted, with their tooltips (Power names its state)
-            case 225 -> pointAt(mc, 76 + 9, 7 + 9);
-            case 227 -> AutoPilot.shot(mc, "menu_hover_power");
-            case 229 -> pointAt(mc, 76 + 9, 61 + 9);
-            case 231 -> AutoPilot.shot(mc, "menu_hover_pack");
-            case 234 -> { pointAt(mc, -100, -100); mc.player.closeContainer(); close(); return false; }
+            case 255 -> pointAt(mc, PowerSuitScreen.POWER_X + 9, PowerSuitScreen.POWER_Y + 9);
+            case 257 -> AutoPilot.shot(mc, "menu_hover_power");
+            case 259 -> pointAt(mc, PowerSuitScreen.PACK_X + 9, PowerSuitScreen.PACK_Y + 9);
+            case 261 -> AutoPilot.shot(mc, "menu_hover_pack");
+            case 264 -> { pointAt(mc, -100, -100); mc.player.closeContainer(); close(); return false; }
             default -> {}
         }
         if (s >= 2) {
@@ -181,6 +203,7 @@ final class MenuScene {
             inv.setItem(9, new ItemStack(Items.IRON_NUGGET, 64));
             inv.setItem(10, new ItemStack(Items.TNT, 12));
             inv.setItem(11, new ItemStack(Items.COAL, 32));
+            player.addEffect(new MobEffectInstance(MobEffects.SPEED, 20 * 600)); // listed under the suit's status panels
             player.setShiftKeyDown(false);
             player.teleportTo(x + 0.5, y, z - 1.5);
             player.startRiding(s, true, true);
@@ -190,7 +213,7 @@ final class MenuScene {
     private static void open() {
         try {
             csv = Files.newBufferedWriter(FMLPaths.GAMEDIR.get().resolve("autopilot_menu.csv"));
-            csv.write("tick,phase,screen,vehicle_inventory,server_socket,client_socket,server_on,client_on,server_powered,client_powered,hand\n");
+            csv.write("tick,phase,screen,vehicle_inventory,server_socket,client_socket,server_on,client_on,server_powered,client_powered,hand,client_armour,client_sealed\n");
         } catch (IOException e) {
             PowerSuits.LOGGER.error("menu csv", e);
         }
@@ -210,11 +233,13 @@ final class MenuScene {
         String clientSocket = client == null ? "?" : id(client.getSocketStack());
         boolean clientOn = client != null && client.power().isSwitchedOn();
         boolean clientPowered = client != null && client.isPowered();
+        int armour = client == null ? -1 : client.armour().pieces();
+        boolean sealed = client != null && client.isSealed();
         AutoPilot.onServer(mc, player -> {
             try {
-                w.write(String.format(Locale.ROOT, "%d,%s,%s,%b,%s,%s,%b,%b,%b,%b,%s%n", s, p, screen, vehicleInventory,
+                w.write(String.format(Locale.ROOT, "%d,%s,%s,%b,%s,%s,%b,%b,%b,%b,%s,%d,%b%n", s, p, screen, vehicleInventory,
                         id(x.getInventory().getItem(PowerSuitEntity.SOCKET_SLOT)), clientSocket, x.power().isSwitchedOn(), clientOn,
-                        x.isPowered(), clientPowered, id(player.getMainHandItem())));
+                        x.isPowered(), clientPowered, id(player.getMainHandItem()), armour, sealed));
             } catch (IOException ignored) {
                 // closed at the end of the scene
             }
