@@ -222,8 +222,14 @@ def barrel_rows(n, holes='keep'):
     holes_ = (['hexxlp', 'hexxlp'], ['hlxxep', 'hlxxlp'])  # (the 5 px barrel's two holes, lit a little differently)
     mid = n - 3                                             # between the shadow row and the two soot rows
     if holes == 'even':
-        rows = []
-        for i in range(mid // 3): rows += ['hellep' if i % 2 == 0 else 'helgep'] + holes_[i % 2]   # a plain row, a hole
+        # (round 7, user: three holes a row apart looked smushed; the body down to 2 px for room) as many holes as fit
+        # the 5 px barrel's rhythm (a plain row first, two between holes), the spare plain rows spread between them
+        k = max(1, (mid + 1) // 4)
+        spare = mid - 2 * k - 1 - 2 * (k - 1)
+        rows = ['hellep'] + holes_[0]
+        for i in range(1, k):
+            gap = 2 + spare // (k - 1) + (1 if i <= spare % (k - 1) else 0)
+            rows += (['helgep'] + ['hellep'] * (gap - 1)) + holes_[i % 2]
     else:
         rows = ['hellep'] + holes_[0] + ['helgep', 'hellep'] + holes_[1]
     rows += ['hellep'] * (mid - len(rows))
@@ -281,10 +287,14 @@ def build(c, top, kind='A', pilot='dark', glow='lit', body_art='burner', body_h=
                           side(one('k')) | {'west': lambda w, h: ['mk'] * h, 'up': none, 'down': one('k')}))
         # the foot: z -0.5 (the bore's back edge, MUZZLE) to the rod, its front 2 texels the blue head; its top under
         # the barrel (and the gap): not drawn; its back against the rod: not drawn
-        head = lambda w, h: ['k' * (w - 2) + 'vu'] * h      # east: back -> front
+        # (round 7, user: the bottom's colours didn't line up with the sides'. Now every face is lit 'v' on the front
+        # texel, 'u' behind it, slate behind that, so they meet at the edges)
+        head = lambda w, h: ['k' * (w - 2) + 'uv'] * h      # east: back -> front
         parts.append(part('pilot_foot', ((c - 0.5, y0, -0.5), (c + 0.5, y0 + 1, 1)),
                           {'north': one('v'), 'south': none, 'east': head, 'west': lambda w, h: [r[::-1] for r in head(w, h)],
-                           'up': none, 'down': lambda w, h: ['vv', 'uu'] + ['kk'] * (h - 2)}))
+                           # (a down face's rows run back -> front, checked from straight below: written front -> back
+                           # the blue went to the back, the slate under the head)
+                           'up': none, 'down': lambda w, h: ['kk'] * (h - 2) + ['uu', 'vv']}))
     else:
         parts.append(part('pilot', rbox, side(rod) | {'up': none, 'down': one('v')}))
     for p in parts: p['rot'] = 0
