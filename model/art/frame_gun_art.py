@@ -131,9 +131,10 @@ def ring_cap(w, h):  # its top / bottom: the plate, an edge round it
     return [''.join('D' if i in (0, w - 1) or j in (0, h - 1) else 'C' for i in range(w)) for j in range(h)]
 
 
-def build(c, top, lamp='red', kind='A', body='ref'):
+def build(c, top, lamp='red', kind='A', body='ref', look='old'):
     """The chaingun's parts on an arm centred at x c (right side) whose socket is at y top: the receiver (bone 'tool')
-    and the barrels with their rings under it (bone 'bit': they spin)."""
+    and the barrels with their rings under it (bone 'bit': they spin). look: GUN_LOOK (below), 'old' the first drafts."""
+    if look != 'old': return doom_build(c, top, look)
     metal = 'steel' if kind == 'C' else 'black'
     P = pal(metal, lamp)
     part = lambda name, box, faces, bone='tool', rot=0: dict(drill.part(name, box, _paint(faces, P), rot), bone=bone)
@@ -156,4 +157,93 @@ def build(c, top, lamp='red', kind='A', body='ref'):
     rf = {'north': ring, 'south': ring, 'east': ring, 'west': ring, 'up': ring_cap, 'down': ring_cap}
     for name, y in (('ring_mid', t - 2), ('ring_muzzle', t - L + 1)):
         parts.append(part(name, ((c - 2.25, y - 0.5, -2.25), (c + 2.25, y, 2.25)), rf, 'bit'))
+    return parts
+
+
+# A new reference (GUN_LOOK; 2026-11-14, user: not convinced by the GUN_BODY drafts; reference .scratch/gun/ref_doom.png,
+# the Doom (2016) chaingun, turned barrels-down in .scratch/gun/doom_rot.png). Its parts on the slot, as the rancher's:
+# - the receiver: a boxy rear housing at the arm (rows 0-2: a panel and a round dial on the outer side), then the
+#   ribbed drum (a lit ring, the band with the reference's 'XX' plate on the outer side, the carrier ring at the bottom);
+# - the gun's top (the back): the carry handle along it; its bottom (the front): the ammo box, rust-orange (the
+#   reference's warm underside: its accent colour, as the chainsaw's orange) with the bent copper feed pipe;
+# - the barrels: three round the axis (the reference's), a dark clamp ring halfway and the muzzle block, chunky, its
+#   corners lit green (the reference's two green lights: the signature), the barrels' ends 0.5 px under it.
+# All in the reference's warm black (a brown-black, worn silver edges), not the frame's blue-grey steel.
+# Drafts: doom (as above) | doom4 (B's four barrels, picked before, in the block) | doom3d (doom, the carry handle a
+# real loop 1 px proud on the back: the reference's silhouette). 'old' the bodies above (GUN, GUN_BODY).
+DOOM = {k: _c(v) for k, v in {
+    'A': '857e72', 'B': '45413d', 'C': '2e2c2a', 'D': '1f1e1c', 'E': '0f0e0d',   # warm black: worn edge .. deepest
+    'K': '55585a', 'x': '050505',                                                # barrels, a bore
+    'o': 'c2581f', 'u': '7a2e12', 'v': '41180b',                                 # the rusty underside: glow, rust, shade
+    'f': 'd9a060', 'Q': 'a8703a', 'q': '6b4422',                                 # the copper pipe
+    'g': 'cfcac0', 'h': '8a857c',                                                # the dial, the XX marks
+    'W': 'c8ffc0', 'L': '3cf060', 'l': '1f8a34'}.items()} | {'.': '.'}          # the muzzle's green lights
+D_OUTER = ['ACCCCCCCuv',       # (back -> front) the housing: its top edge worn, a panel with a dial, the ammo box's rust
+           'ACBBBBDCov',
+           'ACBgCDDCou',
+           'DBBBBBBBBD',       # the drum's rear ring
+           'DBDBDBDBCE',       # its band: the XX marks, embossed (light on dark read as a checkerboard grille)
+           'DDBDDDBDCE',
+           'DBDBDBDBCE',
+           'EDDDDDDDDE']       # the carrier ring
+D_INNER = ['vuCCCCCCCA',       # (front -> back) the same housing, a plain panel; the drum's band ribbed
+           'voCDBBBBCA',
+           'uoCDDDDDCA',
+           'DBBBBBBBBD',
+           'DCBBCCCCDE',
+           'EDDDDDDDDE',
+           'DCBBCCCCDE',
+           'EDDDDDDDDE']
+D_BACK = ['DCCDABDCCD',        # (inner -> outer) the carry handle along the gun's top, its shadow beside it
+          'DCCDABDCCD',
+          'DCCDABDCCD',
+          'DBBBBBBBBD',
+          'DCBBCCCCDE',
+          'EDDDDDDDDE',
+          'DCBBCCCCDE',
+          'EDDDDDDDDE']
+D_FRONT = ['vuooooouuv',       # (outer -> inner) the ammo box's underside in rust, the copper pipe out of it, bending
+           'vuoofQouuv',
+           'DCCCfQqqCD',
+           'DBBBBBBBBD',
+           'DCBBCCCCDE',
+           'EDDDDDDDDE',
+           'DCBBCCCCDE',
+           'EDDDDDDDDE']
+D_FACES = {'south': D_BACK, 'east': D_OUTER, 'west': D_INNER, 'north': D_FRONT, 'up': ['D' * 10] * 10,
+           'down': ['EDDDDDDDDE'] + ['DC' + 'E' * 6 + 'CD'] * 8 + ['EDDDDDDDDE']}
+
+
+def ring_d(w, h):        # the clamp ring's side, dimmer than ring() (a bright ring read as a white band)
+    return ['B' * (w - 1) + 'C'] + ['C' * (w - 1) + 'D'] * (h - 1)
+
+
+def muzzle_side(w, h):   # the block's side: a lit top edge, its first column a green light (one per corner)
+    return ['W' + 'B' * (w - 2) + 'C'] + ['L' + 'C' * (w - 2) + 'D'] * (h - 2) + ['l' + 'D' * (w - 2) + 'E']
+
+
+def doom_build(c, top, look):
+    part = lambda name, box, faces, bone='tool', rot=0: dict(drill.part(name, box, _paint(faces, DOOM), rot), bone=bone)
+    t, L = top - 4, 5
+    parts = [part('body', ((c - 2.5, t, -2.5), (c + 2.5, top, 2.5)), D_FACES)]
+    one = lambda ch: (lambda w, h: [ch * w] * h)
+    bfaces = {'north': one('K'), 'south': one('K'), 'east': one('K'), 'west': one('K'), 'up': one('D'), 'down': one('x')}
+    if look == 'doom4':
+        for k, (dx, dz) in enumerate(((-1, -1), (1, -1), (1, 1), (-1, 1))):
+            parts.append(part(f'barrel{k}', ((c + dx - 0.5, t - L, dz - 0.5), (c + dx + 0.5, t, dz + 0.5)), bfaces, 'bit'))
+    else:   # three, 1 px off the axis, each turned to face out (90: one on the gun's top, the back)
+        for k in range(3):
+            parts.append(part(f'barrel{k}', ((c + 0.5, t - L, -0.5), (c + 1.5, t, 0.5)), bfaces, 'bit', rot=90 + 120 * k))
+    ring_f = {'north': ring_d, 'south': ring_d, 'east': ring_d, 'west': ring_d, 'up': ring_cap, 'down': ring_cap}
+    parts.append(part('ring_mid', ((c - 2.25, t - 2, -2.25), (c + 2.25, t - 1.5, 2.25)), ring_f, 'bit'))
+    mf = {'north': muzzle_side, 'south': muzzle_side, 'east': muzzle_side, 'west': muzzle_side,
+          'up': ring_cap, 'down': ring_cap}
+    parts.append(part('muzzle', ((c - 2, t - L + 0.5, -2), (c + 2, t - L + 2, 2)), mf, 'bit'))
+    if look == 'doom3d':   # the carry handle, a loop 1 px proud of the back over the housing (rows 0-2 + 1 px)
+        side_e = lambda w, h: ['AB'] + ['B.'] * (h - 2) + ['BD']      # (back -> front: the bar, then the gap)
+        side_w = lambda w, h: ['BA'] + ['.B'] * (h - 2) + ['DB']
+        parts.append(part('handle', ((c - 0.5, top - 2.5, 2.5), (c + 0.5, top - 0.5, 3.5)),
+                          {'south': lambda w, h: ['A' * (w - 1) + 'B'] + ['B' * (w - 1) + 'D'] * (h - 1),
+                           'north': one('.'), 'east': side_e, 'west': side_w,
+                           'up': lambda w, h: ['C' * w, 'A' * w], 'down': lambda w, h: ['D' * w, 'E' * w]}))
     return parts
