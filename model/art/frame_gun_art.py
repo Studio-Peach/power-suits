@@ -131,10 +131,10 @@ def ring_cap(w, h):  # its top / bottom: the plate, an edge round it
     return [''.join('D' if i in (0, w - 1) or j in (0, h - 1) else 'C' for i in range(w)) for j in range(h)]
 
 
-def build(c, top, lamp='red', kind='A', body='ref', look='old', barrels='4', handle='paint'):
+def build(c, top, lamp='red', kind='A', body='ref', look='old', barrels='4', handle='paint', top_art='rust', drum='dark'):
     """The chaingun's parts on an arm centred at x c (right side) whose socket is at y top: the receiver (bone 'tool')
     and the barrels with their rings under it (bone 'bit': they spin). look: GUN_LOOK (below), 'old' the first drafts."""
-    if look != 'old': return doom_build(c, top, look, barrels, handle)
+    if look != 'old': return doom_build(c, top, look, barrels, handle, top_art, drum)
     metal = 'steel' if kind == 'C' else 'black'
     P = pal(metal, lamp)
     part = lambda name, box, faces, bone='tool', rot=0: dict(drill.part(name, box, _paint(faces, P), rot), bone=bone)
@@ -214,6 +214,48 @@ D_FACES = {'south': D_BACK, 'east': D_OUTER, 'west': D_INNER, 'north': D_FRONT, 
            'down': ['EDDDDDDDDE'] + ['DC' + 'E' * 6 + 'CD'] * 8 + ['EDDDDDDDDE']}
 
 
+# Round 3 (2026-11-14, user: keep the four barrels; no XX; the top half reworked: the rust ammo box and the copper pipe
+# didn't read, "can't tell what the brass part is"). The drum (rows 3-7) is the same on every side now, plain; the top
+# half (rows 0-2, the rear housing at the arm) GUN_TOP:
+# - plain: a dark housing, a lit top edge, a bolt at each end, a shadow seam under it;
+# - vents: the same, cut with vertical vent slits (the reference's rear block);
+# - fins: the drive motor: cooling fins running along the gun (lit / dark columns), as a real rotary gun's rear;
+# 'rust' round 2's (XX dropped). The back keeps the carry handle down its middle (or the 3D loop, GUN_HANDLE=3d).
+DRUM = ['DBBBBBBBBD', 'DCBBCCCCDE', 'EDDDDDDDDE', 'DCBBCCCCDE', 'EDDDDDDDDE']
+TOPS = {
+    'plain': dict(side=['DBBBBBBBBD', 'BhCCCCCChD', 'EDDDDDDDDE'],
+                  back=['DBBDABDBBD', 'BhCDABDChD', 'EDDDABDDDE']),
+    'vents': dict(side=['DBBBBBBBBD', 'BCECECECCD', 'BCECECECCD'],
+                  back=['DBBDABDBBD', 'BECDABDECD', 'BECDABDECD']),
+    'fins':  dict(side=['DADADADADE'] + ['DBDBDBDBDE'] * 2,     # (the fins' ends lit, their sides dimmer: all-lit
+                  back=['DADDABDADE'] + ['DBDDABDBDE'] * 2)}    # stripes outshone the muzzle)
+
+
+# Round 4 (2026-11-14, user: plain picked, but "a bit plain, too uniform between the two halves"): the drum in its own
+# metal, shaded round (dark edges, a highlight left of the middle: the housing is flat and matte, the drum a turned
+# part), under a deep seam row that splits the halves. GUN_DRUM: bronze (the reference's warm drum metal) | steel (the
+# iron armour's) | polished (the housing's black, worn bright); 'dark' round 3's (the housing's paint, banded).
+DRUMS = {'bronze':   dict(R='a0785a', r='7a5a44', s='5a4234', t='3e2d24', y='22180f'),
+         'steel':    dict(R='9fa4a9', r='757c85', s='58606a', t='3c424c', y='22262e'),
+         'polished': dict(R='8a847a', r='635e57', s='48443f', t='2e2c2a', y='151413')}
+CYLD = 'tsrRrsssty'                      # a side's columns, round
+DRUM_ROUND = ['E' * 10,                  # the seam between the halves
+              'srrRrrrrrs',              # the drum's front lip, lit
+              CYLD, CYLD,
+              'ytttttttty']              # its bottom edge into the barrel carrier
+
+def doom_faces(top, drum='dark'):
+    if drum != 'dark':
+        t = TOPS[top]
+        return dict(D_FACES, east=t['side'] + DRUM_ROUND, west=t['side'] + DRUM_ROUND, north=t['side'] + DRUM_ROUND,
+                    south=t['back'] + DRUM_ROUND)
+    if top == 'rust':
+        f = dict(D_FACES)
+        f['east'] = D_OUTER[:3] + DRUM
+        return f
+    t = TOPS[top]
+    return dict(D_FACES, east=t['side'] + DRUM, west=t['side'] + DRUM, north=t['side'] + DRUM, south=t['back'] + DRUM)
+
 def ring_d(w, h):        # the clamp ring's side, dimmer than ring() (a bright ring read as a white band)
     return ['B' * (w - 1) + 'C'] + ['C' * (w - 1) + 'D'] * (h - 1)
 
@@ -247,12 +289,13 @@ def collar(w, h):        # the collar's side: lit top row, dark under
     return ['C' * (w - 1) + 'D'] + ['D' * (w - 1) + 'E'] * (h - 1)
 
 
-def doom_build(c, top, look, barrels='4', handle='paint'):
+def doom_build(c, top, look, barrels='4', handle='paint', top_art='rust', drum='dark'):
     if look == 'doom4': barrels = '4'                       # (round 1's names)
     if look == 'doom3d': handle = '3d'
-    part = lambda name, box, faces, bone='tool', rot=0: dict(drill.part(name, box, _paint(faces, DOOM), rot), bone=bone)
+    P = DOOM | {k: _c(v) for k, v in DRUMS.get(drum, {}).items()}
+    part = lambda name, box, faces, bone='tool', rot=0: dict(drill.part(name, box, _paint(faces, P), rot), bone=bone)
     t, L = top - 4, 5
-    parts = [part('body', ((c - 2.5, t, -2.5), (c + 2.5, top, 2.5)), D_FACES)]
+    parts = [part('body', ((c - 2.5, t, -2.5), (c + 2.5, top, 2.5)), doom_faces(top_art, drum))]
     one = lambda ch: (lambda w, h: [ch * w] * h)
     bfaces = {'north': one('K'), 'south': one('K'), 'east': one('K'), 'west': one('K'), 'up': one('D'), 'down': one('x')}
     at = {'4': ((-1, -1), (1, -1), (1, 1), (-1, 1)),        # centres (dx, dz), all 1 x 1 px, none turned
