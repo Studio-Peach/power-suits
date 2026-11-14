@@ -786,9 +786,10 @@ if ENGINE == 'firebox':
 # Knob TOOL ('none' / 'drill' / 'saw'; 2026-11-13, user: the big suit's power tools, sized down and redesigned, the drill
 # first): the tool in the left arm's socket (SOCKET), on a `tool` bone under it. Tools are the exception to the simple
 # boxes (user, 2026-11-13): they may be models of several parts. The drill: frame_drill_art.py; the chainsaw:
-# frame_saw_art.py (its drafts SAW=A|B|C); the chaingun ('gun'): frame_gun_art.py.
+# frame_saw_art.py (its drafts SAW=A|B|C); the chaingun ('gun'): frame_gun_art.py; the flamethrower ('flame'):
+# frame_flame_art.py.
 TOOL = os.environ.get('TOOL', 'none')
-assert TOOL in ('none', 'drill', 'saw', 'gun'), TOOL
+assert TOOL in ('none', 'drill', 'saw', 'gun', 'flame'), TOOL
 SHELLS['arm_socket_shell'] = dict(SHELLS['arm_shell'], below=[], end='socket')
 if ARMOR != 'none': SHELLS['arm_socket_armor'] = dict(SHELLS['arm_armor'], below=[], end='socket')
 TOOL_PARTS = []
@@ -812,6 +813,10 @@ if TOOL == 'gun':
                                os.environ.get('GUN_BODY', 'ref'), os.environ.get('GUN_LOOK', 'doom'),
                                os.environ.get('GUN_BARRELS', '4'), os.environ.get('GUN_HANDLE', 'paint'),
                                os.environ.get('GUN_COUNTER') or os.environ.get('GUN_TOP', 'stack'), os.environ.get('GUN_DRUM', 'dark'))
+# The flamethrower (frame_flame_art.py; 2026-11-14, user: next, the big suit's as the reference): drafts FLAME=A|B|C.
+if TOOL == 'flame':
+    import frame_flame_art as flame_art
+    TOOL_PARTS = flame_art.build(6.25 + ARM_OUT, SOCKET_Y, os.environ.get('FLAME', 'A'), os.environ.get('FLAME_PILOT', 'dark'))
 for p in TOOL_PARTS: SHELLS[f"tl_{p['name']}"] = dict(faces=p['faces'])
 # where each shell's faces sit in the texture (below / beside nothing else), one strip per shell
 SHELL_AT = {'arm_shell': (0, 64), 'leg_shell': (0, 80),
