@@ -210,12 +210,34 @@ def pump_faces(n):
     return north, east, south, top + [plain] * free + bottom
 
 
-def build(c, top, kind='A', pilot='dark', glow='lit', body_art='burner', body_h=4):
+# Round 6 (2026-11-14, user: 3 px picked; give the px the body lost to the barrel): the muzzle stays where it was (9 px
+# under the socket, the chaingun's), the barrel takes what the body leaves: 6 px under the 3 px body. Its paint for
+# any length (barrel_rows): the shadow row, the 1 px holes down the middle, the sooty end. FLAME_HOLES: 'keep' the
+# 5 px barrel's rhythm (a hole, two plain rows, a hole; the rest plain over the soot) | 'even' as many holes as fit
+# one plain row apart (three on 6 px).
+MUZZLE_DROP = 9   # px from the socket to the muzzle
+
+
+def barrel_rows(n, holes='keep'):
+    holes_ = (['hexxlp', 'hexxlp'], ['hlxxep', 'hlxxlp'])  # (the 5 px barrel's two holes, lit a little differently)
+    mid = n - 3                                             # between the shadow row and the two soot rows
+    if holes == 'even':
+        rows = []
+        for i in range(mid // 3): rows += ['hellep' if i % 2 == 0 else 'helgep'] + holes_[i % 2]   # a plain row, a hole
+    else:
+        rows = ['hellep'] + holes_[0] + ['helgep', 'hellep'] + holes_[1]
+    rows += ['hellep'] * (mid - len(rows))
+    assert len(rows) == mid, (n, rows)
+    return ['sppppz'] + rows + ['pssssz', 'szzzsz']
+
+
+def build(c, top, kind='A', pilot='dark', glow='lit', body_art='burner', body_h=4, holes='keep'):
     """The flamethrower's parts on an arm centred at x c (right side) whose socket is at y top (bone 'tool': all still)."""
     P = PAL | PILOT[pilot] | GLOW[glow] | BRASS | BODY4
     part = lambda name, box, faces: dict(drill.part(name, box, _paint(faces, P)), bone='tool')
     none = one('.')                                         # a face in another part's plane: not drawn
-    t, L = top - body_h, 5                                  # the body's bottom; the barrel's length
+    t = top - body_h                                        # the body's bottom
+    L = MUZZLE_DROP - body_h                                # the barrel's length: down to the muzzle
     side = lambda rows: {'north': rows, 'south': rows, 'east': rows, 'west': rows}
     body = ((c - 2.5, t, -2.5), (c + 2.5, top, 2.5))
     split = kind in ('B', 'D', 'E')                         # barrel at the front, the tank behind it
@@ -241,7 +263,8 @@ def build(c, top, kind='A', pilot='dark', glow='lit', body_art='burner', body_h=
         # the barrel 0.5 px in from the body's front, the rod flush with its back, 0.5 px of daylight between them
         bz0, bz1 = -2, 1
         rbox = ((c - 0.5, t - L - 1, 1.5), (c + 0.5, t, 2.5))
-    holes = NOZZLE if kind == 'E' else BARREL if kind != 'C' else [r.replace('x', '.') for r in BARREL]
+    art = barrel_rows(round(L * 2), holes)
+    holes = NOZZLE if kind == 'E' else art if kind != 'C' else [r.replace('x', '.') for r in art]
     parts.append(part('barrel', ((c - 1.5, t - L, bz0), (c + 1.5, t, bz1)), side(holes) | {'up': none, 'down': MUZZLE}))
     if kind == 'C':   # the core the holes show: black, 2 px inside the 3 px barrel (0.5 behind each hole: a 1 px core let
         # the eye onto the walls' insides, steel), its ends short of the body and the muzzle
