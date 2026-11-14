@@ -68,11 +68,11 @@ INNER = ['DCCCCCCCCB',
          'DCpCCCDCCB',
          'DCCCCCDCCB',
          'EDDDDDDDDE']
-# the front (the gun's bottom, outer -> inner): the status lamp (the drill's, outer top end), the khaki drive motor
+# the front (the gun's bottom, outer -> inner): the khaki drive motor
 # under the receiver's rear (a block on the outer half: lit top, shade under, an end bolt; centred with the lamp over
 # it, the first draft read as a face), its feed pipe running down and in
 FRONT = ['DCCCCCCCCD',
-         'CWLCCCCCCD',
+         'CCCCCCCCCD',
          'CCCCCCCCCD',
          'TTTTtCCCCD',
          'TttttUCCCD',
@@ -111,7 +111,6 @@ def bodies(kind):
     else:
         d = _drum()
         f = dict(south=DRUM_BACK, east=_belt(d) if kind == 'belt' else d, west=d, north=d)
-    f['north'] = [f['north'][0], f['north'][1][0] + 'WL' + f['north'][1][3:]] + f['north'][2:]   # the status lamp
     return f | {'up': UP, 'down': DOWN}
 
 
@@ -120,8 +119,8 @@ def _paint(faces, P):
     return lambda f, w, h: [[P[ch] for ch in r] for r in (faces[f](w, h) if callable(faces[f]) else faces[f])]
 
 
-def barrel(w, h):   # a barrel's side: lit column, shaded column; its muzzle end a texel darker
-    return [('B' + 'D' * (w - 1)) if j < h - 1 else 'C' * w for j in range(h)]
+def barrel(w, h):   # a barrel's side: one colour (2026-11-14, user; the lit / shaded columns read as stripes)
+    return ['C' * w] * h
 
 
 def ring(w, h):     # a ring's side: a lit top row over the body, the corner column shaded
@@ -140,7 +139,9 @@ def build(c, top, lamp='red', kind='A', body='ref'):
     part = lambda name, box, faces, bone='tool', rot=0: dict(drill.part(name, box, _paint(faces, P), rot), bone=bone)
     t = top - 4                                            # the receiver's bottom: the barrels hang from it
     parts = [part('body', ((c - 2.5, t, -2.5), (c + 2.5, top, 2.5)), bodies(body))]
-    L = 7                                                  # the barrels' length, px (1 past the muzzle ring)
+    # the barrels' length, px (1 past the muzzle ring): 5 (2026-11-14, user: shorter; the first drafts' 7 hung far
+    # under the arm)
+    L = 5
     bore = lambda w, h: ['x' * w] * h
     cap = lambda w, h: ['D' * w] * h
     bfaces = {'north': barrel, 'south': barrel, 'east': barrel, 'west': barrel, 'up': cap, 'down': bore}
@@ -153,6 +154,6 @@ def build(c, top, lamp='red', kind='A', body='ref'):
             # placed on +x then turned about the axis (the bone's origin) by a: frame_model turns it -rot about y
             parts.append(part(f'barrel{k}', ((c + 1.0, t - L, -0.5), (c + 2.0, t, 0.5)), bfaces, 'bit', rot=a))
     rf = {'north': ring, 'south': ring, 'east': ring, 'west': ring, 'up': ring_cap, 'down': ring_cap}
-    for name, y in (('ring_mid', t - 3), ('ring_muzzle', t - L + 1)):
+    for name, y in (('ring_mid', t - 2), ('ring_muzzle', t - L + 1)):
         parts.append(part(name, ((c - 2.25, y - 0.5, -2.25), (c + 2.25, y, 2.25)), rf, 'bit'))
     return parts
