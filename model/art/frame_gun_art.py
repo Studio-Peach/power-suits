@@ -137,10 +137,11 @@ def ring_cap(w, h):  # its top / bottom: the plate, an edge round it
     return [''.join('D' if i in (0, w - 1) or j in (0, h - 1) else 'C' for i in range(w)) for j in range(h)]
 
 
-def build(c, top, lamp='red', kind='A', body='ref', look='old', barrels='4', handle='paint', top_art='rust', drum='dark'):
+def build(c, top, lamp='red', kind='A', body='ref', look='old', barrels='4', handle='paint', top_art='rust', drum='dark',
+          body_h=4, barrel_l=5):
     """The chaingun's parts on an arm centred at x c (right side) whose socket is at y top: the receiver (bone 'tool')
     and the barrels with their rings under it (bone 'bit': they spin). look: GUN_LOOK (below), 'old' the first drafts."""
-    if look != 'old': return doom_build(c, top, look, barrels, handle, top_art, drum)
+    if look != 'old': return doom_build(c, top, look, barrels, handle, top_art, drum, body_h, barrel_l)
     metal = 'steel' if kind == 'C' else 'black'
     P = pal(metal, lamp)
     part = lambda name, box, faces, bone='tool', rot=0: dict(drill.part(name, box, _paint(faces, P), rot), bone=bone)
@@ -357,13 +358,23 @@ def collar(w, h):        # the collar's side: lit top row, dark under
     return ['C' * (w - 1) + 'D'] + ['D' * (w - 1) + 'E'] * (h - 1)
 
 
-def doom_build(c, top, look, barrels='4', handle='paint', top_art='rust', drum='dark'):
+# Round 8 (2026-11-14, user: now that tool bodies have their own heights, see the chaingun's lower): GUN_BODY_H (px)
+# the body's height, the stack's band / groove pair repeated to fill it (3 px: twice); GUN_BARREL_L the barrels'
+# length (5: the gun 1 px higher | 6: the muzzle where it was).
+def doom_build(c, top, look, barrels='4', handle='paint', top_art='rust', drum='dark', body_h=4, barrel_l=5):
     if look == 'doom4': barrels = '4'                       # (round 1's names)
     if look == 'doom3d': handle = '3d'
     P = DOOM | {k: _c(v) for k, v in DRUMS.get(drum, {}).items()}
     part = lambda name, box, faces, bone='tool', rot=0: dict(drill.part(name, box, _paint(faces, P), rot), bone=bone)
-    t, L = top - 4, 5
-    parts = [part('body', ((c - 2.5, t, -2.5), (c + 2.5, top, 2.5)), doom_faces(top_art, drum))]
+    t, L = top - body_h, barrel_l
+    faces = doom_faces(top_art, drum)
+    if body_h != 4:
+        assert top_art == 'stack', 'only the stack is drawn for other heights'
+        n = round(body_h * 2)
+        assert n % 2 == 0 and n >= 4, n
+        rows = STACK[:2] + STACK[2:4] * ((n - 2) // 2)
+        faces = dict(faces, north=rows, south=rows, east=rows, west=rows)
+    parts = [part('body', ((c - 2.5, t, -2.5), (c + 2.5, top, 2.5)), faces)]
     one = lambda ch: (lambda w, h: [ch * w] * h)
     bfaces = {'north': one('K'), 'south': one('K'), 'east': one('K'), 'west': one('K'), 'up': one('D'), 'down': one('x')}
     at = {'4': ((-1, -1), (1, -1), (1, 1), (-1, 1)),        # centres (dx, dz), all 1 x 1 px, none turned
