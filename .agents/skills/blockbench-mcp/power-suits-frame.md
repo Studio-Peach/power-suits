@@ -164,5 +164,9 @@ the end and `docs/guide.md` Notes).
   255) into `power_frame_glass` (a translucent pass, `HelmetGlassLayer`, after his face) and its glowmask
   `power_frame_glow_visor` (the visor's colour faded in by opacity, `SuitGlowLayer.VISOR_GLOW` 0.45: his eyes still
   show through, faintly). His hat layer hides under the helmet (it lies in the helmet's planes).
-- Not yet in game (later steps): the engine (the drafts are knobs, off in the saved files), the tools and
-  the iron armour. Re-run the exporter after rebuilding the saved files.
+- Step 4, the engine: the saved files carry it (`ENGINE=heart`, `FIRE=dark`: the texture holds the dead coals); the
+  game shows the `engine` group with any engine installed. The exporter lights the coal colours into
+  `power_frame_glow_fire` and writes them white -> grey into `power_frame_glow_core` for the tidal engine and the star
+  reactor (tinting the fire's yellow -> red mask violet came out pink). Smoke from the caps' tops (`ExhaustSmoke`: 29.5 px
+  up, 6 back, 3.5 out). The helmet clipping the blower looking up stays (user, 2026-11-14: "the cost of gameplay").
+- Not yet in game (later steps): the tools and the iron armour. Re-run the exporter after rebuilding the saved files.

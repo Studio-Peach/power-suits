@@ -6,6 +6,10 @@ mod as GeckoLib files, without Blockbench (the frame is script-built: model/art/
   textures/entity/power_frame.png, power_frame_slim.png (the opaque texels; see-through ones are alpha 0)
   textures/entity/power_frame_glass(_slim).png (only the partly see-through texels: the helmet's visor glass)
   textures/entity/power_frame_glow_visor(_slim).png (the visor's glowmask: the glass texels, opaque white)
+  textures/entity/power_frame_glow_fire(_slim).png (the engine's fire: the reserved coal colours of
+      tools/make-glowmasks.py, painted dark in the texture (frame_model.py FIRE=dark), each lit to its glow colour)
+  textures/entity/power_frame_glow_core(_slim).png (the same texels in white -> grey: the tidal engine's and the star
+      reactor's light on the heart until they have frame art, tinted in their own colours)
   geckolib/animations/entity/power_frame.animation.json
   geckolib/models/view/frame_arm.geo.json, frame_arm_slim.geo.json (the cockpit's right arm, below)
 
@@ -221,15 +225,24 @@ def png(w, h, rows):
         chunk(b'IDAT', zlib.compress(raw, 9)) + chunk(b'IEND', b'')
 
 
+# The fire's reserved coal colours (tools/make-glowmasks.py GLOW, 'fire') -> their glow colours.
+FIRE = {(0x3f, 0x21, 0x1b): (0xff, 0xdc, 0x6e), (0x37, 0x1d, 0x19): (0xff, 0x96, 0x32), (0x2f, 0x1a, 0x17): (0xd2, 0x46, 0x19)}
+
+
 def textures(data):
-    """The texture split three ways (see the docstring): opaque, glass, the visor's glowmask."""
+    """The texture split (see the docstring): opaque, glass, the visor's glowmask, the fire's glowmask."""
     w, h, rows = unpng(data)
     glass = lambda p: 0 < p[3] < 255
     clear = (0, 0, 0, 0)
     opaque = [[clear if glass(p) else p for p in row] for row in rows]
     panes = [[p if glass(p) else clear for p in row] for row in rows]
     visor = [[(255, 255, 255, 255) if glass(p) else clear for p in row] for row in rows]
-    return png(w, h, opaque), png(w, h, panes), png(w, h, visor)
+    fire = [[FIRE[p[:3]] + (255,) if p[3] == 255 and p[:3] in FIRE else clear for p in row] for row in rows]
+    lit = sum(p != clear for row in fire for p in row)
+    assert lit, 'no fire texels: build the saved files with the engine (ENGINE=heart, FIRE=dark)'
+    grey = {k: (v,) * 3 for k, v in zip(FIRE, (255, 225, 190))}   # hottest -> coolest, as the fire's yellow -> red
+    core = [[grey[p[:3]] + (255,) if p[3] == 255 and p[:3] in FIRE else clear for p in row] for row in rows]
+    return png(w, h, opaque), png(w, h, panes), png(w, h, visor), png(w, h, fire), png(w, h, core)
 
 
 def write(rel, data):
@@ -273,9 +286,11 @@ if __name__ == '__main__':
         arm = ident.replace('power_frame', 'frame_arm')
         write(f'geckolib/models/view/{arm}.geo.json', json.dumps(arm_view(model, arm), indent=1).encode())
         source = model['textures'][0]['source']
-        opaque, glass, visor = textures(base64.b64decode(source.split(',', 1)[1]))
+        opaque, glass, visor, fire, core = textures(base64.b64decode(source.split(',', 1)[1]))
         slim = ident[len('power_frame'):]
         write(f'textures/entity/{ident}.png', opaque)
         write(f'textures/entity/power_frame_glass{slim}.png', glass)
         write(f'textures/entity/power_frame_glow_visor{slim}.png', visor)
+        write(f'textures/entity/power_frame_glow_fire{slim}.png', fire)
+        write(f'textures/entity/power_frame_glow_core{slim}.png', core)
     write('geckolib/animations/entity/power_frame.animation.json', json.dumps(animations(), indent=1).encode())

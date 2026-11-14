@@ -664,7 +664,10 @@ SHELLS['shoulder_plate'] = dict(faces={'plate': _plate, 'decal': _decal, 'bare':
 # - heart (draft, 2026-11-11, user: after Shiro Tomoe's engine heart in Tailenders, replacing the radial firebox, the
 #   core and the pipes): an iron ball in the chest slot, copper hoses painted flat on a harness, two over the
 #   shoulders and two to the waist, into the twin-cylinder pack with the old exhausts on the back (frame_heart_art.py).
-ENGINE = os.environ.get('ENGINE', 'none')
+# In game since 2026-11-14 (step 4): the saved files carry the engine (the heart, BACK=blower; the game shows the
+# `engine` group only with an engine installed) with its fire dark (FIRE=dark below): the in-game texture, lit by the
+# fire glowmask. ENGINE=none builds the bare frame, FIRE=lit shows it burning for a review.
+ENGINE = os.environ.get('ENGINE', 'heart')
 assert ENGINE in ('none', 'firebox', 'heart'), ENGINE
 import frame_engine_art as engine_art
 import frame_radial_art as radial_art
@@ -676,7 +679,7 @@ PAL.update({'F': (0xff, 0xdc, 0x6e), 'I': (0xff, 0x96, 0x32), 'J': (0xd2, 0x46, 
 # Draft knob FIRE (2026-11-11): 'lit' paints the fire burning (review), 'dark' in the reserved coal colours of
 # tools/make-glowmasks.py, as the texture has them in game, where the fire glowmask lights them by the burn state
 # (SuitGlowLayer): an engine that is off.
-FIRE = os.environ.get('FIRE', 'lit')
+FIRE = os.environ.get('FIRE', 'dark')
 if FIRE == 'dark': PAL.update({'F': (0x3f, 0x21, 0x1b), 'I': (0x37, 0x1d, 0x19), 'J': (0x2f, 0x1a, 0x17)})
 LIT = {(0x3f, 0x21, 0x1b): (0xff, 0xdc, 0x6e), (0x37, 0x1d, 0x19): (0xff, 0x96, 0x32), (0x2f, 0x1a, 0x17): (0xd2, 0x46, 0x19)}
 

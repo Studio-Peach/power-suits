@@ -10,10 +10,12 @@ import java.nio.file.Files;
 import java.util.Locale;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
+import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.fml.loading.FMLPaths;
 
@@ -24,7 +26,8 @@ import net.neoforged.fml.loading.FMLPaths;
  * following the view (45 right: the head only; 80 left: the torso turns the last 30; up 40), and an empty frame
  * without an engine beside it (it slumps: head bowed, torso tipped; its helmet's visor dark), the helmet up close (his
  * face behind the visor glass, lit in the visor's colour; at night; the parked frame's dark visor; without a helmet:
- * his own head and hat layer), then the cockpit: the empty right hand (his arm in
+ * his own head and hat layer), the engine (the blower on the back, the core and hoses on the front, by day and by night:
+ * fire lit, smoke from the caps; a star reactor frame, its light violet on the same heart), then the cockpit: the empty right hand (his arm in
  * the frame's arm) and looking down (nothing of his body, like vanilla). Shots ap_frame_*.png.
  * Log run/autopilot_frame.csv per tick: the suit's hitbox, how high the pilot's eyes ride above the suit (1.98: his
  * own eyes in the frame, ModEntities), the client's walk animation (position, speed), the parked frame's power and
@@ -33,7 +36,7 @@ import net.neoforged.fml.loading.FMLPaths;
 final class FrameScene {
     private static BufferedWriter csv;
     private static Vec3 home;
-    private static volatile PowerSuitEntity parked;
+    private static volatile PowerSuitEntity parked, reactor;
     private static String phase = "setup";
 
     static boolean step(Minecraft mc, int s) {
@@ -76,12 +79,27 @@ final class FrameScene {
             case 308 -> { phase = "no_helmet"; AutoPilot.onServer(mc, p -> DevUtil.setTime(p.level(), 6000)); helmet(mc, false); Vec3 at = mc.player.getVehicle().position(); camera(mc, at.add(0.9, 2.0, 1.5), at.add(0, 1.95, 0)); }
             case 322 -> AutoPilot.shot(mc, "frame_no_helmet");
             case 324 -> helmet(mc, true);
+            // The engine (the pilot's firebox): the blower on the back, the core and hoses on the front, by day and by night
+            // (the fire lit, smoke from the caps); a star reactor frame (its light violet on the same heart).
+            case 330 -> { phase = "engine"; Vec3 at = mc.player.getVehicle().position(); camera(mc, at.add(1.4, 2.1, -2.2), at.add(0, 1.4, 0)); }
+            case 344 -> AutoPilot.shot(mc, "frame_engine_back");
+            case 346 -> { Vec3 at = mc.player.getVehicle().position(); camera(mc, at.add(-1.2, 1.6, 2.2), at.add(0, 1.35, 0)); }
+            case 360 -> AutoPilot.shot(mc, "frame_engine_front");
+            case 362 -> { phase = "engine_night"; AutoPilot.onServer(mc, p -> DevUtil.setTime(p.level(), 18000)); Vec3 at = mc.player.getVehicle().position(); camera(mc, at.add(1.4, 2.1, -2.2), at.add(0, 1.4, 0)); }
+            case 380 -> AutoPilot.shot(mc, "frame_engine_night_back");
+            case 382 -> { Vec3 at = mc.player.getVehicle().position(); camera(mc, at.add(-1.2, 1.6, 2.2), at.add(0, 1.35, 0)); }
+            case 396 -> AutoPilot.shot(mc, "frame_engine_night_front");
+            case 398 -> around(mc, reactor, -2.4);     // its mind turns it about: shoot by its own facing
+            case 410 -> AutoPilot.shot(mc, "frame_engine_reactor_back");
+            case 411 -> around(mc, reactor, 2.4);
+            case 417 -> AutoPilot.shot(mc, "frame_engine_reactor_front");
+            case 418 -> AutoPilot.onServer(mc, p -> DevUtil.setTime(p.level(), 6000));
             // The cockpit: the empty right hand (his arm in the frame's), nothing of the body looking down.
-            case 330 -> { phase = "cockpit"; mc.setCameraEntity(mc.player); DevUtil.hideGui(mc, false); o.setCameraType(CameraType.FIRST_PERSON); }
-            case 344 -> AutoPilot.shot(mc, "frame_cockpit_arm");
-            case 346 -> AutoPilot.setView(0, 60);
-            case 362 -> AutoPilot.shot(mc, "frame_cockpit_down");
-            case 364 -> { AutoPilot.setView(0, 0); close(); return false; }
+            case 420 -> { phase = "cockpit"; mc.setCameraEntity(mc.player); DevUtil.hideGui(mc, false); o.setCameraType(CameraType.FIRST_PERSON); }
+            case 434 -> AutoPilot.shot(mc, "frame_cockpit_arm");
+            case 436 -> AutoPilot.setView(0, 60);
+            case 452 -> AutoPilot.shot(mc, "frame_cockpit_down");
+            case 454 -> { AutoPilot.setView(0, 0); close(); return false; }
             default -> {}
         }
         if (s >= 1) {
@@ -104,6 +122,17 @@ final class FrameScene {
             s.getInventory().setItem(PowerSuitEntity.HELMET_SLOT, new ItemStack(ModItems.SUIT_HELMET.get())); // its visor dark: no power
             p.level().addFreshEntity(s);
             parked = s;
+            // a star reactor frame (a nether star: free power; its mind keeps it standing, looking about) 3 blocks behind the pilot
+            PowerSuitEntity r = ModEntities.POWER_SUIT.get().create(p.level(), EntitySpawnReason.COMMAND);
+            r.getInventory().setItem(PowerSuitEntity.ENGINE_SLOT, new ItemStack(ModItems.STAR_REACTOR.get()));
+            r.getInventory().setItem(PowerSuitEntity.HELMET_SLOT, new ItemStack(ModItems.SUIT_HELMET.get()));
+            r.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.NETHER_STAR)); // the reactor's core
+            r.snapTo(home.x + 3, home.y, home.z - 3, 0, 0);
+            r.setYBodyRot(0);
+            r.setYHeadRot(0);
+            r.brain().setOwnerId(p.getUUID());
+            p.level().addFreshEntity(r);
+            reactor = r;
         });
         try {
             csv = Files.newBufferedWriter(FMLPaths.GAMEDIR.get().resolve("autopilot_frame.csv"));
@@ -120,6 +149,19 @@ final class FrameScene {
                 suit.getInventory().setItem(PowerSuitEntity.HELMET_SLOT, on ? new ItemStack(ModItems.SUIT_HELMET.get()) : ItemStack.EMPTY);
             }
         });
+    }
+
+    /** A camera {@code ahead} blocks in front of a suit (negative: behind it) by the way its body faces now, a little to
+     *  its side and above, looking at its chest (the client's copy: what is drawn). */
+    private static void around(Minecraft mc, PowerSuitEntity suit, double ahead) {
+        var c = mc.level.getEntity(suit.getId());
+        if (!(c instanceof PowerSuitEntity drawn)) {
+            return;
+        }
+        float yaw = drawn.yBodyRot * Mth.DEG_TO_RAD;
+        Vec3 forward = new Vec3(-Mth.sin(yaw), 0, Mth.cos(yaw)), side = new Vec3(-forward.z, 0, forward.x);
+        Vec3 at = drawn.position();
+        camera(mc, at.add(forward.scale(ahead)).add(side.scale(0.8)).add(0, 1.9, 0), at.add(0, 1.4, 0));
     }
 
     /** A still camera (GUI hidden: the screenshot shows the frame, not the visor). */

@@ -8,6 +8,7 @@ import com.geckolib.renderer.layer.GeoRenderLayer;
 import com.geckolib.util.ClientUtil;
 import dev.ajaczero.powersuits.PowerSuits;
 import dev.ajaczero.powersuits.entity.PowerSuitEntity;
+import dev.ajaczero.powersuits.entity.SuitEngine;
 import dev.ajaczero.powersuits.item.ToolLight;
 import java.util.Arrays;
 import java.util.stream.Stream;
@@ -88,8 +89,8 @@ public class SuitGlowLayer extends GeoRenderLayer<PowerSuitEntity, Void, LivingE
         int[] suitTints = {
                 tint(fire, 1F, 1F, 1F),
                 glass(on * VISOR_GLOW, visor[0], visor[1], visor[2]),
-                tint(suit.lights().getTidalGlow(time), 1F, 1F, 1F),
-                tint(suit.lights().getReactorGlow(time), 1F, 1F, 1F)};
+                tint(suit.lights().getTidalGlow(time), TIDAL_TINT[0], TIDAL_TINT[1], TIDAL_TINT[2]),
+                tint(suit.lights().getReactorGlow(time), REACTOR_TINT[0], REACTOR_TINT[1], REACTOR_TINT[2])};
         int[] toolTints = toolTints(suit, time, partialTick);
         int[] tints = Arrays.copyOf(suitTints, suitTints.length + toolTints.length);
         System.arraycopy(toolTints, 0, tints, suitTints.length, toolTints.length);
@@ -99,6 +100,13 @@ public class SuitGlowLayer extends GeoRenderLayer<PowerSuitEntity, Void, LivingE
 
     /** The frame's visor glowmask per build (tools/export-frame.py: its glass texels). */
     private static final Identifier FRAME_VISOR = frameMask("visor"), FRAME_VISOR_SLIM = frameMask("visor_slim");
+    /** The frame's engine fire per build (tools/export-frame.py: its reserved coal colours). */
+    private static final Identifier FRAME_FIRE = frameMask("fire"), FRAME_FIRE_SLIM = frameMask("fire_slim");
+    /** The same texels in white -> grey (FRAME_CORE): the tidal engine's and the star reactor's light on the heart until
+     *  they have frame art of their own, in the big suit's teal Heart of the Sea and violet core (tinting the fire's
+     *  yellow -> red mask instead came out a muddy pink). */
+    private static final Identifier FRAME_CORE = frameMask("core"), FRAME_CORE_SLIM = frameMask("core_slim");
+    private static final float[] TIDAL_TINT = {0.3F, 1F, 0.95F}, REACTOR_TINT = {0.85F, 0.45F, 1F};
     /** How strongly the lit visor covers the glass: part strength, so the pilot's face still shows through. */
     private static final float VISOR_GLOW = 0.45F;
 
@@ -107,22 +115,29 @@ public class SuitGlowLayer extends GeoRenderLayer<PowerSuitEntity, Void, LivingE
     }
 
     /**
-     * Render: draw the model once per lit mask, after (on top of) the suit itself. The frame (2026-11-14) lights only its
-     * visor so far: the engine's and the tools' masks are the big suit's texture layout (they come with their steps).
+     * Render: draw the model once per lit mask, after (on top of) the suit itself. The frame (2026-11-14) lights its
+     * engine's fire (for each engine, see TIDAL_TINT) and the visor so far: the tools' masks are the big suit's texture
+     * layout (they come with their step).
      * The frame's visor is glass with his face behind it, so its light fades by opacity in the visor's colour
      * (energy-style, see energy()), not by darkening an opaque colour as on the big suit's dark visor.
      */
     @Override
     public void submitRenderTask(RenderPassInfo<LivingEntityRenderState> info, SubmitNodeCollector renderTasks) {
-        if (!info.willRender() || info.getOrDefaultGeckolibData(SuitRenderData.COCKPIT, false)
-                || !info.getOrDefaultGeckolibData(SuitRenderData.HELMET, false)) {
-            return; // nothing is drawn from inside; no helmet, no visor
-        }
         int[] tints = info.getGeckolibData(SuitRenderData.GLOW);
-        if (tints != null) {
-            boolean slim = info.getOrDefaultGeckolibData(SuitRenderData.PILOT_SLIM, false);
-            drawMasks(this.renderer, info, renderTasks, new Identifier[] {slim ? FRAME_VISOR_SLIM : FRAME_VISOR}, new int[] {tints[1]});
+        if (!info.willRender() || info.getOrDefaultGeckolibData(SuitRenderData.COCKPIT, false) || tints == null) {
+            return; // nothing is drawn from inside
         }
+        boolean slim = info.getOrDefaultGeckolibData(SuitRenderData.PILOT_SLIM, false);
+        // The fire, in the installed engine's light (the fire's glow follows the power for any engine, so pick by the
+        // engine; none installed: the engine isn't drawn, nor its mask).
+        int engine = info.getOrDefaultGeckolibData(SuitRenderData.ENGINE, -1);
+        boolean firebox = engine != SuitEngine.TIDAL.ordinal() && engine != SuitEngine.REACTOR.ordinal();
+        int fire = engine == SuitEngine.TIDAL.ordinal() ? tints[2] : engine == SuitEngine.REACTOR.ordinal() ? tints[3] : tints[0];
+        Identifier fireMask = firebox ? (slim ? FRAME_FIRE_SLIM : FRAME_FIRE) : (slim ? FRAME_CORE_SLIM : FRAME_CORE);
+        // No helmet, no visor (its tint stays on with the power).
+        int visor = info.getOrDefaultGeckolibData(SuitRenderData.HELMET, false) ? tints[1] : 0xFF000000;
+        drawMasks(this.renderer, info, renderTasks, new Identifier[] {fireMask, slim ? FRAME_VISOR_SLIM : FRAME_VISOR},
+                new int[] {fire, visor});
     }
 
     /** Draws the model again in the "eyes" render type for each mask whose tint isn't black. The tint, light

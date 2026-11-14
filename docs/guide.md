@@ -287,7 +287,7 @@ upgrades a world the first time it's opened and there's no way back: let it make
 | `./gradlew runGameTestServer` | Runs the automated in-game tests headless, prints pass/fail |
 | `./gradlew build` | Builds the mod jar into `build/libs/` (put it in a real `mods/` folder, plus GeckoLib) |
 | `node tools/export-model.mjs` | Re-exports model, animations and texture from the open Blockbench project (the big suit) |
-| `python3 tools/export-frame.py` | Exports the frame (`model/power_frame.bbmodel` + `_slim`, built by `model/art/frame_model.py` with the helmet) into the mod without Blockbench: `geckolib/models/entity/power_frame(_slim).geo.json`, their textures (split: opaque, the visor glass `power_frame_glass`, its glowmask `power_frame_glow_visor`), `power_frame.animation.json` (every animation name, empty: the frame is posed in code) and the cockpit's arm `geckolib/models/view/frame_arm(_slim).geo.json` |
+| `python3 tools/export-frame.py` | Exports the frame (`model/power_frame.bbmodel` + `_slim`, built by `model/art/frame_model.py` with the helmet) into the mod without Blockbench: `geckolib/models/entity/power_frame(_slim).geo.json`, their textures (split: opaque, the visor glass `power_frame_glass`, its glowmask `power_frame_glow_visor`, the engine's fire `power_frame_glow_fire` and the same texels in grey for the other engines `power_frame_glow_core`), `power_frame.animation.json` (every animation name, empty: the frame is posed in code) and the cockpit's arm `geckolib/models/view/frame_arm(_slim).geo.json` |
 | `./gradlew runAutopilot` | Dev tool: scripted test drive in a fresh flat world (pool, running out of fuel, chaingun range, right hand, EM projector, drill + chainsaw, tool items on foot), saves `run/screenshots/ap_*.png`, `run/autopilot_{water,fuel,cannon,em,mine}.csv`, quits |
 | `./gradlew runAutopilotFrame` | Dev tool (~25 s): the frame with the player inside from the front, back and side, the third-person and cockpit views, a walk and a sprint, the head following the view, an empty frame slumped beside it; `run/screenshots/ap_frame_*.png`, `run/autopilot_frame.csv` (hitbox, the pilot's eye height, the walk animation) |
 | `./gradlew runAutopilotPose` | Dev tool (~30 s): the code-driven pose from fixed cameras (torso lean with the view pitch, tool raise, torso twist with the view yaw toward marker blocks); `run/screenshots/ap_pose_*.png`, `run/autopilot_pose.csv` |
@@ -394,7 +394,7 @@ src/main/java/dev/ajaczero/powersuits/
     ToolInput.java           right click the hand passes on -> socket tool (vanilla's off-hand turn)
     HeldItemLayer.java       draws the pilot's selected item in the suit's right hand (third person)
     SuitGlowLayer.java       the suit's lights + the tool's ToolLights (glowmasks, tinted per frame); on the frame so far
-                             only the visor (the engine's and tools' masks are the big suit's layout)
+                             the engine's fire and the visor (the tools' masks are the big suit's layout)
     BulletRenderer.java      the glowing tracer streak
     ToolRotors.java          turns the chaingun's barrels / the TNT drum, shakes the rail cannon (suit + cockpit viewmodel)
     ClientSetup.java         registers the renderer
@@ -435,8 +435,12 @@ own, 1.98 up. Step 2: the cockpit shows nothing of his body looking down (like v
 own arm in the frame's arm (its cage and fist), and the third-person camera sits 5 blocks back. Step 3: the helmet (style C: wraparound visor, radio and camera on
 its outer layer) when the suit has one, his face behind its smoked glass, the glass lit in the visor's colour at part
 strength (amber: a pilot; green: the mind; red: a rogue; dark without power), his hat layer hidden under it; without a
-helmet his own head with its hat layer. The frame's left hand is the socket (the arm ends at his hand). Still the big suit's or
-off until their steps: the socket tool's viewmodel, the engine (lights and exhaust smoke off), the tools on the left arm (they work, with the big suit's muzzle
+helmet his own head with its hat layer. The frame's left hand is the socket (the arm ends at his hand). Step 4: the engine (the heart: a
+porthole core and copper hoses painted on the front, the hot-rod blower on the back with its fire window, supercharger
+and exhaust caps) with any engine installed; its fire lights with the burn (the tidal engine and the star reactor light
+the same heart teal / violet until they get frame art), smoke and bubbles from the caps. The helmet clips into the
+blower looking far up (user: fine, it rarely happens). Still the big suit's or
+off until their steps: the socket tool's viewmodel, the tools on the left arm (they work, with the big suit's muzzle
 positions and no model), paint and helmet styles. The notes below are the big suit's.
 
 ### The big suit

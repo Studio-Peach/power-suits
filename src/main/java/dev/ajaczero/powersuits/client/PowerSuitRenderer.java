@@ -21,10 +21,6 @@ import org.jspecify.annotations.Nullable;
  * posed and drawn from that snapshot alone (adjustModelBonesForRender, the layers).
  */
 public class PowerSuitRenderer extends GeoEntityRenderer<PowerSuitEntity, LivingEntityRenderState> {
-    /** Each engine's backpack (design sec. 4b), in SuitEngine order: the firebox (with its exhausts), the tidal engine's
-     *  tanks, the star reactor's canisters. Only the installed engine's is drawn; none without an engine. */
-    private static final String[] ENGINE_BONES = {"backpack_parts", "pack_tidal", "pack_reactor"};
-
     public PowerSuitRenderer(EntityRendererProvider.Context context) {
         super(context, new PowerSuitModel());
         this.shadowRadius = 0.6F;
@@ -108,12 +104,12 @@ public class PowerSuitRenderer extends GeoEntityRenderer<PowerSuitEntity, Living
         // are the big suit's helmets for now: any style shows the frame's helmet until the styles get theirs.)
         boolean helmet = info.getOrDefaultGeckolibData(SuitRenderData.HELMET, true);
         bones.ifPresent("armor_head", bone -> bone.skipRender(!helmet).skipChildrenRender(!helmet));
-        // Engine slot: the installed engine's backpack only (the glowmasks follow: a hidden bone isn't drawn again).
-        int engine = info.getOrDefaultGeckolibData(SuitRenderData.ENGINE, 0);
-        for (int i = 0; i < ENGINE_BONES.length; i++) {
-            boolean hide = i != engine;
-            bones.ifPresent(ENGINE_BONES[i], bone -> bone.skipRender(hide).skipChildrenRender(hide));
-        }
+        // Engine slot (design sec. 4b): the frame's engine (the heart: core and hoses on the front, the blower on the back)
+        // only with one installed; none without (the glowmasks follow: a hidden bone isn't drawn again). Every engine
+        // shows the heart for now: the tidal engine and the star reactor light its fire in their own colours
+        // (SuitGlowLayer) until they get frame art of their own.
+        boolean engine = info.getOrDefaultGeckolibData(SuitRenderData.ENGINE, -1) >= 0;
+        bones.ifPresent("engine", bone -> bone.skipRender(!engine).skipChildrenRender(!engine));
         ToolRotors.pose(bones, info.getOrDefaultGeckolibData(SuitRenderData.BARREL_ANGLE, 0F)); // turn (and coast) always
         float[] shake = info.getGeckolibData(SuitRenderData.RAIL_SHAKE);
         if (shake != null) {

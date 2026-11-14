@@ -14,21 +14,18 @@ import net.minecraft.world.phys.Vec3;
  * fuel left, engine under water); the server never hears about them.
  */
 final class ExhaustSmoke {
-    /** The frame (2026-11-14) has no engine parts on its back yet: the positions below are the big suit's (its pipes 3 blocks
-     *  up, over the frame's head). Off until the frame's engine goes in game with its own cap positions. */
-    private static final boolean FRAME_ENGINE_DRAWN = false;
-    /** Pipe tops in the model, in blocks: 3.04 up (48.6 px), 0.53 behind the centre, 0.31 to each side. */
-    private static final double PIPE_UP = 3.04, PIPE_BACK = 0.53, PIPE_SIDE = 0.31;
-    /** The tidal engine's tank valves (pack_tidal): 2.79 up (44.6 px), over the same spots as the pipes. */
-    private static final double VALVE_UP = 2.79;
-    /** The star reactor's canisters (pack_reactor): the glass strips' middle 2.45 up, their outer sides 0.43 from the centre. */
-    private static final double GLASS_UP = 2.45, GLASS_SIDE = 0.43;
+    /** The frame's exhaust caps (model/power_frame.bbmodel, en_mt_exhaust_cap_*: the blower's, 2026-11-14), in blocks:
+     *  their tops 1.84 up (29.5 px), 0.375 behind the centre (6 px), 0.22 to each side (3.5 px). The smoke comes out of
+     *  the holes in their tops. (The big suit's pipes: 3.04 up, 0.53 back, 0.31 out.) */
+    private static final double PIPE_UP = 29.5 / 16, PIPE_BACK = 6.0 / 16, PIPE_SIDE = 3.5 / 16;
+    /** The tidal engine has no frame art yet: its bubbles come out of the same caps. */
+    private static final double VALVE_UP = PIPE_UP;
+    /** The star reactor's motes, until it has frame art: round the blower's block (its middle 1.375 up, 22 px; its sides
+     *  0.31 from the centre, 5 px). */
+    private static final double GLASS_UP = 22.0 / 16, GLASS_SIDE = 5.0 / 16;
 
     /** Called every client tick. Smoke only while someone is driving: a parked suit's engine is off. */
     static void tick(PowerSuitEntity suit) {
-        if (!FRAME_ENGINE_DRAWN) {
-            return;
-        }
         if (suit.getEngine() == SuitEngine.TIDAL) {
             tidalBubbles(suit);
             return;
@@ -82,9 +79,6 @@ final class ExhaustSmoke {
 
     /** A thick black cough when the engine starts. */
     static void startupBurst(PowerSuitEntity suit) {
-        if (!FRAME_ENGINE_DRAWN) {
-            return;
-        }
         if (suit.getEngine() == SuitEngine.TIDAL && suit.power().isEngineUnderWater()) {
             puff(suit, ParticleTypes.BUBBLE, 8, 0.15, VALVE_UP); // the pump kicks in
             return;
