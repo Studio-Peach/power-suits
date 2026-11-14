@@ -116,3 +116,13 @@ live on `experimental/frame-concept`; the frame isn't in the game yet (model onl
   colour does most of the work: it is the only body that stands out from the grey armour in third person. Lesson: for
   a tool people must recognise, start from a photo of the real thing (rotated to the tool's pose and downsampled to
   the face's texels, `.scratch/saw/ph_*.png`), and use its signature colour even outside the palette.
+- The chaingun (`TOOL=gun`, `model/art/frame_gun_art.py`, picked 2026-11-14 after seven rounds): from the Doom 2016
+  chaingun (`.scratch/gun/ref_doom.png`), but only its parts that read at 5 x 4 x 5: four square barrels, a stepped
+  muzzle block with a **green light in each side's middle** (the signature colour, on the spinning bone), and a warm
+  black body that is one ribbed drum (band / groove three times) under a 2-row top (lit edge, bolts). What didn't
+  read and went: the reference's rust ammo box and bent copper pipe (the user couldn't tell what "the brass part" was),
+  an embossed 'XX' plate (a checkerboard), a clamp ring halfway, a two-tone housing over the drum (steel / grey /
+  chamfered tops all looked off). A red seven-segment ammo counter (Halo) was drafted and dropped: 3 x 5 texels is the
+  smallest legible digit at 2 texels a px, so two digits fill a whole face (smaller needs finer pixels or a light bar).
+  Lessons: a reference gives the tool's signature, not a parts list; when the user says "the top half", ask or draft
+  both halves (round 4 replaced the drum by mistake).

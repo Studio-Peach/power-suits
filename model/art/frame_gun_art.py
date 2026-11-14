@@ -1,5 +1,11 @@
 """The chaingun for the frame (frame_model.py, TOOL=gun): the third power tool brought over from the big suit.
 
+PICKED (2026-11-14, user: "this is the one"; frame_model's defaults): GUN_LOOK=doom (after the Doom 2016 chaingun,
+.scratch/gun/ref_doom.png), GUN_BARRELS=4, GUN_TOP=stack: a warm-black 5 x 4 x 5 body, a lit top edge and two bolts a
+side over the band / groove pair three times; four 1 x 1 px barrels on the spinning bone, no ring halfway; the stepped
+muzzle (collar, 4.5 x 2 block, chamfer, bolts, a green light in each side's middle). Built by doom_build() below; the
+sections before it are the earlier rounds (GUN, GUN_BODY), kept as knobs.
+
 2026-11-14 (user: the chaingun next; reference .scratch/gun/ref.png, a matte black six-barrel minigun: a cylinder
 receiver under a flat top plate with a carry handle, a khaki drive motor and a bent feed pipe under it, a rear grip
 with a red trigger (left out: see OUTER), the barrels held by a carrier at the receiver, a clamp ring halfway and a disc at the muzzle).
