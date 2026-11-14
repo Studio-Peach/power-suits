@@ -293,6 +293,13 @@ def counter(text, dim, w):
     rows = ['D' + 'B' * (w - 2) + 'D'] + ['D' + a[j] + gap + b[j] + 'D' for j in range(5)] + ['D' * (w - 1) + 'E']
     return [r[::-1] for r in rows]
 
+# Round 7 (2026-11-14, user: drop the counter, too big, and it can't be smaller at 2 texels a px; "the last four rows
+# of the body, repeat them a third time, leaving just the top different"): GUN_TOP=stack, every side the drum's band /
+# groove pair three times (rows 2-7) under the plain top's two rows (a lit edge, a bolt at each end). The back the same
+# (the painted carry handle would be a 2-row stub there).
+STACK = ['DBBBBBBBBD', 'BhCCCCCChD'] + ['DCBBCCCCDE', 'EDDDDDDDDE'] * 3
+TOPS['stack'] = dict(side=STACK[:2], back=STACK[:2], drum=STACK[2:])
+
 def doom_faces(top, drum='dark', show='60'):
     if top in ('dim', 'off', 'raised'):   # the counter (GUN_COUNTER): the plain top on the sides, the display on the back
         side = TOPS['plain']['side'] + DRUM
