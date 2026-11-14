@@ -260,7 +260,45 @@ for _k, _side in {'steel': ['MmmmmmmmmN', 'mgnnnnnngN', 'mnnnnnnnnN', 'NNNNNNNNN
                   'angular': ['DDDABBADDD', 'DDABBBBADD', 'DABBBBBBAD', 'ABCCCCCCBA']}.items():
     TOPS[_k] = dict(side=_side, back=_handle(_side, 'Z' if _k == 'steel' else 'D'), drum=DRUM4)
 
-def doom_faces(top, drum='dark'):
+# Round 6 (2026-11-14, user: none of the tops yet; an ammo counter in red pixel digits, like the Halo rifle's?). The
+# back (the gun's top: the face the third-person view sees, the arm hanging) becomes the counter's display, in place of
+# the carry handle; the other sides are the plain top over the banded drum. Two seven-segment digits, 3 x 5 texels (the
+# smallest that read at the model's 2 texels a px; 00-99, '--' endless), upright with the arm hanging. In game the
+# segments would be tiny glowing cubes the renderer shows / hides from a synced count; drawn here as paint ("60").
+# GUN_COUNTER: dim (unlit segments a dark red, an LED display) | off (unlit segments black) | raised (dim, in a display
+# housing 0.5 px proud of the back, 4.5 x 3.5: Halo's counter module).
+DOOM.update({k: _c(v) for k, v in {'R': 'ff5a3c', 'r': '3c1611'}.items()})
+SEGS = {'a': [(0, 0), (1, 0), (2, 0)], 'b': [(2, 0), (2, 1), (2, 2)], 'c': [(2, 2), (2, 3), (2, 4)],
+        'd': [(0, 4), (1, 4), (2, 4)], 'e': [(0, 2), (0, 3), (0, 4)], 'f': [(0, 0), (0, 1), (0, 2)],
+        'g': [(0, 2), (1, 2), (2, 2)]}
+DIGITS = {'0': 'abcdef', '1': 'bc', '2': 'abged', '3': 'abgcd', '4': 'fgbc', '5': 'afgcd', '6': 'afgedc', '7': 'abc',
+          '8': 'abcdefg', '9': 'abcdfg', '-': 'g'}
+
+
+def digit(ch, dim):
+    """A digit's 3 x 5 texels: lit segments 'R', unlit ones 'r' (dim) or the window's black 'E'."""
+    g = [['E'] * 3 for _ in range(5)]
+    for sg, cells in SEGS.items():
+        for x, y in cells:
+            if sg in DIGITS[ch]: g[y][x] = 'R'
+            elif dim and g[y][x] != 'R': g[y][x] = 'r'
+    return [''.join(r) for r in g]
+
+
+def counter(text, dim, w):
+    """The display, w wide (10 the back face, 9 the raised housing) x 7: a bezel (lit top), the digits in a black
+    window, 2 / 1 texels apart. Rows reversed left to right: the gun is on the left arm, which mirrors the art."""
+    a, b = digit(text[0], dim), digit(text[1], dim)
+    gap = 'E' * (w - 8)
+    rows = ['D' + 'B' * (w - 2) + 'D'] + ['D' + a[j] + gap + b[j] + 'D' for j in range(5)] + ['D' * (w - 1) + 'E']
+    return [r[::-1] for r in rows]
+
+def doom_faces(top, drum='dark', show='60'):
+    if top in ('dim', 'off', 'raised'):   # the counter (GUN_COUNTER): the plain top on the sides, the display on the back
+        side = TOPS['plain']['side'] + DRUM
+        back = (counter(show, top != 'off', 10) + ['EDDDDDDDDE'] if top != 'raised' else
+                ['DCCCCCCCCD'] * 3 + DRUM)   # (under the housing)
+        return dict(D_FACES, east=side, west=side, north=side, south=back)
     if drum != 'dark':
         t = TOPS[top]
         return dict(D_FACES, east=t['side'] + DRUM_ROUND, west=t['side'] + DRUM_ROUND, north=t['side'] + DRUM_ROUND,
@@ -326,6 +364,12 @@ def doom_build(c, top, look, barrels='4', handle='paint', top_art='rust', drum='
     # the collar (a straight row of three reaches z / x +-2: it stands through the collar's sides, fine)
     parts.append(part('muzzle_collar', ((c - 1.75, y0 + 2, -1.75), (c + 1.75, y0 + 2.5, 1.75)),
                       {'north': collar, 'south': collar, 'east': collar, 'west': collar, 'up': one('C'), 'down': one('E')}, 'bit'))
+    if top_art == 'raised':   # the counter's housing, 4.5 x 3.5, 0.5 px proud of the back, centred on it
+        disp = counter('60', True, 9)
+        parts.append(part('counter', ((c - 2.25, top - 3.75, 2.5), (c + 2.25, top - 0.25, 3)),
+                          {'south': lambda w, h: disp, 'north': one('.'),
+                           'east': lambda w, h: ['B'] + ['D'] * (h - 1), 'west': lambda w, h: ['B'] + ['D'] * (h - 1),
+                           'up': one('B'), 'down': one('E')}))
     if handle == '3d':   # the carry handle, a loop 1 px proud of the back over the housing (rows 0-2 + 1 px)
         side_e = lambda w, h: ['AB'] + ['B.'] * (h - 2) + ['BD']      # (back -> front: the bar, then the gap)
         side_w = lambda w, h: ['BA'] + ['.B'] * (h - 2) + ['DB']
