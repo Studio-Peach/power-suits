@@ -92,34 +92,80 @@ TANK = ['JJJJJH', 'HHHHHF', 'NNKKNN', 'NKKNNK', 'HFFFFE', 'FFFFFE', 'FFFFFE', 'E
 TANK_SIDE = [r[:3] for r in TANK]
 
 
-def build(c, top, kind='A', pilot='dark'):
+# Round 2 (2026-11-14, user: "none are great honestly. The gas tank should not be the base, but then in B the base is
+# basically wasted space"). The body must do a flamethrower's work itself, the tank off it. Drafts:
+# - D burner: B's layout (barrel front, tank behind, under the body), the body the burner: the slate clamp band, then
+#   two glowing slots a face (the fire's colours, hottest at the bottom, where the fuel lights);
+# - E shroud: B's layout, the body the big perforated heat jacket (Fallout's flamer: a staggered grid of holes, a lit
+#   collar at the arm), the barrel under it a plain steel nozzle with a sooty tip;
+# - F arm tank: the tank strapped to the arm's back above the socket (3 x 3.5 px, 1.5 proud: the face the third-person
+#   view sees), the body D's burner, the perforated barrel centred under it, the pilot rod behind (A's).
+# FLAME_GLOW=lit (review) | dark (frame_model's reserved coal colours, as the fire glowmask lights them in game).
+GLOW = {'lit': {'1': _c('ffdc6e'), '2': _c('ff9632'), '3': _c('d24619')},
+        'dark': {'1': _c('3f211b'), '2': _c('371d19'), '3': _c('2f1a17')}}
+BURNER = ['nnnnnnnnnm',
+          'mhmmmmmmhk',
+          'xxxxxxxxxx',
+          'hezzllzzep',
+          'he33ll33ep',
+          'he22ll22ep',
+          'he11ll11ep',
+          'ssssssssss']
+BURNER_DOWN = SPLIT_DOWN
+JACKET = ['hhhhhhhhhe',
+          'pppppppppz',
+          'hxxllxxllp',
+          'hxxllxxllp',
+          'hellgllllp',
+          'hllxxllxxp',
+          'hllxxllxxp',
+          'ssssssssss']
+NOZZLE = ['sppppz', 'hellep', 'hellep', 'hglllp', 'hellep', 'zzzzzz', 'hellep', 'hellep', 'pssssz', 'szzzsz']
+# the arm's tank (F), 6 x 7 a side (3.5 px: the iron pauldron comes down to raw 18 behind the arm): a steel strap at
+# each end, the red body, the hazard band
+ARM_TANK = ['hhhhhe', 'JJJJJH', 'NNKKNN', 'NKKNNK', 'HFFFFE', 'EEEEEE', 'hhhhhe']
+ARM_TANK_SIDE = [r[:3] for r in ARM_TANK]
+
+
+def build(c, top, kind='A', pilot='dark', glow='lit'):
     """The flamethrower's parts on an arm centred at x c (right side) whose socket is at y top (bone 'tool': all still)."""
-    P = PAL | PILOT[pilot]
+    P = PAL | PILOT[pilot] | GLOW[glow]
     part = lambda name, box, faces: dict(drill.part(name, box, _paint(faces, P)), bone='tool')
     none = one('.')                                         # a face in another part's plane: not drawn
     t, L = top - 4, 5                                       # the body's bottom; the barrel's length
     side = lambda rows: {'north': rows, 'south': rows, 'east': rows, 'west': rows}
+    body = ((c - 2.5, t, -2.5), (c + 2.5, top, 2.5))
+    split = kind in ('B', 'D', 'E')                         # barrel at the front, the tank behind it
     if kind in ('A', 'C'):
-        parts = [part('body', ((c - 2.5, t, -2.5), (c + 2.5, top, 2.5)), side(TANK_BODY) | {'up': one('E'), 'down': TANK_DOWN})]
-        # the barrel 0.5 px in from the body's front, the rod flush with its back, 0.5 px of daylight between them
-        bz0, bz1 = -2, 1
-        rbox = ((c - 0.5, t - L - 1, 1.5), (c + 0.5, t, 2.5))
+        parts = [part('body', body, side(TANK_BODY) | {'up': one('E'), 'down': TANK_DOWN})]
+    elif kind == 'B':
+        parts = [part('body', body, {'north': SPLIT_BODY, 'south': SPLIT_BODY, 'east': SPLIT_OUTER, 'west': SPLIT_BODY,
+                                     'up': one('k'), 'down': SPLIT_DOWN})]
+    elif kind == 'E':
+        parts = [part('body', body, side(JACKET) | {'up': one('k'), 'down': SPLIT_DOWN})]
     else:
-        parts = [part('body', ((c - 2.5, t, -2.5), (c + 2.5, top, 2.5)),
-                      {'north': SPLIT_BODY, 'south': SPLIT_BODY, 'east': SPLIT_OUTER, 'west': SPLIT_BODY,
-                       'up': one('k'), 'down': SPLIT_DOWN})]
-        bz0, bz1 = -2.5, 0.5                                # the barrel at the front, the tank behind (0.5 px apart)
+        parts = [part('body', body, side(BURNER) | {'up': one('k'), 'down': BURNER_DOWN})]
+    if split:
+        bz0, bz1 = -2.5, 0.5                                # (0.5 px of daylight to the tank)
         parts.append(part('tank', ((c - 1.5, t - 4, 1), (c + 1.5, t, 2.5)),
                           {'north': TANK, 'south': TANK, 'east': TANK_SIDE, 'west': TANK_SIDE, 'up': none,
                            'down': one('E')}))
         rbox = ((c - 0.5, t - L - 1, 1.25), (c + 0.5, t - 4, 2.25))   # under the tank, down to a px under the muzzle
-    holes = BARREL if kind != 'C' else [r.replace('x', '.') for r in BARREL]
+    else:
+        # the barrel 0.5 px in from the body's front, the rod flush with its back, 0.5 px of daylight between them
+        bz0, bz1 = -2, 1
+        rbox = ((c - 0.5, t - L - 1, 1.5), (c + 0.5, t, 2.5))
+    holes = NOZZLE if kind == 'E' else BARREL if kind != 'C' else [r.replace('x', '.') for r in BARREL]
     parts.append(part('barrel', ((c - 1.5, t - L, bz0), (c + 1.5, t, bz1)), side(holes) | {'up': none, 'down': MUZZLE}))
     if kind == 'C':   # the core the holes show: black, 2 px inside the 3 px barrel (0.5 behind each hole: a 1 px core let
         # the eye onto the walls' insides, steel), its ends short of the body and the muzzle
         zc = (bz0 + bz1) / 2
         parts.append(part('core', ((c - 1, t - L + 0.5, zc - 1), (c + 1, t - 0.5, zc + 1)),
                           side(one('x')) | {'up': one('x'), 'down': one('x')}))
+    if kind == 'F':   # on the arm's back (z 2.5), its front against it (not drawn), its bottom at the socket
+        parts.append(part('tank', ((c - 1.5, top, 2.5), (c + 1.5, top + 3.5, 4)),
+                          {'north': none, 'south': ARM_TANK, 'east': ARM_TANK_SIDE, 'west': ARM_TANK_SIDE,
+                           'up': one('h'), 'down': one('p')}))
     parts.append(part('pilot', rbox, side(rod) | {'up': none, 'down': one('v')}))
     for p in parts: p['rot'] = 0
     return parts

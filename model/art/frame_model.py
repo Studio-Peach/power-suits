@@ -813,10 +813,11 @@ if TOOL == 'gun':
                                os.environ.get('GUN_BODY', 'ref'), os.environ.get('GUN_LOOK', 'doom'),
                                os.environ.get('GUN_BARRELS', '4'), os.environ.get('GUN_HANDLE', 'paint'),
                                os.environ.get('GUN_COUNTER') or os.environ.get('GUN_TOP', 'stack'), os.environ.get('GUN_DRUM', 'dark'))
-# The flamethrower (frame_flame_art.py; 2026-11-14, user: next, the big suit's as the reference): drafts FLAME=A|B|C.
+# The flamethrower (frame_flame_art.py; 2026-11-14, user: next, the big suit's as the reference): drafts FLAME=A|B|C, round 2 D|E|F.
 if TOOL == 'flame':
     import frame_flame_art as flame_art
-    TOOL_PARTS = flame_art.build(6.25 + ARM_OUT, SOCKET_Y, os.environ.get('FLAME', 'A'), os.environ.get('FLAME_PILOT', 'dark'))
+    TOOL_PARTS = flame_art.build(6.25 + ARM_OUT, SOCKET_Y, os.environ.get('FLAME', 'A'), os.environ.get('FLAME_PILOT', 'dark'),
+                                   os.environ.get('FLAME_GLOW', 'lit'))
 for p in TOOL_PARTS: SHELLS[f"tl_{p['name']}"] = dict(faces=p['faces'])
 # where each shell's faces sit in the texture (below / beside nothing else), one strip per shell
 SHELL_AT = {'arm_shell': (0, 64), 'leg_shell': (0, 80),
