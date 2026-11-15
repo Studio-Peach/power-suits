@@ -454,7 +454,7 @@ DIVER_RIM = 1.2
 # frame): what the diver's fittings (the window's bezel and bars, the hose collars, the valve wheel, the bolts, the
 # lamp's ring) are made of: 'slate' (the under-armour's, as C's brow and neck guard: unpainted), 'steel' (the shell's
 # own shades: they take the paint with it), 'silver' (the hoses' unpainted silver), 'brass' (as drafted).
-DIVER_METAL = os.environ.get('DIVER_METAL', 'slate')
+DIVER_METAL = os.environ.get('DIVER_METAL', 'slate')   # picked: slate (2026-11-14, user)
 assert DIVER_METAL in ('slate', 'steel', 'silver', 'brass'), DIVER_METAL
 METAL = {'slate': {'E': 'n', 'Y': 'm', 'Z': 'k'}, 'steel': {'E': 'g', 'Y': 'h', 'Z': 's'},
          'silver': {'E': 't', 'Y': 'u', 'Z': 'v'}, 'brass': {}}
