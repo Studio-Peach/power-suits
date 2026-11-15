@@ -533,19 +533,34 @@ COLLAR = 15                          # the corselet band's top row (rows 15-17, 
 SEAM_ROW = 2                         # the dome's riveted seam (rows 2-3: over the window's top at row 5)
 
 
+# Draft knob DIVER_RINGS (2026-11-15, user: the rings with the bolts don't look good; something less rustic): the
+# dome's ring and the collar band round the bottom. 'rivets' (as drafted: a seam line with rivets, a steel band with
+# bolts), 'clean' (the same two, no rivets or bolts: a panel line, a plain band), 'slate' (both trim strips in the
+# fittings' slate: a lit row over a shadow at the top, a three-row slate collar), 'collar' (no dome ring; the slate
+# collar only).
+DIVER_RINGS = os.environ.get('DIVER_RINGS', 'clean')
+assert DIVER_RINGS in ('rivets', 'clean', 'slate', 'collar'), DIVER_RINGS
+
+
 def collar_band(g, bolts):
-    """The corselet: a lit top edge, the band, its dark bottom; bolts (lit over their shade) at `bolts`."""
+    """The corselet round the helmet's bottom (DIVER_RINGS)."""
+    rows = ('E', 'Y', 'Z') if DIVER_RINGS in ('slate', 'collar') else ('g', 'l', 'p')
     for i in range(N):
-        g[COLLAR][i], g[COLLAR + 1][i], g[COLLAR + 2][i] = 'g', 'l', 'p'
-    for i in bolts:
-        g[COLLAR + 1][i], g[COLLAR + 2][i] = 'E', 'Z'
+        for k, c in enumerate(rows): g[COLLAR + k][i] = c
+    if DIVER_RINGS == 'rivets':
+        for i in bolts:
+            g[COLLAR + 1][i], g[COLLAR + 2][i] = 'E', 'Z'
 
 
 def rivet_seam(g, j, cols):
-    """A plate seam: a dark line, the lower plate's lit edge under it, rivets on that edge."""
+    """The dome's ring (DIVER_RINGS): a plate seam (a dark line, the lower plate's lit edge under it; rivets on that
+    edge for 'rivets'), or a slate trim strip."""
+    if DIVER_RINGS == 'collar': return
+    top, low = ('E', 'Z') if DIVER_RINGS == 'slate' else ('p', 'h')
     for i in range(N):
-        g[j][i], g[j + 1][i] = 'p', 'h'
-    for i in cols: g[j + 1][i] = 'z'
+        g[j][i], g[j + 1][i] = top, low
+    if DIVER_RINGS == 'rivets':
+        for i in cols: g[j + 1][i] = 'z'
 
 
 def rib_v(g, i0, i1, j0, j1):
