@@ -622,13 +622,16 @@ def protector():
 SPARTAN_BROW = os.environ.get('SPARTAN_BROW', 'prongs')
 assert SPARTAN_BROW in ('band', 'prongs'), SPARTAN_BROW
 SPARTAN_PRONG_TOP = int(os.environ.get('SPARTAN_PRONG_TOP', '3'))   # picked: 3 (2026-11-15, user)
-SPARTAN_BAND = 5                           # the band's rows (5 lit, 6 its body); the glass from row 7
+# Round 8 (2026-11-15, user: the snout too long; the visor's whole outline seen, not cut off by the layer's parts):
+# the band up a row (rows 4-5, the prongs from row 3 down to it), clear of the visor's top border (row 6); the snout
+# inside the notch's border (2 px wide, columns 7-10) and 2 px long (rows 12-15), not to the bottom.
+SPARTAN_BAND = 4                           # the band's rows (4 lit, 5 its body); the visor's border row 6
 # Round 7 (2026-11-15, user, back to the first reference, ref.png: the snout narrower; the visor an n: a flat top, its
 # bottom cut in toward the middle where the snout goes up into it): the visor's rows per column from the outer edge
 # to the middle (mirrored; end exclusive): its outer bottom corner rounded, down to row 12 either side, the middle 3
 # columns (the snout's notch) only to row 10; the snout 3 px wide (6 texels; was 5 px) up into the notch from row 11.
 SPARTAN_GLASS = [(7, 11), (7, 12), (7, 13), (7, 13), (7, 13), (7, 13), (7, 11), (7, 11), (7, 11)]
-SPARTAN_MOUTH = (6, 11)                    # the snout: its columns 6-11, from row 11
+SPARTAN_MOUTH = (7, 12, 16)                # the snout: its columns 7-10, rows 12-15
 SPARTAN_MID = (6, 12)                      # prongs: the middle third, columns 6-11
 
 
@@ -637,15 +640,15 @@ def spartan():
     for i, rows in enumerate(SPARTAN_GLASS):                              # the visor (an n)
         for j in range(*rows): f[j][i] = f[j][N - 1 - i] = 'V'
     outline(f, 'x')
-    m0, top = SPARTAN_MOUTH
+    m0, top, bottom = SPARTAN_MOUTH
     m1 = N - m0
     o = {k: [['.'] * N for _ in range(N)] for k in ('north', 'east', 'south')}
-    for j in range(top, N):                                               # the mouthpiece, on the layer: a seam down
-        for i in range(m0, m1):                                           # its sides, the ridge (lit, shaded) down
-            c = 'p' if i in (m0, m1 - 1) else 'h' if i == N // 2 - 1 else 'l' if i == N // 2 else 'e'   # its middle
-            if j == top and m0 < i < m1 - 1: c = 'g'                      # (lit / shaded flanks too: 6 stripes)
-            if j >= N - 2: c = {'e': 'l', 'h': 'e', 'g': 'h', 'l': 'p'}.get(c, c) if m0 < i < m1 - 1 else c
-            o['north'][j][i], f[j][i] = c, 'p'                            # (the helmet under it: its shade)
+    for j in range(top, bottom):                                          # the snout, on the layer: its lit top
+        for i in range(m0, m1):                                           # edge, the ridge (lit, shaded) down its
+            c = 'g' if j == top else 'h' if i == N // 2 - 1 else 'l' if i == N // 2 else 'e'   # middle, its bottom
+            if j == bottom - 1: c = {'e': 'l', 'h': 'e', 'l': 'p'}.get(c, c)                # row shaded (seams
+            o['north'][j][i], f[j][i] = c, 'p'                            # gone: at 2 px they filled it); the
+                                                                          # helmet under it: its shade
     glint(f)
     e = shade(blank())                                                    # the side (east: column 0 at the back)
     for i, rows in {16: (7, 11), 17: (7, 11), 14: (7, 9), 15: (7, 9)}.items():
