@@ -489,12 +489,13 @@ VALVE_AT = (6, 4)                    # its top left (column, row) on the back: r
 # (The oxygen hoses, from fittings beside the window on the sides round the corners into the valve, went again:
 # 2026-11-15, user: "maybe less is more"; they were f8b1c5d.)
 SPLIT = 10                           # the seam row round the sides and back (the front's panels meet its corners here)
-SIDE_BOLTS = (7, 11, 15)             # the bolts along it on the sides (east columns; clear of the neck guard's wrap)
-# Draft knob DIVER_BOLTS (2026-11-15, user: try the bolts on the other side of the seam): 'above' (row 8, on the upper
-# plate, a row clear of the seam) | 'below' (row 12, the lower plate's second row under it).
-DIVER_BOLTS = os.environ.get('DIVER_BOLTS', 'above')
-assert DIVER_BOLTS in ('above', 'below'), DIVER_BOLTS
-BOLT_ROW = {'above': SPLIT - 2, 'below': SPLIT + 2}[DIVER_BOLTS]
+# The bolts along the seam, above it (2026-11-15, user): spread over the whole side now nothing covers it, in the
+# top's rivet columns (3, 14; the standard helmet's) and two between; on the back the outer two either side of the
+# valve; the top's rivets' shade ('p', user: the darker ones read as another kind).
+SIDE_BOLTS = (3, 7, 10, 14)          # east columns
+BACK_BOLTS = (3, 14)
+BOLT_ROW = SPLIT - 2                 # on the upper plate, a row clear of the seam (2026-11-15, user: tried on the other
+                                     # side of it, picked; under it, row 12, they were b86b412's 'below')
 # Round 12 (2026-11-14, user, after the reference's little camera on Delta's helmet top): the camera over the front
 # window, its lens facing forward on the front face, its body running back over the top face. Its lens is painted,
 # not glass (user: it doesn't light up with the windows). The front and the top meet along a full row (no rounded
@@ -582,12 +583,13 @@ def protector():
     lower = {(i, j) for j in range(SPLIT, N) for i in range(N)}          # the sides' and back's lower section
     e = shade(blank())
     panel(e, lower)
-    for i in SIDE_BOLTS: e[BOLT_ROW][i] = 'z'
+    for i in SIDE_BOLTS: e[BOLT_ROW][i] = 'p'
     neck_guard(e, GUARD_WRAP)
     east, west = sides(e)
     b = shade(blank())
     panel(b, lower)
     neck_guard(b, [N] * len(GUARD_ROWS))
+    for i in BACK_BOLTS: b[BOLT_ROW][i] = 'p'
     for j, row in enumerate(DIVER_VALVE):                                # the valve's red handwheel, mid-back
         for i, c in enumerate(row):
             if c != '.': b[VALVE_AT[1] + j][VALVE_AT[0] + i] = VALVE_RED[c]
