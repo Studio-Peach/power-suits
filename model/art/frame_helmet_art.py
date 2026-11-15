@@ -621,18 +621,21 @@ def protector():
 # Draft knob SPARTAN_PRONG_TOP: the prongs' top row on the front (and the wings' on the sides): '2' | '3'.
 SPARTAN_BROW = os.environ.get('SPARTAN_BROW', 'prongs')
 assert SPARTAN_BROW in ('band', 'prongs'), SPARTAN_BROW
-SPARTAN_PRONG_TOP = int(os.environ.get('SPARTAN_PRONG_TOP', '2'))
+SPARTAN_PRONG_TOP = int(os.environ.get('SPARTAN_PRONG_TOP', '3'))   # picked: 3 (2026-11-15, user)
 SPARTAN_BAND = 5                           # the band's rows (5 lit, 6 its body); the glass from row 7
-SPARTAN_GLASS = {3: (7, 13), 0: (7, 11)}   # the visor: columns from (mirrored) -> rows; the ends 2 rows shorter
-SPARTAN_MOUTH = (4, 13)                    # the mouthpiece: its columns 4-13 (5 px of 9, the old one's), from row 13
+# Round 7 (2026-11-15, user, back to the first reference, ref.png: the snout narrower; the visor an n: a flat top, its
+# bottom cut in toward the middle where the snout goes up into it): the visor's rows per column from the outer edge
+# to the middle (mirrored; end exclusive): its outer bottom corner rounded, down to row 12 either side, the middle 3
+# columns (the snout's notch) only to row 10; the snout 3 px wide (6 texels; was 5 px) up into the notch from row 11.
+SPARTAN_GLASS = [(7, 11), (7, 12), (7, 13), (7, 13), (7, 13), (7, 13), (7, 11), (7, 11), (7, 11)]
+SPARTAN_MOUTH = (6, 11)                    # the snout: its columns 6-11, from row 11
 SPARTAN_MID = (6, 12)                      # prongs: the middle third, columns 6-11
 
 
 def spartan():
     f = shade(blank())
-    for i in range(N // 2):                                               # the visor, stepped down in the middle
-        i0 = max(k for k in SPARTAN_GLASS if k <= i)
-        for j in range(*SPARTAN_GLASS[i0]): f[j][i] = f[j][N - 1 - i] = 'V'
+    for i, rows in enumerate(SPARTAN_GLASS):                              # the visor (an n)
+        for j in range(*rows): f[j][i] = f[j][N - 1 - i] = 'V'
     outline(f, 'x')
     m0, top = SPARTAN_MOUTH
     m1 = N - m0
