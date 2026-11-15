@@ -593,8 +593,8 @@ import frame_helmet_art as helmet_art
 # then 'layer' (2026-11-13, user: the 2D layer "has that je ne sais quoi"; one cube for the gear, paint only, like
 # the armour and the engine; the boxes' forward lens and edges given up).
 PAL.update(helmet_art.EXTRA)   # the styles' red and silver (frame step 7b)
-# the outer layer is helmet C's gear (the styles have none yet)
-HELMET_EXTRAS = helmet_art.extras(os.environ.get('HELMET_EXTRA', 'layer' if HELMET_STYLE == 'C' else 'none')) if 'helmet_armor' in SHELLS else []
+# the outer layer: helmet C's gear and brow, or a style's own outer art (the hunter's ear guards; none: no layer)
+HELMET_EXTRAS = helmet_art.extras(os.environ.get('HELMET_EXTRA', 'layer'), HELMET_STYLE) if 'helmet_armor' in SHELLS else []
 for _p in HELMET_EXTRAS: SHELLS[f"hx_{_p['name']}"] = dict(faces=_p['faces'], compact=_p.get('hollow', False))
 
 def _plate():

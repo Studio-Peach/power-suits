@@ -526,11 +526,12 @@ def robot():
 # Round 2 (2026-11-14, user: "they ain't great, we gotta start somewhere", one by one; the hunter first, after
 # .scratch/helm7/hunter_ref.png, Samus's Varia helmet): a smooth dome split by a centre seam that meets an arched
 # forehead plate over the visor; the visor wide over the eyes, its bottom closing in under the cheek guards to a narrow
-# stem down the middle to the chin (a T); the red cheek guards either side of the stem, a pointed chin under it;
-# ribbed silver hoses round the neck, coming out from under the cheek guards at the front corners and running round the
-# sides and the back. Draft knob HUNTER_VISOR: 't' (the stem down to the chin, as the reference) or 'short' (the stem
-# stopping halfway, more chin).
-HUNTER_VISOR = os.environ.get('HUNTER_VISOR', 't')
+# stem down the middle to the chin (a T); the red cheek guards either side of the stem.
+# Round 3 (2026-11-14, user: "fantastic first pass"): the stem's lower half plated over in silver, as the reference's
+# (the full T of the first option and the shorter glass of the second, reconciled); the ear guards on the outer layer
+# (0.5 px proud, see layer()), the hoses running from under the cheek guards along each side into them instead of
+# round the neck; on the back the centre seam stops on the plate line (an inverted T) and the default helmet's slate
+# neck guard fills the bottom.
 
 
 def hose(g, j, i0, i1):
@@ -538,6 +539,13 @@ def hose(g, j, i0, i1):
     shade), the grooves dark."""
     for i in range(i0, i1):
         g[j][i], g[j + 1][i] = ('t', 'u') if i % 2 == 0 else ('v', 'v')
+
+
+HUNTER_EAR = (9.0, 9.5, 3.8)    # the ear guard on the sides (east texel coords: centre column back -> front, row,
+                                # radius): in the middle of the side, high (2026-11-14, user), over the forehead
+                                # line's end; the hose climbs to it diagonally
+HOSE_ROW = 14                   # the hoses' top row (rows 14-15: clear of the pauldrons, which hide the side's bottom
+                                # 2 px in a side view)
 
 
 def hunter():
@@ -550,43 +558,52 @@ def hunter():
             f[j][i] = 'p'
             if j + 1 < N: f[j + 1][i] = 'h' if f[j + 1][i] not in 'p' else f[j + 1][i]
     for i in (8, 9): f[3][i] = 'p'
-    stem_end = 16 if HUNTER_VISOR == 't' else 14
-    rows = {7: (2, 16), 8: (1, 17), 9: (1, 17), 10: (1, 17), 11: (2, 16), 12: (4, 14), 13: (6, 12)}
-    for j in range(14, stem_end): rows[j] = (7, 11)
+    rows = {7: (2, 16), 8: (1, 17), 9: (1, 17), 10: (1, 17), 11: (2, 16), 12: (4, 14), 13: (6, 12),
+            14: (7, 11), 15: (7, 11)}
     for j, (a, b_) in rows.items(): rect(f, a, j, b_, j + 1, 'V')
     outline(f, 'x')
     for j in range(N):                                                    # the cheek guards' raised edge: a lit texel
         for i in range(N):                                                # under / beside the visor's border
             if f[j][i] == 'x' and j + 1 < N and f[j + 1][i] not in 'Vx' and j >= 11:
                 f[j + 1][i] = 'g' if i < 9 else 'h'
-    for j in range(stem_end + 1, N):                                      # the pointed chin under the stem
-        for i in range(N):
-            if f[j][i] not in 'x': f[j][i] = f[j][i]
-    hose(f, 15, 0, 4); hose(f, 15, 14, 18)                                # the hoses out from under the cheek guards
+    for i in range(7, 11):                                                # the stem's lower half plated in silver: a
+        f[14][i], f[15][i] = ('t' if i < 10 else 'u'), 'v'                 # lit plate over its shadow
+    hose(f, HOSE_ROW, 0, 4); hose(f, HOSE_ROW, 14, 18)                    # the hoses out from under the cheek guards
     for i in (4, 13):
-        f[15][i] = f[16][i] = 'p'                                         # the guards' lower corners over them
+        f[HOSE_ROW][i] = f[HOSE_ROW + 1][i] = 'p'                         # the guards' lower corners over them
     glint(f)
     e = shade(blank())
     for i in range(N): e[6][i] = 'p'                                      # the forehead plate's line run round (level
     for i in range(N): e[7][i] = 'h'                                      # with the arch's ends at the front corners)
-    m = blank('.')                                                        # the side bulge (the reference's ear
-    rrect(m, 8, 8, 17, 14, 'o', cut=2)                                    # guard): a rounded plate, lit top and back
-    on = lambda j, i: 0 <= j < N and 0 <= i < N and m[j][i] == 'o'        # (left) edges, shaded bottom and front
-    for j in range(N):
-        for i in range(N):
-            if on(j, i):
-                e[j][i] = ('g' if not on(j - 1, i) else 'h' if not on(j, i - 1) else
-                           'p' if not on(j + 1, i) or not on(j, i + 1) else 'e')
-    hose(e, 15, 0, N)                                                     # the hose round the side
+    cx, cy, r = HUNTER_EAR
+    path = []                                                             # the hose: from the front corner up and
+    for i in range(N - 1, -1, -1):                                        # back to the ear diagonally (a row up every
+        j = HOSE_ROW - (N - 1 - i) // 2                                   # 2 columns), ending under it
+        if math.hypot(i + 0.5 - cx, j + 1 - cy) < r - 1: break
+        path.append((i, j))
+        e[j][i], e[j + 1][i] = ('t', 'u') if i % 2 == 0 else ('v', 'v')
+    neck_guard(e, GUARD_WRAP)
     east, west = sides(e)
     b = shade(blank())
-    for j in range(0, 14): b[j][8], b[j][9] = 'p', 'h'                    # the seam down the back
-    for i in range(N): b[6][i] = 'p' if b[6][i] not in 'ph' else b[6][i]
-    for i in range(N): b[7][i] = 'h' if b[7][i] not in 'ph' else b[7][i]
-    hose(b, 15, 0, N)                                                     # and across the back
+    for j in range(0, 6): b[j][8], b[j][9] = 'p', 'h'                     # the seam down the back, stopping on the
+    for i in range(N): b[6][i] = 'p'                                      # plate line (_|_)
+    for i in range(N): b[7][i] = 'h'
+    neck_guard(b, [N] * len(GUARD_ROWS))
     top = plain_top()
     for j in range(N): top[j][8], top[j][9] = 'p', 'h'
-    return dict(north=out(f), south=out(b), east=east, west=west, up=out(top))
+    ear = [['.'] * N for _ in range(N)]                                   # the ear guard, on the outer layer: a
+    disc(ear, cx, cy, r, 'e', ring='s', rw=1.0)                           # rounded plate: a dark rim, lit inside it
+    for j in range(N):                                                    # on the top-left, shaded on the bottom-
+        for i in range(N):                                                # right (a dome), a dark dot in the middle
+            d = math.hypot(i + 0.5 - cx, j + 0.5 - cy)
+            if ear[j][i] == 'e' and r - 2.2 < d:
+                ear[j][i] = 'g' if (i + 0.5 - cx) + (j + 0.5 - cy) < -1 else 'p' if (i + 0.5 - cx) + (j + 0.5 - cy) > 1 else 'e'
+    disc(ear, cx, cy, 1.0, 'l')
+    for i, j in path:                                                     # the hose's silver collar where it goes in
+        for jj, c in ((j, 't'), (j + 1, 'v')):                            # (the rim over the hose's end)
+            if ear[jj][i] != '.': ear[jj][i] = c
+    return dict(north=out(f), south=out(b), east=east, west=west, up=out(top),
+                _outer={'east': ear, 'north': [['.'] * N for _ in range(N)], 'south': [['.'] * N for _ in range(N)]})
 
 
 STYLES = {'A': sentinel, 'B': diver, 'C': wrap, 'protector': protector, 'spartan': spartan, 'noble': noble,
@@ -696,7 +713,7 @@ def camera():
             _part('camera_tail', ((4.5, 29, 1.5), (5, 30.5, 2)), dict(east=tail, up=['n'], down=['k'], south=['m'] * 3))]
 
 
-def layer():
+def layer(style='C'):
     """Draft (2026-11-13, user: the gear's 3D boxes vs one see-through outer layer round the helmet, painted 2D, as
     the extras began): one box 0.5 px out from the helmet all round, like a player's hat layer, its only paint the
     radio's and the camera's side art where their boxes' outer faces were (those lie in its side planes, x +-5), so
@@ -715,7 +732,12 @@ def layer():
     # the brow (HELMET_BROW; first: the radio and camera go over the band): the helmet's texel (j, i) is the layer's (j + 1, i + 1) (both 2 per px, the layer 0.5 px
     # bigger each way); at the layer's corners (its first / last column, outside the helmet's faces) each band row
     # carries on round the corner in its colour
-    o = wrap(os.environ.get('HELMET_BACK', 'guard'))['_outer']
+    if style == 'C':
+        o = wrap(os.environ.get('HELMET_BACK', 'guard'))['_outer']
+    else:                                              # a style's own outer art (the hunter's ear guards), no gear
+        o = STYLES[style]().get('_outer')
+        if o is None:
+            return []
     north, south = [list(r) for r in _grid(W, H)], [list(r) for r in _grid(W, H)]
     for face, g in (('north', north), ('east', east), ('south', south)):
         for j in range(N):
@@ -733,14 +755,14 @@ def layer():
             if o['east'][j][i] != '.': west[j + 1][W - 2 - i] = o['east'][j][i]
         if o['east'][j][-1] != '.': west[j + 1][0] = o['east'][j][-1]
         if o['east'][j][0] != '.': west[j + 1][-1] = o['east'][j][0]
-    for p in radio():                                  # west: columns front -> back (z0 up)
+    for p in (radio() if style == 'C' else []):        # west: columns front -> back (z0 up)
         (a, b), art = p['box'], p['faces']['west']
         top = b[1]
         if top > y1:                                   # the aerials: drop shaft rows under the tip to fit
             cut = round((top - y1) * 2)
             art, top = art[:1] + art[1 + cut:], y1
         stamp(west, art, round((a[2] - z0) * 2), row(top))
-    for p in camera():                                 # east: columns back -> front (z1 down)
+    for p in (camera() if style == 'C' else []):       # east: columns back -> front (z1 down)
         (a, b), art = p['box'], p['faces']['east']
         stamp(east, art, round((z1 - b[2]) * 2), row(b[1]))
     part = _part('layer', ((x0, y0, z0), (x1, y1, z1)), dict(east=[''.join(r) for r in east],
@@ -751,6 +773,7 @@ def layer():
     return [part]
 
 
-def extras(kind):
+def extras(kind, style='C'):
+    if kind == 'layer': return layer(style)   # (built only when asked: a style without outer art has none)
     return {'none': [], 'cap': cap(), 'radio': radio(), 'both': cap() + radio(),
-            'all': cap() + radio() + camera(), 'gear': radio() + camera(), 'layer': layer()}[kind]
+            'all': cap() + radio() + camera(), 'gear': radio() + camera()}[kind]
