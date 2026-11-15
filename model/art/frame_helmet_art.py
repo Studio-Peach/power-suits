@@ -615,7 +615,7 @@ def protector():
 # at the corners), its deep shadow row under it; the visor wide, wrapping round the corners onto the sides (user: likes
 # the wrap), its bottom closed in at the corners by the cheeks rising to the lamps (two silver dots on a slate plate
 # round each front corner) and dipping in two lobes either side of the slate mouthpiece (a lit top in the visor's
-# notch, its bottom rounded); the cheeks' lit edges falling from the lamps to the mouthpiece (the reference's V jaw) over a
+# notch, widest under it, its bottom rounded in to 2 texels); the cheeks' lit edges falling from the lamps to the mouthpiece (the reference's V jaw) over a
 # narrow chin plate. The top's centre channel (the reference's recessed strip between two ridges) runs from the brow
 # tab over the top and down the back to a band round the back; the brow's lip sweeps back along the sides and down
 # into that band (ref2's line), so the head reads as one piece; a seam behind the lamps closes the cheek piece.
@@ -651,9 +651,9 @@ SPARTAN_FRONT = [
  'V  V  V  V  V  V  V  V  V',   # 10
  'x  x  V  V  V  V  V  V  V',   # 11
  'n  n  x  V  V  V  V  n  n',   # 12 the cheeks up at the corners; glass lobes; the mouthpiece's top in the notch
- 'k  t  g  x  x  x  x  k  k',   # 13 lamps; the cheek's lit edge falling toward the chin
- 'k  t  e  g  g  x  n  k  m',   # 14 the mouthpiece rounded: widest here, its bottom closing in (user: over the chevron)
- 'x  x  e  e  e  g  x  x  k',   # 15
+ 'k  t  g  x  x  x  n  k  k',   # 13 lamps; the cheek's lit edge falling toward the chin; the mouthpiece widest
+ 'k  t  e  g  g  x  x  x  m',   # 14 its bottom rounded in to 2 texels (user: the roundest one tried)
+ 'x  x  e  e  e  g  x  e  e',   # 15
  'l  l  e  e  e  e  p  g  g',   # 16 chin
  'p  p  l  l  l  l  p  h  h',   # 17
 ]
