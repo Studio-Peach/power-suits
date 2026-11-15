@@ -870,10 +870,25 @@ def noble():
 # own recipe with gold, so it doesn't take the paint): drawn in the steel letters, swapped to GOLD at the end.
 # Draft knob ROBOT_WRAP: 'wrap' (the glass round the corners onto the sides, as the reference) | 'frame' (a gold
 # strip down each front corner, the glass on the front and top only, the side plain round the ear plate).
-ROBOT_WRAP = os.environ.get('ROBOT_WRAP', 'wrap')
+ROBOT_WRAP = os.environ.get('ROBOT_WRAP', 'frame')   # picked: frame (2026-11-15, user)
 # ROBOT_GUARD: the standard neck guard 'slate' (as every helmet) | 'gold' (its shades swapped into the gold).
 ROBOT_GUARD = os.environ.get('ROBOT_GUARD', 'slate')
-ROBOT_DISC_Y = float(os.environ.get('ROBOT_DISC_Y', '7.5'))   # the ear disc's centre row (texel coords)
+ROBOT_DISC_Y = float(os.environ.get('ROBOT_DISC_Y', '7'))   # the ear disc's centre row (texel coords)
+ROBOT_DISC = ['.pppp.',   # the ear disc: a rim lit top-left, shaded bottom-right, round a sunk centre
+              'pgggep',
+              'pgllep',
+              'pgllep',
+              'peeelp',
+              '.pppp.']
+ROBOT_CROWN = int(os.environ.get('ROBOT_CROWN', '11'))   # the glass's last full row on the top (rows front -> back)
+# Round 4 (2026-11-15, user: frame picked; "rework the mouth border"): draft knob ROBOT_MOUTH, the visor's bottom edge
+# over the chin band: 'shadow' (round 3: a dark border row under the glass) | 'lip' (no border: the chin's lit lip
+# right under the glass, its corners rounded) | 'curve' (the glass's bottom rounded up into the corners, the lip
+# following it, the chin rising at the sides as the reference's) | 'square' (the glass's corners square, a straight
+# lip). Rows of the front's glass from row 12 (columns, end exclusive).
+ROBOT_MOUTH = os.environ.get('ROBOT_MOUTH', 'lip')
+ROBOT_MOUTHS = {'shadow': {13: (3, 15)}, 'lip': {13: (3, 15)}, 'curve': {12: (3, 15), 13: (5, 13)},
+                'square': {}}
 
 
 def robot():
@@ -889,27 +904,40 @@ def robot():
         er = {**{j: (12, 18) for j in range(0, 7)}, 7: (13, 18), 8: (13, 18), 9: (14, 18), 10: (14, 18),
               11: (15, 18), 12: (16, 18)}                                 # east: its back edge slanting down to the
     else:                                                                 # cheek (top row 0 = the top's column 17)
-        fr = {**{j: (2, 16) for j in range(0, 13)}, 13: (3, 15)}
-        tr = {**{j: (2, 16) for j in range(0, 5)}, 5: (3, 15), 6: (5, 13)}
+        fr = {j: (2, 16) for j in range(0, 14)}
+        fr.update(ROBOT_MOUTHS[ROBOT_MOUTH])
+        k = ROBOT_CROWN                                                   # round 4 (user): further back over the top
+        tr = {**{j: (2, 16) for j in range(0, k)}, k: (3, 15), k + 1: (5, 13)}
         er = {}
     for g, rows in ((f, fr), (top, tr), (e, er)):
-        for j, (a, b_) in rows.items(): rect(g, a, j, b_, j + 1, 'V')
+        for j, (a, b_) in rows.items():
+            if b_ > a: rect(g, a, j, b_, j + 1, 'V')
         outline(g, 'x')
     for i in range(N):                                                    # the chin band: its lit top, mid, shade
-        f[15][i], f[16][i], f[17][i] = 'g', 'e', 'l'
+        f[15][i], f[16][i], f[17][i] = ('g' if ROBOT_MOUTH == 'shadow' else 'e'), 'e', 'l'
+    if ROBOT_MOUTH != 'shadow':                                           # the chin's lit lip right under the glass
+        for i in range(N):                                                # (no dark border under it), the chin's
+            low = [j for j in range(N) if f[j][i] == 'V']                 # gold below it
+            if not low: continue
+            for j in range(low[-1] + 1, 15):
+                f[j][i] = 'g' if j == low[-1] + 1 else 'e'
+        for j in range(12, 15):                                           # a border texel left beside the lip (the
+            for i in range(N):                                            # rounded corners): the lip's too
+                if f[j][i] == 'x' and j + 1 < N and f[j + 1][i] in 'ge' and 1 < i < 16: f[j][i] = 'g'
     glint(f)
-    x0, x1, y0, y1 = 4, 11, 3, 16                                         # the ear plate behind the glass's D: a
+    x0, x1, y0, y1 = 5, 13, 3, 15                                         # the ear plate behind the glass's D: a
     rect(e, x0, y0, x1, y1, 'e')                                          # raised slab, lit top / back edges, shaded
     for i in range(x0, x1): e[y0][i], e[y1 - 1][i] = 'g', 'p'             # front / bottom (light from the viewer's
     for j in range(y0 + 1, y1 - 1): e[j][x0], e[j][x1 - 1] = 'h', 'l'     # upper left)
     for i in range(x0 - 1, x1): e[y0 - 1][i] = e[y0 - 1][i] if i < 0 else 'p'   # its seam round the top / back
     for j in range(y0, y1): e[j][x0 - 1] = 'p'
-    cx, cy = (x0 + x1) / 2, ROBOT_DISC_Y                                  # the reference's disc: a groove ring round
-    disc(e, cx, cy, 3.3, 'h', ring='p', rw=1.0)                           # a lit boss
-    disc(e, cx, cy, 1.6, 'g', ring='l', rw=0.7)
+    cx, cy = (x0 + x1) / 2, ROBOT_DISC_Y                                  # the reference's disc: a rim round a
+    for j, r in enumerate(ROBOT_DISC):                                    # (drawn, not traced: at 6 texels a traced
+        for i, c in enumerate(r):                                         # ring read as an X)
+            if c != '.': e[round(cy) - 3 + j][int(cx) - 3 + i] = c
     for i in range(x0 + 1, x1 - 1):                                       # the engraved panel under it (its LED
-        e[12][i], e[14][i] = 'p', 'p'                                     # grid: dots between two grooves)
-        e[13][i] = 'h' if (i - x0) % 2 else 'p'
+        e[y1 - 4][i], e[y1 - 2][i] = 'p', 'p'                             # grid: dots between two grooves)
+        e[y1 - 3][i] = 'h' if (i - x0) % 2 else 'p'
     neck_guard(e, GUARD_WRAP)
     b = shade(blank())
     for j in range(0, 9):                                                 # the raised panel's grooves down the back
