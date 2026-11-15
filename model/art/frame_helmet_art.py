@@ -606,117 +606,77 @@ def protector():
 
 
 # ---------------------------------------------------------------- spartan (the Master Chief, Halo)
-# Round 2 (2026-11-15, user's reference: Master Chief's helmet in Halo Infinite, .scratch/helm7/spartan/ref.png; the
-# round-1 draft is in git, cc1ae26). The reference's signature, not its parts list: the wide visor tucked under a brow
-# lip that rings the head, a raised centre plate over the dome (front to back) whose tab overhangs the visor's top,
-# the black mouthpiece notched into the visor's bottom, the chin plate under it, ribbed black vents low on the cheeks
-# and the two white lamps on a dark panel at each cheek's outer corner (wrapping the corner, so they read from the
-# front and the side). The shell in the steel shades (Chief's olive is a paint away: PAINT=green), the black parts
-# slate, the lamps silver (unpainted). The gold of the visor is the glass's colour (env GLASS, a draft option).
-SPARTAN_PLATE = (6, 12)                # the centre plate's columns (front, top, back): seams at 5 and 12, body 6-11
-SPARTAN_BROW = 4                       # the brow lip's row (lit) round the head; the row under it its shadow / seam
-SPARTAN_MOUTH = [                      # the mouthpiece, columns 6-11 from row 11 (its top in the visor's bottom)
-    'xnnnnx',
-    'xkmmkx',
-    '.xkkx.',
-]
-SPARTAN_VENT = ['xxx', 'mmm', 'xxx']   # the cheek vents, columns 2-4 from row 14 (slats, unlit)
-# The lamps (the reference's two white lights on a dark panel at each cheek's outer corner): the panel wraps the corner,
-# 1 texel on the front (column 0, mirrored), 3 on the side (14-17 with its edge), each lamp 3 texels across the corner.
-# Mid slate, not black (in black the white lamps read as teeth, and the lower face went black), a texel of shell
-# between it and the vents.
-SPARTAN_LAMPS = {12: 'm', 13: 't', 14: 'm', 15: 't', 16: 'm'}
-SPARTAN_SIDE_LAMPS = {12: 'kmmm', 13: 'kmtt', 14: 'kmmm', 15: 'kmtt', 16: 'kmmm'}
-
-
-# Round 3 (2026-11-15, user: the visor stays the standard glass, the same on every helmet; two more references, a
-# 3/4 side view and the back, .scratch/helm7/spartan/ref2.jpg / ref3.jpg; depth for some elements on the outer layer,
-# 0.5 px out, as the standard helmet's brow): the brow is a peak on the layer (its lit top edge over a shaded row,
-# the centre plate's tab a row deeper over the visor, its wings round the corners over the visor's wrap, as the
-# standard helmet's), its line run back round the sides and the back on the helmet (the dome's lower edge). The side:
-# the reference's ear vent (a dark slot with slits in a raised plate). The back (ref3): two slots at the top's back
-# end, a nape plate narrowing down onto the round port (a slate disc with a bar) in the
-# neck guard (the reference's black ribbed neck seal).
-# Draft knob SPARTAN_LAYER: 'brow' (the peak alone on the layer) | 'jaw' (the jaw too: the cheeks with their vents and
-# lamps and the chin plate stand 0.5 px out over the visor's bottom and the mouthpiece, as the reference's cheek
-# plates stand forward of them).
-SPARTAN_LAYER = os.environ.get('SPARTAN_LAYER', 'brow')
-assert SPARTAN_LAYER in ('brow', 'jaw'), SPARTAN_LAYER
-SPARTAN_PEAK = 3                       # the peak's rows (3 lit, 4 shaded; the tab on to 5)
+# Rounds 2-4 (2026-11-15, after Halo Infinite references, .scratch/helm7/spartan/ref*.jpg; in git, 88eecc6 / 27350e1):
+# every detail of the references at 18 x 18 texels (cheek vents, lamps, chin plate, ear vent, nape port, prongs) was
+# "way too busy". Round 5 (2026-11-15, user: start again from the old suit's spartan, power_suit.bbmodel helm_spartan,
+# .scratch/helm7/spartan/old_suit_spartan.jpg): its three things only, the shape doing the work: a plain shell, a brow
+# band standing out round the front and the sides' front over the visor (the outer layer, 0.5 px, as the old one's
+# 1 px band), the visor (the standard glass, as every helmet's: user) flat under it, its bottom edge stepped down in the
+# middle, and a narrower mouthpiece under it with a ridge down its middle, painted flat; the standard neck guard.
+# Draft knob SPARTAN_BROW: 'band' (the old suit's: one straight band) | 'prongs' (user's reading of the reference: the
+# band's outer thirds raised on the layer as two prongs from the top's back over the top and down the front to the
+# brow, the middle third left on the helmet, 0.5 px in).
+SPARTAN_BROW = os.environ.get('SPARTAN_BROW', 'band')
+assert SPARTAN_BROW in ('band', 'prongs'), SPARTAN_BROW
+SPARTAN_GLASS = {3: (6, 12), 0: (6, 10)}   # the visor: columns from (mirrored) -> rows; the ends 2 rows shorter
+SPARTAN_MOUTH = (4, 12)                    # the mouthpiece: its columns 4-13 (5 px of 9, the old one's), from row 12
+SPARTAN_MID = (6, 12)                      # prongs: the middle third, columns 6-11
 
 
 def spartan():
     f = shade(blank())
-    a, b_ = SPARTAN_PLATE
-    for j in range(1, SPARTAN_PEAK):                                      # the centre plate down the forehead
-        f[j][a - 1], f[j][b_] = 'p', 'p'
-        for i in range(a, b_): f[j][i] = 'g' if i == a else 'h'
-    rows = {6: (3, 7), 7: (0, 18), 8: (0, 18), 9: (0, 18), 10: (0, 18), 11: (3, 7)}
-    for j, (i0, i1) in rows.items():                                      # the visor (round the corners, onto the
-        for i in range(i0, i1): f[j][i] = f[j][N - 1 - i] = 'V'           # sides), the mouth notched into it
+    for i in range(N // 2):                                               # the visor, stepped down in the middle
+        i0 = max(k for k in SPARTAN_GLASS if k <= i)
+        for j in range(*SPARTAN_GLASS[i0]): f[j][i] = f[j][N - 1 - i] = 'V'
     outline(f, 'x')
-    for j in range(SPARTAN_PEAK, 6):                                      # under the peak: its shadow
-        for i in range(N): f[j][i] = 'x'
-    for j, row in enumerate(SPARTAN_MOUTH):
-        for i, c in enumerate(row):
-            if c != '.': f[11 + j][6 + i] = c
-    for j in range(14, N):                                                # the chin plate under it, seams beside it
-        f[j][a - 1], f[j][b_] = 'p', 'p'
-        for i in range(a, b_): f[j][i] = 'g' if j == 14 else 'h' if i == a else f[j][i]
-    for j, row in enumerate(SPARTAN_VENT):
-        for i, c in enumerate(row): f[14 + j][2 + i] = f[14 + j][N - 3 - i] = c
-    for j, c in SPARTAN_LAMPS.items(): f[j][0] = f[j][N - 1] = c
+    m0, top = SPARTAN_MOUTH
+    m1 = N - m0
+    for j in range(top, N):                                               # the mouthpiece: a seam down its sides,
+        for i in range(m0, m1):                                           # the ridge (lit, shaded) down its middle
+            f[j][i] = ('p' if i in (m0, m1 - 1) else 'h' if i == N // 2 - 1 else 'l' if i == N // 2 else 'e')
+                                                                          # (lit / shaded flanks too: 6 stripes)
+        if j == top:
+            for i in range(m0 + 1, m1 - 1): f[j][i] = 'g'
+    for j in (N - 2, N - 1):                                              # (the face's darker bottom rows)
+        for i in range(m0 + 1, m1 - 1): f[j][i] = {'e': 'l', 'h': 'e', 'g': 'h', 'l': 'p'}.get(f[j][i], f[j][i])
     glint(f)
     e = shade(blank())                                                    # the side (east: column 0 at the back)
-    for j, (i0, i1) in {7: (16, 18), 8: (15, 18), 9: (15, 18), 10: (16, 18)}.items():
-        rect(e, i0, j, i1, j + 1, 'V')                                    # the visor's wrap, its back end rounded
+    for i, rows in {16: (6, 10), 17: (6, 10), 14: (6, 8), 15: (6, 8)}.items():
+        for j in range(*rows): e[j][i] = 'V'                              # the visor's wrap, stepped as the front's
     outline(e, 'x')
-    for i in range(N):                                                    # the dome's lower edge (the peak's line run
-        e[4][i], e[5][i] = ('g', 'p') if i < 11 else ('x', 'x')           # back); under the wing, its shadow
-    for i in range(11, N): e[3][i] = 'x'
-    e[6][16] = e[6][17] = 'x'
-    rect(e, 3, 6, 10, 12, 'e')                                            # the ear plate: lit top-left, shaded edges,
-    for i in range(3, 10): e[6][i], e[11][i] = 'g', 'p'                   # the vent in it (a dark slot, slits)
-    for j in range(7, 11): e[j][3], e[j][9] = 'h', 'p'
-    for j, c in zip(range(7, 11), 'xnxn'):
-        for i in range(5, 8): e[j][i] = c
-    for i in range(5, 8): e[11][i] = 'x'
-    for j, row in SPARTAN_SIDE_LAMPS.items(): e[j][14:18] = list(row)     # the lamp panel round the corner
     neck_guard(e, GUARD_WRAP)
-    bk = shade(blank())
-    for j in range(1, 4):                                                 # the centre plate over the top, down the
-        bk[j][a - 1], bk[j][b_] = 'p', 'p'                                # back to the band
-        for i in range(a, b_): bk[j][i] = 'g' if i == a else 'h'
-    for i in range(N): bk[4][i], bk[5][i] = 'g', 'p'                      # the band (the dome's lower edge)
-    # (the reference's two slots high on the dome are on the top, below; its slits under the band left out: with the
-    # slots and the nape plate on the back they read as a face)
-    for j, (l, r) in {6: (5, 12), 7: (5, 12), 8: (6, 11), 9: (6, 11), 10: (7, 10)}.items():
-        bk[j][l], bk[j][r] = 'p', 'p'                                     # the nape plate narrowing to the port
-        for i in range(l + 1, r): bk[j][i] = 'g' if i == l + 1 else 'h'
-    neck_guard(bk, [N] * len(GUARD_ROWS))
-    bezel(bk, 9, 13.5, 3.6, 3.6, 1.0,                                     # the port: a slate disc, a bar across
-          lambda i, j: 'n' if j == 13 and 7 <= i <= 10 else 'x' if j == 14 and 7 <= i <= 10 else 'k')
-    for j in range(N):
-        for i in range(N): bk[j][i] = {'E': 'n', 'Y': 'm', 'Z': 'x'}.get(bk[j][i], bk[j][i])
-    top = plain_top()
-    for j in range(N):
-        top[j][a - 1], top[j][b_] = 'p', 'p'
-        for i in range(a, b_): top[j][i] = 'g' if i == a else 'h' if 0 < j < N - 1 else top[j][i]
-    for i in (2, 3, 14, 15): top[14][i], top[15][i] = 'x', 'k'            # two slots at the dome's back
-    # the outer layer: the peak (front and wings), and SPARTAN_LAYER=jaw the jaw (the helmet under it dark)
-    o = {k: [['.'] * N for _ in range(N)] for k in ('north', 'east', 'south')}
-    for i in range(N): o['north'][3][i], o['north'][4][i] = 'g', 'l'
-    for i in range(7, 11): o['north'][4][i], o['north'][5][i] = 'e', 's'  # the tab a row deeper
-    for i in range(10, N): o['east'][3][i] = 'g'                          # the wings, a texel shorter underneath
-    for i in range(11, N): o['east'][4][i] = 'l'
-    if SPARTAN_LAYER == 'jaw':
-        jaw = [(i, j) for j in range(12, N) for i in range(N) if not (6 <= i <= 11 and j < 14)]
-        for i, j in jaw: o['north'][j][i], f[j][i] = f[j][i], 'x'
-        for j in range(12, N):
-            for i in range(13, N):
-                if e[j][i] not in 'nmx' or i >= 14: o['east'][j][i], e[j][i] = e[j][i], 'x'
+    b = shade(blank())
+    neck_guard(b, [N] * len(GUARD_ROWS))
+    t = plain_top()
+    o = {k: [['.'] * N for _ in range(N)] for k in ('north', 'east', 'south', 'up')}
+    for i in range(N): o['north'][4][i], o['north'][5][i] = 'g', 'e'      # the band: lit top edge, its body
+    o['north'][4][0], o['north'][5][N - 1] = 'h', 'l'
+    for i in range(12, N): o['east'][4][i], o['east'][5][i] = 'g', 'e'    # round the sides' front (2.75 px, the
+    o['east'][5][12] = 'l'                                                # old one's), its end shaded
+    for j in (4, 5):                                                      # under it: its shadow
+        for i in range(N): f[j][i] = 'x'
+        for i in range(12, N): e[j][i] = 'x'
+    if SPARTAN_BROW == 'prongs':
+        a, b_ = SPARTAN_MID
+        outer = list(range(a)) + list(range(b_, N))
+        for j in range(0, 4):                                             # the prongs down the front to the band
+            for i in outer: o['north'][j][i] = 'g' if j == 0 else 'h' if i == 0 else 'l' if i == N - 1 else 'e'
+        for j in (4, 5):                                                  # the band's middle third on the helmet
+            for i in range(a, b_):
+                o['north'][j][i] = '.'
+                f[j][i] = 'h' if j == 4 else 'l'
+        for j in range(0, 4):                                             # the middle third of the forehead: the
+            for i in range(a, b_): f[j][i] = 'p' if i == a else 'e'       # left prong's shadow down its edge
+        for j in range(0, 4):                                             # round the corner: the prong's side
+            for i in range(12, N): o['east'][j][i] = 'g' if j == 0 else 'e'
+        for i in range(N): o['east'][0][i] = 'h' if i < 12 else 'g'       # its side over the whole length
+        for j in range(N):                                                # the prongs' tops (under them: dark)
+            for i in range(N):
+                if a <= i < b_: t[j][i] = 'p' if i == a else 'e' if 0 < j < N - 1 else t[j][i]
+                else: o['up'][j][i] = 'g' if j == 0 or i == 0 else 'l' if j == N - 1 or i in (a - 1, N - 1) else 'h'
+        for i in outer: o['south'][0][i] = 'l'                            # their back ends
     east, west = sides(e)
-    return dict(north=out(f), south=out(bk), east=east, west=west, up=out(top), _outer=o)
+    return dict(north=out(f), south=out(b), east=east, west=west, up=out(t), _outer=o)
 
 
 # ---------------------------------------------------------------- noble (Emile's EVA helmet, Halo: Reach)
