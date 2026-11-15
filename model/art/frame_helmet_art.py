@@ -523,33 +523,69 @@ def robot():
 
 
 # ---------------------------------------------------------------- hunter (Samus, Smash Bros. Ultimate)
+# Round 2 (2026-11-14, user: "they ain't great, we gotta start somewhere", one by one; the hunter first, after
+# .scratch/helm7/hunter_ref.png, Samus's Varia helmet): a smooth dome split by a centre seam that meets an arched
+# forehead plate over the visor; the visor wide over the eyes, its bottom closing in under the cheek guards to a narrow
+# stem down the middle to the chin (a T); the red cheek guards either side of the stem, a pointed chin under it;
+# ribbed silver hoses round the neck, coming out from under the cheek guards at the front corners and running round the
+# sides and the back. Draft knob HUNTER_VISOR: 't' (the stem down to the chin, as the reference) or 'short' (the stem
+# stopping halfway, more chin).
+HUNTER_VISOR = os.environ.get('HUNTER_VISOR', 't')
+
+
+def hose(g, j, i0, i1):
+    """A corrugated silver hose running across a face in rows j, j + 1: a rib every other column (lit over its
+    shade), the grooves dark."""
+    for i in range(i0, i1):
+        g[j][i], g[j + 1][i] = ('t', 'u') if i % 2 == 0 else ('v', 'v')
+
+
 def hunter():
-    """A shield visor (wide over the eyes, narrowing to a point over the mouth, wrapping round the sides), a crest from
-    the forehead over the top and down the back, a silver mouth grille, corrugated silver hoses from the jaw along
-    each side into a port. The shell and crest take the paint (red = Samus), the grille and hoses stay silver."""
     f = shade(blank())
-    crest(f, 0, 4)
-    rect(f, 0, 4, 18, 10, 'V')
-    for j, (a, b_) in enumerate(((1, 17), (3, 15), (5, 13), (7, 11))):    # its point over the mouth
-        rect(f, a, 10 + j, b_, 11 + j, 'V')
+    for j in range(0, 3): f[j][8], f[j][9] = 'p', 'h'                     # the dome's centre seam (a groove)
+    for k in range(8):                                                    # the forehead plate's arch: from the seam's
+        a, b_ = 7 - k, 10 + k                                             # foot out and down to the visor's corners
+        j = 3 + k // 2
+        for i in (a, b_):
+            f[j][i] = 'p'
+            if j + 1 < N: f[j + 1][i] = 'h' if f[j + 1][i] not in 'p' else f[j + 1][i]
+    for i in (8, 9): f[3][i] = 'p'
+    stem_end = 16 if HUNTER_VISOR == 't' else 14
+    rows = {7: (2, 16), 8: (1, 17), 9: (1, 17), 10: (1, 17), 11: (2, 16), 12: (4, 14), 13: (6, 12)}
+    for j in range(14, stem_end): rows[j] = (7, 11)
+    for j, (a, b_) in rows.items(): rect(f, a, j, b_, j + 1, 'V')
     outline(f, 'x')
-    for j in range(14, N):                                                # the grille under the visor's point:
-        for i in range(7, 11):                                            # two silver bars round a dark slot
-            f[j][i] = 'x' if i in (8, 9) and j < 17 else 't' if i == 7 else 'v' if i == 10 else 'u'
+    for j in range(N):                                                    # the cheek guards' raised edge: a lit texel
+        for i in range(N):                                                # under / beside the visor's border
+            if f[j][i] == 'x' and j + 1 < N and f[j + 1][i] not in 'Vx' and j >= 11:
+                f[j + 1][i] = 'g' if i < 9 else 'h'
+    for j in range(stem_end + 1, N):                                      # the pointed chin under the stem
+        for i in range(N):
+            if f[j][i] not in 'x': f[j][i] = f[j][i]
+    hose(f, 15, 0, 4); hose(f, 15, 14, 18)                                # the hoses out from under the cheek guards
+    for i in (4, 13):
+        f[15][i] = f[16][i] = 'p'                                         # the guards' lower corners over them
     glint(f)
     e = shade(blank())
-    rect(e, 13, 4, 18, 10, 'V')                                           # the wrap
-    outline(e, 'x')
-    for i in range(8, 18):                                                # the hose from the jaw's corner back along
-        e[13][i], e[14][i] = ('t', 'u') if i % 2 == 0 else ('v', 'v')    # the side (corrugated: bands across it)
-    disc(e, 6, 13.5, 2.6, 'x', ring='t', rw=1.0, light=False)             # into a port
-    neck_guard(e, [3, 5])
+    for i in range(N): e[6][i] = 'p'                                      # the forehead plate's line run round (level
+    for i in range(N): e[7][i] = 'h'                                      # with the arch's ends at the front corners)
+    m = blank('.')                                                        # the side bulge (the reference's ear
+    rrect(m, 8, 8, 17, 14, 'o', cut=2)                                    # guard): a rounded plate, lit top and back
+    on = lambda j, i: 0 <= j < N and 0 <= i < N and m[j][i] == 'o'        # (left) edges, shaded bottom and front
+    for j in range(N):
+        for i in range(N):
+            if on(j, i):
+                e[j][i] = ('g' if not on(j - 1, i) else 'h' if not on(j, i - 1) else
+                           'p' if not on(j + 1, i) or not on(j, i + 1) else 'e')
+    hose(e, 15, 0, N)                                                     # the hose round the side
     east, west = sides(e)
     b = shade(blank())
-    neck_guard(b, [N] * len(GUARD_ROWS))
-    crest(b, 0, GUARD_ROWS[0][0])
+    for j in range(0, 14): b[j][8], b[j][9] = 'p', 'h'                    # the seam down the back
+    for i in range(N): b[6][i] = 'p' if b[6][i] not in 'ph' else b[6][i]
+    for i in range(N): b[7][i] = 'h' if b[7][i] not in 'ph' else b[7][i]
+    hose(b, 15, 0, N)                                                     # and across the back
     top = plain_top()
-    for j in range(N): top[j][8], top[j][9] = 'g', 'l'
+    for j in range(N): top[j][8], top[j][9] = 'p', 'h'
     return dict(north=out(f), south=out(b), east=east, west=west, up=out(top))
 
 

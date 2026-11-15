@@ -2,6 +2,7 @@
 """One review file for a round of frame drafts, instead of a model file per option.
 
 Run: python3 model/art/frame_drafts.py 'LEGS=A' 'LEGS=B' 'LEGS=C ARM_SPLAY=10'   (-> /tmp/frame/draft.bbmodel)
+PAINT=<dye> in an option paints it as the game would (needs Pillow: uv run --with pillow python3 ...).
 
 Each argument is one option: the env settings frame_model.py builds it with (its draft knobs, os.environ.get(...)).
 The option's whole model goes into a group proto_<settings> (the repo's convention for drafts: hidden proto_* groups),
@@ -27,11 +28,35 @@ def build(settings):
         subprocess.run([sys.executable, os.path.join(HERE, 'frame_model.py')], env=env, check=True)
         return json.load(open(env['FRAME_OUT']))
 
+def paint(m, dye):
+    """PAINT=<dye> in an option's settings: the option's texture painted as the game paints it (tools/make-frame-paint.py:
+    the armour pieces' and the helmet's steel shades swapped for the dye's ramp). Needs Pillow (run under uv)."""
+    import base64, importlib.util, io
+    from PIL import Image
+    root = os.path.join(HERE, '..', '..')
+    spec = importlib.util.spec_from_file_location('frame_paint', os.path.join(root, 'tools/make-frame-paint.py'))
+    fp = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(fp)
+    tex = m['textures'][0]
+    img = Image.open(io.BytesIO(base64.b64decode(tex['source'].split(',', 1)[1]))).convert('RGBA')
+    px = img.load()
+    step = {fp.H(c): i for i, c in enumerate(fp.paint.STEEL)}
+    main_, rng = fp.paint.DYES[dye]
+    ramp = fp.paint.FIXED.get(dye) or fp.paint.ramp(main_, rng)
+    for xy in fp.texels(m, img, 'helmet'):
+        if 0 <= xy[0] < img.width and 0 <= xy[1] < img.height and px[xy][3] and px[xy][:3] in step:
+            px[xy] = fp.H(ramp[step[px[xy][:3]]]) + (255,)
+    buf = io.BytesIO()
+    img.save(buf, 'PNG')
+    tex['source'] = 'data:image/png;base64,' + base64.b64encode(buf.getvalue()).decode()
+
 def main(options):
     assert options, __doc__
     draft = None
     for i, settings in enumerate(options):
         m = build(settings)
+        dye = dict(kv.split('=', 1) for kv in settings.split()).get('PAINT')
+        if dye: paint(m, dye)
         name = 'proto_' + re.sub(r'\W+', '_', settings).strip('_')
         shown = i == 0
         tex = m['textures'][0]
