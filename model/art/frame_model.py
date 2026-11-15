@@ -595,7 +595,9 @@ import frame_helmet_art as helmet_art
 PAL.update(helmet_art.EXTRA)   # the styles' red and silver (frame step 7b)
 # the outer layer: helmet C's gear and brow, or a style's own outer art (the hunter's ear guards; none: no layer)
 HELMET_EXTRAS = helmet_art.extras(os.environ.get('HELMET_EXTRA', 'layer'), HELMET_STYLE) if 'helmet_armor' in SHELLS else []
-for _p in HELMET_EXTRAS: SHELLS[f"hx_{_p['name']}"] = dict(faces=_p['faces'], compact=_p.get('hollow', False))
+# (a layer's glass, the diver's camera lens, is the helmet's glass: V / T resolved as on the helmet)
+_glassy = lambda faces: {f: [[{'V': GLASS, 'T': GLINT}.get(c, c) for c in r] for r in rows] for f, rows in faces.items()}
+for _p in HELMET_EXTRAS: SHELLS[f"hx_{_p['name']}"] = dict(faces=_glassy(_p['faces']), compact=_p.get('hollow', False))
 # The helmet styles (frame step 7b, design sec. 4c): each picked style's helmet built beside the standard one, in its
 # own group under armor_head (helm_<style>; the standard helmet and its layer in helm_standard), the game showing the
 # worn style's (PowerSuitRenderer; a style without art shows the standard). The saved files (ARMOR=game) carry the
@@ -608,7 +610,7 @@ for _v in HELMET_VARIANTS:
                                                for f, rows in helmet_art.faces(_v).items()})
     HELMET_VARIANT_EXTRAS[_v] = helmet_art.extras('layer', _v)
     for _p in HELMET_VARIANT_EXTRAS[_v]:
-        SHELLS[f"hx_{_v}_{_p['name']}"] = dict(faces=_p['faces'], compact=_p.get('hollow', False))
+        SHELLS[f"hx_{_v}_{_p['name']}"] = dict(faces=_glassy(_p['faces']), compact=_p.get('hollow', False))
 
 def _plate():
     """The shoulder plate at 2 texels per px: a steel plate, its top lit along the front and outer edges, a

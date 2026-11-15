@@ -474,7 +474,7 @@ assert DIVER_LOOK in ('ring', 'rivets', 'both'), DIVER_LOOK
 # round-5 handwheel, in red, a nod to Valve's logo (unpainted, as the hunter's red).
 # Draft knob DIVER_PORTS, the side and top windows' glass: 'bars' (the front's two bars, lined up with them), 'cross'
 # (a bar each way), 'plain' (open glass).
-DIVER_PORTS = os.environ.get('DIVER_PORTS', 'bars')
+DIVER_PORTS = os.environ.get('DIVER_PORTS', 'bars')   # picked: bars (2026-11-14, user)
 assert DIVER_PORTS in ('bars', 'cross', 'plain'), DIVER_PORTS
 DIVER_VALVE = [                      # the air valve's handwheel (rim, four spokes, the hub), 6 x 6, lit upper left
     '.EEYY.',
@@ -485,8 +485,42 @@ DIVER_VALVE = [                      # the air valve's handwheel (rim, four spok
     '.YZZZ.',
 ]
 VALVE_RED = {'E': 'i', 'Y': 'r', 'Z': 'o'}
-SIDE_PORT = (9.0, 9.5, 3.7)          # the side windows: centre column, row (the front window's), radius
-TOP_PORT = (9.0, 9.0, 4.2)           # the top's, in the middle
+TOP_PORT = (9.0, 9.0, 4.2)           # the top's window, in the middle: centre column, row, radius
+SIDE_PORT = TOP_PORT                 # the sides' the same window (2026-11-14, user; first 3.7 round row 9.5, the front
+                                     # window's middle: a different shape); rows 5-12, its top level with the front's
+# Round 12 (2026-11-14, user, after the reference's little camera on Delta's helmet top): the camera over the front
+# window, its lens facing forward on the front face, its body running back over the top face. Draft knob DIVER_CAM:
+# 'flat' (painted on the helmet) | 'box' (a real box in the outer layer's 0.5 px: a hollow layer can't give it sides,
+# so its front and top plates showed air between them from the side) | 'none'. Its lens is painted, not glass (user:
+# it doesn't light up with the windows). Two rows clear of the window's rim (user: they mustn't touch; one read as
+# touching). The front and the top meet along a full row (no rounded corners at the shared edge: holes there).
+DIVER_CAM = os.environ.get('DIVER_CAM', 'flat')
+assert DIVER_CAM in ('flat', 'box', 'none'), DIVER_CAM
+CAM_FRONT = [                        # front face rows 0-2, columns 6-11 (3 px wide over the window's middle)
+    'nnnnnn',
+    'mkuxkk',                        # the lens (dark, a silver glint) in a dark ring
+    '.kxxk.',
+]
+CAM_TOP = [                          # top face rows 0-3 (front -> back), the same columns, as seen from the front
+    'nnnnnn',                        # (lit on the viewer's left): the housing, its back end rounded
+    'nmmmmk',
+    'nmmmmk',
+    '.kkkk.',
+]
+CAM_COL = 6
+
+
+def diver_camera():
+    """DIVER_CAM=box: one box hugging the helmet's top front edge, 0.5 px out (the outer layer's room): 3 px wide, its
+    front from 0.5 px over the helmet's top down 2 px (to raw y 33: two rows clear of the window), its top running
+    2 px back over the helmet. Head-bone raw coordinates; faces as _part's (north column 0 at +x, up rows front ->
+    back from -x, east columns back -> front)."""
+    north = ['nnnnnn', 'mkuxkk', 'mkxxkk', 'kkkkkk']
+    up = ['nnnnnn', 'kmmmmn', 'kmmmmn', 'kmmmmn', 'kkkkkk']
+    east = ['nnnnn', 'mmmmm', 'mmmmm', 'mmmmm']        # +x: the lit side seen from the front
+    west = ['mmmmm', 'kkkkk', 'kkkkk', 'kkkkk']
+    return [_part('cam', ((-1.5, 33, -5), (1.5, 35, -2.5)),
+                  dict(north=north, up=up, east=east, west=west, south=['kkkkkk'] * 4, down=['kkkkkk'] * 5))]
 COLLAR = 15                          # the corselet band's top row (rows 15-17, all four sides)
 SEAM_ROW = 2                         # the dome's riveted seam (rows 2-3: over the window's top at row 5)
 
@@ -578,6 +612,12 @@ def protector():
     if rivets: rivet_ring(top, tx, ty, tr + 1.4, tr + 1.4, 12, rows=(1, N - 2))
     bezel(top, tx, ty, tr, tr, 1.2, cross_glass(ty))
     glint1(top)
+    if DIVER_CAM == 'flat':
+        for art, g in ((CAM_FRONT, f), ([r[::-1] for r in CAM_TOP], top)):   # (the top's columns run
+                                                                         # -x -> +x, the front's +x -> -x: lit side kept)
+            for j, row in enumerate(art):
+                for i, c in enumerate(row):
+                    if c != '.': g[j][CAM_COL + i] = c
     d = dict(north=out(f), south=out(b), east=east, west=west, up=out(top))
     m = METAL[DIVER_METAL]
     return {k: [''.join(m.get(c, c) for c in r) for r in v] for k, v in d.items()}
@@ -934,6 +974,14 @@ def layer(style='C'):
             for j in range(N):
                 if o['east'][j][-1] != '.': east[j + 1][-1] = _round(o['east'], j, N - 1)
                 if o['east'][j][0] != '.': east[j + 1][0] = _round(o['east'], j, 0)
+    up = [list(r) for r in _grid(W, D)]
+    if 'up' in o:                                      # the top (rows front -> back): helmet (j, i) -> layer (j + 1,
+        for j in range(N):                             # i + 1); the north art's top row carries on over the shared
+            for i in range(N):                         # front edge (the layer's front row) and the top's front row
+                if o['up'][j][i] != '.': up[j + 1][i + 1] = o['up'][j][i]
+        for i in range(N):
+            if o['north'][0][i] != '.': north[0][i + 1] = o['north'][0][i]
+            if o['up'][0][i] != '.': up[0][i + 1] = o['up'][0][i]
     for j in range(N):                                 # west: the east mirrored (columns front -> back)
         for i in range(N):
             if o['east'][j][i] != '.': west[j + 1][W - 2 - i] = o['east'][j][i]
@@ -952,12 +1000,14 @@ def layer(style='C'):
     part = _part('layer', ((x0, y0, z0), (x1, y1, z1)), dict(east=[''.join(r) for r in east],
                                                             west=[''.join(r) for r in west],
                                                             north=[''.join(r) for r in north],
-                                                            south=[''.join(r) for r in south]))
+                                                            south=[''.join(r) for r in south],
+                                                            up=[''.join(r) for r in up]))
     part['hollow'] = True
     return [part]
 
 
 def extras(kind, style='C'):
-    if kind == 'layer': return layer(style)   # (built only when asked: a style without outer art has none)
+    if kind == 'layer':                       # (built only when asked: a style without outer art has none)
+        return layer(style) + (diver_camera() if style == 'protector' and DIVER_CAM == 'box' else [])
     return {'none': [], 'cap': cap(), 'radio': radio(), 'both': cap() + radio(),
             'all': cap() + radio() + camera(), 'gear': radio() + camera()}[kind]
