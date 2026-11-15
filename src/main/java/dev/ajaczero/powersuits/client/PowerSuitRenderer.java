@@ -23,6 +23,8 @@ import org.jspecify.annotations.Nullable;
 public class PowerSuitRenderer extends GeoEntityRenderer<PowerSuitEntity, LivingEntityRenderState> {
     /** What a tool without frame art shows in the socket (see adjustModelBonesForRender). */
     private static final String STAND_IN_TOOL = "drill";
+    /** The standard helmet's bone, under armor_head beside the styles' (helm_<style>). */
+    private static final String STANDARD_HELMET = "helm_standard";
 
     public PowerSuitRenderer(EntityRendererProvider.Context context) {
         super(context, new PowerSuitModel());
@@ -105,11 +107,19 @@ public class PowerSuitRenderer extends GeoEntityRenderer<PowerSuitEntity, Living
             boolean hide = !toolBone.equals(shown);
             bones.ifPresent(toolBone, bone -> bone.skipRender(hide).skipChildrenRender(hide));
         }
-        // Helmet slot: the frame's helmet (armor_head: the box, its glass and its outer layer with the radio and camera)
-        // only when one is worn; without it the pilot's own head shows (PilotLayer). (The helmet styles, design sec. 4c,
-        // are the big suit's helmets for now: any style shows the frame's helmet until the styles get theirs.)
+        // Helmet slot: the frame's helmet (armor_head) only when one is worn; without it the pilot's own head shows
+        // (PilotLayer). Inside it one helmet at a time (frame step 7b, design sec. 4c): the worn style's (helm_<style>,
+        // HelmetStyle.bone) or the standard one (helm_standard: the box, its glass, the outer layer with the radio and
+        // camera), which also stands in for a style without frame art yet.
         boolean helmet = info.getOrDefaultGeckolibData(SuitRenderData.HELMET, true);
         bones.ifPresent("armor_head", bone -> bone.skipRender(!helmet).skipChildrenRender(!helmet));
+        HelmetStyle style = HelmetStyle.byId(info.getOrDefaultGeckolibData(SuitRenderData.HELMET_STYLE, -1));
+        String helm = style != null && info.model().getBone(style.bone()).isPresent() ? style.bone() : STANDARD_HELMET;
+        bones.ifPresent(STANDARD_HELMET, bone -> bone.skipRender(!helm.equals(STANDARD_HELMET)).skipChildrenRender(!helm.equals(STANDARD_HELMET)));
+        for (HelmetStyle each : HelmetStyle.values()) {
+            boolean hide = !each.bone().equals(helm);
+            bones.ifPresent(each.bone(), bone -> bone.skipRender(hide).skipChildrenRender(hide));
+        }
         // Engine slot (design sec. 4b): the frame's engine (the heart: core and hoses on the front, the blower on the back)
         // only with one installed; none without (the glowmasks follow: a hidden bone isn't drawn again). Every engine
         // shows the heart for now: the tidal engine and the star reactor light its fire in their own colours

@@ -596,6 +596,19 @@ PAL.update(helmet_art.EXTRA)   # the styles' red and silver (frame step 7b)
 # the outer layer: helmet C's gear and brow, or a style's own outer art (the hunter's ear guards; none: no layer)
 HELMET_EXTRAS = helmet_art.extras(os.environ.get('HELMET_EXTRA', 'layer'), HELMET_STYLE) if 'helmet_armor' in SHELLS else []
 for _p in HELMET_EXTRAS: SHELLS[f"hx_{_p['name']}"] = dict(faces=_p['faces'], compact=_p.get('hollow', False))
+# The helmet styles (frame step 7b, design sec. 4c): each picked style's helmet built beside the standard one, in its
+# own group under armor_head (helm_<style>; the standard helmet and its layer in helm_standard), the game showing the
+# worn style's (PowerSuitRenderer; a style without art shows the standard). The saved files (ARMOR=game) carry the
+# picked ones (env HELMET_VARIANTS, comma separated; '' none). Picked so far: hunter (2026-11-14).
+HELMET_VARIANTS = [v for v in os.environ.get('HELMET_VARIANTS', 'hunter' if ARMOR == 'game' else '').split(',') if v] \
+    if 'helmet_armor' in SHELLS and HELMET_STYLE != 'suit' else []
+HELMET_VARIANT_EXTRAS = {}
+for _v in HELMET_VARIANTS:
+    SHELLS[f'helmet_{_v}_armor'] = dict(faces={f: [[{'V': GLASS, 'T': GLINT}.get(c, c) for c in r] for r in rows]
+                                               for f, rows in helmet_art.faces(_v).items()})
+    HELMET_VARIANT_EXTRAS[_v] = helmet_art.extras('layer', _v)
+    for _p in HELMET_VARIANT_EXTRAS[_v]:
+        SHELLS[f"hx_{_v}_{_p['name']}"] = dict(faces=_p['faces'], compact=_p.get('hollow', False))
 
 def _plate():
     """The shoulder plate at 2 texels per px: a steel plate, its top lit along the front and outer edges, a
@@ -897,6 +910,9 @@ for _k in SHELLS:
     if _k.startswith('tl_') or _k in ('arm_socket_shell', 'arm_socket_armor'): SHELL_AT[_k] = None
 if HELMET_STYLE != 'suit': SHELL_AT['helmet_armor'] = None
 for _p in HELMET_EXTRAS: SHELL_AT[f"hx_{_p['name']}"] = None
+for _v in HELMET_VARIANTS:
+    SHELL_AT[f'helmet_{_v}_armor'] = None
+    for _p in HELMET_VARIANT_EXTRAS[_v]: SHELL_AT[f"hx_{_v}_{_p['name']}"] = None
 # A compact part (the helmet's see-through outer layer) is mostly empty: its all-see-through faces take no room, they
 # all map to one see-through texel (EMPTY_UV), so only its painted faces need a strip.
 def _blank(part, f): return SHELLS[part].get('compact') and all(c == '.' for r in shell_art(part, f) for c in r)
@@ -1359,6 +1375,8 @@ def regroup(e, name):
 ALT_SLOT = {'torso': 'torso', 'body': 'hip', 'right_arm': 'arm_r', 'left_arm': 'arm_l', 'right_leg': 'leg_r', 'left_leg': 'leg_l'}
 def alt(e):
     g = e['_g']
+    if g['name'].startswith('helm_'):   # the helmet styles: one drawn at a time
+        return 'head', g['name']
     if g['name'].startswith(('frame_', 'armor_')) and g['_parent']['name'] in ALT_SLOT:
         return ALT_SLOT[g['_parent']['name']], g['name'].split('_')[0]
     if g['name'] in ('engine_open', 'engine_armored'):
@@ -1376,6 +1394,15 @@ if 'helmet_armor' in SHELLS:
     for _p in HELMET_EXTRAS:   # checked as boxes (painted, like the pauldron decal)
         e = (hollow if _p.get('hollow') else painted)(_gh, 'r', f"hx_{_p['name']}", f"ar_hx_{_p['name']}", *_p['box'])
         e['_armor'] = 'addon'
+    if HELMET_VARIANTS:   # the standard helmet into helm_standard, each style's beside it (HELMET_VARIANTS)
+        for e in [x for x in elements if x['_g'] is _gh]: regroup(e, 'helm_standard')
+        for _v in HELMET_VARIANTS:
+            _gv = group(f'helm_{_v}', [_gh['origin'][0], _gh['origin'][1] - FY, _gh['origin'][2]], _gh)
+            e = painted(_gv, 'r', f'helmet_{_v}_armor', f'ar_helmet_{_v}', *ARMOR_BOX['helmet'])
+            e['_armor'] = True
+            for _p in HELMET_VARIANT_EXTRAS[_v]:
+                e = (hollow if _p.get('hollow') else painted)(_gv, 'r', f"hx_{_v}_{_p['name']}", f"ar_hx_{_v}_{_p['name']}", *_p['box'])
+                e['_armor'] = 'addon'
 if ARMOR != 'none':
     for piece, frame in (('chest', 'fr_chest_shell'), ('waist', 'fr_abdomen_shell')):
         unlink(frame)

@@ -546,8 +546,9 @@ HUNTER_EAR = (9.0, 9.5, 3.8)    # the ear guard on the sides (east texel coords:
                                 # line's end; the hose climbs to it diagonally
 # Draft knob HUNTER_EARS (2026-11-14, user: the raised ears next to the flat hoses feel off, "the disparity"): 'flat'
 # (the ears painted on the side, like the hoses) or 'raised' (the hoses up on the outer layer with the ears: the side's
-# diagonal runs and the front's stubs).
-HUNTER_EARS = os.environ.get('HUNTER_EARS', 'raised')
+# diagonal runs and the front's stubs). Picked: flat (2026-11-14, user: "both damn good", but the raised hoses end
+# abruptly at the front). So the hunter has no outer layer.
+HUNTER_EARS = os.environ.get('HUNTER_EARS', 'flat')
 HOSE_ROW = 14                   # the hoses' top row (rows 14-15: clear of the pauldrons, which hide the side's bottom
                                 # 2 px in a side view)
 

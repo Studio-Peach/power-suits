@@ -120,6 +120,7 @@ final class StyleScene {
                 }
                 DevUtil.firebox(s); s.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.BLAZE_ROD, 4));
                 s.getInventory().setItem(PowerSuitEntity.HELMET_SLOT, helmet);
+                DevUtil.ironArmour(s); // the frame in its iron set: the paint shows on the pieces as on the helmet
                 s.snapTo(x + 0.5 + SPACING * i, y, z + 0.5, 180, 0);
                 s.setYBodyRot(180);
                 s.setYHeadRot(180);

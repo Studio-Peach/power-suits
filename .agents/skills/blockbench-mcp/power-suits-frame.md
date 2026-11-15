@@ -199,4 +199,14 @@ the end and `docs/guide.md` Notes).
   ramps; `tools/make-frame-paint.py`); the bare frame (fr_*) stays steel: its members' greys + grain mapped onto the
   ramp read as camouflage speckle. So: keep the armour and the helmet's shell in the steel shades only, everything
   that mustn't take paint (slate, brass, copper, gear) off them.
+- Step 7b, helmet styles (2026-11-14): one style at a time from a reference picture the user gives (the five first
+  drafts together "ain't great": a draft per reference works). Drafts `HELMET_STYLE=<style>` on Alex (`BUILD=slim`,
+  user) with `PAINT=<dye>` in `frame_drafts.py` (painted as the game paints: judge a style in its colour too). A
+  style's outer art is its `_outer` (helmet texel coords; `layer(style)` builds its layer, none without). The hunter
+  (Samus, `.scratch/helm7/hunter_ref.png`): an arched forehead plate under a centre seam, a T visor whose stem's lower
+  half is plated in silver, flat ear bulbs high mid-side fed by diagonal hoses from under the cheek guards (raised on
+  the layer, the hoses' ends at the front read abrupt; ears raised over flat hoses read as a disparity), the back's
+  seam stopping on the plate line (_|_) over the standard neck guard. The user edits texels in the draft tab: diff its
+  texture against the draft file (glass texels differ by 1 from Blockbench's canvas rounding) and carry the edit into
+  the generator. Picked styles go into the saved files with `HELMET_VARIANTS` (groups `helm_<style>`).
 - Re-run the exporter after rebuilding the saved files, then `make-frame-paint.py`.
