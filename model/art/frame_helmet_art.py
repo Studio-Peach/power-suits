@@ -652,9 +652,9 @@ SPARTAN_FRONT = [
  'x  x  V  V  V  V  V  V  V',   # 11
  'n  n  x  V  V  V  V  n  n',   # 12 the cheeks up at the corners; glass lobes; the mouthpiece's top in the notch
  'k  t  g  x  x  x  n  k  k',   # 13 lamps; the cheek's lit edge falling toward the chin; the mouthpiece widest
- 'k  t  e  g  g  e  e  e  m',   # 14 its bottom rounded in to 2 texels (user: the roundest one tried), no black round it (user)
- 'x  x  e  e  e  g  e  e  e',   # 15
- 'l  l  e  e  e  e  p  g  g',   # 16 chin
+ 'k  t  e  g  g  e  p  l  m',   # 14 its bottom rounded in to 2 texels (user: the roundest one tried), no black round it (user)
+ 'x  x  e  e  e  g  p  g  g',   # 15 the chin plate up to the mouthpiece, its seams from the mouthpiece's ends (user: it read apart)
+ 'l  l  e  e  e  e  p  h  h',   # 16 chin
  'p  p  l  l  l  l  p  h  h',   # 17
 ]
 
