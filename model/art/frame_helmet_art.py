@@ -385,6 +385,7 @@ def wrap_back(style='plain'):
 # each, after the big suit's and their originals.
 EXTRA = {'r': (0x9a, 0x2a, 0x22), 'o': (0x5e, 0x18, 0x14),                       # a red mark (not the fire's reserved reds)
          'i': (0xc8, 0x3c, 0x2a),                                                   # its lit red (the diver's valve)
+         'j': (0xff, 0xf2, 0xc0), 'y': (0xf0, 0xc8, 0x60), 'S': (0xb8, 0x8a, 0x3a),  # a lamp: hot, warm, its edge
          't': (0xc8, 0xcc, 0xd0), 'u': (0x9a, 0xa0, 0xa6), 'v': (0x6b, 0x71, 0x78)}   # silver (grille, hoses): unpainted
 
 
@@ -542,6 +543,37 @@ DIVER_RINGS = os.environ.get('DIVER_RINGS', 'clean')
 assert DIVER_RINGS in ('rivets', 'clean', 'slate', 'collar'), DIVER_RINGS
 
 
+# Draft knob DIVER_FACE (2026-11-15, user, from the reference: Delta's helmet is split in three, seams running from
+# the window's ends down and in under it to meet below it, then one seam down the middle; the two lower panels hold
+# the cheek lights): 'wishbone' (those seams, wrapping onto the sides to the side windows; the cheek lights back in
+# the panels as lamps, not glass: user, distinctly lights; the front's collar band gives way to the panels) | 'plain'.
+DIVER_FACE = os.environ.get('DIVER_FACE', 'wishbone')
+assert DIVER_FACE in ('wishbone', 'plain'), DIVER_FACE
+# The front's right cheek panel (the left mirrors it), row: its columns 0..n-1 (a texel of shell between it and the
+# window's bezel: drawn as a line hugging the bezel it ran into the bezel's shaded lower right, and single-texel
+# diagonals read as dots): the window's section is the dome, the window and a tongue down the middle (columns 7-10).
+# The panels are a step darker, their edge against the upper section a dark seam line.
+WISH_PANEL = {10: 1, 11: 2, 12: 3, 13: 4, 14: 6, 15: 7, 16: 7, 17: 7}
+WISH_SIDE = {10: range(13, N), 11: range(13, N), 12: range(13, N), 13: range(12, N), 14: range(12, N)}
+                                               # on the sides (east: columns back -> front): the panel carried on in
+                                               # front of and under the side window's front, above the collar
+CHEEK_LAMP = [                                  # in each lower panel (rows 14-17, columns 1-4 / 13-16), lit upper left:
+    '.EE.',                                     # a slate rim round a 2 x 2 lamp, hot in its upper left (painted: a
+    'EjyZ',                                     # light, not glass)
+    'EySZ',
+    '.ZZ.',
+]
+
+
+def panel(g, mask, stop=COLLAR):
+    """A plate a step darker than the shell over the texels in mask, its edge against the rest a dark seam line (the
+    face's own edges and the rows from `stop` on, the collar band, don't count)."""
+    for i, j in mask:
+        edge = any(0 <= i + di < N and 0 <= j + dj < stop and (i + di, j + dj) not in mask
+                   for di, dj in ((1, 0), (-1, 0), (0, -1), (0, 1)))
+        if g[j][i] in 'ehl': g[j][i] = 'p' if edge else 'l'
+
+
 def collar_band(g, bolts):
     """The corselet round the helmet's bottom (DIVER_RINGS)."""
     rows = ('E', 'Y', 'Z') if DIVER_RINGS in ('slate', 'collar') else ('g', 'l', 'p')
@@ -604,11 +636,20 @@ def protector():
     grille = {'bars': 'Y', 'grid': 'Y', 'none': 'V'}[DIVER_GRILLE]
     cx, cy, rx, ry = DIVER_MAIN
     if seam: rivet_seam(f, SEAM_ROW, (2, 6, 11, 15))
-    collar_band(f, (2, 6, 11, 15))
+    if DIVER_FACE == 'plain': collar_band(f, (2, 6, 11, 15))
     if rivets: rivet_ring(f, cx, cy, rx + 1.3, ry + 1.2, 14)
     bezel(f, cx, cy, rx, ry, DIVER_RIM,
           lambda i, j: grille if i in (7, 10) else 'Y' if (DIVER_GRILLE == 'grid' and j == 6) else 'V')
     glint(f)
+    if DIVER_FACE == 'wishbone':
+        mask = {(i, j) for j, n in WISH_PANEL.items() for i in range(n)}
+        mask |= {(N - 1 - i, j) for i, j in mask}
+        for j in range(14, N):                                           # the tongue down to the bottom (over the
+            for i in range(7, 11): f[j][i] = 'e' if j < N - 1 else 'l'    # face's darker bottom rows)
+        panel(f, mask, stop=N)
+        for j, row in enumerate(CHEEK_LAMP):
+            for i, c in enumerate(row):
+                if c != '.': f[14 + j][1 + i] = f[14 + j][13 + i] = c
     def cross_glass(cy):                                                 # 'cross': one bar each way through the middle
         return lambda i, j: 'Y' if DIVER_PORTS == 'cross' and (i in (8, 9) or j in (int(cy - 0.5), int(cy))) else \
             'Y' if DIVER_PORTS == 'bars' and i in (7, 10) else 'V'
@@ -619,6 +660,8 @@ def protector():
     if rivets: rivet_ring(e, sx, sy, sr + 1.4, sr + 1.4, 12)
     bezel(e, sx, sy, sr, sr, 1.2, cross_glass(sy))
     glint1(e)
+    if DIVER_FACE == 'wishbone':
+        panel(e, {(i, j) for j, cols in WISH_SIDE.items() for i in cols})
     east, west = sides(e)
     b = shade(blank())
     if seam: rivet_seam(b, SEAM_ROW, (2, 6, 11, 15))
