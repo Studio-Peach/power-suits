@@ -499,10 +499,11 @@ SIDE_PORT = TOP_PORT                 # the sides' the same window (2026-11-14, u
 # itself (CAM_FRONT / CAM_TOP below), against 'box'. (The layer option is gone; it was 3fae2cd.)
 DIVER_CAM = os.environ.get('DIVER_CAM', 'box')
 assert DIVER_CAM in ('flat', 'box', 'none'), DIVER_CAM
-CAM_FRONT = [                        # front face rows 0-2, columns 6-11 (3 px wide over the window's middle): the
-    'mkuxkk',                        # box's front under its edge row (the lens: dark, a silver glint, a dark ring),
-    'mkxxkk',                        # two rows clear of the window's rim
-    'kkkkkk',
+CAM_FRONT = [                        # front face rows 0-3, columns 6-11 (3 px wide over the window's middle): the
+    'nnnnnn',                        # box's front, all four rows (2026-11-15, user: taller, as the box looks from the
+    'mkuxkk',                        # front; three read short), its lit top row on the edge with the top's; the lens
+    'mkxxkk',                        # dark, a silver glint, in a dark ring. One row clear of the window's rim (two
+    'kkkkkk',                        # with three rows)
 ]
 CAM_TOP = [                          # top face rows 0-3 (front -> back), as seen from the front (lit on the viewer's
     'nnnnnn',                        # left): the box's top, its lit front edge on the helmet's edge row
