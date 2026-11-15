@@ -544,6 +544,10 @@ def hose(g, j, i0, i1):
 HUNTER_EAR = (9.0, 9.5, 3.8)    # the ear guard on the sides (east texel coords: centre column back -> front, row,
                                 # radius): in the middle of the side, high (2026-11-14, user), over the forehead
                                 # line's end; the hose climbs to it diagonally
+# Draft knob HUNTER_EARS (2026-11-14, user: the raised ears next to the flat hoses feel off, "the disparity"): 'flat'
+# (the ears painted on the side, like the hoses) or 'raised' (the hoses up on the outer layer with the ears: the side's
+# diagonal runs and the front's stubs).
+HUNTER_EARS = os.environ.get('HUNTER_EARS', 'raised')
 HOSE_ROW = 14                   # the hoses' top row (rows 14-15: clear of the pauldrons, which hide the side's bottom
                                 # 2 px in a side view)
 
@@ -567,7 +571,8 @@ def hunter():
             if f[j][i] == 'x' and j + 1 < N and f[j + 1][i] not in 'Vx' and j >= 11:
                 f[j + 1][i] = 'g' if i < 9 else 'h'
     for i in range(7, 11):                                                # the stem's lower half plated in silver: a
-        f[14][i], f[15][i] = ('t' if i < 10 else 'u'), 'v'                 # lit plate over its shadow
+        f[14][i], f[15][i] = ('t' if 7 < i < 10 else 'u'), 'v'            # lit plate over its shadow, its ends a step
+                                                                          # darker (2026-11-14, user's edit: even)
     hose(f, HOSE_ROW, 0, 4); hose(f, HOSE_ROW, 14, 18)                    # the hoses out from under the cheek guards
     for i in (4, 13):
         f[HOSE_ROW][i] = f[HOSE_ROW + 1][i] = 'p'                         # the guards' lower corners over them
@@ -583,7 +588,6 @@ def hunter():
         path.append((i, j))
         e[j][i], e[j + 1][i] = ('t', 'u') if i % 2 == 0 else ('v', 'v')
     neck_guard(e, GUARD_WRAP)
-    east, west = sides(e)
     b = shade(blank())
     for j in range(0, 6): b[j][8], b[j][9] = 'p', 'h'                     # the seam down the back, stopping on the
     for i in range(N): b[6][i] = 'p'                                      # plate line (_|_)
@@ -602,8 +606,24 @@ def hunter():
     for i, j in path:                                                     # the hose's silver collar where it goes in
         for jj, c in ((j, 't'), (j + 1, 'v')):                            # (the rim over the hose's end)
             if ear[jj][i] != '.': ear[jj][i] = c
+    empty = lambda: [['.'] * N for _ in range(N)]
+    outer = {'east': empty(), 'north': empty(), 'south': empty()}
+    clean = shade(blank())
+    if HUNTER_EARS == 'raised':                                           # the hoses up onto the layer with the ears:
+        hoses = [(j, i) for i, j0 in path for j in (j0, j0 + 1)]          # the side's diagonal run, the front's stubs
+        for j, i in hoses:
+            outer['east'][j][i], e[j][i] = e[j][i], clean[j][i]
+        for j in (HOSE_ROW, HOSE_ROW + 1):
+            for i in list(range(0, 4)) + list(range(14, 18)):
+                outer['north'][j][i], f[j][i] = f[j][i], clean[j][i]
+    for j in range(N):                                                    # the ears: on the layer, or flat on the side
+        for i in range(N):
+            if ear[j][i] != '.':
+                if HUNTER_EARS == 'flat': e[j][i] = ear[j][i]
+                else: outer['east'][j][i] = ear[j][i]
+    east, west = sides(e)
     return dict(north=out(f), south=out(b), east=east, west=west, up=out(top),
-                _outer={'east': ear, 'north': [['.'] * N for _ in range(N)], 'south': [['.'] * N for _ in range(N)]})
+                _outer=outer if HUNTER_EARS != 'flat' else None)
 
 
 STYLES = {'A': sentinel, 'B': diver, 'C': wrap, 'protector': protector, 'spartan': spartan, 'noble': noble,
@@ -713,6 +733,17 @@ def camera():
             _part('camera_tail', ((4.5, 29, 1.5), (5, 30.5, 2)), dict(east=tail, up=['n'], down=['k'], south=['m'] * 3))]
 
 
+def _round(g, j, i):
+    """The texel the layer's corner column carries on with, next to an edge texel g[j][i]: the same, but a hose keeps
+    its ribs going (a rib's lit / mid texel is followed by a groove, a groove by a rib)."""
+    c = g[j][i]
+    if c in 'tu': return 'v'
+    if c == 'v':
+        bottom = j > 0 and g[j - 1][i] in 'tuv'
+        return 'u' if bottom else 't'
+    return c
+
+
 def layer(style='C'):
     """Draft (2026-11-13, user: the gear's 3D boxes vs one see-through outer layer round the helmet, painted 2D, as
     the extras began): one box 0.5 px out from the helmet all round, like a player's hat layer, its only paint the
@@ -743,18 +774,18 @@ def layer(style='C'):
         for j in range(N):
             for i in range(N):
                 if o[face][j][i] != '.': g[j + 1][i + 1] = o[face][j][i]
-            row_ = [c for c in o[face][j] if c != '.']
-            if face != 'east' and row_ and len(row_) == N:   # a full row: round both corners
-                g[j + 1][0], g[j + 1][-1] = row_[0], row_[-1]
+            if face != 'east':                         # an edge texel carries on round the corner (a full row:
+                if o[face][j][0] != '.': g[j + 1][0] = _round(o[face], j, 0)     # both ends; the hunter's hoses:
+                if o[face][j][-1] != '.': g[j + 1][-1] = _round(o[face], j, N - 1)   # theirs)
         if face == 'east':                             # the side's band meets the front's / back's corner texel
             for j in range(N):
-                if o['east'][j][-1] != '.': east[j + 1][-1] = o['east'][j][-1]
-                if o['east'][j][0] != '.': east[j + 1][0] = o['east'][j][0]
+                if o['east'][j][-1] != '.': east[j + 1][-1] = _round(o['east'], j, N - 1)
+                if o['east'][j][0] != '.': east[j + 1][0] = _round(o['east'], j, 0)
     for j in range(N):                                 # west: the east mirrored (columns front -> back)
         for i in range(N):
             if o['east'][j][i] != '.': west[j + 1][W - 2 - i] = o['east'][j][i]
-        if o['east'][j][-1] != '.': west[j + 1][0] = o['east'][j][-1]
-        if o['east'][j][0] != '.': west[j + 1][-1] = o['east'][j][0]
+        if o['east'][j][-1] != '.': west[j + 1][0] = _round(o['east'], j, N - 1)
+        if o['east'][j][0] != '.': west[j + 1][-1] = _round(o['east'], j, 0)
     for p in (radio() if style == 'C' else []):        # west: columns front -> back (z0 up)
         (a, b), art = p['box'], p['faces']['west']
         top = b[1]
