@@ -641,11 +641,11 @@ SPARTAN_FRONT = [
  'g  g  g  g  g  B  l  l  l',   # 0 rim; the top's channel (cols 6-11) running out over the front
  'h  h  h  h  h  B  l  l  l',   # 1
  'h  e  e  e  e  e  B  l  l',   # 2 narrowing
- 'h  e  e  e  e  e  e  g  g',   # 3 the tab's lit top
- 'h  e  g  g  g  g  g  h  h',   # 4 brow lip; tab
- 'g  g  x  x  x  x  x  h  h',   # 5 the brow's wings a row lower; recess; tab
- 'x  x  x  x  x  x  x  l  l',   # 6 recess under the brow; the tab's shaded bottom
- 'V  V  V  V  V  V  V  V  V',   # 7
+ 'h  e  e  e  e  e  B  l  l',   # 3
+ 'h  e  e  e  e  e  e  g  g',   # 4 the tab's lit top
+ 'h  e  g  g  g  g  g  h  h',   # 5 brow lip; tab
+ 'g  g  x  x  x  x  x  x  x',   # 6 the brow's wings a row lower; the visor's border (1 texel all round: user)
+ 'x  x  V  V  V  V  V  V  V',   # 7
  'V  V  V  V  V  V  V  V  V',   # 8
  'V  V  V  V  V  V  V  V  V',   # 9  eyes
  'V  V  V  V  V  V  V  V  V',   # 10
@@ -665,13 +665,13 @@ SPARTAN_SIDE = [
  'eeeeeeeeeeeeeeeeee',
  'eeeeeeeeeeeeeeeeee',
  'eeeeeeeeeeeeeeeeee',
- 'eeeeeeeeeeeeeeeegg',   # 5
- 'eeeeeeeeggggggggxx',   # 6 the wing's lip run back
- 'eeeeggggeexxVVVVVV',   # 7
- 'ggggeeeeeexVVVVVVV',
- 'eeeeeeeeeexVVVVVVV',
- 'eeeeeeeeeeexVVVVVV',   # 10
- 'eeeeeeeeeeeexxxxxx',   # 11
+ 'eeeeeeeeeeeeeeeeee',
+ 'eeeeeeeegggggggggg',   # 6 the wing's lip run back, stepping down into the back's band (row 8)
+ 'eeeeggggeeeeexxxxx',   # 7 the visor's wrap, its border 1 texel
+ 'ggggeeeeeeeexVVVVV',
+ 'eeeeeeeeeeexVVVVVV',
+ 'eeeeeeeeeeeexVVVVV',   # 10
+ 'eeeeeeeeeeeeexxxxx',   # 11
  'eeeeeeeeeeepgeeenn',   # 12 the cheek piece's back seam; lamp plate
  'eeeeeeeeeeepheeekk',
  'eeeeeeeeeeepheeetk',
