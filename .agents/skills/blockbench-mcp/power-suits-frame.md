@@ -21,6 +21,13 @@ the end and `docs/guide.md` Notes).
 - The art scripts use **raw** coordinates; the model is lifted `FY = 2` (the 4 px soles). A sweep or a Blockbench
   readout shows built coordinates (raw + 2): the caps' tops are raw y 27.5, Blockbench 29.5.
 - 1 px = 1/16 block, the model faces -z, right side +x, 2 texels per px.
+- **Face columns don't share a direction** (frame_model.py's faces, the helmet art's): north (front) runs +x -> -x,
+  south (back) and up (top) -x -> +x, east back -> front, west front -> back; up rows front -> back, down rows back
+  -> front. Anything that crosses an edge (a channel, a seam, a stripe) must be matched by world position, not by
+  column number: front column i is x = 4.5 - (i + 0.5) / 2 on the helmet, top column i is x = -4.5 + (i + 0.5) / 2.
+  2026-11-15: a spartan option lit off the front's column numbers put the channel's dark wall on the other side of
+  the top's, so the streak jumped where the faces meet (the user caught it). Check edges in a 3D view, never in the
+  flat face grids alone.
 
 ## Envelopes (what any part on the torso must clear)
 - **The helmet** (9 x 9 x 9, raw y 25.5 up, x / z +-4.5; head pivot raw 26, yaw +-50, pitch +-90): above raw 25.5
