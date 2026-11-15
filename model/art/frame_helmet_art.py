@@ -703,6 +703,44 @@ SPARTAN_BACK = [
 ]
 
 
+# Round 17 (2026-11-15, user: "a fun part": the sections read well, the mouthpiece's from side to side under the
+# visor and the top's from the back to the front; put them on the outer layer, for depth against the visor and the
+# rest of the helmet). The layer's texels are the helmet's own (the layer is 0.5 px out, its texel (j + 1, i + 1) over
+# the helmet's (j, i), its edge rows / columns carrying the art on round the corners), so from the front nothing
+# moves; the helmet keeps its paint under them (an icon or a model without the layer looks the same). The visor's
+# 1-texel dark border stays on the helmet: the raised parts' edges stand over it.
+# Draft knob SPARTAN_LAYER ('+' joined, 'none' for the flat round 16):
+#   jaw     the lower section: every front texel under the visor (its border excepted: the lamps, cheeks, mouthpiece,
+#           chin) and the cheek piece round the sides (in front of its back seam, which stays on the helmet as the
+#           shadow behind it)
+#   cap     the upper section, the whole shell over the visor: the front's brow (lip, tab, wings), the top, the sides
+#           over the brow's line, the back down to its band (the shadow row under the band stays on the helmet)
+#   channel the centre strip only: the brow's tab, the channel over the top and down the back to its tab
+SPARTAN_LAYER = os.environ.get('SPARTAN_LAYER', 'jaw+cap')
+
+
+def spartan_layer(f, e, b, t, parts):
+    """The outer art ({face: rows, '.' see-through}) for the sections in parts, cut from the helmet's faces."""
+    glassy = lambda g, i, j: g[j][i] in 'VT' or (g[j][i] == 'x' and any(
+        0 <= i + di < N and 0 <= j + dj < N and g[j + dj][i + di] in 'VT' for di, dj in ((1, 0), (-1, 0), (0, 1), (0, -1))))
+    pick = {k: set() for k in ('north', 'east', 'south', 'up')}
+    if 'jaw' in parts:
+        pick['north'] |= {(i, j) for j in range(12, N) for i in range(N) if not glassy(f, i, j)}
+        pick['east'] |= {(i, j) for j in range(12, N) for i in range(12, N) if not glassy(e, i, j)}
+    if 'cap' in parts:
+        pick['north'] |= {(i, j) for j in range(7) for i in range(N) if not glassy(f, i, j)}
+        line = lambda i: 8 if i < 4 else 7 if i < 8 else 6                # the side's line: the brow's lip, stepping
+        pick['east'] |= {(i, j) for i in range(N) for j in range(line(i) + 1) if not glassy(e, i, j)}   # down
+        pick['south'] |= {(i, j) for j in range(9) for i in range(N)}     # back to the band (row 8)
+        pick['up'] |= {(i, j) for j in range(N) for i in range(N)}
+    if 'channel' in parts:
+        pick['north'] |= {(i, j) for j, (a, b_) in enumerate([(5, 13)] * 2 + [(6, 12)] * 2 + [(7, 11)] * 3) for i in range(a, b_)}
+        pick['up'] |= {(i, j) for j in range(N) for i in range(6, 12)}
+        pick['south'] |= {(i, j) for j, (a, b_) in enumerate([(6, 12)] * 5 + [(7, 11)]) for i in range(a, b_)}
+    src = dict(north=f, east=e, south=b, up=t)
+    return {k: [[src[k][j][i] if (i, j) in pick[k] else '.' for i in range(N)] for j in range(N)] for k in pick}
+
+
 def spartan():
     f = mirror_half(SPARTAN_FRONT)
     glint(f)
@@ -715,8 +753,10 @@ def spartan():
     for j in range(N):                                                    # the channel front to back: its walls
         t[j][6], t[j][11] = 'p', 'g'                                      # (shaded, lit), its floor a step down
         for i in range(7, 11): t[j][i] = 'e'
+    parts = [p for p in SPARTAN_LAYER.split('+') if p != 'none']
+    outer = spartan_layer(f, e, b, t, parts) if parts else None
     east, west = sides(e)
-    return dict(north=out(f), south=out(b), east=east, west=west, up=out(t))
+    return dict(north=out(f), south=out(b), east=east, west=west, up=out(t), _outer=outer)
 
 
 # ---------------------------------------------------------------- noble (Emile's EVA helmet, Halo: Reach)
@@ -1031,6 +1071,15 @@ def layer(style='C'):
             for j in range(N):
                 if o['east'][j][-1] != '.': east[j + 1][-1] = _round(o['east'], j, N - 1)
                 if o['east'][j][0] != '.': east[j + 1][0] = _round(o['east'], j, 0)
+    up = [list(r) for r in _grid(W, D)]
+    if o.get('up'):                                    # a style's top (the spartan's cap): rows front -> back, its
+        for j in range(N):                             # edge rows / columns carried on to the layer's edges
+            for i in range(N):
+                if o['up'][j][i] != '.': up[j + 1][i + 1] = o['up'][j][i]
+            for i in (0, N - 1):
+                if o['up'][j][i] != '.': up[j + 1][0 if i == 0 else W - 1] = o['up'][j][i]
+        for i in range(W):
+            up[0][i], up[D - 1][i] = up[1][i], up[D - 2][i]
     for j in range(N):                                 # west: the east mirrored (columns front -> back)
         for i in range(N):
             if o['east'][j][i] != '.': west[j + 1][W - 2 - i] = o['east'][j][i]
@@ -1046,7 +1095,11 @@ def layer(style='C'):
     for p in (camera() if style == 'C' else []):       # east: columns back -> front (z1 down)
         (a, b), art = p['box'], p['faces']['east']
         stamp(east, art, round((z1 - b[2]) * 2), row(b[1]))
-    part = _part('layer', ((x0, y0, z0), (x1, y1, z1)), dict(east=[''.join(r) for r in east],
+    if style != 'C':                                   # a style's art on the faces' top row carries on over the
+        for g in (north, south, east, west):           # layer's own top row (the cap meets the top's edge); not
+            g[0] = list(g[1])                          # its bottom row (0.5 px under the helmet, in the chest)
+    part = _part('layer', ((x0, y0, z0), (x1, y1, z1)), dict(up=[''.join(r) for r in up],
+                                                            east=[''.join(r) for r in east],
                                                             west=[''.join(r) for r in west],
                                                             north=[''.join(r) for r in north],
                                                             south=[''.join(r) for r in south]))
