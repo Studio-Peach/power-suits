@@ -494,8 +494,11 @@ SIDE_PORT = TOP_PORT                 # the sides' the same window (2026-11-14, u
 # so its front and top plates showed air between them from the side) | 'none'. Its lens is painted, not glass (user:
 # it doesn't light up with the windows). Two rows clear of the window's rim (user: they mustn't touch; one read as
 # touching). The front and the top meet along a full row (no rounded corners at the shared edge: holes there).
-DIVER_CAM = os.environ.get('DIVER_CAM', 'flat')
-assert DIVER_CAM in ('flat', 'box', 'none'), DIVER_CAM
+# Picked (2026-11-15, user): the box's look, but painted on the outer layer instead of an object of its own:
+# 'layer' (the box's front and top art on the layer's front and top faces, its edge rows included; like a player's
+# hat layer it has no sides of its own).
+DIVER_CAM = os.environ.get('DIVER_CAM', 'layer')
+assert DIVER_CAM in ('flat', 'box', 'layer', 'none'), DIVER_CAM
 CAM_FRONT = [                        # front face rows 0-2, columns 6-11 (3 px wide over the window's middle)
     'nnnnnn',
     'mkuxkk',                        # the lens (dark, a silver glint) in a dark ring
@@ -510,13 +513,17 @@ CAM_TOP = [                          # top face rows 0-3 (front -> back), the sa
 CAM_COL = 6
 
 
+CAM_BOX = dict(                       # the box's faces (diver_camera) and the layer's (columns as the layer's: north
+    north=['nnnnnn', 'mkuxkk', 'mkxxkk', 'kkkkkk'],                # from +x, up from -x, rows front -> back)
+    up=['nnnnnn', 'kmmmmn', 'kmmmmn', 'kmmmmn', 'kkkkkk'])
+
+
 def diver_camera():
     """DIVER_CAM=box: one box hugging the helmet's top front edge, 0.5 px out (the outer layer's room): 3 px wide, its
     front from 0.5 px over the helmet's top down 2 px (to raw y 33: two rows clear of the window), its top running
     2 px back over the helmet. Head-bone raw coordinates; faces as _part's (north column 0 at +x, up rows front ->
     back from -x, east columns back -> front)."""
-    north = ['nnnnnn', 'mkuxkk', 'mkxxkk', 'kkkkkk']
-    up = ['nnnnnn', 'kmmmmn', 'kmmmmn', 'kmmmmn', 'kkkkkk']
+    north, up = CAM_BOX['north'], CAM_BOX['up']
     east = ['nnnnn', 'mmmmm', 'mmmmm', 'mmmmm']        # +x: the lit side seen from the front
     west = ['mmmmm', 'kkkkk', 'kkkkk', 'kkkkk']
     return [_part('cam', ((-1.5, 33, -5), (1.5, 35, -2.5)),
@@ -620,7 +627,12 @@ def protector():
                     if c != '.': g[j][CAM_COL + i] = c
     d = dict(north=out(f), south=out(b), east=east, west=west, up=out(top))
     m = METAL[DIVER_METAL]
-    return {k: [''.join(m.get(c, c) for c in r) for r in v] for k, v in d.items()}
+    d = {k: [''.join(m.get(c, c) for c in r) for r in v] for k, v in d.items()}
+    if DIVER_CAM == 'layer':                                             # on the layer: its front rows 0-3 (the edge
+        blank_ = lambda: [['.'] * N for _ in range(N)]                   # row over the helmet's top, then 1.5 px down)
+        d['_outer'] = dict(north=blank_(), east=blank_(), south=blank_(),   # and its top rows 0-4 (the edge row,
+                           stamps=[('north', 0, 7, CAM_BOX['north']), ('up', 0, 7, CAM_BOX['up'])])   # then 2 px back)
+    return d
 
 
 # ---------------------------------------------------------------- spartan (the Master Chief, Halo)
@@ -975,13 +987,11 @@ def layer(style='C'):
                 if o['east'][j][-1] != '.': east[j + 1][-1] = _round(o['east'], j, N - 1)
                 if o['east'][j][0] != '.': east[j + 1][0] = _round(o['east'], j, 0)
     up = [list(r) for r in _grid(W, D)]
-    if 'up' in o:                                      # the top (rows front -> back): helmet (j, i) -> layer (j + 1,
-        for j in range(N):                             # i + 1); the north art's top row carries on over the shared
-            for i in range(N):                         # front edge (the layer's front row) and the top's front row
-                if o['up'][j][i] != '.': up[j + 1][i + 1] = o['up'][j][i]
-        for i in range(N):
-            if o['north'][0][i] != '.': north[0][i + 1] = o['north'][0][i]
-            if o['up'][0][i] != '.': up[0][i + 1] = o['up'][0][i]
+    for face, row0, col0, art in o.get('stamps', []):  # art in the layer's own texels (the diver's camera: it uses
+        g = {'north': north, 'up': up}[face]           # the layer's edge rows, which helmet coords can't reach)
+        for j, line in enumerate(art):
+            for i, c in enumerate(line):
+                if c != '.': g[row0 + j][col0 + i] = c
     for j in range(N):                                 # west: the east mirrored (columns front -> back)
         for i in range(N):
             if o['east'][j][i] != '.': west[j + 1][W - 2 - i] = o['east'][j][i]
