@@ -636,6 +636,9 @@ def protector():
 # under the mouthpiece. (SPARTAN_TAB dropped with it.)
 # Round 21 (2026-11-15, the user's third paint, "a shape I really like"; the shadowed glass not liked): the tab 6 wide,
 # hanging a row into the visor over its border, its own lit bottom edge, the border under it.
+# Round 23 (2026-11-15, the user's fourth paint after the SPARTAN_TOP drafts, "ready"): the front's corner columns a
+# step darker over the visor (the dome rolling round). The picked spartan: SPARTAN_TOP / SPARTAN_BROW / _SHADOW stay
+# at their defaults (flat / user / none; kept as knobs for the record).
 # Brow depth drafts (2026-11-15, user: "is there a technique for that kind of depth on the brow in pixel art?"):
 # SPARTAN_BROW 'user' (round 19: a lit lower edge) | 'form' (shaded as a rounded overhang lit from above: its top
 # lit, its face mid, its bottom turning under dark, the tab darkest) | 'plate' (a raised plate: a seam over it, a lit
@@ -691,9 +694,9 @@ def spartan_top_colour(faces, kind):
 SPARTAN_FRONT = [
  'gggggglllllpgggggg',   # 0 the channel down the brow (cols 5-12): lit rim, its floor, dark wall
  'hhhhhglllllpghhhhh',
- 'heeeeeglllpgeeeeeh',
- 'heeeeeeggggeeeeeeh',   # 3 the tab's lit top
- 'hhhhhheeeeeehhhhhh',
+ 'leeeeeglllpgeeeeel',   # 2-4 the corners a step darker (user, round 23: the dome rolling round)
+ 'leeeeeeggggeeeeeel',   # 3 the tab's lit top
+ 'lhhhhheeeeeehhhhhl',
  'gggggghhhhhhgggggg',   # 5 the brow's lit lower edge; the tab (6 wide) hanging on down
  'xxxxxxggggggxxxxxx',   # 6 the visor's border; the tab's lit bottom edge over it (user, round 21)
  'VTVVVVxxxxxxVVVVVV',   # 7 the border under the tab (the glass a row lower there); the glint: the user's two texels

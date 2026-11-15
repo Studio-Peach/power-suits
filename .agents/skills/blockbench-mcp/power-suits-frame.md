@@ -228,6 +228,18 @@ the end and `docs/guide.md` Notes).
   windows on the sides and top, oxygen hoses ("less is more"). Lesson: the reference's signature (the window, the
   split, the lamps), not its parts list; on 18 texels four bolts can only space evenly at gaps of 3 or 5, and both
   looked off: two a face matched the rest.
+- The spartan (Master Chief, `.scratch/helm7/spartan/ref.png`, 2026-11-15, 23 rounds; picked, not in game yet): the
+  user finished it by painting in Blockbench themselves (rounds 18-23: their texels carried into the generator exactly,
+  full 18-texel maps in `SPARTAN_FRONT` / `_SIDE` / `_BACK`). What it is: a brow whose 6-wide tab hangs a row into the
+  visor, a lit lower lip, the wide visor wrapping the corners, a 1-texel border, the slate mouthpiece over a chin
+  plate, lamps on the cheek corners, the top's channel from the brow over the top to a band round the back, the
+  brow's line sweeping down the sides with a shadow row under it. What didn't work: every detail of the reference
+  ("way too busy"), a plain shell with a band and prongs ("dogwater"), parts on the outer layer (twice: the user
+  avoids 3D on the frame), a thicker border under the brow (read as eyebrows), shadowed visor glass, moving parts to
+  thin a border (grow the glass into it instead). Lessons: a fresh start from the reference's big shapes in value,
+  drawn texel by texel, beat adding its parts; when the user paints, carry their texels exactly and offer changes as
+  knobs beside them. Knobs kept for the record: `SPARTAN_LAYER`, `SPARTAN_BROW`, `SPARTAN_BROW_SHADOW` (glass
+  `W`, `GLASS_SHADE`), `SPARTAN_TOP`.
 - Re-run the exporter after rebuilding the saved files, then `make-frame-paint.py`.
 
 ## Build time (2026-11-15)
