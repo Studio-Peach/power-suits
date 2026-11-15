@@ -439,34 +439,25 @@ def protector_r1():
 # ring, its lens). The shell in the steel shades (Delta's copper is a paint away: PAINT=orange / brown).
 # Draft knob DIVER_GRILLE (the main porthole's bars): 'bars' (two brass bars, between his eyes, running on down as
 # the straps), 'grid' (the two and one across the window above his eyes: Delta's panes), 'none' (open glass).
-DIVER_GRILLE = os.environ.get('DIVER_GRILLE', 'bars')
+DIVER_GRILLE = os.environ.get('DIVER_GRILLE', 'bars')   # picked: bars (2026-11-14, user)
 assert DIVER_GRILLE in ('bars', 'grid', 'none'), DIVER_GRILLE
 # The main porthole (2026-11-14, user: the hand-drawn one came out too tall and uneven left to right; the first
 # pass's, traced as an ellipse, looked much better): DIVER_MAIN, a brass bezel lit top-left round the glass, rivets
 # round it in mirrored pairs, the grille's bars over it. Under it the cheeks' portholes and the straps, drawn by hand
 # (DIVER_FRONT, rows 12 on: traced as ellipses at that size they ran into the bezel): '.' keeps the shell, E / Y / Z
 # the brass lit / mid / shade (light from the upper left), V glass. His eyes are behind rows 9-10.
-DIVER_MAIN = (9.0, 7.5, 7.0, 4.6)    # the main porthole's bezel: centre column, row, x / y radius (texels)
+DIVER_MAIN = (9.0, 9.5, 7.0, 4.6)    # the main porthole's bezel: centre column, row, x / y radius (texels): round
+                                     # his eyes (rows 9-10; 2026-11-14, user: at row 7.5 it sat too high)
 DIVER_RIM = 1.2
-DIVER_FRONT = [
-    '..................',
-    '..................',
-    '..................',
-    '..................',
-    '..................',
-    '..................',
-    '..................',
-    '..................',
-    '..................',
-    '..................',
-    '..................',
-    '..................',
-    '..EEE..Y..Y..EEE..',
-    '.EVVVY.Z..Z.EVVVY.',
-    '.EVVVZ.Y..Y.EVVVZ.',
-    '.YVVVZ.Z..Z.YVVVZ.',
-    '..ZZZ..Y..Y..ZZZ..',
-    '.......Z..Z.......',
+# Draft knob DIVER_CHEEKS (2026-11-14, user: the window centred on his eyes, the cheeks' portholes smaller or gone to
+# make room): 'small' (4 x 4, 2 x 2 glass, in the bottom corners under the window), 'none' (the straps only).
+DIVER_CHEEKS = os.environ.get('DIVER_CHEEKS', 'small')
+assert DIVER_CHEEKS in ('small', 'none'), DIVER_CHEEKS
+DIVER_FRONT = ['.' * N] * 14 + [
+    '..EE...Y..Y...EE..',
+    '.EVVZ..Z..Z..EVVZ.',
+    '.YVVZ..Y..Y..YVVZ.',
+    '..ZZ...Z..Z...ZZ..',
 ]
 DIVER_VALVE = [                      # the back's air valve: a brass handwheel (rim, four spokes, the hub), 6 x 6
     '.EEYY.',
@@ -509,7 +500,7 @@ def protector():
     for k in range(3):                                                   # the rivets round the bezel, mirrored pairs
         t = (k + 0.5) * math.pi / 3 - math.pi / 2                        # (right half, top to bottom)
         i, j = int(cx + (rx + 0.9) * math.cos(t)), int(cy + (ry + 0.9) * math.sin(t))
-        if 1 < j < 12: f[j][i] = f[j][N - 1 - i] = 'p'
+        if 1 < j < 14: f[j][i] = f[j][N - 1 - i] = 'p'
     for j in range(N):
         for i in range(N):
             x, y = (i + 0.5 - cx) / rx, (j + 0.5 - cy) / ry
@@ -518,14 +509,14 @@ def protector():
                 f[j][i] = 'E' if x + y < -0.45 else 'Z' if x + y > 0.45 else 'Y'
             else:
                 f[j][i] = grille if i in (7, 10) else 'Y' if (DIVER_GRILLE == 'grid' and j == 6) else 'V'
+    glint(f)                                                             # (the window's: before the cheeks' glass)
     for j, row in enumerate(DIVER_FRONT):
         assert len(row) == N, j
         for i, c in enumerate(row):
-            if c != '.': f[j][i] = c
+            if c != '.' and (DIVER_CHEEKS == 'small' or i in (7, 10)): f[j][i] = c
     for i in (7, 10):                                                    # the straps up to the bezel
-        for j in range(int(cy), 12):
+        for j in range(int(cy), N):
             if f[j][i] not in 'VEYZ': f[j][i] = 'Y' if j % 2 else 'Z'
-    glint(f)
     e = shade(blank())
     rivet_seam(e, SEAM_ROW, range(1, N, 4))
     collar_band(e, (3, 8, 13))
