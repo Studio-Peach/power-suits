@@ -613,13 +613,18 @@ def protector():
 # band standing out round the front and the sides' front over the visor (the outer layer, 0.5 px, as the old one's
 # 1 px band), the visor (the standard glass, as every helmet's: user) flat under it, its bottom edge stepped down in the
 # middle, and a narrower mouthpiece under it with a ridge down its middle, painted flat; the standard neck guard.
-# Draft knob SPARTAN_BROW: 'band' (the old suit's: one straight band) | 'prongs' (user's reading of the reference: the
-# band's outer thirds raised on the layer as two prongs from the top's back over the top and down the front to the
-# brow, the middle third left on the helmet, 0.5 px in).
-SPARTAN_BROW = os.environ.get('SPARTAN_BROW', 'band')
+# SPARTAN_BROW: 'band' (the old suit's: one straight band) | 'prongs' (user's reading of the reference: the band's
+# outer thirds raised as two prongs on the layer, the middle third left on the helmet, 0.5 px in). Picked: prongs
+# (2026-11-15, user), but short: not up to the top of the face (first drafted from the top's back over the top and
+# down the front, f63e448). Round 6 (user): the mouthpiece on the outer layer too, and the visor lower (it sat high:
+# the brow, visor and mouthpiece down a row).
+# Draft knob SPARTAN_PRONG_TOP: the prongs' top row on the front (and the wings' on the sides): '2' | '3'.
+SPARTAN_BROW = os.environ.get('SPARTAN_BROW', 'prongs')
 assert SPARTAN_BROW in ('band', 'prongs'), SPARTAN_BROW
-SPARTAN_GLASS = {3: (6, 12), 0: (6, 10)}   # the visor: columns from (mirrored) -> rows; the ends 2 rows shorter
-SPARTAN_MOUTH = (4, 12)                    # the mouthpiece: its columns 4-13 (5 px of 9, the old one's), from row 12
+SPARTAN_PRONG_TOP = int(os.environ.get('SPARTAN_PRONG_TOP', '2'))
+SPARTAN_BAND = 5                           # the band's rows (5 lit, 6 its body); the glass from row 7
+SPARTAN_GLASS = {3: (7, 13), 0: (7, 11)}   # the visor: columns from (mirrored) -> rows; the ends 2 rows shorter
+SPARTAN_MOUTH = (4, 13)                    # the mouthpiece: its columns 4-13 (5 px of 9, the old one's), from row 13
 SPARTAN_MID = (6, 12)                      # prongs: the middle third, columns 6-11
 
 
@@ -631,50 +636,47 @@ def spartan():
     outline(f, 'x')
     m0, top = SPARTAN_MOUTH
     m1 = N - m0
-    for j in range(top, N):                                               # the mouthpiece: a seam down its sides,
-        for i in range(m0, m1):                                           # the ridge (lit, shaded) down its middle
-            f[j][i] = ('p' if i in (m0, m1 - 1) else 'h' if i == N // 2 - 1 else 'l' if i == N // 2 else 'e')
-                                                                          # (lit / shaded flanks too: 6 stripes)
-        if j == top:
-            for i in range(m0 + 1, m1 - 1): f[j][i] = 'g'
-    for j in (N - 2, N - 1):                                              # (the face's darker bottom rows)
-        for i in range(m0 + 1, m1 - 1): f[j][i] = {'e': 'l', 'h': 'e', 'g': 'h', 'l': 'p'}.get(f[j][i], f[j][i])
+    o = {k: [['.'] * N for _ in range(N)] for k in ('north', 'east', 'south')}
+    for j in range(top, N):                                               # the mouthpiece, on the layer: a seam down
+        for i in range(m0, m1):                                           # its sides, the ridge (lit, shaded) down
+            c = 'p' if i in (m0, m1 - 1) else 'h' if i == N // 2 - 1 else 'l' if i == N // 2 else 'e'   # its middle
+            if j == top and m0 < i < m1 - 1: c = 'g'                      # (lit / shaded flanks too: 6 stripes)
+            if j >= N - 2: c = {'e': 'l', 'h': 'e', 'g': 'h', 'l': 'p'}.get(c, c) if m0 < i < m1 - 1 else c
+            o['north'][j][i], f[j][i] = c, 'p'                            # (the helmet under it: its shade)
     glint(f)
     e = shade(blank())                                                    # the side (east: column 0 at the back)
-    for i, rows in {16: (6, 10), 17: (6, 10), 14: (6, 8), 15: (6, 8)}.items():
+    for i, rows in {16: (7, 11), 17: (7, 11), 14: (7, 9), 15: (7, 9)}.items():
         for j in range(*rows): e[j][i] = 'V'                              # the visor's wrap, stepped as the front's
     outline(e, 'x')
     neck_guard(e, GUARD_WRAP)
     b = shade(blank())
     neck_guard(b, [N] * len(GUARD_ROWS))
     t = plain_top()
-    o = {k: [['.'] * N for _ in range(N)] for k in ('north', 'east', 'south', 'up')}
-    for i in range(N): o['north'][4][i], o['north'][5][i] = 'g', 'e'      # the band: lit top edge, its body
-    o['north'][4][0], o['north'][5][N - 1] = 'h', 'l'
-    for i in range(12, N): o['east'][4][i], o['east'][5][i] = 'g', 'e'    # round the sides' front (2.75 px, the
-    o['east'][5][12] = 'l'                                                # old one's), its end shaded
-    for j in (4, 5):                                                      # under it: its shadow
+    B = SPARTAN_BAND
+    for i in range(N): o['north'][B][i], o['north'][B + 1][i] = 'g', 'e'  # the band: lit top edge, its body
+    o['north'][B][0], o['north'][B + 1][N - 1] = 'h', 'l'
+    for i in range(12, N): o['east'][B][i], o['east'][B + 1][i] = 'g', 'e'   # round the sides' front (2.75 px, the
+    o['east'][B + 1][12] = 'l'                                            # old one's), its end shaded
+    for j in (B, B + 1):                                                  # under it: its shadow
         for i in range(N): f[j][i] = 'x'
         for i in range(12, N): e[j][i] = 'x'
     if SPARTAN_BROW == 'prongs':
         a, b_ = SPARTAN_MID
+        P = SPARTAN_PRONG_TOP
         outer = list(range(a)) + list(range(b_, N))
-        for j in range(0, 4):                                             # the prongs down the front to the band
-            for i in outer: o['north'][j][i] = 'g' if j == 0 else 'h' if i == 0 else 'l' if i == N - 1 else 'e'
-        for j in (4, 5):                                                  # the band's middle third on the helmet
-            for i in range(a, b_):
-                o['north'][j][i] = '.'
-                f[j][i] = 'h' if j == 4 else 'l'
-        for j in range(0, 4):                                             # the middle third of the forehead: the
-            for i in range(a, b_): f[j][i] = 'p' if i == a else 'e'       # left prong's shadow down its edge
-        for j in range(0, 4):                                             # round the corner: the prong's side
-            for i in range(12, N): o['east'][j][i] = 'g' if j == 0 else 'e'
-        for i in range(N): o['east'][0][i] = 'h' if i < 12 else 'g'       # its side over the whole length
-        for j in range(N):                                                # the prongs' tops (under them: dark)
-            for i in range(N):
-                if a <= i < b_: t[j][i] = 'p' if i == a else 'e' if 0 < j < N - 1 else t[j][i]
-                else: o['up'][j][i] = 'g' if j == 0 or i == 0 else 'l' if j == N - 1 or i in (a - 1, N - 1) else 'h'
-        for i in outer: o['south'][0][i] = 'l'                            # their back ends
+        for j in range(P, B):                                             # the prongs: up from the band, lit on top
+            for i in outer: o['north'][j][i] = 'g' if j == P else 'h' if i == 0 else 'l' if i == N - 1 else 'e'
+            for i in range(12, N): o['east'][j][i] = 'g' if j == P else 'e'   # round the corner
+            for i in outer: f[j][i] = 'g' if j == P else 'x'              # under them: their top lit (seen from
+            for i in range(12, N): e[j][i] = 'g' if j == P else 'x'       # above, a wall), else their shadow
+        for i in outer:                                                   # the band's rows the prongs' lower end:
+            o['north'][B][i] = 'h' if i == 0 else 'l' if i == N - 1 else 'e' # its lit edge only where it's the top,
+            o['north'][B + 1][i] = 'l'                                    # the bottom row shaded (the lip)
+        for i in range(12, N): o['east'][B][i], o['east'][B + 1][i] = 'e', 'l'
+        for i in range(a, b_):                                            # the band's middle third on the helmet
+            o['north'][B][i] = o['north'][B + 1][i] = '.'
+            f[B][i], f[B + 1][i] = 'h', 'l'
+        for j in range(P, B + 2): f[j][a] = 'p'                           # the left prong's shadow down its edge
     east, west = sides(e)
     return dict(north=out(f), south=out(b), east=east, west=west, up=out(t), _outer=o)
 
