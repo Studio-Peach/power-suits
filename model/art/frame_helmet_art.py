@@ -464,10 +464,8 @@ METAL = {'slate': {'E': 'n', 'Y': 'm', 'Z': 'k'}, 'steel': {'E': 'g', 'Y': 'h', 
 # one design). One language on every face: each carries one round fitting in the window's bezel (the same rim, lit
 # top-left, the same metal): the window on the front, the hose ports on the sides, the air valve on the back, the
 # lamp on top; and the corselet band (bolted) round the bottom of all four sides, the front included.
-# Draft knob DIVER_LOOK, what ties them together besides: 'ring' (the dome's riveted seam round all four sides, the
-# front's over the window), 'rivets' (no seam: a ring of rivets round every fitting), 'both'.
-DIVER_LOOK = os.environ.get('DIVER_LOOK', 'ring')
-assert DIVER_LOOK in ('ring', 'rivets', 'both'), DIVER_LOOK
+# (DIVER_LOOK, what tied them together besides: a riveted seam round the dome or rings of rivets round the fittings;
+# dropped with the rings, below.)
 # Round 11 (2026-11-14, user): windows on the sides and the top too, as real diving helmets had several (they won't show
 # his face, but with the helmet on every one lights up, the visor's glow: the deep-sea look): round, in the front
 # window's bezel, at its height on the sides (all lined up), the top's in the middle. The hose ports went with them:
@@ -531,16 +529,11 @@ def diver_camera():
     return [_part('cam', ((-1.5, 33, -5), (1.5, 35, -2.5)),
                   dict(north=north, up=up, east=east, west=west, south=['kkkkkk'] * 4, down=['kkkkkk'] * 5))]
 COLLAR = 15                          # the corselet band's top row (rows 15-17, all four sides)
-SEAM_ROW = 2                         # the dome's riveted seam (rows 2-3: over the window's top at row 5)
 
 
-# Draft knob DIVER_RINGS (2026-11-15, user: the rings with the bolts don't look good; something less rustic): the
-# dome's ring and the collar band round the bottom. 'rivets' (as drafted: a seam line with rivets, a steel band with
-# bolts), 'clean' (the same two, no rivets or bolts: a panel line, a plain band), 'slate' (both trim strips in the
-# fittings' slate: a lit row over a shadow at the top, a three-row slate collar), 'collar' (no dome ring; the slate
-# collar only).
-DIVER_RINGS = os.environ.get('DIVER_RINGS', 'clean')
-assert DIVER_RINGS in ('rivets', 'clean', 'slate', 'collar'), DIVER_RINGS
+# The rings (2026-11-15, user: the rings with the bolts don't look good, something less rustic; drafted: the seam and
+# the band without rivets / bolts, both as slate trim, or the slate collar alone; picked: the collar alone, "the bald
+# one"): no ring round the dome, the collar band round the bottom in the fittings' slate, plain.
 
 
 # Draft knob DIVER_FACE (2026-11-15, user, from the reference: Delta's helmet is split in three, seams running from
@@ -574,25 +567,10 @@ def panel(g, mask, stop=COLLAR):
         if g[j][i] in 'ehl': g[j][i] = 'p' if edge else 'l'
 
 
-def collar_band(g, bolts):
-    """The corselet round the helmet's bottom (DIVER_RINGS)."""
-    rows = ('E', 'Y', 'Z') if DIVER_RINGS in ('slate', 'collar') else ('g', 'l', 'p')
+def collar_band(g):
+    """The corselet round the helmet's bottom: a slate band (lit, mid, shade rows; E / Y / Z as DIVER_METAL maps)."""
     for i in range(N):
-        for k, c in enumerate(rows): g[COLLAR + k][i] = c
-    if DIVER_RINGS == 'rivets':
-        for i in bolts:
-            g[COLLAR + 1][i], g[COLLAR + 2][i] = 'E', 'Z'
-
-
-def rivet_seam(g, j, cols):
-    """The dome's ring (DIVER_RINGS): a plate seam (a dark line, the lower plate's lit edge under it; rivets on that
-    edge for 'rivets'), or a slate trim strip."""
-    if DIVER_RINGS == 'collar': return
-    top, low = ('E', 'Z') if DIVER_RINGS == 'slate' else ('p', 'h')
-    for i in range(N):
-        g[j][i], g[j + 1][i] = top, low
-    if DIVER_RINGS == 'rivets':
-        for i in cols: g[j + 1][i] = 'z'
+        for k, c in enumerate('EYZ'): g[COLLAR + k][i] = c
 
 
 def rib_v(g, i0, i1, j0, j1):
@@ -621,23 +599,11 @@ def glint1(g):
     if pane: g[pane[0][1]][pane[0][2]] = 'T'
 
 
-def rivet_ring(g, cx, cy, rx, ry, n, rows=(2, COLLAR - 1)):
-    """n rivets round a fitting, in mirrored pairs (about column cx = 9: the face's middle), on bare shell only."""
-    for k in range(n // 2):
-        t = (k + 0.5) * math.pi / (n // 2) - math.pi / 2
-        i, j = int(cx + rx * math.cos(t)), int(cy + ry * math.sin(t))
-        if rows[0] <= j <= rows[1] and 1 <= i <= N - 2 and g[j][i] in 'eh' and g[j][N - 1 - i] in 'eh':
-            g[j][i] = g[j][N - 1 - i] = 'p'
-
-
 def protector():
-    seam, rivets = DIVER_LOOK in ('ring', 'both'), DIVER_LOOK in ('rivets', 'both')
     f = shade(blank())
     grille = {'bars': 'Y', 'grid': 'Y', 'none': 'V'}[DIVER_GRILLE]
     cx, cy, rx, ry = DIVER_MAIN
-    if seam: rivet_seam(f, SEAM_ROW, (2, 6, 11, 15))
-    if DIVER_FACE == 'plain': collar_band(f, (2, 6, 11, 15))
-    if rivets: rivet_ring(f, cx, cy, rx + 1.3, ry + 1.2, 14)
+    if DIVER_FACE == 'plain': collar_band(f)
     bezel(f, cx, cy, rx, ry, DIVER_RIM,
           lambda i, j: grille if i in (7, 10) else 'Y' if (DIVER_GRILLE == 'grid' and j == 6) else 'V')
     glint(f)
@@ -655,17 +621,14 @@ def protector():
             'Y' if DIVER_PORTS == 'bars' and i in (7, 10) else 'V'
     sx, sy, sr = SIDE_PORT
     e = shade(blank())
-    if seam: rivet_seam(e, SEAM_ROW, (1, 5, 9, 13))
-    collar_band(e, (3, 8, 13))
-    if rivets: rivet_ring(e, sx, sy, sr + 1.4, sr + 1.4, 12)
+    collar_band(e)
     bezel(e, sx, sy, sr, sr, 1.2, cross_glass(sy))
     glint1(e)
     if DIVER_FACE == 'wishbone':
         panel(e, {(i, j) for j, cols in WISH_SIDE.items() for i in cols})
     east, west = sides(e)
     b = shade(blank())
-    if seam: rivet_seam(b, SEAM_ROW, (2, 6, 11, 15))
-    collar_band(b, (2, 6, 11, 15))
+    collar_band(b)
     for i0, i1 in ((1, 3), (15, 17)):                                    # the hoses up the corners from the tanks...
         rib_v(b, i0, i1, 11, COLLAR)
     for i in list(range(1, 6)) + list(range(12, 17)):                    # ...turning in to the valve (rows 9-10)
@@ -675,7 +638,6 @@ def protector():
             if c != '.': b[7 + j][6 + i] = VALVE_RED[c]
     top = plain_top()
     tx, ty, tr = TOP_PORT
-    if rivets: rivet_ring(top, tx, ty, tr + 1.4, tr + 1.4, 12, rows=(1, N - 2))
     bezel(top, tx, ty, tr, tr, 1.2, cross_glass(ty))
     glint1(top)
     if DIVER_CAM == 'flat':
