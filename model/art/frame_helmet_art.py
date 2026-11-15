@@ -489,11 +489,10 @@ VALVE_AT = (6, 4)                    # its top left (column, row) on the back: r
 # (The oxygen hoses, from fittings beside the window on the sides round the corners into the valve, went again:
 # 2026-11-15, user: "maybe less is more"; they were f8b1c5d.)
 SPLIT = 10                           # the seam row round the sides and back (the front's panels meet its corners here)
-# The bolts along the seam, above it (2026-11-15, user): spread evenly over the whole side now nothing covers it (4
-# bolts, 5 texels apart, as far as the edges allow; 3 / 7 / 10 / 14 weren't even, user), on the back two either side
-# of the valve (3 texels in: about 5 from the sides' last bolts round the corner); the top's rivets' shade ('p', user:
-# the darker ones read as another kind).
-SIDE_BOLTS = (1, 6, 11, 16)          # east columns
+# The bolts along the seam, above it (2026-11-15, user): two a face, 3 texels in from the edges, as the top's rivets
+# and the back's (either side of the valve) (user: four, evenly spaced at 1 / 6 / 11 / 16, looked squished; 3 / 7 /
+# 10 / 14 weren't even); the top's rivets' shade ('p', user: the darker ones read as another kind).
+SIDE_BOLTS = (3, 14)                 # east columns
 BACK_BOLTS = (3, 14)
 BOLT_ROW = SPLIT - 2                 # on the upper plate, a row clear of the seam (2026-11-15, user: tried on the other
                                      # side of it, picked; under it, row 12, they were b86b412's 'below')
