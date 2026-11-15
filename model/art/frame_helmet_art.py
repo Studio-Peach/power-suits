@@ -615,7 +615,7 @@ def protector():
 # at the corners), its deep shadow row under it; the visor wide, wrapping round the corners onto the sides (user: likes
 # the wrap), its bottom closed in at the corners by the cheeks rising to the lamps (two silver dots on a slate plate
 # round each front corner) and dipping in two lobes either side of the slate mouthpiece (a lit top in the visor's
-# notch, a chevron); the cheeks' lit edges falling from the lamps to the mouthpiece (the reference's V jaw) over a
+# notch, its bottom rounded); the cheeks' lit edges falling from the lamps to the mouthpiece (the reference's V jaw) over a
 # narrow chin plate. The top's centre channel (the reference's recessed strip between two ridges) runs from the brow
 # tab over the top and down the back to a band round the back; the brow's lip sweeps back along the sides and down
 # into that band (ref2's line), so the head reads as one piece; a seam behind the lamps closes the cheek piece.
@@ -643,8 +643,8 @@ SPARTAN_FRONT = [
  'h  e  e  e  e  e  B  l  l',   # 2 narrowing
  'h  e  e  e  e  e  e  g  g',   # 3 the tab's lit top
  'h  e  g  g  g  g  g  h  h',   # 4 brow lip; tab
- 'g  g  x  x  x  x  x  h  h',   # 5 the brow's wings a row lower; the visor's border (1 texel all round: user)
- 'x  x  V  V  V  V  V  x  x',   # 6 the glass up under the lip (r10's outline kept), lower under the wings and tab
+ 'g  g  x  x  x  x  x  h  h',   # 5 the brow's wings a row lower; recess; tab
+ 'x  x  x  x  x  x  x  l  l',   # 6 recess under the brow; the tab's shaded bottom
  'V  V  V  V  V  V  V  V  V',   # 7
  'V  V  V  V  V  V  V  V  V',   # 8
  'V  V  V  V  V  V  V  V  V',   # 9  eyes
@@ -652,8 +652,8 @@ SPARTAN_FRONT = [
  'x  x  V  V  V  V  V  V  V',   # 11
  'n  n  x  V  V  V  V  n  n',   # 12 the cheeks up at the corners; glass lobes; the mouthpiece's top in the notch
  'k  t  g  x  x  x  x  k  k',   # 13 lamps; the cheek's lit edge falling toward the chin
- 'k  t  e  g  g  x  n  m  x',   # 14 the mouthpiece's chevron
- 'x  x  e  e  e  g  x  k  m',   # 15
+ 'k  t  e  g  g  x  n  k  m',   # 14 the mouthpiece rounded: widest here, its bottom closing in (user: over the chevron)
+ 'x  x  e  e  e  g  x  x  k',   # 15
  'l  l  e  e  e  e  p  g  g',   # 16 chin
  'p  p  l  l  l  l  p  h  h',   # 17
 ]
@@ -666,8 +666,8 @@ SPARTAN_SIDE = [
  'eeeeeeeeeeeeeeeeee',
  'eeeeeeeeeeeeeeeeee',
  'eeeeeeeeeeeeeeeegg',   # 5
- 'eeeeeeeeggggggggxx',   # 6 the wing's lip run back, stepping down into the back's band (row 8)
- 'eeeeggggeeexxxxxVV',   # 7 the wrap a row shallower under the lip (its border 1 texel: user)
+ 'eeeeeeeeggggggggxx',   # 6 the wing's lip run back
+ 'eeeeggggeexxVVVVVV',   # 7
  'ggggeeeeeexVVVVVVV',
  'eeeeeeeeeexVVVVVVV',
  'eeeeeeeeeeexVVVVVV',   # 10
