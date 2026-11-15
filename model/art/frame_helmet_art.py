@@ -378,7 +378,183 @@ def wrap_back(style='plain'):
     return b
 
 
-STYLES = {'A': sentinel, 'B': diver, 'C': wrap}
+# ================================================================ the helmet styles (frame step 7b, 2026-11-14)
+# The big suit's five Easter-egg helmets (item/HelmetStyle, design sec. 4c) redrawn for the frame: the same 9 x 9 x 9
+# box at 2 texels per px as C, flat (no layer yet), its steel in the eight steel shades so the paint takes it (as the
+# big suit's style shells did), what mustn't take paint in other colours (EXTRA: a red, a silver). First drafts, one
+# each, after the big suit's and their originals.
+EXTRA = {'r': (0x9a, 0x2a, 0x22), 'o': (0x5e, 0x18, 0x14),                       # a red mark (not the fire's reserved reds)
+         't': (0xc8, 0xcc, 0xd0), 'u': (0x9a, 0xa0, 0xa6), 'v': (0x6b, 0x71, 0x78)}   # silver (grille, hoses): unpainted
+
+
+def rrect(g, i0, j0, i1, j1, c, cut=1):
+    """A rectangle (i1 / j1 exclusive) with its corners cut by `cut` texels (a rounded look)."""
+    for j in range(max(j0, 0), min(j1, N)):            # (a rectangle may run off the face: a visor wrapping on)
+        for i in range(max(i0, 0), min(i1, N)):
+            di = min(i - i0, i1 - 1 - i)
+            dj = min(j - j0, j1 - 1 - j)
+            if di + dj >= cut:
+                g[j][i] = c
+
+
+def outline(g, c, inside='V'):
+    """Every texel next to an `inside` texel (4-neighbours) that isn't one becomes c: a border round the glass."""
+    pts = [(i, j) for j in range(N) for i in range(N) if g[j][i] != inside and any(
+        0 <= i + di < N and 0 <= j + dj < N and g[j + dj][i + di] == inside for di, dj in ((1, 0), (-1, 0), (0, 1), (0, -1)))]
+    for i, j in pts:
+        g[j][i] = c
+
+
+def plain_top():
+    top = blank('h')
+    for i in range(N): top[0][i], top[-1][i] = 'g', 'l'
+    for j in range(N): top[j][0], top[j][-1] = 'h', 'e'
+    return top
+
+
+def sides(east):
+    return out(east), out([r[::-1] for r in east])
+
+
+# ---------------------------------------------------------------- protector (Subject Delta, BioShock 2)
+def protector():
+    """The diver (draft B, 2026-11-12: left out of the default as "BioShock's already", so this is where it goes): a
+    riveted porthole with a brass bezel over the face, behind three steel bars (the big suit's protector), smaller
+    portholes on the sides, the hatch on top, the copper air port at the back."""
+    d = diver()
+    f = [list(r) for r in d['north']]
+    for j in range(N):                                                    # three bars over the glass: the middle
+        if any(f[j][i] in 'VTZ' for i in (8, 9)): f[j][8], f[j][9] = 'h', 'l'   # one 2 texels (on the centre line),
+        for i in (5, 12):                                                 # the outer two 1, glass 2 wide between
+            if f[j][i] in 'VTZ': f[j][i] = 'h'
+    d['north'] = out(f)
+    return d
+
+
+# ---------------------------------------------------------------- spartan (the Master Chief, Halo)
+def spartan():
+    """A forehead band with the crest down its middle, a wide visor whose bottom corners cut in toward a narrow
+    mouthpiece (two slots), recessed cheeks beside it; on the sides a big ear plate behind the visor's wrap; the crest
+    over the top and down the back to a neck guard."""
+    f = shade(blank())
+    crest(f, 0, 5)
+    for i in range(N): f[5][i] = 's'                                      # the band's lower edge
+    rect(f, 0, 6, 18, 10, 'V')                                            # the visor (round the corners onto the sides)
+    rect(f, 2, 10, 16, 11, 'V')
+    rect(f, 4, 11, 14, 12, 'V')
+    outline(f, 'x')
+    for j in range(12, N):                                                # the mouthpiece, its slots, the cheeks
+        for i in range(N):
+            if f[j][i] == 'x': continue
+            f[j][i] = 'e' if 6 <= i <= 11 else 'l' if f[j][i] not in 'hl' else f[j][i]
+        f[j][6], f[j][11] = 'h', 'p'
+    for j in range(13, 17): f[j][8], f[j][9] = 'x', 'x'
+    for j in range(12, 17): f[j][3], f[j][14] = 'p', 'p'                 # the cheeks' seams
+    glint(f)
+    e = shade(blank())
+    for i in range(N): e[5][i] = 's'
+    rect(e, 15, 6, 18, 10, 'V')                                           # the visor's wrap
+    outline(e, 'x')
+    rect(e, 6, 6, 14, 12, 'e')                                            # the ear plate: lit top, shaded edges, vents
+    for i in range(6, 14): e[6][i], e[11][i] = 'g', 'p'
+    for j in range(6, 12): e[j][6], e[j][13] = 'h', 'p'
+    for j in (8, 10):
+        for i in range(8, 12): e[j][i] = 'x'
+    neck_guard(e, GUARD_WRAP)
+    east, west = sides(e)
+    b = shade(blank())
+    neck_guard(b, [N] * len(GUARD_ROWS))
+    crest(b, 0, GUARD_ROWS[0][0])
+    top = plain_top()
+    for j in range(N): top[j][8], top[j][9] = 'g', 'l'
+    return dict(north=out(f), south=out(b), east=east, west=west, up=out(top))
+
+
+# ---------------------------------------------------------------- noble (Emile's EVA helmet, Halo: Reach)
+def noble():
+    """A visor over nearly the whole front (rounded corners, wrapping onto the sides), a steel band round the head
+    over it (lit edge, body, shadow), a short chin under it; a red mark on each side behind the glass."""
+    f = shade(blank())
+    rrect(f, -1, 4, 19, 16, 'V', cut=2)                                   # (running on round the corners)
+    outline(f, 'x')
+    for i in range(N): f[1][i], f[2][i], f[3][i] = 'g', 'e', 's'           # the band
+    for i in (5, 12): f[17][i] = 'p'
+    glint(f)
+    e = shade(blank())
+    for i in range(N): e[1][i], e[2][i], e[3][i] = 'g', 'e', 's'
+    rect(e, 15, 5, 18, 15, 'V')                                           # the wrap: the front's rows at the corner,
+    rect(e, 14, 6, 15, 14, 'V')                                           # its back end rounded
+    outline(e, 'x')
+    rect(e, 6, 6, 10, 12, 'r')                                            # the red mark: its own shaded edge
+    for j in range(6, 12): e[j][9] = 'o'
+    for i in range(6, 10): e[11][i] = 'o'
+    neck_guard(e, GUARD_WRAP)
+    east, west = sides(e)
+    b = shade(blank())
+    for i in range(N): b[1][i], b[2][i], b[3][i] = 'g', 'e', 's'
+    neck_guard(b, [N] * len(GUARD_ROWS))
+    top = plain_top()
+    for j in range(N): top[j][0] = 'g'
+    return dict(north=out(f), south=out(b), east=east, west=west, up=out(top))
+
+
+# ---------------------------------------------------------------- robot (Guy-Manuel's helmet, Daft Punk)
+def robot():
+    """Smooth: one big dark visor (rounded) in a framing ring (lit top-left inside edge, shade bottom-right), nothing
+    else on the front; an ear disc on each side; a plain back and top (a single seam low on the back)."""
+    f = shade(blank())
+    rrect(f, 1, 3, 17, 15, 'V', cut=3)                                     # wide, rounded (its frame on the edges)
+    outline(f, 'x')
+    pts = [(i, j) for j in range(N) for i in range(N) if f[j][i] == 'x']
+    for i, j in pts:                                                      # the frame round the border, lit / shaded
+        for di, dj in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+            a, b_ = i + di, j + dj
+            if 0 <= a < N and 0 <= b_ < N and f[b_][a] not in 'Vx':
+                f[b_][a] = 'g' if (di < 0 or dj < 0) else 'p'
+    glint(f)
+    e = shade(blank())
+    disc(e, 9, 9, 5.5, 'e', ring='p', rw=1.4, light=True)                 # the ear disc
+    disc(e, 9, 9, 2.6, 'h', ring='l', rw=1.0)
+    disc(e, 9, 9, 1.0, 'p')
+    east, west = sides(e)
+    b = shade(blank())
+    seam(b, 14, 1, 17)
+    return dict(north=out(f), south=out(b), east=east, west=west, up=out(plain_top()))
+
+
+# ---------------------------------------------------------------- hunter (Samus, Smash Bros. Ultimate)
+def hunter():
+    """A shield visor (wide over the eyes, narrowing to a point over the mouth, wrapping round the sides), a crest from
+    the forehead over the top and down the back, a silver mouth grille, corrugated silver hoses from the jaw along
+    each side into a port. The shell and crest take the paint (red = Samus), the grille and hoses stay silver."""
+    f = shade(blank())
+    crest(f, 0, 4)
+    rect(f, 0, 4, 18, 10, 'V')
+    for j, (a, b_) in enumerate(((1, 17), (3, 15), (5, 13), (7, 11))):    # its point over the mouth
+        rect(f, a, 10 + j, b_, 11 + j, 'V')
+    outline(f, 'x')
+    for j in range(14, N):                                                # the grille under the visor's point:
+        for i in range(7, 11):                                            # two silver bars round a dark slot
+            f[j][i] = 'x' if i in (8, 9) and j < 17 else 't' if i == 7 else 'v' if i == 10 else 'u'
+    glint(f)
+    e = shade(blank())
+    rect(e, 13, 4, 18, 10, 'V')                                           # the wrap
+    outline(e, 'x')
+    for i in range(8, 18):                                                # the hose from the jaw's corner back along
+        e[13][i], e[14][i] = ('t', 'u') if i % 2 == 0 else ('v', 'v')    # the side (corrugated: bands across it)
+    disc(e, 6, 13.5, 2.6, 'x', ring='t', rw=1.0, light=False)             # into a port
+    neck_guard(e, [3, 5])
+    east, west = sides(e)
+    b = shade(blank())
+    neck_guard(b, [N] * len(GUARD_ROWS))
+    crest(b, 0, GUARD_ROWS[0][0])
+    top = plain_top()
+    for j in range(N): top[j][8], top[j][9] = 'g', 'l'
+    return dict(north=out(f), south=out(b), east=east, west=west, up=out(top))
+
+
+STYLES = {'A': sentinel, 'B': diver, 'C': wrap, 'protector': protector, 'spartan': spartan, 'noble': noble,
+          'robot': robot, 'hunter': hunter}
 
 
 def faces(style, back='plain'):
