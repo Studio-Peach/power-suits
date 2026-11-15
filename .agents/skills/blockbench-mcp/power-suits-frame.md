@@ -209,4 +209,16 @@ the end and `docs/guide.md` Notes).
   seam stopping on the plate line (_|_) over the standard neck guard. The user edits texels in the draft tab: diff its
   texture against the draft file (glass texels differ by 1 from Blockbench's canvas rounding) and carry the edit into
   the generator. Picked styles go into the saved files with `HELMET_VARIANTS` (groups `helm_<style>`).
+- The protector / diver (Subject Delta, `.scratch/helm7/diver/ref.jpg`, 2026-11-14/15, 24 rounds; reviewed on Steve,
+  `BUILD=wide`, user): one wide oval window round his eyes with two bars (traced as an ellipse: hand-drawn it came out
+  tall and lopsided), slate fittings (brass read out of place: nothing else on the frame is brass), a flat camera over
+  the window running onto the top (a box, even in the outer layer's 0.5 px, is 3D: the user avoids 3D on the frame; on
+  the hollow layer itself it floats, no sides), the reference's split in three as tone, not lines (the cheek panels a
+  step darker with a dark edge; a seam line hugging the bezel merged into its shaded side and 1-texel diagonals read as
+  dots), carried round the sides and back at row 10, cheek lamps in the fire's coal colours (lit with the engine), a
+  red handwheel valve on the back (a nod to Valve), bolts two a face 3 texels in, as the top's rivets, the standard neck
+  guard. Tried and dropped: cheek portholes and straps, brass, riveted / bolted rings ("rustic"), slate trim rings,
+  windows on the sides and top, oxygen hoses ("less is more"). Lesson: the reference's signature (the window, the
+  split, the lamps), not its parts list; on 18 texels four bolts can only space evenly at gaps of 3 or 5, and both
+  looked off: two a face matched the rest.
 - Re-run the exporter after rebuilding the saved files, then `make-frame-paint.py`.

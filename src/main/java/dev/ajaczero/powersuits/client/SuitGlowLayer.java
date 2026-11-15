@@ -84,7 +84,9 @@ public class SuitGlowLayer extends GeoRenderLayer<PowerSuitEntity, Void, LivingE
 
     /** The frame's visor glowmask per build (tools/export-frame.py: its glass texels). */
     private static final Identifier FRAME_VISOR = frameMask("visor"), FRAME_VISOR_SLIM = frameMask("visor_slim");
-    /** The frame's engine fire per build (tools/export-frame.py: its reserved coal colours). */
+    /** The frame's engine fire per build (tools/export-frame.py: its reserved coal colours). Anything painted in those
+     *  colours lights with the engine: the radiator guard's slats, the protector helmet's cheek lamps (its lamps are
+     *  "on when the suit is powered", so they borrow the fire's light). */
     private static final Identifier FRAME_FIRE = frameMask("fire"), FRAME_FIRE_SLIM = frameMask("fire_slim");
     /** The same texels in white -> grey (FRAME_CORE): the tidal engine's and the star reactor's light on the heart until
      *  they have frame art of their own, in the big suit's teal Heart of the Sea and violet core (tinting the fire's

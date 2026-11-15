@@ -601,8 +601,9 @@ for _p in HELMET_EXTRAS: SHELLS[f"hx_{_p['name']}"] = dict(faces=_glassy(_p['fac
 # The helmet styles (frame step 7b, design sec. 4c): each picked style's helmet built beside the standard one, in its
 # own group under armor_head (helm_<style>; the standard helmet and its layer in helm_standard), the game showing the
 # worn style's (PowerSuitRenderer; a style without art shows the standard). The saved files (ARMOR=game) carry the
-# picked ones (env HELMET_VARIANTS, comma separated; '' none). Picked so far: hunter (2026-11-14).
-HELMET_VARIANTS = [v for v in os.environ.get('HELMET_VARIANTS', 'hunter' if ARMOR == 'game' else '').split(',') if v] \
+# picked ones (env HELMET_VARIANTS, comma separated; '' none). Picked so far: hunter (2026-11-14), protector (the
+# diver, 2026-11-15).
+HELMET_VARIANTS = [v for v in os.environ.get('HELMET_VARIANTS', 'hunter,protector' if ARMOR == 'game' else '').split(',') if v] \
     if 'helmet_armor' in SHELLS and HELMET_STYLE != 'suit' else []
 HELMET_VARIANT_EXTRAS = {}
 for _v in HELMET_VARIANTS:
