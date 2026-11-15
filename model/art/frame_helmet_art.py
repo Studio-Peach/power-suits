@@ -458,20 +458,23 @@ DIVER_METAL = os.environ.get('DIVER_METAL', 'slate')   # picked: slate (2026-11-
 assert DIVER_METAL in ('slate', 'steel', 'silver', 'brass'), DIVER_METAL
 METAL = {'slate': {'E': 'n', 'Y': 'm', 'Z': 'k'}, 'steel': {'E': 'g', 'Y': 'h', 'Z': 's'},
          'silver': {'E': 't', 'Y': 'u', 'Z': 'v'}, 'brass': {}}
-DIVER_VALVE = [                      # the back's air valve: a brass handwheel (rim, four spokes, the hub), 6 x 6
-    '.EEYY.',
-    'EZ.EZY',
-    'E.EY.Z',
-    'YEYZYZ',
-    'YZ.Y.Z',
-    '.YZZZ.',
-]
-COLLAR = 15                          # the corselet band's top row (rows 15-17, sides and back)
-SEAM_ROW = 3                         # the dome's riveted seam round the sides and back
+# Round 9 (2026-11-14, user: the window is locked in, but the rest of the front looks bare and the faces don't read as
+# one design). One language on every face: each carries one round fitting in the window's bezel (the same rim, lit
+# top-left, the same metal): the window on the front, the hose ports on the sides, the air valve on the back, the
+# lamp on top; and the corselet band (bolted) round the bottom of all four sides, the front included.
+# Draft knob DIVER_LOOK, what ties them together besides: 'ring' (the dome's riveted seam round all four sides, the
+# front's over the window), 'rivets' (no seam: a ring of rivets round every fitting), 'both'.
+DIVER_LOOK = os.environ.get('DIVER_LOOK', 'ring')
+assert DIVER_LOOK in ('ring', 'rivets', 'both'), DIVER_LOOK
+COLLAR = 15                          # the corselet band's top row (rows 15-17, all four sides)
+SEAM_ROW = 2                         # the dome's riveted seam (rows 2-3: over the window's top at row 5)
+PORT = (9.0, 10.0, 3.2)              # the sides' and the back's fittings: centre column, row, radius (on the hoses'
+                                     # two rows 9-10)
+LAMP = (9.0, 7.0, 3.2)               # the top's lamp (top rows run front -> back: toward the front)
 
 
 def collar_band(g, bolts):
-    """The corselet: a lit top edge, the band, its dark bottom; brass bolts (lit over their shade) at `bolts`."""
+    """The corselet: a lit top edge, the band, its dark bottom; bolts (lit over their shade) at `bolts`."""
     for i in range(N):
         g[COLLAR][i], g[COLLAR + 1][i], g[COLLAR + 2][i] = 'g', 'l', 'p'
     for i in bolts:
@@ -492,52 +495,61 @@ def rib_v(g, i0, i1, j0, j1):
             g[j][i] = ('t' if i == i0 else 'u') if j % 2 == 0 else 'v'
 
 
-def protector():
-    f = shade(blank())
-    grille = {'bars': 'Y', 'grid': 'Y', 'none': 'V'}[DIVER_GRILLE]
-    cx, cy, rx, ry = DIVER_MAIN
-    for k in range(3):                                                   # the rivets round the bezel, mirrored pairs
-        t = (k + 0.5) * math.pi / 3 - math.pi / 2                        # (right half, top to bottom)
-        i, j = int(cx + (rx + 0.9) * math.cos(t)), int(cy + (ry + 0.9) * math.sin(t))
-        if 1 < j < 14: f[j][i] = f[j][N - 1 - i] = 'p'
+def bezel(g, cx, cy, rx, ry, rim, inner):
+    """A round fitting: its rim (E lit upper left, Z shaded lower right, Y between) round an inside painted by
+    inner(i, j) (normalised x, y passed too)."""
     for j in range(N):
         for i in range(N):
             x, y = (i + 0.5 - cx) / rx, (j + 0.5 - cy) / ry
             if math.hypot(x, y) > 1: continue
-            if math.hypot((i + 0.5 - cx) / (rx - DIVER_RIM), (j + 0.5 - cy) / (ry - DIVER_RIM)) > 1:
-                f[j][i] = 'E' if x + y < -0.45 else 'Z' if x + y > 0.45 else 'Y'
+            if math.hypot((i + 0.5 - cx) / (rx - rim), (j + 0.5 - cy) / (ry - rim)) > 1:
+                g[j][i] = 'E' if x + y < -0.45 else 'Z' if x + y > 0.45 else 'Y'
             else:
-                f[j][i] = grille if i in (7, 10) else 'Y' if (DIVER_GRILLE == 'grid' and j == 6) else 'V'
+                g[j][i] = inner(i, j)
+
+
+def rivet_ring(g, cx, cy, rx, ry, n, rows=(2, COLLAR - 1)):
+    """n rivets round a fitting, in mirrored pairs (about column cx = 9: the face's middle), on bare shell only."""
+    for k in range(n // 2):
+        t = (k + 0.5) * math.pi / (n // 2) - math.pi / 2
+        i, j = int(cx + rx * math.cos(t)), int(cy + ry * math.sin(t))
+        if rows[0] <= j <= rows[1] and 1 <= i <= N - 2 and g[j][i] in 'eh' and g[j][N - 1 - i] in 'eh':
+            g[j][i] = g[j][N - 1 - i] = 'p'
+
+
+def protector():
+    seam, rivets = DIVER_LOOK in ('ring', 'both'), DIVER_LOOK in ('rivets', 'both')
+    f = shade(blank())
+    grille = {'bars': 'Y', 'grid': 'Y', 'none': 'V'}[DIVER_GRILLE]
+    cx, cy, rx, ry = DIVER_MAIN
+    if seam: rivet_seam(f, SEAM_ROW, (2, 6, 11, 15))
+    collar_band(f, (2, 6, 11, 15))
+    if rivets: rivet_ring(f, cx, cy, rx + 1.3, ry + 1.2, 14)
+    bezel(f, cx, cy, rx, ry, DIVER_RIM,
+          lambda i, j: grille if i in (7, 10) else 'Y' if (DIVER_GRILLE == 'grid' and j == 6) else 'V')
     glint(f)
+    px, py, pr = PORT
     e = shade(blank())
-    rivet_seam(e, SEAM_ROW, range(1, N, 4))
+    if seam: rivet_seam(e, SEAM_ROW, (1, 5, 9, 13))
     collar_band(e, (3, 8, 13))
-    hx, hy, hr = 9.0, 10.0, 3.2                                          # the hose's brass collar, mid-side, on the
-    disc(e, hx, hy, hr, 'Y', ring='Z', rw=1.0, light=True)               # hose's two rows
-    for j in range(N):
-        for i in range(N):
-            if e[j][i] == 'h' and math.hypot(i + 0.5 - hx, j + 0.5 - hy) <= hr: e[j][i] = 'E'
-    disc(e, hx, hy, 2.0, 'u')                                            # the hose's silver end in it, dark inside
-    for j in (9, 10):                                                    # (a dark disc read as a black cross)
-        for i in (8, 9): e[j][i] = 'x'
-    for i in range(0, int(hx - hr) + 1):                                 # the hose out of it back to the corner
+    if rivets: rivet_ring(e, px, py, pr + 1.4, pr + 1.4, 12)
+    for i in range(0, int(px - pr) + 1):                                 # the hose back to the corner
         e[9][i], e[10][i] = ('t', 'u') if i % 2 == 0 else ('v', 'v')
+    bezel(e, px, py, pr, pr, 1.2, lambda i, j: 'x' if i in (8, 9) and j in (9, 10) else 'u')   # the hose's end in it
     east, west = sides(e)
     b = shade(blank())
-    rivet_seam(b, SEAM_ROW, range(2, N, 4))
+    if seam: rivet_seam(b, SEAM_ROW, (2, 6, 11, 15))
+    collar_band(b, (2, 6, 11, 15))
+    if rivets: rivet_ring(b, px, py, pr + 1.4, pr + 1.4, 12)
     for i0, i1 in ((0, 3), (15, 18)):                                    # the hoses round the corners and down to
         rib_v(b, i0, i1, 9, COLLAR)                                      # the tanks
-    collar_band(b, (4, 8, 9, 13))
-    for j, row in enumerate(DIVER_VALVE):                                # the air valve's handwheel, mid-back
-        for i, c in enumerate(row):
-            if c != '.': b[7 + j][6 + i] = c
+    bezel(b, px, py, pr, pr, 1.2,                                        # the air valve: a silver handwheel's spokes
+          lambda i, j: 't' if i in (8, 9) and j in (9, 10) else 'u' if i in (8, 9) or j in (9, 10) else 'x')   # (slate
+                                                                         # spokes on slate read as a blob)
     top = plain_top()
-    disc(top, 9, 7, 3.6, 'Y', ring='Z', rw=1.0, light=True)              # the lamp housing: a brass ring, its lens
-    for j in range(N):
-        for i in range(N):
-            if top[j][i] == 'h' and math.hypot(i + 0.5 - 9, j + 0.5 - 7) <= 3.6: top[j][i] = 'E'
-    disc(top, 9, 7, 2.0, 'x', ring='k', rw=0.8)
-    top[5][7] = 'n'
+    lx, ly, lr = LAMP
+    if rivets: rivet_ring(top, lx, ly, lr + 1.4, lr + 1.4, 12, rows=(1, N - 2))
+    bezel(top, lx, ly, lr, lr, 1.2, lambda i, j: 'u' if (i, j) == (8, 6) else 'x')   # its lens, a glint on it
     d = dict(north=out(f), south=out(b), east=east, west=west, up=out(top))
     m = METAL[DIVER_METAL]
     return {k: [''.join(m.get(c, c) for c in r) for r in v] for k, v in d.items()}
