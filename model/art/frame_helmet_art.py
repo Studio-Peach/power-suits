@@ -441,23 +441,26 @@ def protector_r1():
 # the straps), 'grid' (the two and one across the window above his eyes: Delta's panes), 'none' (open glass).
 DIVER_GRILLE = os.environ.get('DIVER_GRILLE', 'bars')
 assert DIVER_GRILLE in ('bars', 'grid', 'none'), DIVER_GRILLE
-# The front drawn by hand (an oval and two small rounds traced as ellipses came out lumpy at 18 texels): '.' keeps
-# the shell, E / Y / Z the brass lit / mid / shade (light from the upper left), V glass, p a rivet, B a grille bar
-# (brass where DIVER_GRILLE puts one, glass where not), C the bar across ('grid' only). His eyes are behind rows
-# 9-10: the window's glass is widest at rows 5-9.
+# The main porthole (2026-11-14, user: the hand-drawn one came out too tall and uneven left to right; the first
+# pass's, traced as an ellipse, looked much better): DIVER_MAIN, a brass bezel lit top-left round the glass, rivets
+# round it in mirrored pairs, the grille's bars over it. Under it the cheeks' portholes and the straps, drawn by hand
+# (DIVER_FRONT, rows 12 on: traced as ellipses at that size they ran into the bezel): '.' keeps the shell, E / Y / Z
+# the brass lit / mid / shade (light from the upper left), V glass. His eyes are behind rows 9-10.
+DIVER_MAIN = (9.0, 7.5, 7.0, 4.6)    # the main porthole's bezel: centre column, row, x / y radius (texels)
+DIVER_RIM = 1.2
 DIVER_FRONT = [
     '..................',
     '..................',
-    '....p.EEEEEE.p....',
-    '....EEVBVVBVYY....',
-    '...EVVVBVVBVVY....',
-    '..EVVVVBVVBVVVY...',
-    '.pECCCCBCCBCCCZ.p.',
-    '..YVVVVBVVBVVVZ...',
-    '..YVVVVBVVBVVVZ...',
-    '...YVVVBVVBVVZ....',
-    '.p.YZVVBVVBVZZ..p.',
-    '.....ZZYZZYZ......',
+    '..................',
+    '..................',
+    '..................',
+    '..................',
+    '..................',
+    '..................',
+    '..................',
+    '..................',
+    '..................',
+    '..................',
     '..EEE..Y..Y..EEE..',
     '.EVVVY.Z..Z.EVVVY.',
     '.EVVVZ.Y..Y.EVVVZ.',
@@ -502,12 +505,26 @@ def rib_v(g, i0, i1, j0, j1):
 def protector():
     f = shade(blank())
     grille = {'bars': 'Y', 'grid': 'Y', 'none': 'V'}[DIVER_GRILLE]
+    cx, cy, rx, ry = DIVER_MAIN
+    for k in range(3):                                                   # the rivets round the bezel, mirrored pairs
+        t = (k + 0.5) * math.pi / 3 - math.pi / 2                        # (right half, top to bottom)
+        i, j = int(cx + (rx + 0.9) * math.cos(t)), int(cy + (ry + 0.9) * math.sin(t))
+        if 1 < j < 12: f[j][i] = f[j][N - 1 - i] = 'p'
+    for j in range(N):
+        for i in range(N):
+            x, y = (i + 0.5 - cx) / rx, (j + 0.5 - cy) / ry
+            if math.hypot(x, y) > 1: continue
+            if math.hypot((i + 0.5 - cx) / (rx - DIVER_RIM), (j + 0.5 - cy) / (ry - DIVER_RIM)) > 1:
+                f[j][i] = 'E' if x + y < -0.45 else 'Z' if x + y > 0.45 else 'Y'
+            else:
+                f[j][i] = grille if i in (7, 10) else 'Y' if (DIVER_GRILLE == 'grid' and j == 6) else 'V'
     for j, row in enumerate(DIVER_FRONT):
         assert len(row) == N, j
         for i, c in enumerate(row):
-            if c == 'B': c = grille
-            if c == 'C': c = 'Y' if DIVER_GRILLE == 'grid' else 'V'
             if c != '.': f[j][i] = c
+    for i in (7, 10):                                                    # the straps up to the bezel
+        for j in range(int(cy), 12):
+            if f[j][i] not in 'VEYZ': f[j][i] = 'Y' if j % 2 else 'Z'
     glint(f)
     e = shade(blank())
     rivet_seam(e, SEAM_ROW, range(1, N, 4))
