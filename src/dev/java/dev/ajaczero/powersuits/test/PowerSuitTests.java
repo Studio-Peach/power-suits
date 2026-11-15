@@ -75,6 +75,7 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntitySpawnRequest;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -2688,6 +2689,137 @@ public final class PowerSuitTests {
                     item -> SuitArmourItem.of(item.getItem()) != null);
             helper.assertTrue(drops.size() == 5, "a destroyed suit drops its five pieces, got " + drops.size());
             helper.succeed();
+        });
+    }
+
+    /** A hit armour counts against (a zombie's): the generic source bypasses armour, like /kill and the void. */
+    private static DamageSource zombieHit(GameTestHelper helper, BlockPos at) {
+        Mob zombie = helper.spawnWithNoFreeWill(EntityTypes.ZOMBIE, at);
+        return helper.getLevel().damageSources().mobAttack(zombie);
+    }
+
+    /** What a hit of this much costs each worn piece: vanilla armour's max(1, damage / 4), times the config's wear. */
+    private static int wearPerHit(float damage) {
+        double wear = PowerSuitsConfig.ARMOUR_WEAR.get();
+        return wear <= 0 ? 0 : Math.max(1, (int) (damage / 4.0F * wear));
+    }
+
+    /** A bare part never exposes the pilot (every hit goes to the hull), and the hull takes less the more pieces the
+     *  frame wears (vanilla's armour formula on the pieces' points): bare (no helmet either), two pieces, all five. */
+    @SuitTest(timeoutTicks = 20)
+    public static void morePiecesLessHullDamage(GameTestHelper helper) {
+        int[] worn = {0, 2, 5};
+        PowerSuitEntity[] suits = new PowerSuitEntity[worn.length];
+        Player[] pilots = new Player[worn.length];
+        for (int i = 0; i < worn.length; i++) {
+            suits[i] = suitAt(helper, new BlockPos(1 + 3 * i, 2, 2));
+            SuitArmour.Part[] parts = SuitArmour.Part.values();
+            for (int p = 0; p < worn[i]; p++) {
+                suits[i].getInventory().setItem(parts[p].slot, ironPiece(parts[p].piece));
+            }
+            if (worn[i] == 0) {
+                suits[i].getInventory().setItem(PowerSuitEntity.HELMET_SLOT, ItemStack.EMPTY); // the helmet has points too
+            }
+            pilots[i] = helper.makeMockPlayer(GameType.SURVIVAL);
+            pilots[i].snapTo(helper.absoluteVec(new Vec3(1.5 + 3 * i, 2, 3.5)));
+            suits[i].interact(pilots[i], InteractionHand.MAIN_HAND, suits[i].position());
+        }
+        DamageSource hit = zombieHit(helper, new BlockPos(4, 2, 7));
+        helper.runAfterDelay(1, () -> {
+            float[] lost = new float[worn.length];
+            for (int i = 0; i < worn.length; i++) {
+                helper.assertTrue(pilots[i].getVehicle() == suits[i], "pilot " + i + " is in");
+                pilots[i].hurtServer(helper.getLevel(), hit, 10.0F);
+                helper.assertTrue(pilots[i].getHealth() == pilots[i].getMaxHealth(), worn[i] + " pieces: the pilot is unhurt");
+                lost[i] = suits[i].getMaxHealth() - suits[i].getHealth();
+            }
+            helper.assertTrue(lost[0] == 10.0F, "the bare frame takes the whole hit, got " + lost[0]);
+            helper.assertTrue(lost[1] < lost[0] && lost[2] < lost[1], "more pieces, less hull damage: " + java.util.Arrays.toString(lost));
+            helper.succeed();
+        });
+    }
+
+    /** Every worn piece wears per hit like vanilla armour; a bare part has nothing to wear; hits that ignore armour
+     *  (the generic source, the void) don't wear it; a piece is repaired at an anvil with iron ingots. */
+    @SuitTest(timeoutTicks = 20)
+    public static void armourWearsPerHit(GameTestHelper helper) {
+        PowerSuitEntity suit = spawnSuit(helper);
+        armoured(suit);
+        suit.getInventory().setItem(PowerSuitEntity.RIGHT_LEG_SLOT, ItemStack.EMPTY);
+        DamageSource hit = zombieHit(helper, new BlockPos(4, 2, 7));
+        helper.runAfterDelay(1, () -> {
+            for (SuitArmour.Part part : SuitArmour.Part.values()) {
+                ItemStack piece = suit.getInventory().getItem(part.slot);
+                helper.assertTrue(piece.isEmpty() || piece.getMaxDamage() == ArmourTier.IRON.durability(part.piece) && piece.getDamageValue() == 0,
+                        part + ": new, iron armour's durability");
+            }
+            suit.hurtServer(helper.getLevel(), hit, 8.0F);
+            int expected = wearPerHit(8.0F);
+            for (SuitArmour.Part part : SuitArmour.Part.values()) {
+                ItemStack piece = suit.getInventory().getItem(part.slot);
+                helper.assertTrue(part == SuitArmour.Part.RIGHT_LEG ? piece.isEmpty() : piece.getDamageValue() == expected,
+                        part + " should have worn " + expected + ", got " + piece.getDamageValue());
+            }
+            suit.setInvulnerableTime(0);
+            suit.hurtServer(helper.getLevel(), helper.getLevel().damageSources().generic(), 4.0F);
+            suit.setInvulnerableTime(0);
+            suit.hurtServer(helper.getLevel(), helper.getLevel().damageSources().fellOutOfWorld(), 4.0F);
+            ItemStack torso = suit.getInventory().getItem(PowerSuitEntity.TORSO_SLOT);
+            helper.assertTrue(torso.getDamageValue() == expected, "armour-piercing hits don't wear it, got " + torso.getDamageValue());
+            helper.assertTrue(torso.isValidRepairItem(new ItemStack(Items.IRON_INGOT)) && !torso.isValidRepairItem(new ItemStack(Items.COPPER_INGOT)),
+                    "iron ingots repair it at an anvil");
+            helper.succeed();
+        });
+    }
+
+    /** A worn-out piece breaks and is gone: its protection and the seal with it (the menu, the synced copy). */
+    @SuitTest(timeoutTicks = 30)
+    public static void wornOutPieceBreaksAndUnseals(GameTestHelper helper) {
+        PowerSuitEntity suit = fueledSuit(helper, new ItemStack(Items.COAL, 4));
+        boardedPilot(helper, suit);
+        armoured(suit);
+        ItemStack torso = suit.getInventory().getItem(PowerSuitEntity.TORSO_SLOT);
+        torso.setDamageValue(torso.getMaxDamage() - 1);
+        DamageSource hit = zombieHit(helper, new BlockPos(4, 2, 7));
+        helper.runAfterDelay(3, () -> {
+            helper.assertTrue(suit.isSealed(), "sealed before the hit");
+            if (wearPerHit(8.0F) == 0) {
+                helper.succeed(); // wear switched off in the config: nothing breaks
+                return;
+            }
+            // the seal keeps fire & co. out, not a zombie's fist: the hit lands and wears the pieces
+            suit.hurtServer(helper.getLevel(), hit, 8.0F);
+            helper.assertTrue(suit.getInventory().getItem(PowerSuitEntity.TORSO_SLOT).isEmpty(), "the worn-out torso piece broke");
+            helper.assertTrue(suit.armour().worn(SuitArmour.Part.TORSO) == null && suit.armour().pieces() == 4, "the synced copy knows");
+            assertArmour(helper, suit, fullIronArmour() - PowerSuitsConfig.IRON_TORSO_ARMOUR.get(), "the torso's points are gone");
+            helper.assertTrue(!suit.isSealed(), "a broken piece unseals the suit");
+            helper.succeed();
+        });
+    }
+
+    /** Rogues come in armour mixes (design sec. 10): rolled once, so a piece knocked off doesn't grow back, and the roll
+     *  survives saving; a defeated rogue still drops only its tool (defeatedRogueDropsOnlyItsTool). */
+    @SuitTest(timeoutTicks = 20)
+    public static void rogueArmourIsRolledOnce(GameTestHelper helper) {
+        PowerSuitEntity suit = rogue(helper, SUIT_POS, true);
+        double chance = PowerSuitsConfig.ROGUE_ARMOUR_CHANCE.get();
+        helper.runAfterDelay(2, () -> {
+            int pieces = suit.armour().pieces();
+            helper.assertTrue(chance < 1 || pieces == 5, "chance 1: the full set, got " + pieces);
+            helper.assertTrue(chance > 0 || pieces == 0, "chance 0: the bare frame, got " + pieces);
+            for (SuitArmour.Part part : SuitArmour.Part.values()) {
+                suit.getInventory().setItem(part.slot, ItemStack.EMPTY);
+            }
+            PowerSuitEntity loaded = ModEntities.POWER_SUIT.get().create(helper.getLevel(), EntitySpawnReason.LOAD);
+            loadTag(helper, loaded, saveTag(helper, suit));
+            loaded.snapTo(helper.absoluteVec(new Vec3(1.5, 2, 1.5)));
+            helper.getLevel().addFreshEntity(loaded);
+            helper.runAfterDelay(3, () -> {
+                helper.assertTrue(suit.armour().pieces() == 0, "taken off: the armour doesn't come back");
+                helper.assertTrue(loaded.isRogue() && loaded.armour().pieces() == 0, "nor after loading");
+                loaded.discard();
+                helper.succeed();
+            });
         });
     }
 

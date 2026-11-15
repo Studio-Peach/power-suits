@@ -5,8 +5,16 @@ import dev.ajaczero.powersuits.PowerSuitsConfig;
 import dev.ajaczero.powersuits.item.ArmourPiece;
 import dev.ajaczero.powersuits.item.ArmourTier;
 import dev.ajaczero.powersuits.item.SuitArmourItem;
+import net.minecraft.core.Holder;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.particles.ItemParticleOption;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.resources.Identifier;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.util.Mth;
 import net.minecraft.world.Container;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -47,6 +55,22 @@ public final class SuitArmour {
         public boolean fits(ItemStack stack) {
             SuitArmourItem armour = SuitArmourItem.of(stack);
             return armour != null && armour.piece() == this.piece;
+        }
+
+        /** Where the piece sits on the frame, in blocks: sideways (+ = the suit's left) and up from its feet. Only for
+         *  the particles of a piece that breaks. */
+        double side() {
+            return switch (this) {
+                case TORSO -> 0;
+                case LEFT_ARM -> 0.45;
+                case RIGHT_ARM -> -0.45;
+                case LEFT_LEG -> 0.18;
+                case RIGHT_LEG -> -0.18;
+            };
+        }
+
+        double height() {
+            return this == TORSO ? 1.45 : this.piece == ArmourPiece.ARM ? 1.35 : 0.5;
         }
 
         public static @Nullable Part ofSlot(int slot) {
@@ -129,6 +153,53 @@ public final class SuitArmour {
             set(armour, part.modifier, piece != null && piece.piece() == part.piece ? piece.tier().protection(part.piece) : 0);
         }
         set(armour, HELMET_MODIFIER, slots.getItem(PowerSuitEntity.HELMET_SLOT).isEmpty() ? 0 : PowerSuitsConfig.HELMET_ARMOUR.get());
+    }
+
+    /**
+     * Server, from the suit's hurtArmor (vanilla calls it for every hit that armour reduces: not /kill, the void,
+     * starving...): every worn piece wears like vanilla armour, max(1, damage / 4) durability a hit (times the config's
+     * wear). A piece worn out breaks like vanilla armour (its break sound, bits of it
+     * flying) and is gone: the part is bare, its protection and the seal with it (design sec. 10, 2026-11-14).
+     */
+    void wear(ServerLevel level, DamageSource source, float damage) {
+        double wear = PowerSuitsConfig.ARMOUR_WEAR.get();
+        if (damage <= 0 || wear <= 0) {
+            return;
+        }
+        int amount = Math.max(1, (int) (damage / 4.0F * wear));
+        Container slots = this.suit.getInventory();
+        boolean changed = false;
+        for (Part part : Part.values()) {
+            ItemStack stack = slots.getItem(part.slot);
+            if (!part.fits(stack) || !stack.isDamageableItem() || !stack.canBeHurtBy(source)) {
+                continue;
+            }
+            // The suit as the owner: vanilla skips the wear only for players in creative (a mob never is).
+            stack.hurtAndBreak(amount, level, this.suit, broken -> this.breakEffects(level, part, broken));
+            if (stack.isEmpty()) {
+                slots.setItem(part.slot, ItemStack.EMPTY); // tells the container: syncSlots drops its protection, the seal
+            }
+            changed = true;
+        }
+        if (changed) {
+            // a stack damaged in place doesn't tell its container (the menu's durability bars follow the slots anyway)
+            slots.setChanged();
+        }
+    }
+
+    /** What vanilla shows when a worn piece breaks (LivingEntity.breakItem: a client-side entity event for equipment
+     *  slots, which the suit's pieces aren't in), sent from the server at the piece's place on the frame. */
+    private void breakEffects(ServerLevel level, Part part, ItemStack broken) {
+        float yaw = this.suit.yBodyRot * Mth.DEG_TO_RAD;
+        // the suit's left in the world: yaw 0 faces +z, so its left is +x
+        double x = this.suit.getX() + Mth.cos(yaw) * part.side();
+        double z = this.suit.getZ() + Mth.sin(yaw) * part.side();
+        double y = this.suit.getY() + part.height();
+        Holder<SoundEvent> sound = broken.get(DataComponents.BREAK_SOUND);
+        if (sound != null && !this.suit.isSilent()) {
+            level.playSound(null, x, y, z, sound.value(), this.suit.getSoundSource(), 0.8F, 0.8F + this.suit.getRandom().nextFloat() * 0.4F);
+        }
+        level.sendParticles(new ItemParticleOption(ParticleTypes.ITEM, broken.getItem()), x, y, z, 12, 0.15, 0.2, 0.15, 0.08);
     }
 
     private static void set(AttributeInstance attribute, Identifier id, double amount) {

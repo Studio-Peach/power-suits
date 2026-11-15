@@ -217,6 +217,10 @@ public final class PowerSuitsConfig {
     public static final ModConfigSpec.DoubleValue HELMET_ARMOUR = B
             .comment("Armour points the helmet adds.").translation(key("helmet_armour"))
             .defineInRange("helmet", 2.0, 0, 30);
+    public static final ModConfigSpec.DoubleValue ARMOUR_WEAR = B
+            .comment("How fast the pieces wear: each hit costs every worn piece vanilla armour's max(1, damage / 4) durability,",
+                    "times this. 0 = they never wear.").translation(key("armour_wear"))
+            .defineInRange("wear", 1.0, 0, 10);
 
     // ---- The machine mind (design sec. 8): what a powered suit does with nobody inside
     // (nugget_store_max went 2026-10-27 with the hidden nugget store: the mind's tools never run out of ammo.)
@@ -236,6 +240,10 @@ public final class PowerSuitsConfig {
             .comment("A rogue suit leaves after this many ticks (24000 = an in-game day), as soon as no player is within 64",
                     "blocks to watch it go.").translation(key("rogue_lifetime"))
             .defineInRange("rogue_lifetime", 24000, 20, 10_000_000);
+    public static final ModConfigSpec.DoubleValue ROGUE_ARMOUR_CHANCE = B
+            .comment("A new rogue suit wears each of the five armour pieces with this chance (rolled once, so rogues come in",
+                    "mixes from the bare frame to the full set). A defeated rogue still drops only its tool.").translation(key("rogue_armour_chance"))
+            .defineInRange("rogue_armour_chance", 0.5, 0, 1);
     public static final ModConfigSpec.DoubleValue EM_GUARD_RADIUS = B
             .comment("A friendly suit with an EM projector guards this many blocks around its home: monsters inside get flung.").translation(key("em_guard_radius"))
             .defineInRange("em_guard_radius", 12.0, 0, 32);

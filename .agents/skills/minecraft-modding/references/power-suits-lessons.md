@@ -233,6 +233,12 @@ to Minecraft 26.3 / GeckoLib 5. Add a new lesson to the right section when somet
   autopilot scenes) must put a `SUIT_HELMET` in `HELMET_SLOT` next to the fuel (GameTests' `suitAt` does). Since the
   frame's armour (2026-11-14) the seal also needs all five armour pieces: tests call `armoured(suit)` (suitAt doesn't:
   the bare frame is the default), scenes `DevUtil.ironArmour` (the scenes' piloted suits get it next to the helmet).
+- **Testing armour (2026-11-14) needs a hit armour counts against**: vanilla's `generic()` source bypasses armour (tag
+  `bypasses_armor`, with `/kill`, the void, fire, falls...), so it neither shrinks with the pieces nor wears them; the
+  seal keeps cactus and fire out of a sealed suit. Use a mob attack (`mobAttack(zombie)`; a scene in a peaceful world:
+  `mobAttack(parkedSuit)`). Repeated hits within 10 ticks only land the excess (`setInvulnerableTime(0)` between them).
+  Rogues roll their armour on their first tick (`SuitBrain.equipRogue`): a test or scene that wants a known mix calls
+  `brain().skipRogueArmour()` and dresses it.
 
 ## GameTests
 - *(26.3)* **GameTest structures start at the test origin** (1.21.1 placed them one block higher): `test_pad` keeps its

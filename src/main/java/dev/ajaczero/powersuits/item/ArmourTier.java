@@ -1,6 +1,8 @@
 package dev.ajaczero.powersuits.item;
 
 import dev.ajaczero.powersuits.PowerSuitsConfig;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Items;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -31,6 +33,28 @@ public enum ArmourTier {
                 case ARM -> PowerSuitsConfig.IRON_ARM_ARMOUR.get();
                 case LEG -> PowerSuitsConfig.IRON_LEG_ARMOUR.get();
             };
+        };
+    }
+
+    /**
+     * How many hits' worth of wear this tier's piece takes (its item's max damage, set at registration, so not in the
+     * config: that loads later; PowerSuitsConfig's armour_wear scales the wear instead). Iron as vanilla's iron armour:
+     * the torso a chestplate's 240, the legs leggings' 225, an arm a helmet's 165 (the smallest piece).
+     */
+    public int durability(ArmourPiece piece) {
+        return switch (this) {
+            case IRON -> switch (piece) {
+                case TORSO -> 240;
+                case ARM -> 165;
+                case LEG -> 225;
+            };
+        };
+    }
+
+    /** What repairs this tier's pieces at an anvil (vanilla armour's own material). */
+    public Item repairItem() {
+        return switch (this) {
+            case IRON -> Items.IRON_INGOT;
         };
     }
 

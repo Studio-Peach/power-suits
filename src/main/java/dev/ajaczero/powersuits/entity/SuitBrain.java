@@ -4,6 +4,7 @@ import com.mojang.authlib.GameProfile;
 import dev.ajaczero.powersuits.PowerSuitsConfig;
 import dev.ajaczero.powersuits.entity.ai.SuitGoals;
 import dev.ajaczero.powersuits.entity.ai.ToolUse;
+import dev.ajaczero.powersuits.item.ArmourTier;
 import dev.ajaczero.powersuits.item.HelmetStyle;
 import dev.ajaczero.powersuits.item.PowerTool;
 import dev.ajaczero.powersuits.registry.ModDataComponents;
@@ -52,6 +53,8 @@ public final class SuitBrain {
     private Vec3 aim;
     /** Server: ticks this rogue has been around (saved). */
     private int rogueAge;
+    /** A rogue's armour was rolled (once: equipRogue only fills empty slots, so a piece knocked off mustn't grow back). */
+    private boolean rogueArmed;
     /** Server: the tool whose goals the mind has right now (null: none), and those goals (updateToolGoals). */
     @Nullable
     private PowerTool goalsTool;
@@ -276,6 +279,17 @@ public final class SuitBrain {
             }
             slots.setItem(PowerSuitEntity.HELMET_SLOT, helmet);
         }
+        if (!this.rogueArmed) {
+            // Rogues come in mixes, from the bare frame to the full set (design sec. 10, 2026-11-14): each piece rolled
+            // once. Iron, the only tier yet. Not loot (a defeated rogue drops its tool only); a rebooted one keeps it.
+            this.rogueArmed = true;
+            double chance = PowerSuitsConfig.ROGUE_ARMOUR_CHANCE.get();
+            for (SuitArmour.Part part : SuitArmour.Part.values()) {
+                if (slots.getItem(part.slot).isEmpty() && this.suit.getRandom().nextDouble() < chance) {
+                    slots.setItem(part.slot, new ItemStack(ModItems.armour(ArmourTier.IRON, part.piece)));
+                }
+            }
+        }
         if (slots.getItem(PowerSuitEntity.ENGINE_SLOT).isEmpty()) {
             // Suits come without an engine now, and a rogue needs a backpack to look the part (it runs on nothing
             // anyway). Not loot either (a defeated rogue drops its tool only), but one rebooted by lightning keeps it,
@@ -290,6 +304,11 @@ public final class SuitBrain {
                 && this.suit.level().getNearestPlayer(this.suit, 64) == null;
     }
 
+    /** Server: no armour roll for this rogue (scenes and tests that dress it themselves, or want it bare). */
+    public void skipRogueArmour() {
+        this.rogueArmed = true;
+    }
+
     public void setRogueAge(int ticks) {
         this.rogueAge = ticks;
     }
@@ -300,10 +319,12 @@ public final class SuitBrain {
         this.ownerId = tag.read("Owner", UUIDUtil.CODEC).orElse(null);
         this.home = tag.read("Home", BlockPos.CODEC).orElse(null);
         this.rogueAge = tag.getIntOr("RogueAge", 0);
+        this.rogueArmed = tag.getBooleanOr("RogueArmour", false);
     }
 
     void save(ValueOutput tag) {
         tag.putInt("RogueAge", this.rogueAge);
+        tag.putBoolean("RogueArmour", this.rogueArmed);
         tag.storeNullable("Owner", UUIDUtil.CODEC, this.ownerId); // int array, as before
         tag.storeNullable("Home", BlockPos.CODEC, this.home);
     }

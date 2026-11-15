@@ -99,10 +99,22 @@ public final class ModItems {
     public static final DeferredItem<SuitArmourItem> IRON_ARM_ARMOUR = armour(ArmourPiece.ARM, ArmourTier.IRON);
     public static final DeferredItem<SuitArmourItem> IRON_LEG_ARMOUR = armour(ArmourPiece.LEG, ArmourTier.IRON);
 
-    /** "iron_torso_armour" etc. Stack to 1 like vanilla armour. */
+    /** The item of a tier's piece (rogues' armour, tests). */
+    public static SuitArmourItem armour(ArmourTier tier, ArmourPiece piece) {
+        return switch (tier) {
+            case IRON -> switch (piece) {
+                case TORSO -> IRON_TORSO_ARMOUR.get();
+                case ARM -> IRON_ARM_ARMOUR.get();
+                case LEG -> IRON_LEG_ARMOUR.get();
+            };
+        };
+    }
+
+    /** "iron_torso_armour" etc. Wears like vanilla armour (durability stacks it to 1; SuitArmour.wear), repaired at an
+     *  anvil with its tier's material. */
     private static DeferredItem<SuitArmourItem> armour(ArmourPiece piece, ArmourTier tier) {
         return ITEMS.registerItem(tier.getName() + "_" + piece.getName() + "_armour", props -> new SuitArmourItem(props, piece, tier),
-                props -> props.stacksTo(1));
+                props -> props.durability(tier.durability(piece)).repairable(tier.repairItem()));
     }
 
     private static DeferredItem<HelmetTemplateItem> template(HelmetStyle style) {

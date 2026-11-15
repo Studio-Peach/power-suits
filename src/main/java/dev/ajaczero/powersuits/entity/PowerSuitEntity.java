@@ -952,6 +952,15 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
         return damaged;
     }
 
+    /** Vanilla's hook for armour wear, called for every hit its armour formula reduces (empty on mobs: their armour
+     *  is in equipment slots, the suit's in its own): the worn pieces take it (SuitArmour.wear). */
+    @Override
+    protected void hurtArmor(DamageSource source, float damage) {
+        if (this.level() instanceof ServerLevel level) {
+            this.armour.wear(level, source, damage);
+        }
+    }
+
     /** Only a running suit flinches when hit. Switched off (empty, knocked out, still standing up) it can't react: and the
      *  flinch (on the "action" controller, which overrides the body's controller) would cut into the electrified
      *  convulsion, the slump or the startup, e.g. on every tick of fire after a lightning strike. */
