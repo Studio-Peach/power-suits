@@ -475,7 +475,7 @@ METAL = {'slate': {'E': 'n', 'Y': 'm', 'Z': 'k'}, 'steel': {'E': 'g', 'Y': 'h', 
 # round the sides and the back (the lower section a step darker under a seam line, level with where the front's
 # cheek panels meet the corners); bolts along that division on the sides; the top's rivets as the standard helmet's
 # (a square 3 texels in); the hoses no longer from the neck: oxygen hoses from fittings on the sides, beside the
-# window as the reference's, back round the corners into the valve.
+# window as the reference's, back round the corners into the valve (gone again, below).
 DIVER_VALVE = [                      # the air valve's handwheel (rim, four spokes, the hub), 6 x 6, lit upper left
     '.EEYY.',
     'EZ.EZY',
@@ -485,10 +485,9 @@ DIVER_VALVE = [                      # the air valve's handwheel (rim, four spok
     '.YZZZ.',
 ]
 VALVE_RED = {'E': 'i', 'Y': 'r', 'Z': 'o'}
-VALVE_AT = (6, 5)                    # its top left (column, row) on the back: centred on the hoses (rows 7-8)
-HOSE_ROWS = (7, 8)                   # the oxygen hoses' rows on the sides and the back (over the seam at row 10)
-HOSE_FIT = (14.0, 8.0, 2.0)          # the hose's fitting on the sides (east: columns back -> front), beside the
-                                     # window: centre column, row (between the hose's rows), radius
+VALVE_AT = (6, 4)                    # its top left (column, row) on the back: rows 4-9, just over the seam
+# (The oxygen hoses, from fittings beside the window on the sides round the corners into the valve, went again:
+# 2026-11-15, user: "maybe less is more"; they were f8b1c5d.)
 SPLIT = 10                           # the seam row round the sides and back (the front's panels meet its corners here)
 SIDE_BOLTS = (7, 11, 15)             # the bolts along it on the sides (east columns; clear of the neck guard's wrap)
 BOLT_ROW = 12                        # (the lower plate's second row under the seam)
@@ -548,12 +547,6 @@ def panel(g, mask):
         if g[j][i] in 'ehl': g[j][i] = 'p' if edge else 'l'
 
 
-def hose_h(g, j, i0, i1):
-    """A silver hose running across (rows j, j + 1, columns i0..i1-1): a rib every other column, the grooves dark."""
-    for i in range(i0, i1):
-        g[j][i], g[j + 1][i] = ('t', 'u') if i % 2 == 1 else ('v', 'v')
-
-
 def bezel(g, cx, cy, rx, ry, rim, inner):
     """A round fitting: its rim (E lit upper left, Z shaded lower right, Y between) round an inside painted by
     inner(i, j)."""
@@ -587,14 +580,10 @@ def protector():
     panel(e, lower)
     for i in SIDE_BOLTS: e[BOLT_ROW][i] = 'z'
     neck_guard(e, GUARD_WRAP)
-    hx, hy, hr = HOSE_FIT
-    hose_h(e, HOSE_ROWS[0], 0, int(hx - hr) + 1)                          # the hose back from its fitting
-    bezel(e, hx, hy, hr, hr, 1.0, lambda i, j: 'x')                      # its fitting: slate, the hose's mouth dark
     east, west = sides(e)
     b = shade(blank())
     panel(b, lower)
     neck_guard(b, [N] * len(GUARD_ROWS))
-    hose_h(b, HOSE_ROWS[0], 0, N)                                        # the hoses round the corners into the valve
     for j, row in enumerate(DIVER_VALVE):                                # the valve's red handwheel, mid-back
         for i, c in enumerate(row):
             if c != '.': b[VALVE_AT[1] + j][VALVE_AT[0] + i] = VALVE_RED[c]
