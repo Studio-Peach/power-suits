@@ -417,7 +417,7 @@ def sides(east):
 
 
 # ---------------------------------------------------------------- protector (Subject Delta, BioShock 2)
-def protector():
+def protector_r1():
     """The diver (draft B, 2026-11-12: left out of the default as "BioShock's already", so this is where it goes): a
     riveted porthole with a brass bezel over the face, behind three steel bars (the big suit's protector), smaller
     portholes on the sides, the hatch on top, the copper air port at the back."""
@@ -429,6 +429,116 @@ def protector():
             if f[j][i] in 'VTZ': f[j][i] = 'h'
     d['north'] = out(f)
     return d
+
+
+# Round 2 (2026-11-14, user's reference: Subject Delta, .scratch/helm7/diver/ref.jpg): the Big Daddy's face, not a
+# generic diving helmet: a wide oval porthole high on the front (its brass bezel lit top-left, his eyes behind it),
+# two small portholes under it at the cheeks, two brass straps from the bezel down to the collar between them; the
+# helmet bolted onto its corselet (a riveted collar band round the bottom, brass bolts); the air hoses (silver ribs)
+# into brass collars on the sides and down the back's corners toward the tanks; the lamp housing on top (a brass
+# ring, its lens). The shell in the steel shades (Delta's copper is a paint away: PAINT=orange / brown).
+# Draft knob DIVER_GRILLE (the main porthole's bars): 'bars' (two brass bars, between his eyes, running on down as
+# the straps), 'grid' (the two and one across the window above his eyes: Delta's panes), 'none' (open glass).
+DIVER_GRILLE = os.environ.get('DIVER_GRILLE', 'bars')
+assert DIVER_GRILLE in ('bars', 'grid', 'none'), DIVER_GRILLE
+# The front drawn by hand (an oval and two small rounds traced as ellipses came out lumpy at 18 texels): '.' keeps
+# the shell, E / Y / Z the brass lit / mid / shade (light from the upper left), V glass, p a rivet, B a grille bar
+# (brass where DIVER_GRILLE puts one, glass where not), C the bar across ('grid' only). His eyes are behind rows
+# 9-10: the window's glass is widest at rows 5-9.
+DIVER_FRONT = [
+    '..................',
+    '..................',
+    '....p.EEEEEE.p....',
+    '....EEVBVVBVYY....',
+    '...EVVVBVVBVVY....',
+    '..EVVVVBVVBVVVY...',
+    '.pECCCCBCCBCCCZ.p.',
+    '..YVVVVBVVBVVVZ...',
+    '..YVVVVBVVBVVVZ...',
+    '...YVVVBVVBVVZ....',
+    '.p.YZVVBVVBVZZ..p.',
+    '.....ZZYZZYZ......',
+    '..EEE..Y..Y..EEE..',
+    '.EVVVY.Z..Z.EVVVY.',
+    '.EVVVZ.Y..Y.EVVVZ.',
+    '.YVVVZ.Z..Z.YVVVZ.',
+    '..ZZZ..Y..Y..ZZZ..',
+    '.......Z..Z.......',
+]
+DIVER_VALVE = [                      # the back's air valve: a brass handwheel (rim, four spokes, the hub), 6 x 6
+    '.EEYY.',
+    'EZ.EZY',
+    'E.EY.Z',
+    'YEYZYZ',
+    'YZ.Y.Z',
+    '.YZZZ.',
+]
+COLLAR = 15                          # the corselet band's top row (rows 15-17, sides and back)
+SEAM_ROW = 3                         # the dome's riveted seam round the sides and back
+
+
+def collar_band(g, bolts):
+    """The corselet: a lit top edge, the band, its dark bottom; brass bolts (lit over their shade) at `bolts`."""
+    for i in range(N):
+        g[COLLAR][i], g[COLLAR + 1][i], g[COLLAR + 2][i] = 'g', 'l', 'p'
+    for i in bolts:
+        g[COLLAR + 1][i], g[COLLAR + 2][i] = 'E', 'Z'
+
+
+def rivet_seam(g, j, cols):
+    """A plate seam: a dark line, the lower plate's lit edge under it, rivets on that edge."""
+    for i in range(N):
+        g[j][i], g[j + 1][i] = 'p', 'h'
+    for i in cols: g[j + 1][i] = 'z'
+
+
+def rib_v(g, i0, i1, j0, j1):
+    """A silver hose running down (columns i0..i1-1, rows j0..j1-1): a rib every other row, lit on the left."""
+    for j in range(j0, j1):
+        for i in range(i0, i1):
+            g[j][i] = ('t' if i == i0 else 'u') if j % 2 == 0 else 'v'
+
+
+def protector():
+    f = shade(blank())
+    grille = {'bars': 'Y', 'grid': 'Y', 'none': 'V'}[DIVER_GRILLE]
+    for j, row in enumerate(DIVER_FRONT):
+        assert len(row) == N, j
+        for i, c in enumerate(row):
+            if c == 'B': c = grille
+            if c == 'C': c = 'Y' if DIVER_GRILLE == 'grid' else 'V'
+            if c != '.': f[j][i] = c
+    glint(f)
+    e = shade(blank())
+    rivet_seam(e, SEAM_ROW, range(1, N, 4))
+    collar_band(e, (3, 8, 13))
+    hx, hy, hr = 9.0, 10.0, 3.2                                          # the hose's brass collar, mid-side, on the
+    disc(e, hx, hy, hr, 'Y', ring='Z', rw=1.0, light=True)               # hose's two rows
+    for j in range(N):
+        for i in range(N):
+            if e[j][i] == 'h' and math.hypot(i + 0.5 - hx, j + 0.5 - hy) <= hr: e[j][i] = 'E'
+    disc(e, hx, hy, 2.0, 'u')                                            # the hose's silver end in it, dark inside
+    for j in (9, 10):                                                    # (a dark disc read as a black cross)
+        for i in (8, 9): e[j][i] = 'x'
+    for i in range(0, int(hx - hr) + 1):                                 # the hose out of it back to the corner
+        e[9][i], e[10][i] = ('t', 'u') if i % 2 == 0 else ('v', 'v')
+    east, west = sides(e)
+    b = shade(blank())
+    rivet_seam(b, SEAM_ROW, range(2, N, 4))
+    for i0, i1 in ((0, 3), (15, 18)):                                    # the hoses round the corners and down to
+        rib_v(b, i0, i1, 9, COLLAR)                                      # the tanks
+    collar_band(b, (4, 8, 9, 13))
+    for j, row in enumerate(DIVER_VALVE):                                # the air valve's handwheel, mid-back
+        for i, c in enumerate(row):
+            if c != '.': b[7 + j][6 + i] = c
+    top = plain_top()
+    disc(top, 9, 7, 3.6, 'Y', ring='Z', rw=1.0, light=True)              # the lamp housing: a brass ring, its lens
+    for j in range(N):
+        for i in range(N):
+            if top[j][i] == 'h' and math.hypot(i + 0.5 - 9, j + 0.5 - 7) <= 3.6: top[j][i] = 'E'
+    disc(top, 9, 7, 2.0, 'x', ring='k', rw=0.8)
+    top[5][7] = 'n'
+    return dict(north=out(f), south=out(b), east=east, west=west, up=out(top))
 
 
 # ---------------------------------------------------------------- spartan (the Master Chief, Halo)
