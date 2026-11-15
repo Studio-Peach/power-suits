@@ -890,7 +890,8 @@ ROBOT_OPEN = os.environ.get('ROBOT_OPEN', 'side')
 # plates back in the middle of the sides, half the helmet's height (from row EAR_TOP to the bottom), the glass
 # stepping round them ("a sort of stepping stone", so the sides aren't so square).
 EAR = (5, 13)                                         # the ear plate's east columns (centred)
-EAR_TOP = int(os.environ.get('ROBOT_EAR_TOP', '9'))   # its top row (half way down)
+EAR_TOP = int(os.environ.get('ROBOT_EAR_TOP', '5'))   # its top row (round 7: 9, half way; round 8, user: a bit
+                                                     # taller, its disc and LED panel as round 5's)
 # Round 4 (2026-11-15, user: frame picked; "rework the mouth border"): draft knob ROBOT_MOUTH, the visor's bottom edge
 # over the chin band: 'shadow' (round 3: a dark border row under the glass) | 'lip' (no border: the chin's lit lip
 # right under the glass, its corners rounded) | 'curve' (the glass's bottom rounded up into the corners, the lip
@@ -964,18 +965,21 @@ def robot():
             if b_ > a: rect(g, a, j, b_, j + 1, 'V')
         outline(g, 'x')
     for i in range(N):                                                    # the chin band: its lit top, mid, shade
-        f[15][i], f[16][i], f[17][i] = ('g' if ROBOT_MOUTH == 'shadow' else 'e'), 'e', 'l'
+        if f[15][i] != 'x': f[15][i] = 'g' if ROBOT_MOUTH == 'shadow' else 'e'   # (the border kept: round 8)
+        f[16][i], f[17][i] = 'e', 'l'
     if ROBOT_MOUTH != 'shadow':                                           # the chin's lit lip right under the glass
         for i in range(N):                                                # (no dark border under it), the chin's
             low = [j for j in range(N) if f[j][i] == 'V']                 # gold below it
             if not low: continue
-            for j in range(low[-1] + 1, 17):
-                f[j][i] = 'g' if j == low[-1] + 1 else 'e'
-        for j in range(12, 15):                                           # a border texel left beside the lip (the
-            for i in range(N):                                            # rounded corners): the lip's too
-                if f[j][i] == 'x' and j + 1 < N and f[j + 1][i] in 'ge' and 1 < i < 16: f[j][i] = 'g'
+            b0 = low[-1] + (2 if ROBOT_OPEN == 'side' else 1)             # (round 8, user: the dark border all the
+            for j in range(b0, 17):                                       # way round the visor: the lip under it)
+                f[j][i] = 'g' if j == b0 else 'e'
+        if ROBOT_OPEN != 'side':
+            for j in range(12, 15):                                       # a border texel left beside the lip (the
+                for i in range(N):                                        # rounded corners): the lip's too
+                    if f[j][i] == 'x' and j + 1 < N and f[j + 1][i] in 'ge' and 1 < i < 16: f[j][i] = 'g'
     if ROBOT_OPEN == 'side':
-        for i in range(EAR[1] + 1, N): e[13][i] = 'g'                     # the side's chin: the lit lip under the glass,
+        for i in range(EAR[1] + 1, N): e[14][i] = 'g'                     # the side's chin: the lit lip under the glass,
                                                                           # as the front's
     glint(f)
     x0, x1, y0, y1 = (EAR[0], EAR[1], EAR_TOP, 18) if ROBOT_OPEN == 'side' else (5, 13, 3, 18)                                        # the ear plate behind the glass's D: a
@@ -986,16 +990,14 @@ def robot():
         if i >= 0 and e[y0 - 1][i] != 'x': e[y0 - 1][i] = 'p'             # border where it runs over the plate)
     if x0 > 0:
         for j in range(y0, y1): e[j][x0 - 1] = 'p'
-    cx, cy = (x0 + x1) / 2, ROBOT_DISC_Y                                  # the reference's disc: a rim round a
+    cx, cy = (x0 + x1) / 2, (y0 + 5 if ROBOT_OPEN == 'side' else ROBOT_DISC_Y)                                 # the reference's disc: a rim round a
     for j, r in enumerate(ROBOT_DISC):                                    # (drawn, not traced: at 6 texels a traced
         for i, c in enumerate(r):                                         # ring read as an X)
             if c != '.': e[round(cy) - 3 + j][int(cx) - 3 + i] = c
     for i in range(x0 + 1, x1 - 1):                                       # the engraved panel under it (its LED
-        if ROBOT_OPEN == 'side':                                          # grid: dots between two grooves; round 7's
-            e[y1 - 2][i] = 'h' if (i - x0) % 2 else 'p'                   # half-height plate: one row of dots)
-            continue
-        e[12][i], e[14][i] = 'p', 'p'
-        e[13][i] = 'h' if (i - x0) % 2 else 'p'
+        k = y0 + 8 if ROBOT_OPEN == 'side' else 12                        # grid: dots between two grooves; round 8:
+        e[k][i], e[k + 2][i] = 'p', 'p'                                   # laid out as round 5's on the shorter
+        e[k + 1][i] = 'h' if (i - x0) % 2 else 'p'                        # plate)
     if ROBOT_OPEN != 'side':                                              # (the plate runs down to the helmet's bottom
         neck_guard(e, [x0] * len(GUARD_ROWS))                             # edge, round 5, user: the guard stops at it)
     b = shade(blank())
