@@ -494,21 +494,21 @@ SIDE_PORT = TOP_PORT                 # the sides' the same window (2026-11-14, u
 # so its front and top plates showed air between them from the side) | 'none'. Its lens is painted, not glass (user:
 # it doesn't light up with the windows). Two rows clear of the window's rim (user: they mustn't touch; one read as
 # touching). The front and the top meet along a full row (no rounded corners at the shared edge: holes there).
-# Picked (2026-11-15, user): the box's look, but painted on the outer layer instead of an object of its own:
-# 'layer' (the box's front and top art on the layer's front and top faces, its edge rows included; like a player's
-# hat layer it has no sides of its own).
-DIVER_CAM = os.environ.get('DIVER_CAM', 'layer')
-assert DIVER_CAM in ('flat', 'box', 'layer', 'none'), DIVER_CAM
-CAM_FRONT = [                        # front face rows 0-2, columns 6-11 (3 px wide over the window's middle)
-    'nnnnnn',
-    'mkuxkk',                        # the lens (dark, a silver glint) in a dark ring
-    '.kxxk.',
+# 2026-11-15 (user): the box's look over the layer's (painted on the outer layer it looked like it floats: no sides),
+# but 3D elements are something the user deliberately avoids; so 'flat' is now the box's art painted into the helmet
+# itself (CAM_FRONT / CAM_TOP below), against 'box'. (The layer option is gone; it was 3fae2cd.)
+DIVER_CAM = os.environ.get('DIVER_CAM', 'box')
+assert DIVER_CAM in ('flat', 'box', 'none'), DIVER_CAM
+CAM_FRONT = [                        # front face rows 0-2, columns 6-11 (3 px wide over the window's middle): the
+    'mkuxkk',                        # box's front under its edge row (the lens: dark, a silver glint, a dark ring),
+    'mkxxkk',                        # two rows clear of the window's rim
+    'kkkkkk',
 ]
-CAM_TOP = [                          # top face rows 0-3 (front -> back), the same columns, as seen from the front
-    'nnnnnn',                        # (lit on the viewer's left): the housing, its back end rounded
+CAM_TOP = [                          # top face rows 0-3 (front -> back), as seen from the front (lit on the viewer's
+    'nnnnnn',                        # left): the box's top, its lit front edge on the helmet's edge row
     'nmmmmk',
     'nmmmmk',
-    '.kkkk.',
+    'kkkkkk',
 ]
 CAM_COL = 6
 
@@ -627,12 +627,7 @@ def protector():
                     if c != '.': g[j][CAM_COL + i] = c
     d = dict(north=out(f), south=out(b), east=east, west=west, up=out(top))
     m = METAL[DIVER_METAL]
-    d = {k: [''.join(m.get(c, c) for c in r) for r in v] for k, v in d.items()}
-    if DIVER_CAM == 'layer':                                             # on the layer: its front rows 0-3 (the edge
-        blank_ = lambda: [['.'] * N for _ in range(N)]                   # row over the helmet's top, then 1.5 px down)
-        d['_outer'] = dict(north=blank_(), east=blank_(), south=blank_(),   # and its top rows 0-4 (the edge row,
-                           stamps=[('north', 0, 7, CAM_BOX['north']), ('up', 0, 7, CAM_BOX['up'])])   # then 2 px back)
-    return d
+    return {k: [''.join(m.get(c, c) for c in r) for r in v] for k, v in d.items()}
 
 
 # ---------------------------------------------------------------- spartan (the Master Chief, Halo)
@@ -986,12 +981,6 @@ def layer(style='C'):
             for j in range(N):
                 if o['east'][j][-1] != '.': east[j + 1][-1] = _round(o['east'], j, N - 1)
                 if o['east'][j][0] != '.': east[j + 1][0] = _round(o['east'], j, 0)
-    up = [list(r) for r in _grid(W, D)]
-    for face, row0, col0, art in o.get('stamps', []):  # art in the layer's own texels (the diver's camera: it uses
-        g = {'north': north, 'up': up}[face]           # the layer's edge rows, which helmet coords can't reach)
-        for j, line in enumerate(art):
-            for i, c in enumerate(line):
-                if c != '.': g[row0 + j][col0 + i] = c
     for j in range(N):                                 # west: the east mirrored (columns front -> back)
         for i in range(N):
             if o['east'][j][i] != '.': west[j + 1][W - 2 - i] = o['east'][j][i]
@@ -1010,8 +999,7 @@ def layer(style='C'):
     part = _part('layer', ((x0, y0, z0), (x1, y1, z1)), dict(east=[''.join(r) for r in east],
                                                             west=[''.join(r) for r in west],
                                                             north=[''.join(r) for r in north],
-                                                            south=[''.join(r) for r in south],
-                                                            up=[''.join(r) for r in up]))
+                                                            south=[''.join(r) for r in south]))
     part['hollow'] = True
     return [part]
 
