@@ -891,6 +891,41 @@ ROBOT_MOUTHS = {'shadow': {13: (3, 15)}, 'lip': {13: (3, 15)}, 'curve': {13: (3,
                 # row lower in round 5, user)
                 'square': {}}
 
+# The visor's faces (2026-11-15, user; sheets .scratch/helm7/robot/r7-r10): the robot's visor doesn't light up as the
+# other helmets' do (its whole glass lit in amber read as one block with the gold); it shows simple faces instead,
+# eyes only, as reactions to events, and stays dark when nothing happens. One colour, the visor's (who is in control:
+# amber a pilot, green the friendly mind, red a rogue; SuitLights), no exceptions (the hearts too). Tried and
+# dropped: higher-res icons (a heart, a bullseye, a diamond: "out of place in Minecraft"), Minecraft's own sprites
+# ("too much"), an idle scan bar, sleepy / focus / surprised / cry (didn't read). Each face: rows of '#' on the
+# front's texels, (rows, top row, left column); the glowmask export lights them (not the glass). Triggers (to build):
+# hit = took damage, broken = helmet broken, dizzy = EM-stunned, happy = pilot climbs in, angry = attacking (a rogue's
+# lasting face), love = refuelled / repaired, effort = using a power tool.
+def _eyes(left, top):
+    """Two eyes, the right the left mirrored, 2 columns apart, centred on the visor (front columns 3-14)."""
+    rows = [l + '..' + l[::-1] for l in left]
+    return rows, top, 3 + (12 - len(rows[0])) // 2
+
+
+ROBOT_FACES = {
+    'hit': _eyes(['#....', '.##..', '...##', '.##..', '#....'], 6),           # > <
+    'broken': _eyes(['#...#', '.#.#.', '..#..', '.#.#.', '#...#'], 6),        # x x
+    'dizzy': (['.###....###.', '#...#..#...#', '#.#.#..#.#.#', '#..##..##..#', '.##......##.'], 6, 3),   # @ @
+    'happy': (['..##....##..', '.#..#..#..#.', '#....##....#'], 7, 3),       # ^^ (round 7's)
+    'angry': (['##........##', '####....####', '.####..####.', '..###..###..'], 7, 3),   # (round 7's)
+    'love': _eyes(['.#.#.', '#####', '#####', '.###.', '..#..'], 6),          # heart eyes
+    'effort': _eyes(['#####', '.###.'], 8),                                   # half-lidded (B, picked over slits and
+}                                                                             # a sweat drop)
+
+
+def robot_face(name):
+    """The face's lit texels on the front (an 18 x 18 grid, '#' lit)."""
+    rows, top, left = ROBOT_FACES[name]
+    g = blank('.')
+    for j, r in enumerate(rows):
+        for i, c in enumerate(r):
+            if c == '#': g[top + j][left + i] = '#'
+    return out(g)
+
 
 def robot():
     wrap = ROBOT_WRAP == 'wrap'

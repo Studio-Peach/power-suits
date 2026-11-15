@@ -240,6 +240,15 @@ the end and `docs/guide.md` Notes).
   drawn texel by texel, beat adding its parts; when the user paints, carry their texels exactly and offer changes as
   knobs beside them. Knobs kept for the record: `SPARTAN_LAYER`, `SPARTAN_BROW`, `SPARTAN_BROW_SHADOW` (glass
   `W`, `GLASS_SHADE`), `SPARTAN_TOP`.
+- The robot (Guy-Manuel, `.scratch/helm7/robot/ref.jpg`, 2026-11-15, shape picked round 5): gold in its own fixed
+  shades (`GOLD`, letters '0'-'7', outside the steel ramp: it never takes the paint; user: its own recipe with gold).
+  The visor is the reference's signature: it runs up the whole front and over most of the top (`ROBOT_CROWN`), a
+  thin gold strip down each front corner (`ROBOT_WRAP=frame`; wrapping the glass onto the sides read as a black
+  box), its bottom curving up into the corners over a deep chin (`ROBOT_MOUTH=curve`); an ear plate centred on each
+  side running down to the bottom edge (a drawn disc: a traced 6-texel ring read as an X; the LED panel under it); a
+  raised panel on the top and back; the slate neck guard. Lit like the others, its big glass in amber blended into the
+  gold, so its visor shows eyes-only faces as reactions to events instead (`ROBOT_FACES`, one colour: the visor's),
+  dark when idle. Dropped: detailed icons and Minecraft's own sprites (out of place / too much), a scan bar.
 - Re-run the exporter after rebuilding the saved files, then `make-frame-paint.py`.
 
 ## Build time (2026-11-15)
