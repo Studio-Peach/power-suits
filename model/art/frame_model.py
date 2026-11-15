@@ -1304,14 +1304,32 @@ def check_armor():
                     and not encloses(a, st, W, margin=0.1):
                 bad.append((a['name'], 'does not enclose', st['name']))
         fa, ca = [A for x in a.get('_hollow', [a]) for A in quads(x)], _centre(a)
-        for o in others:
+        planes = {}                                    # the piece's faces by plane, so each other face is tested only
+        for A in fa:                                   # against the piece's faces in its own plane (a hollow piece,
+            planes.setdefault(_plane_key(A), []).append(A)   # the helmet's layer, is thousands of texel slabs: testing
+        for o in others:                               # every pair took ~12 min a build)
             if o['name'] == a['name'] or apart(a, o): continue
             co = _centre(o)
             for B in quads(o):
-                if any(coplanar(A, B) and side(A, ca) * side(A, co) >= 0 for A in fa):
+                axis, k = _plane_key(B)
+                near = [A for kk in (k - 1, k, k + 1) for A in planes.get((axis, kk), ())]
+                if any(coplanar(A, B) and side(A, ca) * side(A, co) >= 0 for A in near):
                     bad.append((a['name'], 'shares a plane with', o['name']))
                     break
     return bad
+
+PLANE_BIN = 0.05   # px; wider than coplanar()'s eps, so two faces in one plane fall in the same or the next bin
+
+
+def _plane_key(A):
+    """A face's plane, coarsely: the axis its normal is closest to and its distance from the origin along the normal
+    (turned to point along that axis), in PLANE_BIN steps. Faces coplanar() calls one plane share the axis and have
+    keys at most one step apart."""
+    n = _normal(A)
+    axis = max(range(3), key=lambda k: abs(n[k]))
+    ln = sum(c * c for c in n) ** 0.5 * (1 if n[axis] > 0 else -1)
+    return axis, round(sum(A[0][k] * n[k] for k in range(3)) / ln / PLANE_BIN)
+
 
 def _normal(A):
     u = [A[1][k] - A[0][k] for k in range(3)]; v = [A[3][k] - A[0][k] for k in range(3)]

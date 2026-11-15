@@ -172,7 +172,7 @@ the end and `docs/guide.md` Notes).
 - Step 5a, the tools: `TOOL=all` (the saved files' default) builds every tool at once on the left arm, each on bones
   named as the game's tool (`GAME_BONES`: drill / drill_bit, chainsaw / chainsaw_chain, chaingun / chaingun_barrels,
   flamethrower), shell keys `tl_<tool>_<part>`; the game shows the installed one (a tool without frame art: the
-  drill's). The build takes ~4 min (~15 min with ARMOR=game: the texture packing's free-space scan). The exporter keeps an animation whose
+  drill's). The build takes ~25 s with ARMOR=game (see Build time below). The exporter keeps an animation whose
   bones the frame all has (drill_run, chainsaw_run); the others are written empty.
 - Step 5b, aiming: raised, the left arm swings forward 90 deg less the view's pitch and turns with the head
   (PowerSuitRenderer.raiseTool); the muzzle is the shoulder (8.25 px left, 28 up) plus 20.5 px along the view
@@ -193,7 +193,7 @@ the end and `docs/guide.md` Notes).
   renderer picks per part (`client/ArmourBones`). The checks skip pairs never drawn together (`ALT` / `apart`: a part's
   frame vs its piece, the two engine fronts), so every mix of worn and bare parts is checked. The one clash that found:
   a leg piece's top and outer side lay in the bare belt's planes; the belt and the hip block now go with the LEGS (the
-  hip shows with either leg piece on), as the hip was drawn as the leg pieces' part. A full build takes ~15 min now.
+  hip shows with either leg piece on), as the hip was drawn as the leg pieces' part. A full build takes ~25 s (Build time below).
 - Step 7, paint (user, 2026-11-14, pick B of in-game mockups `.scratch/paint7/sheet.png`): the iron pieces (ar_*) and
   the helmet (ar_helmet / ar_hx_layer) take the dye by swapping their eight steel shades (the big suit's recipe and
   ramps; `tools/make-frame-paint.py`); the bare frame (fr_*) stays steel: its members' greys + grain mapped onto the
@@ -222,3 +222,12 @@ the end and `docs/guide.md` Notes).
   split, the lamps), not its parts list; on 18 texels four bolts can only space evenly at gaps of 3 or 5, and both
   looked off: two a face matched the rest.
 - Re-run the exporter after rebuilding the saved files, then `make-frame-paint.py`.
+
+## Build time (2026-11-15)
+- The builds were slow (a saved-files build ~15 min, a draft with a painted helmet layer ~12 min) because of
+  `check_armor`, not the texture packing: it tested every face of every armour piece against every other face, and a
+  hollow piece (the helmet's outer layer) is checked as thousands of texel slabs, so ~44 million `coplanar()` calls.
+  The piece's faces are now bucketed by plane (`_plane_key`: nearest axis + distance in `PLANE_BIN` steps) and each
+  other face is tested only against its own and the neighbouring buckets: the same clashes found (checked against
+  the old loop with eps loosened to 0.3: 13 clashes both), a saved-files build ~25 s, a layered draft ~8 s, a flat
+  helmet draft under 1 s. Profile first (`python3 -m cProfile -s cumtime model/art/frame_model.py`) before guessing.

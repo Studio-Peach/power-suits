@@ -716,7 +716,9 @@ SPARTAN_BACK = [
 #   cap     the upper section, the whole shell over the visor: the front's brow (lip, tab, wings), the top, the sides
 #           over the brow's line, the back down to its band (the shadow row under the band stays on the helmet)
 #   channel the centre strip only: the brow's tab, the channel over the top and down the back to its tab
-SPARTAN_LAYER = os.environ.get('SPARTAN_LAYER', 'jaw+cap')
+# Dropped (2026-11-15, user: "I guess there is a reason I didn't like it before"): flat again, as the other helmets;
+# the knob stays for the record (r17 sheet: .scratch/helm7/spartan/r17_spartan_layer.jpg).
+SPARTAN_LAYER = os.environ.get('SPARTAN_LAYER', 'none')
 
 
 def spartan_layer(f, e, b, t, parts):
