@@ -646,6 +646,48 @@ SPARTAN_BROW = os.environ.get('SPARTAN_BROW', 'user')
 SPARTAN_BROW_SHADOW = os.environ.get('SPARTAN_BROW_SHADOW', 'none')   # 'glass' not liked (user, 2026-11-15)
 BROW_ROWS = {'form': {3: 'g' * 16, 4: 'e' * 16, 5: 'llllll' + 'pppp' + 'llllll'},
              'plate': {2: 'ppppp' + 'glllpg' + 'ppppp', 3: 'g' * 16, 4: 'e' * 16, 5: 'llllll' + 'pppp' + 'llllll'}}
+# The upper section's colour (2026-11-15, user: "the colouring of the top part is a bit too flat"): draft knob
+# SPARTAN_TOP 'flat' (round 21) | 'grain' (the iron armour's: a few 1-texel marks a step off the field, one per ~30
+# texels, never on a line; at the armour's one per 12 the big fields read speckled) | 'wear' (the reference's worn edges: some lit edge texels at the brightest shade, a lit
+# scuff under some of them) | 'dome' (planes: the top's outer three columns and the upper section's vertical
+# corners a step darker, so the dome rolls over instead of standing as flat faces); '+' joins them (dome+wear).
+SPARTAN_TOP = os.environ.get('SPARTAN_TOP', 'flat')
+
+
+def spartan_upper(face, i, j):
+    """Is texel (i, j) of a face in the helmet's upper section (over the visor and the brow's line)?"""
+    if face == 'up': return True
+    if face == 'north': return j <= 5
+    if face == 'south': return j <= 8
+    return j <= (8 if i < 4 else 7 if i < 8 else 6)                         # east: the brow's line
+
+
+def spartan_top_colour(faces, kind):
+    import random
+    ramp = 'zsplehgw'
+    step = lambda c, k: ramp[max(0, min(7, ramp.index(c) + k))]
+    for name, g in faces.items():
+        rng = random.Random('spartan' + name)
+        field = lambda i, j: g[j][i] in 'eh' and all(0 <= i + a < N and 0 <= j + b < N and g[j + b][i + a] == g[j][i]
+                                                     for a, b in ((1, 0), (-1, 0), (0, 1), (0, -1)))
+        upper = [(i, j) for j in range(N) for i in range(N) if spartan_upper(name, i, j)]
+        if kind == 'grain':
+            spots = [(i, j) for i, j in upper if field(i, j)]
+            for i, j in rng.sample(spots, min(len(spots), len(upper) // 30)):
+                g[j][i] = step(g[j][i], rng.choice((1, -1)))
+        elif kind == 'wear':
+            edges = [(i, j) for i, j in upper if g[j][i] == 'g']
+            for i, j in edges:
+                if rng.random() < 0.3:
+                    g[j][i] = 'w'
+                    if j + 1 < N and g[j + 1][i] in 'eh' and rng.random() < 0.5: g[j + 1][i] = step(g[j + 1][i], 1)
+        elif kind == 'dome':
+            cols = {'up': (0, 1, 2, 15, 16, 17), 'north': (0, 1, 16, 17), 'south': (0, 1, 16, 17), 'east': (0, 1, 16, 17)}[name]
+            for i, j in upper:
+                if i in cols and g[j][i] in 'eh' and (name == 'up' or j >= 2) and not (name == 'up' and j in (0, N - 1)):
+                    g[j][i] = step(g[j][i], -1)
+
+
 SPARTAN_FRONT = [
  'gggggglllllpgggggg',   # 0 the channel down the brow (cols 5-12): lit rim, its floor, dark wall
  'hhhhhglllllpghhhhh',
@@ -772,6 +814,9 @@ def spartan():
     for j in range(N):                                                    # the channel front to back: a lit rim
         t[j][5], t[j][6], t[j][12] = 'g', 'p', 'g'                        # and dark wall on the left, the floor,
         for i in range(7, 12): t[j][i] = 'e'                              # a lit wall on the right (user's)
+    if SPARTAN_TOP != 'flat':
+        for kind in SPARTAN_TOP.split('+'):
+            spartan_top_colour(dict(north=f, east=e, south=b, up=t), kind)
     parts = [p for p in SPARTAN_LAYER.split('+') if p != 'none']
     outer = spartan_layer(f, e, b, t, parts) if parts else None
     east, west = sides(e)
