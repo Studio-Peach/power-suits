@@ -644,7 +644,7 @@ SPARTAN_FRONT = [
  'h  e  e  e  e  e  e  g  g',   # 3 the tab's lit top
  'h  e  g  g  g  g  g  h  h',   # 4 brow lip; tab
  'g  g  x  x  x  x  x  h  h',   # 5 the brow's wings a row lower; recess; tab
- 'x  x  x  x  x  x  x  l  l',   # 6 recess under the brow; the tab's shaded bottom
+ 'x  x  V  V  V  V  V  l  l',   # 6 the glass up under the lip (no second dark row: read as eyebrows, user); the tab's shaded bottom
  'V  V  V  V  V  V  V  V  V',   # 7
  'V  V  V  V  V  V  V  V  V',   # 8
  'V  V  V  V  V  V  V  V  V',   # 9  eyes
@@ -652,8 +652,8 @@ SPARTAN_FRONT = [
  'x  x  V  V  V  V  V  V  V',   # 11
  'n  n  x  V  V  V  V  n  n',   # 12 the cheeks up at the corners; glass lobes; the mouthpiece's top in the notch
  'k  t  g  x  x  x  n  k  k',   # 13 lamps; the cheek's lit edge falling toward the chin; the mouthpiece widest
- 'k  t  e  g  g  x  x  x  m',   # 14 its bottom rounded in to 2 texels (user: the roundest one tried)
- 'x  x  e  e  e  g  x  e  e',   # 15
+ 'k  t  e  g  g  e  e  e  m',   # 14 its bottom rounded in to 2 texels (user: the roundest one tried), no black round it (user)
+ 'x  x  e  e  e  g  e  e  e',   # 15
  'l  l  e  e  e  e  p  g  g',   # 16 chin
  'p  p  l  l  l  l  p  h  h',   # 17
 ]
