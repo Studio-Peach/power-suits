@@ -385,7 +385,6 @@ def wrap_back(style='plain'):
 # each, after the big suit's and their originals.
 EXTRA = {'r': (0x9a, 0x2a, 0x22), 'o': (0x5e, 0x18, 0x14),                       # a red mark (not the fire's reserved reds)
          'i': (0xc8, 0x3c, 0x2a),                                                   # its lit red (the diver's valve)
-         'j': (0xff, 0xf2, 0xc0), 'y': (0xf0, 0xc8, 0x60), 'S': (0xb8, 0x8a, 0x3a),  # a lamp: hot, warm, its edge
          't': (0xc8, 0xcc, 0xd0), 'u': (0x9a, 0xa0, 0xa6), 'v': (0x6b, 0x71, 0x78)}   # silver (grille, hoses): unpainted
 
 
@@ -471,10 +470,12 @@ METAL = {'slate': {'E': 'n', 'Y': 'm', 'Z': 'k'}, 'steel': {'E': 'g', 'Y': 'h', 
 # window's bezel, at its height on the sides (all lined up), the top's in the middle. The hose ports went with them:
 # the hoses come up the back's corners and turn in to the air valve, which is back (user: "I liked that idea"): the
 # round-5 handwheel, in red, a nod to Valve's logo (unpainted, as the hunter's red).
-# Draft knob DIVER_PORTS, the side and top windows' glass: 'bars' (the front's two bars, lined up with them), 'cross'
-# (a bar each way), 'plain' (open glass).
-DIVER_PORTS = os.environ.get('DIVER_PORTS', 'bars')   # picked: bars (2026-11-14, user)
-assert DIVER_PORTS in ('bars', 'cross', 'plain'), DIVER_PORTS
+# (DIVER_PORTS, the side and top windows' bars: picked bars, then the windows went, below.)
+# Round 19 (2026-11-15, user): the side and top windows gone again, the front's alone; the front's two tones carried
+# round the sides and the back (the lower section a step darker under a seam line, level with where the front's
+# cheek panels meet the corners); bolts along that division on the sides; the top's rivets as the standard helmet's
+# (a square 3 texels in); the hoses no longer from the neck: oxygen hoses from fittings on the sides, beside the
+# window as the reference's, back round the corners into the valve.
 DIVER_VALVE = [                      # the air valve's handwheel (rim, four spokes, the hub), 6 x 6, lit upper left
     '.EEYY.',
     'EZ.EZY',
@@ -484,28 +485,28 @@ DIVER_VALVE = [                      # the air valve's handwheel (rim, four spok
     '.YZZZ.',
 ]
 VALVE_RED = {'E': 'i', 'Y': 'r', 'Z': 'o'}
-TOP_PORT = (9.0, 9.0, 4.2)           # the top's window, in the middle: centre column, row, radius
-SIDE_PORT = TOP_PORT                 # the sides' the same window (2026-11-14, user; first 3.7 round row 9.5, the front
-                                     # window's middle: a different shape); rows 5-12, its top level with the front's
+VALVE_AT = (6, 5)                    # its top left (column, row) on the back: centred on the hoses (rows 7-8)
+HOSE_ROWS = (7, 8)                   # the oxygen hoses' rows on the sides and the back (over the seam at row 10)
+HOSE_FIT = (14.0, 8.0, 2.0)          # the hose's fitting on the sides (east: columns back -> front), beside the
+                                     # window: centre column, row (between the hose's rows), radius
+SPLIT = 10                           # the seam row round the sides and back (the front's panels meet its corners here)
+SIDE_BOLTS = (7, 11, 15)             # the bolts along it on the sides (east columns; clear of the neck guard's wrap)
+BOLT_ROW = 12                        # (the lower plate's second row under the seam)
 # Round 12 (2026-11-14, user, after the reference's little camera on Delta's helmet top): the camera over the front
-# window, its lens facing forward on the front face, its body running back over the top face. Draft knob DIVER_CAM:
-# 'flat' (painted on the helmet) | 'box' (a real box in the outer layer's 0.5 px: a hollow layer can't give it sides,
-# so its front and top plates showed air between them from the side) | 'none'. Its lens is painted, not glass (user:
-# it doesn't light up with the windows). Two rows clear of the window's rim (user: they mustn't touch; one read as
-# touching). The front and the top meet along a full row (no rounded corners at the shared edge: holes there).
-# 2026-11-15 (user): the box's look over the layer's (painted on the outer layer it looked like it floats: no sides),
-# but 3D elements are something the user deliberately avoids; so 'flat' is now the box's art painted into the helmet
-# itself (CAM_FRONT / CAM_TOP below), against 'box'. (The layer option is gone; it was 3fae2cd.)
-DIVER_CAM = os.environ.get('DIVER_CAM', 'box')
-assert DIVER_CAM in ('flat', 'box', 'none'), DIVER_CAM
+# window, its lens facing forward on the front face, its body running back over the top face. Its lens is painted,
+# not glass (user: it doesn't light up with the windows). The front and the top meet along a full row (no rounded
+# corners at the shared edge: holes there). Drafted as a box in the outer layer's 0.5 px (0f89ec6), on the outer layer
+# itself (3fae2cd: it looked like it floats, no sides) and flat; picked: flat (2026-11-15, user: 3D elements are
+# deliberately avoided), the box's art painted into the helmet, its front all four of the box's rows (user: as the box
+# looks from the front), one row clear of the window's rim.
 CAM_FRONT = [                        # front face rows 0-3, columns 6-11 (3 px wide over the window's middle): the
-    'nnnnnn',                        # box's front, all four rows (2026-11-15, user: taller, as the box looks from the
-    'mkuxkk',                        # front; three read short), its lit top row on the edge with the top's; the lens
-    'mkxxkk',                        # dark, a silver glint, in a dark ring. One row clear of the window's rim (two
-    'kkkkkk',                        # with three rows)
+    'nnnnnn',                        # lit top row on the edge with the top's; the lens dark, a silver glint, in a dark
+    'mkuxkk',                        # ring
+    'mkxxkk',
+    '.kkkk.',                        # its bottom corners rounded off (2026-11-15, user)
 ]
 CAM_TOP = [                          # top face rows 0-3 (front -> back), as seen from the front (lit on the viewer's
-    'nnnnnn',                        # left): the box's top, its lit front edge on the helmet's edge row
+    'nnnnnn',                        # left): its lit front edge on the helmet's edge row
     'nmmmmk',
     'nmmmmk',
     'kkkkkk',
@@ -513,76 +514,49 @@ CAM_TOP = [                          # top face rows 0-3 (front -> back), as see
 CAM_COL = 6
 
 
-CAM_BOX = dict(                       # the box's faces (diver_camera) and the layer's (columns as the layer's: north
-    north=['nnnnnn', 'mkuxkk', 'mkxxkk', 'kkkkkk'],                # from +x, up from -x, rows front -> back)
-    up=['nnnnnn', 'kmmmmn', 'kmmmmn', 'kmmmmn', 'kkkkkk'])
-
-
-def diver_camera():
-    """DIVER_CAM=box: one box hugging the helmet's top front edge, 0.5 px out (the outer layer's room): 3 px wide, its
-    front from 0.5 px over the helmet's top down 2 px (to raw y 33: two rows clear of the window), its top running
-    2 px back over the helmet. Head-bone raw coordinates; faces as _part's (north column 0 at +x, up rows front ->
-    back from -x, east columns back -> front)."""
-    north, up = CAM_BOX['north'], CAM_BOX['up']
-    east = ['nnnnn', 'mmmmm', 'mmmmm', 'mmmmm']        # +x: the lit side seen from the front
-    west = ['mmmmm', 'kkkkk', 'kkkkk', 'kkkkk']
-    return [_part('cam', ((-1.5, 33, -5), (1.5, 35, -2.5)),
-                  dict(north=north, up=up, east=east, west=west, south=['kkkkkk'] * 4, down=['kkkkkk'] * 5))]
-COLLAR = 15                          # the corselet band's top row (rows 15-17, all four sides)
-
-
 # The rings (2026-11-15, user: the rings with the bolts don't look good, something less rustic; drafted: the seam and
 # the band without rivets / bolts, both as slate trim, or the slate collar alone; picked: the collar alone, "the bald
-# one"): no ring round the dome, the collar band round the bottom in the fittings' slate, plain.
+# one"): no ring round the dome. Then the slate collar band went too (2026-11-15, user): the standard helmet's slate
+# neck guard back on the back, wrapping the sides' back corners (as the hunter's).
 
 
-# Draft knob DIVER_FACE (2026-11-15, user, from the reference: Delta's helmet is split in three, seams running from
-# the window's ends down and in under it to meet below it, then one seam down the middle; the two lower panels hold
-# the cheek lights): 'wishbone' (those seams, wrapping onto the sides to the side windows; the cheek lights back in
-# the panels as lamps, not glass: user, distinctly lights; the front's collar band gives way to the panels) | 'plain'.
-DIVER_FACE = os.environ.get('DIVER_FACE', 'wishbone')
-assert DIVER_FACE in ('wishbone', 'plain'), DIVER_FACE
+# The face (2026-11-15, user, from the reference: Delta's helmet is split in three, seams running from the window's
+# ends down and in under it to meet below it, then one seam down the middle; the two lower panels hold the cheek
+# lights): the cheek panels, wrapping round onto the sides; the cheek lights in them as lamps, not glass (user:
+# distinctly lights), lit when the suit is powered (user): painted in the fire's reserved coal colours (F I), so the
+# fire glowmask lights them with the engine as the radiator guard's slats; the front's collar band gives way to the
+# panels.
 # The front's right cheek panel (the left mirrors it), row: its columns 0..n-1 (a texel of shell between it and the
 # window's bezel: drawn as a line hugging the bezel it ran into the bezel's shaded lower right, and single-texel
 # diagonals read as dots): the window's section is the dome, the window and a tongue down the middle (columns 7-10).
 # The panels are a step darker, their edge against the upper section a dark seam line.
 WISH_PANEL = {10: 1, 11: 2, 12: 3, 13: 4, 14: 6, 15: 7, 16: 7, 17: 7}
-WISH_SIDE = {10: range(13, N), 11: range(13, N), 12: range(13, N), 13: range(12, N), 14: range(12, N)}
-                                               # on the sides (east: columns back -> front): the panel carried on in
-                                               # front of and under the side window's front, above the collar
-CHEEK_LAMP = [                                  # in each lower panel (rows 14-17, columns 1-4 / 13-16), lit upper left:
-    '.EE.',                                     # a slate rim round a 2 x 2 lamp, hot in its upper left (painted: a
-    'EjyZ',                                     # light, not glass)
-    'EySZ',
+CHEEK_LAMP = [                                  # in each lower panel (rows 14-17, columns 1-4 / 13-16): a slate rim
+    '.EE.',                                     # round a 2 x 2 lamp, hottest in its upper left
+    'EFFZ',
+    'EFIZ',
     '.ZZ.',
 ]
 
 
-def panel(g, mask, stop=COLLAR):
+def panel(g, mask):
     """A plate a step darker than the shell over the texels in mask, its edge against the rest a dark seam line (the
-    face's own edges and the rows from `stop` on, the collar band, don't count)."""
+    face's own edges don't count)."""
     for i, j in mask:
-        edge = any(0 <= i + di < N and 0 <= j + dj < stop and (i + di, j + dj) not in mask
+        edge = any(0 <= i + di < N and 0 <= j + dj < N and (i + di, j + dj) not in mask
                    for di, dj in ((1, 0), (-1, 0), (0, -1), (0, 1)))
         if g[j][i] in 'ehl': g[j][i] = 'p' if edge else 'l'
 
 
-def collar_band(g):
-    """The corselet round the helmet's bottom: a slate band (lit, mid, shade rows; E / Y / Z as DIVER_METAL maps)."""
-    for i in range(N):
-        for k, c in enumerate('EYZ'): g[COLLAR + k][i] = c
-
-
-def rib_v(g, i0, i1, j0, j1):
-    """A silver hose running down (columns i0..i1-1, rows j0..j1-1): a rib every other row, lit on the left."""
-    for j in range(j0, j1):
-        for i in range(i0, i1):
-            g[j][i] = ('t' if i == i0 else 'u') if j % 2 == 0 else 'v'
+def hose_h(g, j, i0, i1):
+    """A silver hose running across (rows j, j + 1, columns i0..i1-1): a rib every other column, the grooves dark."""
+    for i in range(i0, i1):
+        g[j][i], g[j + 1][i] = ('t', 'u') if i % 2 == 1 else ('v', 'v')
 
 
 def bezel(g, cx, cy, rx, ry, rim, inner):
     """A round fitting: its rim (E lit upper left, Z shaded lower right, Y between) round an inside painted by
-    inner(i, j) (normalised x, y passed too)."""
+    inner(i, j)."""
     for j in range(N):
         for i in range(N):
             x, y = (i + 0.5 - cx) / rx, (j + 0.5 - cy) / ry
@@ -593,59 +567,44 @@ def bezel(g, cx, cy, rx, ry, rim, inner):
                 g[j][i] = inner(i, j)
 
 
-def glint1(g):
-    """A small window's glint: its top-left glass texel (glint()'s diagonal filled a small round window)."""
-    pane = sorted((i + j, j, i) for j in range(N) for i in range(N) if g[j][i] == 'V')
-    if pane: g[pane[0][1]][pane[0][2]] = 'T'
-
-
 def protector():
     f = shade(blank())
     grille = {'bars': 'Y', 'grid': 'Y', 'none': 'V'}[DIVER_GRILLE]
     cx, cy, rx, ry = DIVER_MAIN
-    if DIVER_FACE == 'plain': collar_band(f)
     bezel(f, cx, cy, rx, ry, DIVER_RIM,
           lambda i, j: grille if i in (7, 10) else 'Y' if (DIVER_GRILLE == 'grid' and j == 6) else 'V')
     glint(f)
-    if DIVER_FACE == 'wishbone':
-        mask = {(i, j) for j, n in WISH_PANEL.items() for i in range(n)}
-        mask |= {(N - 1 - i, j) for i, j in mask}
-        for j in range(14, N):                                           # the tongue down to the bottom (over the
-            for i in range(7, 11): f[j][i] = 'e' if j < N - 1 else 'l'    # face's darker bottom rows)
-        panel(f, mask, stop=N)
-        for j, row in enumerate(CHEEK_LAMP):
-            for i, c in enumerate(row):
-                if c != '.': f[14 + j][1 + i] = f[14 + j][13 + i] = c
-    def cross_glass(cy):                                                 # 'cross': one bar each way through the middle
-        return lambda i, j: 'Y' if DIVER_PORTS == 'cross' and (i in (8, 9) or j in (int(cy - 0.5), int(cy))) else \
-            'Y' if DIVER_PORTS == 'bars' and i in (7, 10) else 'V'
-    sx, sy, sr = SIDE_PORT
+    mask = {(i, j) for j, n in WISH_PANEL.items() for i in range(n)}
+    mask |= {(N - 1 - i, j) for i, j in mask}
+    for j in range(14, N):                                               # the tongue down to the bottom (over the
+        for i in range(7, 11): f[j][i] = 'e' if j < N - 1 else 'l'        # face's darker bottom rows)
+    panel(f, mask)
+    for j, row in enumerate(CHEEK_LAMP):
+        for i, c in enumerate(row):
+            if c != '.': f[14 + j][1 + i] = f[14 + j][13 + i] = c
+    lower = {(i, j) for j in range(SPLIT, N) for i in range(N)}          # the sides' and back's lower section
     e = shade(blank())
-    collar_band(e)
-    bezel(e, sx, sy, sr, sr, 1.2, cross_glass(sy))
-    glint1(e)
-    if DIVER_FACE == 'wishbone':
-        panel(e, {(i, j) for j, cols in WISH_SIDE.items() for i in cols})
+    panel(e, lower)
+    for i in SIDE_BOLTS: e[BOLT_ROW][i] = 'z'
+    neck_guard(e, GUARD_WRAP)
+    hx, hy, hr = HOSE_FIT
+    hose_h(e, HOSE_ROWS[0], 0, int(hx - hr) + 1)                          # the hose back from its fitting
+    bezel(e, hx, hy, hr, hr, 1.0, lambda i, j: 'x')                      # its fitting: slate, the hose's mouth dark
     east, west = sides(e)
     b = shade(blank())
-    collar_band(b)
-    for i0, i1 in ((1, 3), (15, 17)):                                    # the hoses up the corners from the tanks...
-        rib_v(b, i0, i1, 11, COLLAR)
-    for i in list(range(1, 6)) + list(range(12, 17)):                    # ...turning in to the valve (rows 9-10)
-        b[9][i], b[10][i] = ('t', 'u') if i % 2 == 1 else ('v', 'v')
+    panel(b, lower)
+    neck_guard(b, [N] * len(GUARD_ROWS))
+    hose_h(b, HOSE_ROWS[0], 0, N)                                        # the hoses round the corners into the valve
     for j, row in enumerate(DIVER_VALVE):                                # the valve's red handwheel, mid-back
         for i, c in enumerate(row):
-            if c != '.': b[7 + j][6 + i] = VALVE_RED[c]
+            if c != '.': b[VALVE_AT[1] + j][VALVE_AT[0] + i] = VALVE_RED[c]
     top = plain_top()
-    tx, ty, tr = TOP_PORT
-    bezel(top, tx, ty, tr, tr, 1.2, cross_glass(ty))
-    glint1(top)
-    if DIVER_CAM == 'flat':
-        for art, g in ((CAM_FRONT, f), ([r[::-1] for r in CAM_TOP], top)):   # (the top's columns run
-                                                                         # -x -> +x, the front's +x -> -x: lit side kept)
-            for j, row in enumerate(art):
-                for i, c in enumerate(row):
-                    if c != '.': g[j][CAM_COL + i] = c
+    for j in (3, 14):                                                    # the standard helmet's rivets: a square
+        for i in (3, 14): top[j][i] = 'p'                                # 3 texels in from the edges
+    for art, g in ((CAM_FRONT, f), ([r[::-1] for r in CAM_TOP], top)):   # (the top's columns run -x -> +x, the
+        for j, row in enumerate(art):                                    # front's +x -> -x: lit side kept)
+            for i, c in enumerate(row):
+                if c != '.': g[j][CAM_COL + i] = c
     d = dict(north=out(f), south=out(b), east=east, west=west, up=out(top))
     m = METAL[DIVER_METAL]
     return {k: [''.join(m.get(c, c) for c in r) for r in v] for k, v in d.items()}
@@ -1027,6 +986,6 @@ def layer(style='C'):
 
 def extras(kind, style='C'):
     if kind == 'layer':                       # (built only when asked: a style without outer art has none)
-        return layer(style) + (diver_camera() if style == 'protector' and DIVER_CAM == 'box' else [])
+        return layer(style)
     return {'none': [], 'cap': cap(), 'radio': radio(), 'both': cap() + radio(),
             'all': cap() + radio() + camera(), 'gear': radio() + camera()}[kind]
