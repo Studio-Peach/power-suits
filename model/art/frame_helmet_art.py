@@ -634,6 +634,8 @@ def protector():
 # right over the visor's border, the tab's shadow under its lit top, the channel's floor down the brow a step darker;
 # the glass over the mouthpiece again (no border there), the lobes as round 16, the lamps a row lower, a dark line
 # under the mouthpiece. (SPARTAN_TAB dropped with it.)
+# Round 21 (2026-11-15, the user's third paint, "a shape I really like"; the shadowed glass not liked): the tab 6 wide,
+# hanging a row into the visor over its border, its own lit bottom edge, the border under it.
 # Brow depth drafts (2026-11-15, user: "is there a technique for that kind of depth on the brow in pixel art?"):
 # SPARTAN_BROW 'user' (round 19: a lit lower edge) | 'form' (shaded as a rounded overhang lit from above: its top
 # lit, its face mid, its bottom turning under dark, the tab darkest) | 'plate' (a raised plate: a seam over it, a lit
@@ -641,7 +643,7 @@ def protector():
 # top glass row in the shade glass 'W', the tab's shadow a row deeper and a texel right, away from the light). The
 # corners (columns 0 and 17) keep the user's texels, where the side's line meets them.
 SPARTAN_BROW = os.environ.get('SPARTAN_BROW', 'user')
-SPARTAN_BROW_SHADOW = os.environ.get('SPARTAN_BROW_SHADOW', 'none')
+SPARTAN_BROW_SHADOW = os.environ.get('SPARTAN_BROW_SHADOW', 'none')   # 'glass' not liked (user, 2026-11-15)
 BROW_ROWS = {'form': {3: 'g' * 16, 4: 'e' * 16, 5: 'llllll' + 'pppp' + 'llllll'},
              'plate': {2: 'ppppp' + 'glllpg' + 'ppppp', 3: 'g' * 16, 4: 'e' * 16, 5: 'llllll' + 'pppp' + 'llllll'}}
 SPARTAN_FRONT = [
@@ -649,17 +651,17 @@ SPARTAN_FRONT = [
  'hhhhhglllllpghhhhh',
  'heeeeeglllpgeeeeeh',
  'heeeeeeggggeeeeeeh',   # 3 the tab's lit top
- 'hhheeeeeeeeeeeehhh',
- 'ggggggeppppegggggg',   # 5 the brow's lit lower edge; the tab's shadow (user, round 19)
- 'xxxxxxxxxxxxxxxxxx',   # 6 the visor's border, one row
- 'VTVVVVVVVVVVVVVVVV',   # 7 (the glint: the user's two texels)
+ 'hhhhhheeeeeehhhhhh',
+ 'gggggghhhhhhgggggg',   # 5 the brow's lit lower edge; the tab (6 wide) hanging on down
+ 'xxxxxxggggggxxxxxx',   # 6 the visor's border; the tab's lit bottom edge over it (user, round 21)
+ 'VTVVVVxxxxxxVVVVVV',   # 7 the border under the tab (the glass a row lower there); the glint: the user's two texels
  'TVVVVVVVVVVVVVVVVV',
  'VVVVVVVVVVVVVVVVVV',
  'VVVVVVVVVVVVVVVVVV',
- 'xxVVVVVVVVVVVVVVxx',   # 11 the glass over the mouthpiece again (user, round 19)
+ 'xxVVVVVVVVVVVVVVxx',   # 11 the glass over the mouthpiece
  'ggxVVVVnnnnVVVVxgg',   # 12 the lobes; the mouthpiece's lit top
  'nngxxxnkkkknxxxgnn',   # 13 the cheeks' lit edges; the mouthpiece
- 'tkegggxxxxxxgggekt',   # 14 the lamps a row lower (user); a dark line under the mouthpiece
+ 'tkegggxxxxxxgggekt',   # 14 the lamps; a dark line under the mouthpiece
  'tkeeeephhhhpeeeekt',
  'lleeeephhhhpeeeell',   # 16 chin
  'ppllllpeeeepllllpp',
