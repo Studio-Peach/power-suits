@@ -619,89 +619,83 @@ def protector():
 # narrow chin plate. The top's centre channel (the reference's recessed strip between two ridges) runs from the brow
 # tab over the top and down the back to a band round the back; the brow's lip sweeps back along the sides and down
 # into that band (ref2's line), so the head reads as one piece; a seam behind the lamps closes the cheek piece.
-# A/B glass on the half maps: 'A' a left-facing (lit) edge, 'B' a right-facing (shaded) one, swapped by the mirror.
-
-
-def mirror_half(half, lit='g', shaded='p'):
-    """An 18-wide face from its left half (9 letters a row, spaces ignored), mirrored about the centre; 'A' / 'B' are
-    the lit / shaded vertical edges (a raised strip's left / right side), swapped on the right half so the light still
-    comes from the upper left."""
-    swap = {'A': 'B', 'B': 'A'}
-    rows = []
-    for r in half:
-        r = r.replace(' ', '')
-        assert len(r) == N // 2, r
-        rows.append([{'A': lit, 'B': shaded}.get(c, c) for c in r + ''.join(swap.get(c, c) for c in r[::-1])])
-    assert len(rows) == N
-    return rows
-
-
+# Round 18 (2026-11-15): the user's own paint over round 16 in Blockbench (their first texture edit), carried here
+# texel for texel: the black under the brow a slate band (the reference's dark recess, the mouthpiece's and lamps'
+# slate, no "eyebrows"), the visor's border one row all round (over the mouthpiece too), the mouthpiece two rows
+# with the chin plate's lit top right under it, the lobes a texel narrower; the channel lit as a groove on the top
+# and back (lit rim and dark wall on the left, lit wall on the right), a ridge down the brow; the side's wrap
+# shallower, a shadow row under the brow's line all along its sweep, the cheek piece's seam further forward and its
+# side lamp dot gone. Full 18-texel rows (the channel's lighting isn't a mirror image). Faces as frame_model.py's.
+# Draft knobs (2026-11-15, offered with the carry-over): SPARTAN_FRONT_CHANNEL 'ridge' (the user's) | 'groove' (lit
+# as on the top, so the light doesn't flip at the front edge); SPARTAN_TAB 'dark' (the user's) | 'lit' (the
+# reference's lit plate hanging over the slate band to the border).
+SPARTAN_FRONT_CHANNEL = os.environ.get('SPARTAN_FRONT_CHANNEL', 'ridge')
+SPARTAN_TAB = os.environ.get('SPARTAN_TAB', 'dark')
 SPARTAN_FRONT = [
-# 0  1  2  3  4  5  6  7  8
- 'g  g  g  g  g  B  l  l  l',   # 0 rim; the top's channel (cols 6-11) running out over the front
- 'h  h  h  h  h  B  l  l  l',   # 1
- 'h  e  e  e  e  e  B  l  l',   # 2 narrowing
- 'h  e  e  e  e  e  e  g  g',   # 3 the tab's lit top
- 'h  e  g  g  g  g  g  h  h',   # 4 brow lip; tab
- 'g  g  x  x  x  x  x  h  h',   # 5 the brow's wings a row lower; recess; tab
- 'x  x  V  V  V  V  V  l  l',   # 6 the glass up under the lip (no second dark row: read as eyebrows, user); the tab's shaded bottom
- 'V  V  V  V  V  V  V  V  V',   # 7
- 'V  V  V  V  V  V  V  V  V',   # 8
- 'V  V  V  V  V  V  V  V  V',   # 9  eyes
- 'V  V  V  V  V  V  V  V  V',   # 10
- 'x  x  V  V  V  V  V  V  V',   # 11
- 'n  n  x  V  V  V  V  n  n',   # 12 the cheeks up at the corners; glass lobes; the mouthpiece's top in the notch
- 'k  t  g  x  x  x  n  k  k',   # 13 lamps; the cheek's lit edge falling toward the chin; the mouthpiece widest
- 'k  t  e  g  g  e  p  l  m',   # 14 its bottom rounded in to 2 texels (user: the roundest one tried), no black round it (user)
- 'x  x  e  e  e  g  p  g  g',   # 15 the chin plate up to the mouthpiece, its seams from the mouthpiece's ends (user: it read apart)
- 'l  l  e  e  e  e  p  h  h',   # 16 chin
- 'p  p  l  l  l  l  p  h  h',   # 17
+ 'gggggghhhhhpgggggg',   # 0 the channel down the brow (cols 5-12), its lit rim / dark wall / floor
+ 'hhhhhghhhhhpghhhhh',
+ 'heeeeeghhhpgeeeeeh',
+ 'heeeeeeggggeeeeeeh',   # 3 the tab's lit top
+ 'hhhggggppppgggghhh',   # 4 the brow's lip; the tab
+ 'gggnnnnkkkknnnnggg',   # 5 the wings; the slate band under the lip (user's: no black eyebrows)
+ 'xxxxxxxxxxxxxxxxxx',   # 6 the visor's border, one row (user)
+ 'VTVVVVVVVVVVVVVVVV',   # 7 (the glint: the user's two texels)
+ 'TVVVVVVVVVVVVVVVVV',
+ 'VVVVVVVVVVVVVVVVVV',
+ 'VVVVVVVVVVVVVVVVVV',
+ 'xxVVVVVxxxxVVVVVxx',   # 11 the border over the mouthpiece too
+ 'nnxVVVxnnnnxVVVxnn',   # 12 the lobes; the mouthpiece's lit top
+ 'ktgxxxnkkkknxxxgtk',   # 13 lamps; the cheeks' lit edges; the mouthpiece
+ 'ktegggpggggpgggetk',   # 14 the chin plate's lit top right under it
+ 'xxeeeephhhhpeeeexx',
+ 'lleeeephhhhpeeeell',   # 16 chin
+ 'ppllllpeeeepllllpp',
 ]
 
-# east (column 0 at the back, 17 at the front)
+# east (column 0 at the back, 17 at the front; the neck guard's texels left plain: neck_guard() paints them)
 SPARTAN_SIDE = [
  'gggggggggggggggggg',
  'hhhhhhhhhhhhhhhhhh',
  'eeeeeeeeeeeeeeeeee',
  'eeeeeeeeeeeeeeeeee',
  'eeeeeeeeeeeeeeeeee',
- 'eeeeeeeeeeeeeeeegg',   # 5
+ 'eeeeeeeeeeeeeeeegg',
  'eeeeeeeeggggggggxx',   # 6 the wing's lip run back
- 'eeeeggggeexxVVVVVV',   # 7
- 'ggggeeeeeexVVVVVVV',
- 'eeeeeeeeeexVVVVVVV',
- 'eeeeeeeeeeexVVVVVV',   # 10
- 'eeeeeeeeeeeexxxxxx',   # 11
- 'eeeeeeeeeeepgeeenn',   # 12 the cheek piece's back seam; lamp plate
- 'eeeeeeeeeeepheeekk',
- 'eeeeeeeeeeepheeetk',
- 'eeeeeeeeeeepheeexx',
+ 'eeeeggggllllllxxVV',   # 7 a shadow row under the lip all along its sweep (user)
+ 'gggglllleeeeeexVVV',
+ 'lllleeeeeeeeeexVVV',
+ 'eeeeeeeeeeeeeeexVV',   # 10 the wrap 2-3 texels deep (user)
+ 'eeeeeeeeeeeeeeeexx',
+ 'eeeeeeeeeeeeeepgnn',   # 12 the cheek piece's back seam (user: further forward); lamp plate
+ 'eeeeeeeeeeeeeephkk',
+ 'eeeeeeeeeeeeeephkk',
+ 'eeeeeeeeeeeeeephxx',
  'llllllllllllllllll',
  'pppppppppppppppppp',
 ]
 
 SPARTAN_BACK = [
-# 0  1  2  3  4  5  6  7  8
- 'g  g  g  g  g  g  B  l  l',
- 'h  h  h  h  h  h  B  l  l',
- 'h  e  e  e  e  e  B  l  l',
- 'h  e  e  e  e  e  B  l  l',
- 'h  e  e  e  e  e  B  l  l',
- 'h  e  e  e  e  e  e  g  g',
- 'h  e  e  e  e  e  e  e  e',
- 'h  e  e  e  e  e  e  e  e',
- 'g  g  g  g  g  g  g  g  g',
- 'l  l  l  l  l  l  l  l  l',
- 'h  e  e  e  e  e  e  e  e',
- 'h  e  e  e  e  e  e  e  e',
- 'h  e  e  e  e  e  e  e  e',
- 'h  e  e  e  e  e  e  e  e',
- 'h  e  e  e  e  e  e  e  e',
- 'h  e  e  e  e  e  e  e  e',
- 'l  l  l  l  l  l  l  l  l',
- 'p  p  p  p  p  p  p  p  p',
+ 'ggggggplllllgggggg',   # 0 the channel down the back (its rim / wall / floor as the top's)
+ 'hhhhhgplllllghhhhh',
+ 'heeeegplllllgeeeeh',
+ 'heeeegplllllgeeeeh',
+ 'heeeeegplllgeeeeeh',
+ 'heeeeeeggggeeeeeeh',   # 5 the tab
+ 'heeeeeeeeeeeeeeeeh',
+ 'heeeeeeeeeeeeeeeeh',
+ 'gggggggggggggggggg',   # 8 the band round the back
+ 'llllllllllllllllll',
+ 'heeeeeeeeeeeeeeeeh',
+ 'heeeeeeeeeeeeeeeeh',
+ 'heeeeeeeeeeeeeeeeh',
+ 'heeeeeeeeeeeeeeeeh',
+ 'heeeeeeeeeeeeeeeeh',
+ 'heeeeeeeeeeeeeeeeh',
+ 'llllllllllllllllll',
+ 'pppppppppppppppppp',
 ]
 
+GROOVE = {0: (6, 'p' + 'l' * 5), 1: (5, 'gp' + 'l' * 5 + 'g'), 2: (6, 'gp' + 'lll' + 'g')}   # front rows 0-2 (start col, texels)
 
 # Round 17 (2026-11-15, user: "a fun part": the sections read well, the mouthpiece's from side to side under the
 # visor and the top's from the back to the front; put them on the outer layer, for depth against the visor and the
@@ -744,17 +738,21 @@ def spartan_layer(f, e, b, t, parts):
 
 
 def spartan():
-    f = mirror_half(SPARTAN_FRONT)
-    glint(f)
+    f = [list(r) for r in SPARTAN_FRONT]
+    if SPARTAN_FRONT_CHANNEL == 'groove':
+        for j, (i0, run) in GROOVE.items():
+            for k, c in enumerate(run): f[j][i0 + k] = c
+    if SPARTAN_TAB == 'lit':
+        for i in range(7, 11): f[4][i], f[5][i] = 'h', 'l'
     e = [list(r) for r in SPARTAN_SIDE]
-    assert len(e) == N and all(len(r) == N for r in e)
+    b = [list(r) for r in SPARTAN_BACK]
+    assert all(len(g) == N and all(len(r) == N for r in g) for g in (f, e, b))
     neck_guard(e, GUARD_WRAP)
-    b = mirror_half(SPARTAN_BACK)
     neck_guard(b, [N] * len(GUARD_ROWS))
     t = plain_top()
-    for j in range(N):                                                    # the channel front to back: its walls
-        t[j][6], t[j][11] = 'p', 'g'                                      # (shaded, lit), its floor a step down
-        for i in range(7, 11): t[j][i] = 'e'
+    for j in range(N):                                                    # the channel front to back: a lit rim
+        t[j][5], t[j][6], t[j][12] = 'g', 'p', 'g'                        # and dark wall on the left, the floor,
+        for i in range(7, 12): t[j][i] = 'e'                              # a lit wall on the right (user's)
     parts = [p for p in SPARTAN_LAYER.split('+') if p != 'none']
     outer = spartan_layer(f, e, b, t, parts) if parts else None
     east, west = sides(e)
