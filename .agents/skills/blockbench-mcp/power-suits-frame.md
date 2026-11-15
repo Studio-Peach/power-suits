@@ -194,4 +194,9 @@ the end and `docs/guide.md` Notes).
   frame vs its piece, the two engine fronts), so every mix of worn and bare parts is checked. The one clash that found:
   a leg piece's top and outer side lay in the bare belt's planes; the belt and the hip block now go with the LEGS (the
   hip shows with either leg piece on), as the hip was drawn as the leg pieces' part. A full build takes ~15 min now.
-- Re-run the exporter after rebuilding the saved files.
+- Step 7, paint (user, 2026-11-14, pick B of in-game mockups `.scratch/paint7/sheet.png`): the iron pieces (ar_*) and
+  the helmet (ar_helmet / ar_hx_layer) take the dye by swapping their eight steel shades (the big suit's recipe and
+  ramps; `tools/make-frame-paint.py`); the bare frame (fr_*) stays steel: its members' greys + grain mapped onto the
+  ramp read as camouflage speckle. So: keep the armour and the helmet's shell in the steel shades only, everything
+  that mustn't take paint (slate, brass, copper, gear) off them.
+- Re-run the exporter after rebuilding the saved files, then `make-frame-paint.py`.

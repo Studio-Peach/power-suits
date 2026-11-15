@@ -116,7 +116,8 @@ Details in `.agents/skills/blockbench-mcp/power-suits-model.md`.
 - Simple boxes, detail in the texture; armour plates in the 8 steel shades only (paint swaps them); re-run
   `tools/make-paint-textures.py` after every texture export.
 - Drafts are hidden `proto_*` groups with new, unused cube prefixes (grep the model first); keep them hidden when saving.
-- After an export: `extract-view-geo.py`, `make-glowmasks.py`, `make-paint-textures.py`; diff bones and keyframes against
+- After an export: `extract-view-geo.py`, `make-glowmasks.py`, `make-paint-textures.py` (the frame: `export-frame.py`
+  then `make-frame-paint.py`); diff bones and keyframes against
   the last export and re-measure code numbers (`SocketAim`, the tool raise) if bones moved.
 - Moving a pivot or reshaping a joint invalidates baked animations: re-solve the specs in `model/anim/` and measure
   (`gaitsweep.mjs`, `livefeet.mjs`, `runAutopilotGait`). Carry hand tweaks to the legs into their rebuild script.

@@ -30,6 +30,8 @@ import net.neoforged.fml.loading.FMLPaths;
  * two shots: the in-game third-person view from behind (eye 2.6 up, 6.5 back, the view the player has most) and a
  * front three-quarter view: {@code ap_paint_<n>_<state>_back/front.png}. Log run/autopilot_paint.csv: per tick the
  * server's and the client's paint (the synced data must reach the client) and the dyes left in the player's hand.
+ * Then the frame's paint on four suits in a row (full set red and blue, torso and legs yellow, the bare frame green),
+ * front and back, and the red one's cockpit: {@code ap_paint_lineup_front/back/cockpit.png}.
  * Runs alone with ./gradlew runAutopilotPaint (~30 s) and at the end of runAutopilotMech.
  */
 final class PaintScene {
@@ -51,9 +53,7 @@ final class PaintScene {
         if (k >= 0) {
             int i = k / EACH, t = k % EACH;
             if (i >= STATES.length) {
-                close();
-                mc.setCameraEntity(mc.player);
-                return false;
+                return lineup(mc, k - STATES.length * EACH);
             }
             String state = STATES[i];
             String name = String.format(Locale.ROOT, "paint_%02d_%s", i, state);
@@ -68,6 +68,62 @@ final class PaintScene {
         }
         if (s >= 2) {
             log(mc, s);
+        }
+        return true;
+    }
+
+    /** The frame's paint (step 7, 2026-11-14) on four suits in a row: red and blue in the full set, yellow with bare
+     *  arms (torso and legs only), green a bare frame (helmet only). Shot from the front and from behind. */
+    private static final String[] LINEUP = {"red", "blue", "yellow", "green"};
+    private static final int[] LINEUP_PIECES = {5, 5, 3, 0};
+    private static final PowerSuitEntity[] lineup = new PowerSuitEntity[LINEUP.length];
+
+    private static boolean lineup(Minecraft mc, int t) {
+        switch (t) {
+            case 0 -> { phase = "lineup"; AutoPilot.onServer(mc, p -> {
+                            BlockPos b = base;
+                            for (int i = 0; i < LINEUP.length && b != null; i++) {
+                                PowerSuitEntity s = ModEntities.POWER_SUIT.get().create(p.level(), EntitySpawnReason.COMMAND);
+                                DevUtil.firebox(s); s.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.BLAZE_ROD, 4));
+                                s.getInventory().setItem(PowerSuitEntity.HELMET_SLOT, new ItemStack(ModItems.SUIT_HELMET.get()));
+                                DevUtil.ironArmour(s);
+                                if (LINEUP_PIECES[i] < 5) { // keep the torso and legs (3) or nothing (0)
+                                    s.getInventory().setItem(PowerSuitEntity.LEFT_ARM_SLOT, ItemStack.EMPTY);
+                                    s.getInventory().setItem(PowerSuitEntity.RIGHT_ARM_SLOT, ItemStack.EMPTY);
+                                }
+                                if (LINEUP_PIECES[i] == 0) {
+                                    s.getInventory().setItem(PowerSuitEntity.TORSO_SLOT, ItemStack.EMPTY);
+                                    s.getInventory().setItem(PowerSuitEntity.LEFT_LEG_SLOT, ItemStack.EMPTY);
+                                    s.getInventory().setItem(PowerSuitEntity.RIGHT_LEG_SLOT, ItemStack.EMPTY);
+                                }
+                                s.snapTo(b.getX() - 4 + 2.7 * i + 0.5, b.getY(), b.getZ() + 10.5, 180, 0);
+                                s.setYBodyRot(180);
+                                s.setYHeadRot(180);
+                                s.brain().setOwnerId(p.getUUID());
+                                p.level().addFreshEntity(s);
+                                p.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.DYE.pick(DyeColor.byName(LINEUP[i], DyeColor.WHITE))));
+                                s.interact(p, InteractionHand.MAIN_HAND, s.position());
+                                lineup[i] = s;
+                            }
+                            p.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+                        }); }
+            case 4 -> camera(mc, new Vec3(0, 2.4, 4.2), new Vec3(0, 1.3, 10.5));
+            case 14 -> AutoPilot.shot(mc, "paint_lineup_front");
+            case 16 -> camera(mc, new Vec3(0, 2.6, 17.5), new Vec3(0, 1.4, 10.5));
+            case 26 -> AutoPilot.shot(mc, "paint_lineup_back");
+            // the cockpit of the red one: the arm in view in its painted piece (CockpitViewRenderer takes the paint too)
+            case 28 -> { phase = "lineup_cockpit"; AutoPilot.onServer(mc, p -> {
+                             if (lineup[0] != null) { lineup[0].interact(p, InteractionHand.MAIN_HAND, lineup[0].position()); }
+                         });
+                         mc.setCameraEntity(mc.player); DevUtil.hideGui(mc, false); mc.options.setCameraType(CameraType.FIRST_PERSON); }
+            case 48 -> AutoPilot.shot(mc, "paint_lineup_cockpit");
+            case 50 -> { AutoPilot.onServer(mc, p -> {
+                             p.stopRiding();
+                             for (int i = 0; i < lineup.length; i++) {
+                                 if (lineup[i] != null) { lineup[i].discard(); lineup[i] = null; }
+                             } });
+                         close(); mc.setCameraEntity(mc.player); return false; }
+            default -> {}
         }
         return true;
     }

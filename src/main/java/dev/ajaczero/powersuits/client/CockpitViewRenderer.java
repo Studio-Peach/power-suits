@@ -33,6 +33,8 @@ final class CockpitViewRenderer extends GeoObjectRenderer<CockpitView, Void, Geo
     private static final DataTicket<int[]> GLOW = DataTicket.create("power_suits_view_glow", int[].class);
     /** The suit's armour (SuitArmour.wornMask): the arm in view shows its piece or its bare frame (ArmourBones). */
     private static final DataTicket<Integer> ARMOUR = DataTicket.create("power_suits_view_armour", Integer.class);
+    /** The suit's paint (a dye id, -1 bare): the arm's piece in its colour, as on the suit. */
+    private static final DataTicket<Integer> PAINT = DataTicket.create("power_suits_view_paint", Integer.class);
 
 
     CockpitViewRenderer() {
@@ -48,6 +50,7 @@ final class CockpitViewRenderer extends GeoObjectRenderer<CockpitView, Void, Geo
         state.addGeckolibData(TOOL_BONE, suit != null && suit.getSocketStack().getItem() instanceof PowerTool tool ? tool.suitBone() : "");
         state.addGeckolibData(BARREL_ANGLE, suit == null ? 0F : suit.socketVisuals().rotorAngle(partialTick));
         state.addGeckolibData(ARMOUR, suit == null ? 0 : suit.armour().wornMask());
+        state.addGeckolibData(PAINT, suit == null || suit.getPaint() == null ? -1 : suit.getPaint().getId());
         if (suit != null && view.part == Part.TOOL) {
             float time = (float) ClientUtil.getCurrentTick(partialTick);
             state.addGeckolibData(GLOW, SuitGlowLayer.toolTints(suit, time, partialTick));
@@ -92,8 +95,6 @@ final class CockpitViewRenderer extends GeoObjectRenderer<CockpitView, Void, Geo
         // The frame's arm (tools/export-frame.py), per build.
         private static final Identifier ARM = Identifier.fromNamespaceAndPath(PowerSuits.MODID, "view/frame_arm");
         private static final Identifier ARM_SLIM = Identifier.fromNamespaceAndPath(PowerSuits.MODID, "view/frame_arm_slim");
-        private static final Identifier FRAME = Identifier.fromNamespaceAndPath(PowerSuits.MODID, "textures/entity/power_frame.png");
-        private static final Identifier FRAME_SLIM = Identifier.fromNamespaceAndPath(PowerSuits.MODID, "textures/entity/power_frame_slim.png");
 
         private static boolean arm(GeoRenderState state) {
             return state.getOrDefaultGeckolibData(PART, Part.TOOL) == Part.ARM;
@@ -110,7 +111,7 @@ final class CockpitViewRenderer extends GeoObjectRenderer<CockpitView, Void, Geo
 
         @Override
         public Identifier getTextureResource(GeoRenderState state) {
-            return slim(state) ? FRAME_SLIM : FRAME;
+            return PowerSuitModel.texture(slim(state), state.getOrDefaultGeckolibData(PAINT, -1)); // the suit's, painted too
         }
 
         @Override
