@@ -443,22 +443,21 @@ DIVER_GRILLE = os.environ.get('DIVER_GRILLE', 'bars')   # picked: bars (2026-11-
 assert DIVER_GRILLE in ('bars', 'grid', 'none'), DIVER_GRILLE
 # The main porthole (2026-11-14, user: the hand-drawn one came out too tall and uneven left to right; the first
 # pass's, traced as an ellipse, looked much better): DIVER_MAIN, a brass bezel lit top-left round the glass, rivets
-# round it in mirrored pairs, the grille's bars over it. Under it the cheeks' portholes and the straps, drawn by hand
-# (DIVER_FRONT, rows 12 on: traced as ellipses at that size they ran into the bezel): '.' keeps the shell, E / Y / Z
-# the brass lit / mid / shade (light from the upper left), V glass. His eyes are behind rows 9-10.
+# round it in mirrored pairs, the grille's bars over it. E / Y / Z: the fittings' lit / mid / shade (light from the
+# upper left; DIVER_METAL), V glass. His eyes are behind rows 9-10.
 DIVER_MAIN = (9.0, 9.5, 7.0, 4.6)    # the main porthole's bezel: centre column, row, x / y radius (texels): round
                                      # his eyes (rows 9-10; 2026-11-14, user: at row 7.5 it sat too high)
 DIVER_RIM = 1.2
-# Draft knob DIVER_CHEEKS (2026-11-14, user: the window centred on his eyes, the cheeks' portholes smaller or gone to
-# make room): 'small' (4 x 4, 2 x 2 glass, in the bottom corners under the window), 'none' (the straps only).
-DIVER_CHEEKS = os.environ.get('DIVER_CHEEKS', 'small')
-assert DIVER_CHEEKS in ('small', 'none'), DIVER_CHEEKS
-DIVER_FRONT = ['.' * N] * 14 + [
-    '..EE...Y..Y...EE..',
-    '.EVVZ..Z..Z..EVVZ.',
-    '.YVVZ..Y..Y..YVVZ.',
-    '..ZZ...Z..Z...ZZ..',
-]
+# The cheeks' portholes and the straps under the window are gone (2026-11-14, user, round 7: 'none' picked over 4 x 4
+# corner ports, half hidden by the chest's top; the straps running on down past the window looked off).
+# Draft knob DIVER_METAL (2026-11-14, user: the brass looks out of place, there is no brass anywhere else on the
+# frame): what the diver's fittings (the window's bezel and bars, the hose collars, the valve wheel, the bolts, the
+# lamp's ring) are made of: 'slate' (the under-armour's, as C's brow and neck guard: unpainted), 'steel' (the shell's
+# own shades: they take the paint with it), 'silver' (the hoses' unpainted silver), 'brass' (as drafted).
+DIVER_METAL = os.environ.get('DIVER_METAL', 'slate')
+assert DIVER_METAL in ('slate', 'steel', 'silver', 'brass'), DIVER_METAL
+METAL = {'slate': {'E': 'n', 'Y': 'm', 'Z': 'k'}, 'steel': {'E': 'g', 'Y': 'h', 'Z': 's'},
+         'silver': {'E': 't', 'Y': 'u', 'Z': 'v'}, 'brass': {}}
 DIVER_VALVE = [                      # the back's air valve: a brass handwheel (rim, four spokes, the hub), 6 x 6
     '.EEYY.',
     'EZ.EZY',
@@ -509,14 +508,7 @@ def protector():
                 f[j][i] = 'E' if x + y < -0.45 else 'Z' if x + y > 0.45 else 'Y'
             else:
                 f[j][i] = grille if i in (7, 10) else 'Y' if (DIVER_GRILLE == 'grid' and j == 6) else 'V'
-    glint(f)                                                             # (the window's: before the cheeks' glass)
-    for j, row in enumerate(DIVER_FRONT):
-        assert len(row) == N, j
-        for i, c in enumerate(row):
-            if c != '.' and (DIVER_CHEEKS == 'small' or i in (7, 10)): f[j][i] = c
-    for i in (7, 10):                                                    # the straps up to the bezel
-        for j in range(int(cy), N):
-            if f[j][i] not in 'VEYZ': f[j][i] = 'Y' if j % 2 else 'Z'
+    glint(f)
     e = shade(blank())
     rivet_seam(e, SEAM_ROW, range(1, N, 4))
     collar_band(e, (3, 8, 13))
@@ -546,7 +538,9 @@ def protector():
             if top[j][i] == 'h' and math.hypot(i + 0.5 - 9, j + 0.5 - 7) <= 3.6: top[j][i] = 'E'
     disc(top, 9, 7, 2.0, 'x', ring='k', rw=0.8)
     top[5][7] = 'n'
-    return dict(north=out(f), south=out(b), east=east, west=west, up=out(top))
+    d = dict(north=out(f), south=out(b), east=east, west=west, up=out(top))
+    m = METAL[DIVER_METAL]
+    return {k: [''.join(m.get(c, c) for c in r) for r in v] for k, v in d.items()}
 
 
 # ---------------------------------------------------------------- spartan (the Master Chief, Halo)
