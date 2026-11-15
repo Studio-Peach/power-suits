@@ -623,13 +623,15 @@ def protector():
 # texel for texel: the black under the brow a slate band (the reference's dark recess, the mouthpiece's and lamps'
 # slate, no "eyebrows"), the visor's border one row all round (over the mouthpiece too), the mouthpiece two rows
 # with the chin plate's lit top right under it, the lobes a texel narrower; the channel lit as a groove on the top
-# and back (lit rim and dark wall on the left, lit wall on the right), a ridge down the brow; the side's wrap
+# and back (from behind: lit rim and dark wall on the left, lit wall on the right), down the brow its dark wall in
+# line; the side's wrap
 # shallower, a shadow row under the brow's line all along its sweep, the cheek piece's seam further forward and its
 # side lamp dot gone. Full 18-texel rows (the channel's lighting isn't a mirror image). Faces as frame_model.py's.
-# Draft knobs (2026-11-15, offered with the carry-over): SPARTAN_FRONT_CHANNEL 'ridge' (the user's) | 'groove' (lit
-# as on the top, so the light doesn't flip at the front edge); SPARTAN_TAB 'dark' (the user's) | 'lit' (the
-# reference's lit plate hanging over the slate band to the border).
-SPARTAN_FRONT_CHANNEL = os.environ.get('SPARTAN_FRONT_CHANNEL', 'ridge')
+# The faces' columns run opposite ways (the front's from +x, the top's and back's from -x): the channel's dark wall
+# is one strip at x -1.25 on all three, so its streak runs on unbroken over the front edge (user, 2026-11-15). A
+# 'groove' option lit off the front's column numbers moved it to the other side at the edge (dropped).
+# Draft knob SPARTAN_TAB 'dark' (the user's) | 'lit' (the reference's lit plate hanging over the slate band to the
+# border).
 SPARTAN_TAB = os.environ.get('SPARTAN_TAB', 'dark')
 SPARTAN_FRONT = [
  'gggggghhhhhpgggggg',   # 0 the channel down the brow (cols 5-12), its lit rim / dark wall / floor
@@ -695,7 +697,6 @@ SPARTAN_BACK = [
  'pppppppppppppppppp',
 ]
 
-GROOVE = {0: (6, 'p' + 'l' * 5), 1: (5, 'gp' + 'l' * 5 + 'g'), 2: (6, 'gp' + 'lll' + 'g')}   # front rows 0-2 (start col, texels)
 
 # Round 17 (2026-11-15, user: "a fun part": the sections read well, the mouthpiece's from side to side under the
 # visor and the top's from the back to the front; put them on the outer layer, for depth against the visor and the
@@ -739,9 +740,6 @@ def spartan_layer(f, e, b, t, parts):
 
 def spartan():
     f = [list(r) for r in SPARTAN_FRONT]
-    if SPARTAN_FRONT_CHANNEL == 'groove':
-        for j, (i0, run) in GROOVE.items():
-            for k, c in enumerate(run): f[j][i0 + k] = c
     if SPARTAN_TAB == 'lit':
         for i in range(7, 11): f[4][i], f[5][i] = 'h', 'l'
     e = [list(r) for r in SPARTAN_SIDE]
