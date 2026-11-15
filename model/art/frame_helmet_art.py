@@ -384,6 +384,7 @@ def wrap_back(style='plain'):
 # big suit's style shells did), what mustn't take paint in other colours (EXTRA: a red, a silver). First drafts, one
 # each, after the big suit's and their originals.
 EXTRA = {'r': (0x9a, 0x2a, 0x22), 'o': (0x5e, 0x18, 0x14),                       # a red mark (not the fire's reserved reds)
+         'i': (0xc8, 0x3c, 0x2a),                                                   # its lit red (the diver's valve)
          't': (0xc8, 0xcc, 0xd0), 'u': (0x9a, 0xa0, 0xa6), 'v': (0x6b, 0x71, 0x78)}   # silver (grille, hoses): unpainted
 
 
@@ -466,11 +467,28 @@ METAL = {'slate': {'E': 'n', 'Y': 'm', 'Z': 'k'}, 'steel': {'E': 'g', 'Y': 'h', 
 # front's over the window), 'rivets' (no seam: a ring of rivets round every fitting), 'both'.
 DIVER_LOOK = os.environ.get('DIVER_LOOK', 'ring')
 assert DIVER_LOOK in ('ring', 'rivets', 'both'), DIVER_LOOK
+# Round 11 (2026-11-14, user): windows on the sides and the top too, as real diving helmets had several (they won't show
+# his face, but with the helmet on every one lights up, the visor's glow: the deep-sea look): round, in the front
+# window's bezel, at its height on the sides (all lined up), the top's in the middle. The hose ports went with them:
+# the hoses come up the back's corners and turn in to the air valve, which is back (user: "I liked that idea"): the
+# round-5 handwheel, in red, a nod to Valve's logo (unpainted, as the hunter's red).
+# Draft knob DIVER_PORTS, the side and top windows' glass: 'bars' (the front's two bars, lined up with them), 'cross'
+# (a bar each way), 'plain' (open glass).
+DIVER_PORTS = os.environ.get('DIVER_PORTS', 'bars')
+assert DIVER_PORTS in ('bars', 'cross', 'plain'), DIVER_PORTS
+DIVER_VALVE = [                      # the air valve's handwheel (rim, four spokes, the hub), 6 x 6, lit upper left
+    '.EEYY.',
+    'EZ.EZY',
+    'E.EY.Z',
+    'YEYZYZ',
+    'YZ.Y.Z',
+    '.YZZZ.',
+]
+VALVE_RED = {'E': 'i', 'Y': 'r', 'Z': 'o'}
+SIDE_PORT = (9.0, 9.5, 3.7)          # the side windows: centre column, row (the front window's), radius
+TOP_PORT = (9.0, 9.0, 4.2)           # the top's, in the middle
 COLLAR = 15                          # the corselet band's top row (rows 15-17, all four sides)
 SEAM_ROW = 2                         # the dome's riveted seam (rows 2-3: over the window's top at row 5)
-PORT = (9.0, 10.0, 3.2)              # the sides' and the back's fittings: centre column, row, radius (on the hoses'
-                                     # two rows 9-10)
-LAMP = (9.0, 7.0, 3.2)               # the top's lamp (top rows run front -> back: toward the front)
 
 
 def collar_band(g, bolts):
@@ -508,6 +526,12 @@ def bezel(g, cx, cy, rx, ry, rim, inner):
                 g[j][i] = inner(i, j)
 
 
+def glint1(g):
+    """A small window's glint: its top-left glass texel (glint()'s diagonal filled a small round window)."""
+    pane = sorted((i + j, j, i) for j in range(N) for i in range(N) if g[j][i] == 'V')
+    if pane: g[pane[0][1]][pane[0][2]] = 'T'
+
+
 def rivet_ring(g, cx, cy, rx, ry, n, rows=(2, COLLAR - 1)):
     """n rivets round a fitting, in mirrored pairs (about column cx = 9: the face's middle), on bare shell only."""
     for k in range(n // 2):
@@ -528,28 +552,32 @@ def protector():
     bezel(f, cx, cy, rx, ry, DIVER_RIM,
           lambda i, j: grille if i in (7, 10) else 'Y' if (DIVER_GRILLE == 'grid' and j == 6) else 'V')
     glint(f)
-    px, py, pr = PORT
+    def cross_glass(cy):                                                 # 'cross': one bar each way through the middle
+        return lambda i, j: 'Y' if DIVER_PORTS == 'cross' and (i in (8, 9) or j in (int(cy - 0.5), int(cy))) else \
+            'Y' if DIVER_PORTS == 'bars' and i in (7, 10) else 'V'
+    sx, sy, sr = SIDE_PORT
     e = shade(blank())
     if seam: rivet_seam(e, SEAM_ROW, (1, 5, 9, 13))
     collar_band(e, (3, 8, 13))
-    if rivets: rivet_ring(e, px, py, pr + 1.4, pr + 1.4, 12)
-    for i in range(0, int(px - pr) + 1):                                 # the hose back to the corner
-        e[9][i], e[10][i] = ('t', 'u') if i % 2 == 0 else ('v', 'v')
-    bezel(e, px, py, pr, pr, 1.2, lambda i, j: 'x' if i in (8, 9) and j in (9, 10) else 'u')   # the hose's end in it
+    if rivets: rivet_ring(e, sx, sy, sr + 1.4, sr + 1.4, 12)
+    bezel(e, sx, sy, sr, sr, 1.2, cross_glass(sy))
+    glint1(e)
     east, west = sides(e)
     b = shade(blank())
     if seam: rivet_seam(b, SEAM_ROW, (2, 6, 11, 15))
     collar_band(b, (2, 6, 11, 15))
-    if rivets: rivet_ring(b, px, py, pr + 1.4, pr + 1.4, 12)
-    for i0, i1 in ((0, 3), (15, 18)):                                    # the hoses round the corners and down to
-        rib_v(b, i0, i1, 9, COLLAR)                                      # the tanks
-    bezel(b, px, py, pr, pr, 1.2,                                        # the air valve: a silver handwheel's spokes
-          lambda i, j: 't' if i in (8, 9) and j in (9, 10) else 'u' if i in (8, 9) or j in (9, 10) else 'x')   # (slate
-                                                                         # spokes on slate read as a blob)
+    for i0, i1 in ((1, 3), (15, 17)):                                    # the hoses up the corners from the tanks...
+        rib_v(b, i0, i1, 11, COLLAR)
+    for i in list(range(1, 6)) + list(range(12, 17)):                    # ...turning in to the valve (rows 9-10)
+        b[9][i], b[10][i] = ('t', 'u') if i % 2 == 1 else ('v', 'v')
+    for j, row in enumerate(DIVER_VALVE):                                # the valve's red handwheel, mid-back
+        for i, c in enumerate(row):
+            if c != '.': b[7 + j][6 + i] = VALVE_RED[c]
     top = plain_top()
-    lx, ly, lr = LAMP
-    if rivets: rivet_ring(top, lx, ly, lr + 1.4, lr + 1.4, 12, rows=(1, N - 2))
-    bezel(top, lx, ly, lr, lr, 1.2, lambda i, j: 'u' if (i, j) == (8, 6) else 'x')   # its lens, a glint on it
+    tx, ty, tr = TOP_PORT
+    if rivets: rivet_ring(top, tx, ty, tr + 1.4, tr + 1.4, 12, rows=(1, N - 2))
+    bezel(top, tx, ty, tr, tr, 1.2, cross_glass(ty))
+    glint1(top)
     d = dict(north=out(f), south=out(b), east=east, west=west, up=out(top))
     m = METAL[DIVER_METAL]
     return {k: [''.join(m.get(c, c) for c in r) for r in v] for k, v in d.items()}
