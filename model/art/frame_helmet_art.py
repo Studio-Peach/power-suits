@@ -386,6 +386,13 @@ def wrap_back(style='plain'):
 EXTRA = {'r': (0x9a, 0x2a, 0x22), 'o': (0x5e, 0x18, 0x14),                       # a red mark (not the fire's reserved reds)
          'i': (0xc8, 0x3c, 0x2a),                                                   # its lit red (the diver's valve)
          't': (0xc8, 0xcc, 0xd0), 'u': (0x9a, 0xa0, 0xa6), 'v': (0x6b, 0x71, 0x78)}   # silver (grille, hoses): unpainted
+# Gold (the robot's, 2026-11-15, user: a gold recipe of its own, so it keeps its colour: no paint): eight shades
+# '0' (darkest) .. '7' (brightest), one per steel shade z s p l e h g w (GOLD maps them), so a style is drawn in the
+# steel letters and swapped at the end. Digits: the only letters free in frame_model's PAL + the iron's; none of
+# them a reserved glow colour (make-glowmasks.py).
+GOLD = dict(zip('zsplehgw', '01234567'))
+EXTRA.update({'0': (0x3a, 0x2a, 0x0c), '1': (0x5e, 0x42, 0x0f), '2': (0x8a, 0x5e, 0x12), '3': (0xb0, 0x7a, 0x14),
+              '4': (0xd4, 0x9a, 0x1a), '5': (0xe9, 0xb8, 0x27), '6': (0xf8, 0xd8, 0x4a), '7': (0xff, 0xf7, 0xa8)})
 
 
 def rrect(g, i0, j0, i1, j1, c, cut=1):
@@ -855,27 +862,69 @@ def noble():
 
 
 # ---------------------------------------------------------------- robot (Guy-Manuel's helmet, Daft Punk)
+# Round 2 (2026-11-15, ref .scratch/helm7/robot/ref.jpg, the xcoser replica: front, side, back): the reference's big
+# shapes: one tall dark visor over nearly the whole front (its top corners rounded off, the dome), a thin frame over
+# it, a deep chin band under it; round the corners the visor wraps onto the sides as a D, an ear fin following its
+# back edge with the disc (a ring round a lit boss) and the engraved panel under it; on the top and back a raised
+# panel (two grooves front to back, closing over the back's band), the standard neck guard. All in gold (user: its
+# own recipe with gold, so it doesn't take the paint): drawn in the steel letters, swapped to GOLD at the end.
+# Draft knob ROBOT_WRAP: 'wrap' (the glass round the corners onto the sides, as the reference) | 'frame' (a gold
+# strip down each front corner, the glass on the front only, the side plain round the ear plate).
+ROBOT_WRAP = os.environ.get('ROBOT_WRAP', 'wrap')
+# ROBOT_GUARD: the standard neck guard 'slate' (as every helmet) | 'gold' (its shades swapped into the gold).
+ROBOT_GUARD = os.environ.get('ROBOT_GUARD', 'slate')
+ROBOT_DISC_Y = float(os.environ.get('ROBOT_DISC_Y', '7.5'))   # the ear disc's centre row (texel coords)
+
+
 def robot():
-    """Smooth: one big dark visor (rounded) in a framing ring (lit top-left inside edge, shade bottom-right), nothing
-    else on the front; an ear disc on each side; a plain back and top (a single seam low on the back)."""
+    wrap = ROBOT_WRAP == 'wrap'
     f = shade(blank())
-    rrect(f, 1, 3, 17, 15, 'V', cut=3)                                     # wide, rounded (its frame on the edges)
+    if wrap: rows = {2: (5, 13), 3: (3, 15), 4: (1, 17), **{j: (0, 18) for j in range(5, 13)}, 13: (1, 17)}
+    else: rows = {2: (6, 12), 3: (4, 14), 4: (3, 15), **{j: (2, 16) for j in range(5, 13)}, 13: (3, 15)}
+    for j, (a, b_) in rows.items(): rect(f, a, j, b_, j + 1, 'V')     # tall, its top rounded off (the dome)
     outline(f, 'x')
-    pts = [(i, j) for j in range(N) for i in range(N) if f[j][i] == 'x']
-    for i, j in pts:                                                      # the frame round the border, lit / shaded
-        for di, dj in ((-1, 0), (1, 0), (0, -1), (0, 1)):
-            a, b_ = i + di, j + dj
-            if 0 <= a < N and 0 <= b_ < N and f[b_][a] not in 'Vx':
-                f[b_][a] = 'g' if (di < 0 or dj < 0) else 'p'
+    for i in range(N):                                                    # the chin band: its lit top, mid, shade
+        f[15][i], f[16][i], f[17][i] = 'g', 'e', 'l'
     glint(f)
-    e = shade(blank())
-    disc(e, 9, 9, 5.5, 'e', ring='p', rw=1.4, light=True)                 # the ear disc
-    disc(e, 9, 9, 2.6, 'h', ring='l', rw=1.0)
-    disc(e, 9, 9, 1.0, 'p')
-    east, west = sides(e)
+    e = shade(blank())                                                    # east: column 0 at the back
+    d = {5: (15, 18), 6: (14, 18), **{j: (13, 18) for j in range(7, 12)}, 12: (14, 18)}
+    for j, (a, b_) in d.items(): rect(e, a, j, b_, j + 1, 'V')
+    outline(e, 'x')
+    x0, x1, y0, y1 = 5, 12, 3, 16                                         # the ear plate behind the glass's D: a
+    rect(e, x0, y0, x1, y1, 'e')                                          # raised slab, lit top / back edges, shaded
+    for i in range(x0, x1): e[y0][i], e[y1 - 1][i] = 'g', 'p'             # front / bottom (light from the viewer's
+    for j in range(y0 + 1, y1 - 1): e[j][x0], e[j][x1 - 1] = 'h', 'l'     # upper left)
+    for i in range(x0 - 1, x1): e[y0 - 1][i] = e[y0 - 1][i] if i < 0 else 'p'   # its seam round the top / back
+    for j in range(y0, y1): e[j][x0 - 1] = 'p'
+    cx, cy = (x0 + x1) / 2, ROBOT_DISC_Y                                  # the reference's disc: a groove ring round
+    disc(e, cx, cy, 3.3, 'h', ring='p', rw=1.0)                           # a lit boss
+    disc(e, cx, cy, 1.6, 'g', ring='l', rw=0.7)
+    for i in range(x0 + 1, x1 - 1):                                       # the engraved panel under it (its LED
+        e[12][i], e[14][i] = 'p', 'p'                                     # grid: dots between two grooves)
+        e[13][i] = 'h' if (i - x0) % 2 else 'p'
+    if not wrap:                                                          # the glass's D in gold
+        for j in range(N):
+            for i in range(N):
+                if e[j][i] in 'Vx': e[j][i] = 'e'
+    neck_guard(e, GUARD_WRAP)
     b = shade(blank())
-    seam(b, 14, 1, 17)
-    return dict(north=out(f), south=out(b), east=east, west=west, up=out(plain_top()))
+    for j in range(0, 9):                                                 # the raised panel's grooves down the back
+        b[j][3], b[j][4], b[j][14], b[j][15] = 'p', 'h', 'p', 'h'          # (a dark line, its lit far wall)
+    for i in range(4, 15): b[9][i], b[10][i] = 'p', 'h'                   # closing over the band
+    b[9][3] = b[9][14] = 'p'
+    neck_guard(b, [N] * len(GUARD_ROWS))
+    if ROBOT_GUARD == 'gold':                                             # the neck guard in gold too
+        for g, reach in ((e, GUARD_WRAP), (b, [N, N])):
+            for j in range(12, N):
+                for i in range(N):
+                    g[j][i] = {'n': 'l', 'm': 'p', 'x': 's', 'k': 's'}.get(g[j][i], g[j][i])
+    top = plain_top()
+    for j in range(3, N):                                                 # the same grooves over the top (world x
+        top[j][3], top[j][4], top[j][14], top[j][15] = 'p', 'h', 'p', 'h'  # as the back's), closing above the visor
+    for i in range(4, 14): top[3][i], top[4][i] = 'p', 'h'
+    east, west = sides(e)
+    gold = lambda rows_: [''.join(GOLD.get(c, c) for c in r) for r in rows_]
+    return dict(north=gold(f), south=gold(b), east=gold(east), west=gold(west), up=gold(top))
 
 
 # ---------------------------------------------------------------- hunter (Samus, Smash Bros. Ultimate)
