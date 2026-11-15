@@ -75,7 +75,11 @@ public final class ModItems {
     public static final DeferredItem<SuitPartItem> SUIT_LEG = ITEMS.registerItem("suit_leg",
             props -> new SuitPartItem(props, "item.power_suits.suit_part.tooltip"), props -> props.stacksTo(1));
     /** The helmet: its look (design sec. 4c) is a data component, set at a smithing table (SuitHelmetItem). */
-    public static final DeferredItem<SuitHelmetItem> SUIT_HELMET = ITEMS.registerItem("suit_helmet", SuitHelmetItem::new, props -> props.stacksTo(1));
+    /** It wears like the armour pieces (an iron helmet's 165) but never breaks off: worn out it stays on, broken
+     *  (SuitHelmetItem.isBroken), until an anvil repairs it with iron ingots. */
+    public static final DeferredItem<SuitHelmetItem> SUIT_HELMET = ITEMS.registerItem("suit_helmet", SuitHelmetItem::new, props -> props
+                    .durability(SuitHelmetItem.DURABILITY)
+                    .repairable(Items.IRON_INGOT));
 
     // The helmet styles' smithing templates (design sec. 4c, 2026-10-22): Easter eggs found in structure chests.
     public static final DeferredItem<HelmetTemplateItem> PROTECTOR_TEMPLATE = template(HelmetStyle.PROTECTOR);

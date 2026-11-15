@@ -168,6 +168,9 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
     /** Is a helmet in its slot: clients draw it (or not) and know whether the suit is sealed. */
     private static final EntityDataAccessor<Boolean> HELMET =
             SynchedEntityData.defineId(PowerSuitEntity.class, EntityDataSerializers.BOOLEAN);
+    /** The helmet is worn out (SuitHelmetItem.isBroken): no seal (clients show the seal), it still carries the mind. */
+    private static final EntityDataAccessor<Boolean> HELMET_BROKEN =
+            SynchedEntityData.defineId(PowerSuitEntity.class, EntityDataSerializers.BOOLEAN);
     /** The worn helmet's style (HelmetStyle ordinal, -1 = the standard helmet or none): clients draw its bone. */
     private static final EntityDataAccessor<Byte> HELMET_STYLE =
             SynchedEntityData.defineId(PowerSuitEntity.class, EntityDataSerializers.BYTE);
@@ -254,6 +257,7 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
         builder.define(RAIL_END, new Vector3f());
         builder.define(SOCKET_ITEM, ItemStack.EMPTY);
         builder.define(HELMET, false);
+        builder.define(HELMET_BROKEN, false);
         builder.define(HELMET_STYLE, (byte) -1);
         builder.define(STUNNED, false);
         builder.define(MIND, (byte) SuitMind.FRIENDLY.ordinal());
@@ -495,6 +499,7 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
                     this.inventory.getItem(FUEL_SLOT), this.level()));
             this.entityData.set(SOCKET_ITEM, this.inventory.getItem(SOCKET_SLOT).copy());
             this.entityData.set(HELMET, !this.inventory.getItem(HELMET_SLOT).isEmpty());
+            this.entityData.set(HELMET_BROKEN, SuitHelmetItem.isBroken(this.inventory.getItem(HELMET_SLOT)));
             HelmetStyle style = SuitHelmetItem.style(this.inventory.getItem(HELMET_SLOT));
             this.entityData.set(HELMET_STYLE, (byte) (style == null ? -1 : style.ordinal()));
             SuitEngine engine = SuitEngine.of(this.inventory.getItem(ENGINE_SLOT));
@@ -527,15 +532,20 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
         return this.entityData.get(HELMET);
     }
 
+    /** Both sides: the helmet in its slot is worn out (no armour points, no seal; the mind still runs). */
+    public boolean isHelmetBroken() {
+        return this.entityData.get(HELMET_BROKEN);
+    }
+
     /** Both sides: the worn helmet's style (design sec. 4c), null for the standard one (or no helmet). */
     public @Nullable HelmetStyle getHelmetStyle() {
         return HelmetStyle.byId(this.entityData.get(HELMET_STYLE));
     }
 
-    /** Both sides: running with its helmet and all five armour pieces on (design sec. 10, 2026-11-14; the helmet alone
-     *  until then), so fire, frost, harmful effects and water are kept out (SuitSeal). */
+    /** Both sides: running with its helmet (not broken) and all five armour pieces on (design sec. 10, 2026-11-14; the
+     *  helmet alone until then), so fire, frost, harmful effects and water are kept out (SuitSeal). */
     public boolean isSealed() {
-        return this.isPowered() && this.hasHelmet() && this.armour.fullSet();
+        return this.isPowered() && this.hasHelmet() && !this.isHelmetBroken() && this.armour.fullSet();
     }
 
     /** Powered and finished standing up: allowed to move, jump and use tools. */

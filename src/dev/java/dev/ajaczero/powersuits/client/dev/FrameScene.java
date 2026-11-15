@@ -40,11 +40,11 @@ import net.neoforged.fml.loading.FMLPaths;
  * the frame's arm) and looking down (nothing of his body, like vanilla), then the iron armour going on piece by piece
  * from the bare frame (each in its part's frame's place), the full set from behind, the side and at night, the cockpit
  * in it (the seal mark lit) and a leg piece off again, then hits wearing the pieces (a nearly worn-out arm piece
- * breaking off) and four rogues in their rolled armour mixes. Shots ap_frame_*.png.
+ * breaking off, the helmet worn out with it but staying on, broken) and four rogues in their rolled armour mixes. Shots ap_frame_*.png.
  * Log run/autopilot_frame.csv per tick: the suit's hitbox, how high the pilot's eyes ride above the suit (1.98: his
  * own eyes in the frame, ModEntities), the client's walk animation (position, speed), the parked frame's power and
  * the pilot's skin model (wide / slim: which frame build is drawn), the armour (pieces, points, sealed) on the client and
- * the server, the hull and two pieces' wear.
+ * the server, the hull, two pieces' and the helmet's wear, the helmet broken (client).
  */
 final class FrameScene {
     private static BufferedWriter csv;
@@ -179,11 +179,14 @@ final class FrameScene {
             case 880 -> armour(mc, 4, true); // the full set again
             // Wear (2026-11-14): each hit on the armoured frame wears every piece (the CSV's wear columns) and costs the
             // hull what the armour lets through; the left arm's piece, nearly worn out, breaks on the second hit (its
-            // break sound, iron bits flying) and that arm is bare frame again, unsealed.
+            // break sound, iron bits flying) and that arm is bare frame again, unsealed; the helmet wears out with it
+            // but stays on, broken (no armour, no seal: the visor's seal mark goes dark).
             case 882 -> { phase = "wear"; AutoPilot.onServer(mc, p -> {
                               if (p.getVehicle() instanceof PowerSuitEntity suit) {
                                   ItemStack arm = suit.getInventory().getItem(PowerSuitEntity.LEFT_ARM_SLOT);
                                   arm.setDamageValue(arm.getMaxDamage() - 3);
+                                  ItemStack helmet = suit.getInventory().getItem(PowerSuitEntity.HELMET_SLOT);
+                                  helmet.setDamageValue(helmet.getMaxDamage() - 3); // breaks with it, stays on
                                   suit.getInventory().setChanged();
                                   suit.setHealth(suit.getMaxHealth());
                               } }); }
@@ -196,9 +199,11 @@ final class FrameScene {
                               } });
             case 901 -> AutoPilot.shot(mc, "frame_wear_break");
             case 926 -> AutoPilot.shot(mc, "frame_wear_after");
+            case 927 -> { mc.setCameraEntity(mc.player); DevUtil.hideGui(mc, false); mc.options.setCameraType(CameraType.FIRST_PERSON); }
+            case 947 -> AutoPilot.shot(mc, "frame_wear_cockpit"); // (after the visor's warm-up) the HUD's seal shield faded: the helmet is broken
             // Rogues in armour mixes (rolled once each by SuitBrain.equipRogue; no tools: they just stand): four in a
             // row in front of the pilot, their pieces counted into the phase column.
-            case 930 -> { phase = "rogue_mixes"; AutoPilot.onServer(mc, p -> {
+            case 950 -> { phase = "rogue_mixes"; AutoPilot.onServer(mc, p -> {
                               for (int i = 0; i < 4; i++) {
                                   PowerSuitEntity r = ModEntities.POWER_SUIT.get().create(p.level(), EntitySpawnReason.COMMAND);
                                   r.setMind(SuitMind.ROGUE);
@@ -208,12 +213,12 @@ final class FrameScene {
                                   p.level().addFreshEntity(r);
                                   rogues[i] = r;
                               } }); }
-            case 932 -> camera(mc, home.add(0, 2.2, 1.2), home.add(0, 1.3, 7));
-            case 936 -> { StringBuilder mix = new StringBuilder("rogue_mixes");
+            case 952 -> camera(mc, home.add(0, 2.2, 1.2), home.add(0, 1.3, 7));
+            case 956 -> { StringBuilder mix = new StringBuilder("rogue_mixes");
                           for (PowerSuitEntity r : rogues) { mix.append(r == null ? "_-" : "_" + r.armour().pieces()); }
                           phase = mix.toString(); }
-            case 946 -> AutoPilot.shot(mc, "frame_rogue_mixes");
-            case 948 -> { AutoPilot.onServer(mc, p -> {
+            case 966 -> AutoPilot.shot(mc, "frame_rogue_mixes");
+            case 968 -> { AutoPilot.onServer(mc, p -> {
                               for (int i = 0; i < 4; i++) {
                                   if (rogues[i] != null) { rogues[i].discard(); rogues[i] = null; }
                               } });
@@ -254,7 +259,7 @@ final class FrameScene {
         });
         try {
             csv = Files.newBufferedWriter(FMLPaths.GAMEDIR.get().resolve("autopilot_frame.csv"));
-            csv.write("tick,phase,bb_width,bb_height,eye_above_suit,walk_pos,walk_speed,speed,parked_powered,pilot_skin,tool,tool_running,rotor,lamp,armour_pieces,armour_points,sealed,server_armour_pieces,server_armour_points,server_sealed,server_hull,torso_wear,left_arm_wear\n");
+            csv.write("tick,phase,bb_width,bb_height,eye_above_suit,walk_pos,walk_speed,speed,parked_powered,pilot_skin,tool,tool_running,rotor,lamp,armour_pieces,armour_points,sealed,server_armour_pieces,server_armour_points,server_sealed,server_hull,torso_wear,left_arm_wear,helmet_wear,helmet_broken\n");
         } catch (IOException e) {
             PowerSuits.LOGGER.error("frame csv", e);
         }
@@ -325,7 +330,7 @@ final class FrameScene {
         var server = mc.getSingleplayerServer() == null ? null : mc.getSingleplayerServer().getPlayerList().getPlayer(mc.player.getUUID());
         PowerSuitEntity serverSuit = server != null && server.getVehicle() instanceof PowerSuitEntity v ? v : null;
         try {
-            csv.write(String.format(Locale.ROOT, "%d,%s,%.3f,%.3f,%.3f,%.3f,%.3f,%.2f,%s,%s,%s,%s,%.1f,%s,%d,%.1f,%s,%s,%s,%s,%s,%s,%s%n", s, phase, suit.getBbWidth(), suit.getBbHeight(),
+            csv.write(String.format(Locale.ROOT, "%d,%s,%.3f,%.3f,%.3f,%.3f,%.3f,%.2f,%s,%s,%s,%s,%.1f,%s,%d,%.1f,%s,%s,%s,%s,%s,%s,%s,%s,%s%n", s, phase, suit.getBbWidth(), suit.getBbHeight(),
                     mc.player.getEyeY() - suit.getY(), suit.walkAnimation.position(), suit.walkAnimation.speed(),
                     suit.animator().getVisualSpeed(), parkedClient instanceof PowerSuitEntity c ? c.isPowered() : "-",
                     mc.player.getSkin().model().getSerializedName(), // slim = the frame's slim build
@@ -338,7 +343,8 @@ final class FrameScene {
                     serverSuit == null ? "-" : serverSuit.isSealed(),
                     serverSuit == null ? "-" : String.format(Locale.ROOT, "%.1f", serverSuit.getHealth()),
                     serverSuit == null ? "-" : wear(serverSuit, PowerSuitEntity.TORSO_SLOT),
-                    serverSuit == null ? "-" : wear(serverSuit, PowerSuitEntity.LEFT_ARM_SLOT)));
+                    serverSuit == null ? "-" : wear(serverSuit, PowerSuitEntity.LEFT_ARM_SLOT),
+                    serverSuit == null ? "-" : wear(serverSuit, PowerSuitEntity.HELMET_SLOT), suit.isHelmetBroken()));
         } catch (IOException ignored) {
             // closed
         }

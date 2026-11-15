@@ -230,6 +230,8 @@
   "item.power_suits.suit_helmet.tooltip": "Put it on a Power Suit: right-click the suit with it, or use the helmet slot in its menu. With all five armour pieces on, it seals the suit (fire, frost, poison, air under water) and the suit's machine mind only runs with it on.",
   "item.power_suits.suit_helmet.protector": "Protector Helmet",
   "item.power_suits.suit_helmet.protector.flavour": "\"Would you kindly keep her safe?\"",
+  "item.power_suits.suit_helmet.broken": "%s (broken)",
+  "item.power_suits.suit_helmet.broken.tooltip": "Broken: no armour, no seal. Repair it at an anvil with iron ingots.",
   "item.power_suits.suit_helmet.spartan": "Spartan Helmet",
   "item.power_suits.suit_helmet.spartan.flavour": "\"Wake me when you need me.\"",
   "item.power_suits.suit_helmet.noble": "Noble Helmet",

@@ -2797,6 +2797,52 @@ public final class PowerSuitTests {
         });
     }
 
+    /** The helmet wears like the pieces but stays on when worn out (user's pick A, 2026-11-14): broken, it gives no
+     *  armour and no seal, the machine mind still runs (an empty suit stays powered: it needs a helmet); further hits
+     *  leave it be; its name says so; iron ingots repair it at an anvil, and smithing a style keeps the wear. */
+    @SuitTest(timeoutTicks = 30)
+    public static void wornOutHelmetStaysOnBroken(GameTestHelper helper) {
+        PowerSuitEntity suit = fueledSuit(helper, new ItemStack(Items.COAL, 4));
+        armoured(suit);
+        ItemStack helmet = suit.getInventory().getItem(PowerSuitEntity.HELMET_SLOT);
+        helper.assertTrue(helmet.getMaxDamage() == SuitHelmetItem.DURABILITY, "an iron helmet's durability, got " + helmet.getMaxDamage());
+        helmet.setDamageValue(helmet.getMaxDamage() - 1);
+        DamageSource hit = zombieHit(helper, new BlockPos(4, 2, 7));
+        helper.runAfterDelay(3, () -> {
+            helper.assertTrue(suit.isSealed() && !suit.isHelmetBroken(), "sealed before the hit");
+            if (wearPerHit(8.0F) == 0) {
+                helper.succeed(); // wear switched off in the config
+                return;
+            }
+            suit.hurtServer(helper.getLevel(), hit, 8.0F);
+            ItemStack worn = suit.getInventory().getItem(PowerSuitEntity.HELMET_SLOT);
+            helper.assertTrue(worn == helmet && worn.getDamageValue() == worn.getMaxDamage(), "the helmet stays on, worn out, got " + worn);
+            helper.assertTrue(SuitHelmetItem.isBroken(worn) && suit.isHelmetBroken(), "broken, on both sides");
+            helper.assertTrue(worn.getHoverName().getContents() instanceof TranslatableContents t
+                    && t.getKey().equals("item.power_suits.suit_helmet.broken"), "named broken, got " + worn.getHoverName());
+            helper.assertTrue(!suit.isSealed(), "a broken helmet doesn't seal");
+            assertArmour(helper, suit, fullIronArmour() - PowerSuitsConfig.HELMET_ARMOUR.get(), "nor protect");
+            helper.assertTrue(suit.hasHelmet() && suit.isPowered(), "the mind still runs (an empty suit stays powered)");
+            suit.setInvulnerableTime(0);
+            suit.hurtServer(helper.getLevel(), hit, 8.0F);
+            helper.assertTrue(suit.getInventory().getItem(PowerSuitEntity.HELMET_SLOT) == helmet && helmet.getDamageValue() == helmet.getMaxDamage(),
+                    "more hits leave it as it is");
+            helper.assertTrue(helmet.isValidRepairItem(new ItemStack(Items.IRON_INGOT)), "iron ingots repair it at an anvil");
+            ItemStack spartan = smith(helper, new ItemStack(ModItems.SPARTAN_TEMPLATE.get()), helmet, new ItemStack(Items.TOTEM_OF_UNDYING));
+            helper.assertTrue(SuitHelmetItem.style(spartan) == HelmetStyle.SPARTAN && SuitHelmetItem.isBroken(spartan),
+                    "a style keeps the wear, got " + spartan);
+            helper.assertTrue(spartan.getHoverName().getContents() instanceof TranslatableContents t
+                    && t.getKey().equals("item.power_suits.suit_helmet.broken") && t.getArgs()[0] instanceof Component style
+                    && style.getContents() instanceof TranslatableContents s && s.getKey().equals("item.power_suits.suit_helmet.spartan"),
+                    "\"Spartan Helmet (broken)\", got " + spartan.getHoverName());
+            helmet.setDamageValue(0); // what the anvil does
+            suit.getInventory().setChanged();
+            helper.assertTrue(suit.isSealed() && !suit.isHelmetBroken(), "repaired, it seals again");
+            assertArmour(helper, suit, fullIronArmour(), "and protects");
+            helper.succeed();
+        });
+    }
+
     /** Rogues come in armour mixes (design sec. 10): rolled once, so a piece knocked off doesn't grow back, and the roll
      *  survives saving; a defeated rogue still drops only its tool (defeatedRogueDropsOnlyItsTool). */
     @SuitTest(timeoutTicks = 20)

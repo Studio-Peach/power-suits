@@ -17,6 +17,9 @@ import org.jetbrains.annotations.Nullable;
  * name): the item type stays power_suits:suit_helmet, so the suit, the menu and the recipes need nothing new.
  */
 public class SuitHelmetItem extends SuitPartItem {
+    /** Its durability: vanilla's iron helmet (design sec. 10, 2026-11-14). An item property, so not in the config. */
+    public static final int DURABILITY = 165;
+
     public SuitHelmetItem(Properties properties) {
         super(properties, "item.power_suits.suit_helmet.tooltip");
     }
@@ -26,15 +29,29 @@ public class SuitHelmetItem extends SuitPartItem {
         return stack.get(ModDataComponents.HELMET_STYLE.get());
     }
 
+    /**
+     * Worn out (design sec. 10, user 2026-11-14): a helmet doesn't break off like the armour pieces (SuitArmour.wear
+     * stops its damage at the max), it stays on, broken: no armour points and no seal, but the machine mind still runs
+     * (a parked suit mustn't die from scratches). An anvil with iron ingots repairs it.
+     */
+    public static boolean isBroken(ItemStack stack) {
+        return stack.getItem() instanceof SuitHelmetItem && stack.isBroken();
+    }
+
     @Override
     public Component getName(ItemStack stack) {
-        // A name typed in at an anvil still wins: vanilla draws the custom name over this one.
+        // A name typed in at an anvil still wins: vanilla draws the custom name over this one (the tooltip still says
+        // it's broken).
         HelmetStyle style = style(stack);
-        return style == null ? super.getName(stack) : Component.translatable("item.power_suits.suit_helmet." + style.getSerializedName());
+        Component name = style == null ? super.getName(stack) : Component.translatable("item.power_suits.suit_helmet." + style.getSerializedName());
+        return isBroken(stack) ? Component.translatable("item.power_suits.suit_helmet.broken", name) : name; // "Spartan Helmet (broken)"
     }
 
     @Override
     public void addTooltip(ItemStack stack, TooltipContext context, Consumer<Component> tooltip, TooltipFlag flag) {
+        if (isBroken(stack)) {
+            tooltip.accept(Component.translatable("item.power_suits.suit_helmet.broken.tooltip").withStyle(ChatFormatting.RED));
+        }
         super.addTooltip(stack, context, tooltip, flag);
         HelmetStyle style = style(stack);
         if (style != null) {
