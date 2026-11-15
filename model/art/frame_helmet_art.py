@@ -606,74 +606,115 @@ def protector():
 
 
 # ---------------------------------------------------------------- spartan (the Master Chief, Halo)
-# Rounds 2-4 (2026-11-15, after Halo Infinite references, .scratch/helm7/spartan/ref*.jpg; in git, 88eecc6 / 27350e1):
-# every detail of the references at 18 x 18 texels (cheek vents, lamps, chin plate, ear vent, nape port, prongs) was
-# "way too busy". Round 5 (2026-11-15, user: start again from the old suit's spartan, power_suit.bbmodel helm_spartan,
-# .scratch/helm7/spartan/old_suit_spartan.jpg): its three things only, the shape doing the work: a plain shell, a brow
-# band standing out round the front and the sides' front over the visor (the outer layer, 0.5 px, as the old one's
-# 1 px band), the visor (the standard glass, as every helmet's: user) flat under it, its bottom edge stepped down in the
-# middle, and a narrower mouthpiece under it with a ridge down its middle, painted flat; the standard neck guard.
-# SPARTAN_BROW: 'band' (the old suit's: one straight band) | 'prongs' (user's reading of the reference: the band's
-# outer thirds raised as two prongs on the layer, the middle third left on the helmet, 0.5 px in). Picked: prongs
-# (2026-11-15, user), but short: not up to the top of the face (first drafted from the top's back over the top and
-# down the front, f63e448). Round 6 (user): the mouthpiece on the outer layer too, and the visor lower (it sat high:
-# the brow, visor and mouthpiece down a row).
-# Draft knob SPARTAN_PRONG_TOP: the prongs' top row on the front (and the wings' on the sides): '2' | '3'.
-SPARTAN_BROW = os.environ.get('SPARTAN_BROW', 'prongs')
-assert SPARTAN_BROW in ('band', 'prongs'), SPARTAN_BROW
-SPARTAN_PRONG_TOP = int(os.environ.get('SPARTAN_PRONG_TOP', '3'))   # picked: 3 (2026-11-15, user)
-# Round 8 (2026-11-15, user: the snout too long; the visor's whole outline seen, not cut off by the layer's parts):
-# the band up a row (rows 4-5, the prongs from row 3 down to it), clear of the visor's top border (row 6); the snout
-# inside the notch's border (2 px wide, columns 7-10) and 2 px long (rows 12-15), not to the bottom.
-SPARTAN_BAND = 4                           # the band's rows (4 lit, 5 its body); the visor's border row 6
-# Round 7 (2026-11-15, user, back to the first reference, ref.png: the snout narrower; the visor an n: a flat top, its
-# bottom cut in toward the middle where the snout goes up into it): the visor's rows per column from the outer edge
-# to the middle (mirrored; end exclusive): its outer bottom corner rounded, down to row 12 either side, the middle 3
-# columns (the snout's notch) only to row 10; the snout 3 px wide (6 texels; was 5 px) up into the notch from row 11.
-SPARTAN_GLASS = [(7, 11), (7, 12), (7, 13), (7, 13), (7, 13), (7, 13), (7, 11), (7, 11), (7, 11)]
-SPARTAN_MOUTH = (7, 12, 16)                # the snout: its columns 7-10, rows 12-15
-SPARTAN_MID = (6, 12)                      # prongs: the middle third, columns 6-11
+# Rounds 2-9 (2026-11-15, in git: 88eecc6 .. cbee522): every detail of the references (.scratch/helm7/spartan/ref*.jpg)
+# was "way too busy"; a band, prongs and a snout on a plain shell (from the old suit's) "absolute dogwater, not cool at
+# all"; outer-layer parts disliked (flat, the paint doing it, as the other helmets).
+# Round 10 (2026-11-15, user: "make this helmet one of our stars", ref.png again): restarted from the reference's face
+# read as big shapes in value, drawn texel by texel (half maps, mirrored): a brow over the visor whose lower edge has
+# the reference's three parts (the centre tab hanging down over the visor, the lip either side, the wings a row lower
+# at the corners), its deep shadow row under it; the visor wide, wrapping round the corners onto the sides (user: likes
+# the wrap), its bottom closed in at the corners by the cheeks rising to the lamps (two silver dots on a slate plate
+# round each front corner) and dipping in two lobes either side of the slate mouthpiece (a lit top in the visor's
+# notch, a chevron); the cheeks' lit edges falling from the lamps to the mouthpiece (the reference's V jaw) over a
+# narrow chin plate. The top's centre channel (the reference's recessed strip between two ridges) runs from the brow
+# tab over the top and down the back to a band round the back; the brow's lip sweeps back along the sides and down
+# into that band (ref2's line), so the head reads as one piece; a seam behind the lamps closes the cheek piece.
+# A/B glass on the half maps: 'A' a left-facing (lit) edge, 'B' a right-facing (shaded) one, swapped by the mirror.
 
 
-# Round 9 (2026-11-15, user: not digging the outer layer: flat, the paint doing it, as the other helmets): the band,
-# the prongs and the snout painted on the helmet (no layer); the prongs told from the band's middle third by a seam
-# down either side of it.
+def mirror_half(half, lit='g', shaded='p'):
+    """An 18-wide face from its left half (9 letters a row, spaces ignored), mirrored about the centre; 'A' / 'B' are
+    the lit / shaded vertical edges (a raised strip's left / right side), swapped on the right half so the light still
+    comes from the upper left."""
+    swap = {'A': 'B', 'B': 'A'}
+    rows = []
+    for r in half:
+        r = r.replace(' ', '')
+        assert len(r) == N // 2, r
+        rows.append([{'A': lit, 'B': shaded}.get(c, c) for c in r + ''.join(swap.get(c, c) for c in r[::-1])])
+    assert len(rows) == N
+    return rows
+
+
+SPARTAN_FRONT = [
+# 0  1  2  3  4  5  6  7  8
+ 'g  g  g  g  g  B  l  l  l',   # 0 rim; the top's channel (cols 6-11) running out over the front
+ 'h  h  h  h  h  B  l  l  l',   # 1
+ 'h  e  e  e  e  e  B  l  l',   # 2 narrowing
+ 'h  e  e  e  e  e  e  g  g',   # 3 the tab's lit top
+ 'h  e  g  g  g  g  g  h  h',   # 4 brow lip; tab
+ 'g  g  x  x  x  x  x  h  h',   # 5 the brow's wings a row lower; recess; tab
+ 'x  x  x  x  x  x  x  l  l',   # 6 recess under the brow; the tab's shaded bottom
+ 'V  V  V  V  V  V  V  V  V',   # 7
+ 'V  V  V  V  V  V  V  V  V',   # 8
+ 'V  V  V  V  V  V  V  V  V',   # 9  eyes
+ 'V  V  V  V  V  V  V  V  V',   # 10
+ 'x  x  V  V  V  V  V  V  V',   # 11
+ 'n  n  x  V  V  V  V  n  n',   # 12 the cheeks up at the corners; glass lobes; the mouthpiece's top in the notch
+ 'k  t  g  x  x  x  x  k  k',   # 13 lamps; the cheek's lit edge falling toward the chin
+ 'k  t  e  g  g  x  n  m  x',   # 14 the mouthpiece's chevron
+ 'x  x  e  e  e  g  x  k  m',   # 15
+ 'l  l  e  e  e  e  p  g  g',   # 16 chin
+ 'p  p  l  l  l  l  p  h  h',   # 17
+]
+
+# east (column 0 at the back, 17 at the front)
+SPARTAN_SIDE = [
+ 'gggggggggggggggggg',
+ 'hhhhhhhhhhhhhhhhhh',
+ 'eeeeeeeeeeeeeeeeee',
+ 'eeeeeeeeeeeeeeeeee',
+ 'eeeeeeeeeeeeeeeeee',
+ 'eeeeeeeeeeeeeeeegg',   # 5
+ 'eeeeeeeeggggggggxx',   # 6 the wing's lip run back
+ 'eeeeggggeexxVVVVVV',   # 7
+ 'ggggeeeeeexVVVVVVV',
+ 'eeeeeeeeeexVVVVVVV',
+ 'eeeeeeeeeeexVVVVVV',   # 10
+ 'eeeeeeeeeeeexxxxxx',   # 11
+ 'eeeeeeeeeeepgeeenn',   # 12 the cheek piece's back seam; lamp plate
+ 'eeeeeeeeeeepheeekk',
+ 'eeeeeeeeeeepheeetk',
+ 'eeeeeeeeeeepheeexx',
+ 'llllllllllllllllll',
+ 'pppppppppppppppppp',
+]
+
+SPARTAN_BACK = [
+# 0  1  2  3  4  5  6  7  8
+ 'g  g  g  g  g  g  B  l  l',
+ 'h  h  h  h  h  h  B  l  l',
+ 'h  e  e  e  e  e  B  l  l',
+ 'h  e  e  e  e  e  B  l  l',
+ 'h  e  e  e  e  e  B  l  l',
+ 'h  e  e  e  e  e  e  g  g',
+ 'h  e  e  e  e  e  e  e  e',
+ 'h  e  e  e  e  e  e  e  e',
+ 'g  g  g  g  g  g  g  g  g',
+ 'l  l  l  l  l  l  l  l  l',
+ 'h  e  e  e  e  e  e  e  e',
+ 'h  e  e  e  e  e  e  e  e',
+ 'h  e  e  e  e  e  e  e  e',
+ 'h  e  e  e  e  e  e  e  e',
+ 'h  e  e  e  e  e  e  e  e',
+ 'h  e  e  e  e  e  e  e  e',
+ 'l  l  l  l  l  l  l  l  l',
+ 'p  p  p  p  p  p  p  p  p',
+]
 
 
 def spartan():
-    f = shade(blank())
-    for i, rows in enumerate(SPARTAN_GLASS):                              # the visor (an n)
-        for j in range(*rows): f[j][i] = f[j][N - 1 - i] = 'V'
-    outline(f, 'x')
-    m0, top, bottom = SPARTAN_MOUTH
-    for j in range(top, bottom):                                          # the snout: its lit top edge, the ridge
-        for i in range(m0, N - m0):                                       # (lit, shaded) down its middle, its bottom
-            c = 'g' if j == top else 'h' if i == N // 2 - 1 else 'l' if i == N // 2 else 'e'   # row shaded
-            f[j][i] = {'e': 'l', 'h': 'e', 'l': 'p'}.get(c, c) if j == bottom - 1 else c
+    f = mirror_half(SPARTAN_FRONT)
     glint(f)
-    e = shade(blank())                                                    # the side (east: column 0 at the back)
-    for i, rows in {16: (7, 11), 17: (7, 11), 14: (7, 9), 15: (7, 9)}.items():
-        for j in range(*rows): e[j][i] = 'V'                              # the visor's wrap, stepped as the front's
-    outline(e, 'x')
+    e = [list(r) for r in SPARTAN_SIDE]
+    assert len(e) == N and all(len(r) == N for r in e)
     neck_guard(e, GUARD_WRAP)
-    b = shade(blank())
+    b = mirror_half(SPARTAN_BACK)
     neck_guard(b, [N] * len(GUARD_ROWS))
     t = plain_top()
-    B = SPARTAN_BAND
-    for i in range(N): f[B][i], f[B + 1][i] = 'g', 'e'                    # the band: lit top edge, its body
-    f[B][0], f[B + 1][N - 1] = 'h', 'l'
-    for i in range(12, N): e[B][i], e[B + 1][i] = 'g', 'e'                # round the sides' front (2.75 px, the
-    e[B + 1][12] = 'l'                                                    # old one's), its end shaded
-    if SPARTAN_BROW == 'prongs':
-        a, b_ = SPARTAN_MID
-        P = SPARTAN_PRONG_TOP
-        outer = list(range(a)) + list(range(b_, N))
-        for j in range(P, B + 2):                                         # the prongs: from row P down to the
-            for i in outer:                                               # band's bottom, lit on top, the bottom
-                f[j][i] = 'g' if j == P else 'l' if j == B + 1 else 'h' if i == 0 else 'e'   # row shaded (the lip)
-            for i in range(12, N): e[j][i] = 'g' if j == P else 'l' if j == B + 1 else 'e'   # round the corner
-        for i in range(a, b_): f[B][i], f[B + 1][i] = 'h', 'l'            # the band's middle third, set in
-        for j in range(P, B + 2): f[j][a], f[j][b_ - 1] = 'p', 'p'        # a seam down either side of it
+    for j in range(N):                                                    # the channel front to back: its walls
+        t[j][6], t[j][11] = 'p', 'g'                                      # (shaded, lit), its floor a step down
+        for i in range(7, 11): t[j][i] = 'e'
     east, west = sides(e)
     return dict(north=out(f), south=out(b), east=east, west=west, up=out(t))
 
