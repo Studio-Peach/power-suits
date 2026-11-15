@@ -103,6 +103,9 @@ HELMET_STYLE = os.environ.get('HELMET_STYLE', 'C')
 _hex = lambda h: tuple(int(h[i:i + 2], 16) for i in range(0, len(h), 2))
 GLASS = _hex(os.environ.get('GLASS', '262c34c8'))
 GLINT = _hex(os.environ.get('GLINT', 'e8f4ff78'))   # a glint across it, top left to bottom right
+# The glass in a shadow (draft, 2026-11-15: the spartan's brow casting its shadow on the visor, letter 'W'): darker and
+# denser, still see-through (so it goes to the glass pass with the rest).
+GLASS_SHADE = _hex(os.environ.get('GLASS_SHADE', '14181de0'))
 FY = 2   # he stands on the 4 px soles (his feet at y 4): everything above the soles is lifted 2 px from the numbers below
 LEG_OUT = 0.25
 CHEST_X = {'wide': 6.0, 'slim': 5.5}[BUILD]   # the chest's half width
@@ -309,7 +312,7 @@ SUIT_HELMET = ['helmet_shell', 'visor', 'helmet_brow', 'cheek_l', 'cheek_r', 'ch
 def _helmet(visor='painted'):
     if HELMET_STYLE != 'suit':
         import frame_helmet_art as helmet_art
-        sub = {'V': GLASS, 'T': GLINT}
+        sub = {'V': GLASS, 'T': GLINT, 'W': GLASS_SHADE}
         # Draft knob HELMET_BACK (C's back): 'plain' / 'guard' / 'crest' / 'vents' (frame_helmet_art.wrap_back)
         back = os.environ.get('HELMET_BACK', 'guard')
         return {f: [[sub.get(c, c) for c in r] for r in rows] for f, rows in helmet_art.faces(HELMET_STYLE, back).items()}
@@ -596,7 +599,7 @@ PAL.update(helmet_art.EXTRA)   # the styles' red and silver (frame step 7b)
 # the outer layer: helmet C's gear and brow, or a style's own outer art (the hunter's ear guards; none: no layer)
 HELMET_EXTRAS = helmet_art.extras(os.environ.get('HELMET_EXTRA', 'layer'), HELMET_STYLE) if 'helmet_armor' in SHELLS else []
 # (a layer's glass, the diver's camera lens, is the helmet's glass: V / T resolved as on the helmet)
-_glassy = lambda faces: {f: [[{'V': GLASS, 'T': GLINT}.get(c, c) for c in r] for r in rows] for f, rows in faces.items()}
+_glassy = lambda faces: {f: [[{'V': GLASS, 'T': GLINT, 'W': GLASS_SHADE}.get(c, c) for c in r] for r in rows] for f, rows in faces.items()}
 for _p in HELMET_EXTRAS: SHELLS[f"hx_{_p['name']}"] = dict(faces=_glassy(_p['faces']), compact=_p.get('hollow', False))
 # The helmet styles (frame step 7b, design sec. 4c): each picked style's helmet built beside the standard one, in its
 # own group under armor_head (helm_<style>; the standard helmet and its layer in helm_standard), the game showing the
@@ -607,7 +610,7 @@ HELMET_VARIANTS = [v for v in os.environ.get('HELMET_VARIANTS', 'hunter,protecto
     if 'helmet_armor' in SHELLS and HELMET_STYLE != 'suit' else []
 HELMET_VARIANT_EXTRAS = {}
 for _v in HELMET_VARIANTS:
-    SHELLS[f'helmet_{_v}_armor'] = dict(faces={f: [[{'V': GLASS, 'T': GLINT}.get(c, c) for c in r] for r in rows]
+    SHELLS[f'helmet_{_v}_armor'] = dict(faces={f: [[{'V': GLASS, 'T': GLINT, 'W': GLASS_SHADE}.get(c, c) for c in r] for r in rows]
                                                for f, rows in helmet_art.faces(_v).items()})
     HELMET_VARIANT_EXTRAS[_v] = helmet_art.extras('layer', _v)
     for _p in HELMET_VARIANT_EXTRAS[_v]:

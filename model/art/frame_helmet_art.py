@@ -634,6 +634,16 @@ def protector():
 # right over the visor's border, the tab's shadow under its lit top, the channel's floor down the brow a step darker;
 # the glass over the mouthpiece again (no border there), the lobes as round 16, the lamps a row lower, a dark line
 # under the mouthpiece. (SPARTAN_TAB dropped with it.)
+# Brow depth drafts (2026-11-15, user: "is there a technique for that kind of depth on the brow in pixel art?"):
+# SPARTAN_BROW 'user' (round 19: a lit lower edge) | 'form' (shaded as a rounded overhang lit from above: its top
+# lit, its face mid, its bottom turning under dark, the tab darkest) | 'plate' (a raised plate: a seam over it, a lit
+# top edge, a shaded bottom edge); SPARTAN_BROW_SHADOW 'none' | 'glass' (the brow's shadow cast on the visor: its
+# top glass row in the shade glass 'W', the tab's shadow a row deeper and a texel right, away from the light). The
+# corners (columns 0 and 17) keep the user's texels, where the side's line meets them.
+SPARTAN_BROW = os.environ.get('SPARTAN_BROW', 'user')
+SPARTAN_BROW_SHADOW = os.environ.get('SPARTAN_BROW_SHADOW', 'none')
+BROW_ROWS = {'form': {3: 'g' * 16, 4: 'e' * 16, 5: 'llllll' + 'pppp' + 'llllll'},
+             'plate': {2: 'ppppp' + 'glllpg' + 'ppppp', 3: 'g' * 16, 4: 'e' * 16, 5: 'llllll' + 'pppp' + 'llllll'}}
 SPARTAN_FRONT = [
  'gggggglllllpgggggg',   # 0 the channel down the brow (cols 5-12): lit rim, its floor, dark wall
  'hhhhhglllllpghhhhh',
@@ -741,7 +751,17 @@ def spartan_layer(f, e, b, t, parts):
 
 def spartan():
     f = [list(r) for r in SPARTAN_FRONT]
+    for j, row in BROW_ROWS.get(SPARTAN_BROW, {}).items():
+        if j == 4: row = 'hh' + row[2:-2] + 'hh'                         # (the user's lit wing ends kept)
+        f[j][1:17] = list(row) if j != 5 else list(row[:5] + 'l' + row[6:10] + 'l' + row[11:])
+    if SPARTAN_BROW_SHADOW == 'glass':
+        for i in range(N):
+            if f[7][i] == 'V': f[7][i] = 'W'
+        for i in range(8, 12): f[8][i] = 'W'
     e = [list(r) for r in SPARTAN_SIDE]
+    if SPARTAN_BROW_SHADOW == 'glass':
+        for i in range(N):
+            if e[7][i] == 'V': e[7][i] = 'W'
     b = [list(r) for r in SPARTAN_BACK]
     assert all(len(g) == N and all(len(r) == N for r in g) for g in (f, e, b))
     neck_guard(e, GUARD_WRAP)
