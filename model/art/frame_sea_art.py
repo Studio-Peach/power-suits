@@ -59,8 +59,8 @@ def lit_tube(st, x, y, side_, along):
     c = hi if side_ < -HR / 3 else lo if side_ > HR / 3 else mid
     if c == mid:
         h = (int(along * K) * 7 + int(y * K) * 13 + int(x * K) * 5) % 11
-        if st.get('bubbles') and h == 0: return 'T'
-        if st.get('foam') and h == 1: return 'T'
+        if st.get('bubbles') and h == 0: return st.get('spark', 'T')
+        if st.get('foam') and h == 1: return st.get('spark', 'T')
     return c
 
 
@@ -253,10 +253,10 @@ def tanks_back(st):
 # The breastplate covers the chest's lines (the shoulder strips, the front plate's and the back's upper ones); the
 # gauge shows in a steel ring 0.5 px proud of it, and the lower pair comes out from under its bottom edge (raw y 20),
 # round the waist (the strip) and in on the back to the tanks: frame_heart_art.build(armored=True, flat=True).
-def bezel():
+def bezel(el=None):
     """The gauge (x +-2, raw y 21-25) in a 0.5 px steel ring: lit top and left, shaded bottom and right, a dark bolt in
     each corner."""
-    g = element(gauge())
+    g = el or element(gauge())
     hx, y0, y1 = 2.5, 20.5, 25.5
     def front(x, y):
         e = g(x, y)

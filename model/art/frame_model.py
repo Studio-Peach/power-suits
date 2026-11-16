@@ -699,9 +699,11 @@ import frame_engine_art as engine_art
 import frame_radial_art as radial_art
 import frame_heart_art as heart_art
 import frame_sea_art as sea_art
+import frame_star_art as star_art
 PAL.update(radial_art.EXTRA)
 PAL.update(heart_art.EXTRA)
 PAL.update(sea_art.EXTRA)
+PAL.update(star_art.EXTRA)
 ENGINE_META = {}   # the radial's parts: their mirror / turn / shared paint (frame_radial_art.part)
 PAL.update({'F': (0xff, 0xdc, 0x6e), 'I': (0xff, 0x96, 0x32), 'J': (0xd2, 0x46, 0x19)})   # fire, lit (see engine_art)
 # Draft knob FIRE (2026-11-11): 'lit' paints the fire burning (review), 'dark' in the reserved coal colours of
@@ -753,6 +755,19 @@ if SEA_GLOW == 'dark': PAL.update(sea_art.SEA_DARK)
 if ENGINE == 'heart' and SEA != 'none':
     _back, _open, _armoured = sea_art.build(CHEST_X)
     for prefix, parts_ in (('sb_', _back), ('so_', _open)) + ((('sa_', _armoured),) if ARMOR == 'game' else ()):
+        for p in parts_:
+            k = prefix + p['name']
+            ENGINE_BOX[k] = p['box']
+            ENGINE_META[k] = p
+            if p['faces']: SHELLS[f'en_{k}'] = dict(faces=p['faces'])
+# Knob STAR ('none' / 'A' crystal / 'B' halo / 'C' pylon; 2026-11-16, user: the star reactor too, after the tidal engine's
+# diver): its own back and fronts (frame_star_art.py), group engine_star. STAR_GLOW as SEA_GLOW.
+STAR = os.environ.get('STAR', 'none')
+assert STAR in ('none', 'A', 'B', 'C'), STAR
+if os.environ.get('STAR_GLOW', 'dark') == 'dark': PAL.update(star_art.STAR_DARK)
+if ENGINE == 'heart' and STAR != 'none':
+    _back, _open, _armoured = star_art.build(STAR, CHEST_X)
+    for prefix, parts_ in (('rb_', _back), ('ro_', _open)) + ((('ra_', _armoured),) if ARMOR == 'game' else ()):
         for p in parts_:
             k = prefix + p['name']
             ENGINE_BOX[k] = p['box']
@@ -1451,14 +1466,14 @@ def alt(e):
         return ('arm_r' if e['name'].endswith('_r') else 'arm_l'), 'tool'
     if g['name'].startswith(('frame_', 'armor_')) and g['_parent']['name'] in ALT_SLOT:
         return ALT_SLOT[g['_parent']['name']], g['name'].split('_')[0] + ('_socket' if g['name'].endswith('_socket') else '')
-    if g['name'] in ('engine_open', 'engine_armored', 'sea_open', 'sea_armored'):
+    if g['name'] in ('engine_open', 'engine_armored', 'sea_open', 'sea_armored', 'star_open', 'star_armored'):
         return 'torso', 'frame' if g['name'].endswith('_open') else 'armor'
     return None
 def engine_root(e):
     """'engine' / 'engine_sea': the engine group a cube is in (None: not an engine part)."""
     g = e['_g']
     while g is not None:
-        if g['name'] in ('engine', 'engine_sea'): return g['name']
+        if g['name'] in ('engine', 'engine_sea', 'engine_star'): return g['name']
         g = g.get('_parent')
     return None
 def apart(a, b):
@@ -1524,6 +1539,11 @@ if ENGINE_BOX:
         fronts['sb_'] = sea
         fronts.update({'so_': group('sea_open', (0, 14, 0), sea), 'sa_': group('sea_armored', (0, 14, 0), sea)} if ARMOR == 'game'
                       else {'so_': sea})
+    if any(k.startswith('rb_') for k in ENGINE_BOX):   # the star reactor's likewise
+        star = group('engine_star', (0, 14, 0), _t)
+        fronts['rb_'] = star
+        fronts.update({'ro_': group('star_open', (0, 14, 0), star), 'ra_': group('star_armored', (0, 14, 0), star)} if ARMOR == 'game'
+                      else {'ro_': star})
     for k, box in ENGINE_BOX.items():
         meta = ENGINE_META.get(k)
         if meta:   # a radial part (mirrored: the left one's turns about y and z flip)
