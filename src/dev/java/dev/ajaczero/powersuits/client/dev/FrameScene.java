@@ -137,6 +137,14 @@ final class FrameScene {
             case 556 -> AutoPilot.hold(o.keyUse, true);
             case 576 -> AutoPilot.shot(mc, "frame_tool_run_chaingun");
             case 578 -> { AutoPilot.hold(o.keyUse, false); socket(mc, -1); }
+            // The right arm's tool is the attack button's (2026-11-15): the chainsaw there runs on left click alone.
+            case 580 -> { phase = "tool_run_right"; AutoPilot.onServer(mc, p -> { if (p.getVehicle() instanceof PowerSuitEntity suit)
+                              suit.getInventory().setItem(PowerSuitEntity.RIGHT_SOCKET_SLOT, new ItemStack(ModItems.CHAINSAW.get())); });
+                          AutoPilot.hold(o.keyAttack, true); }
+            case 582 -> net.neoforged.neoforge.common.NeoForge.EVENT_BUS.post(new net.neoforged.neoforge.client.event.InputEvent.InteractionKeyMappingTriggered(0, o.keyAttack, net.minecraft.world.InteractionHand.MAIN_HAND)); // the click: vanilla's startAttack posts this (a held key alone starts no attack)
+            case 586 -> AutoPilot.shot(mc, "frame_tool_run_right_chainsaw");
+            case 588 -> { AutoPilot.hold(o.keyAttack, false); AutoPilot.onServer(mc, p -> { if (p.getVehicle() instanceof PowerSuitEntity suit)
+                              suit.getInventory().setItem(PowerSuitEntity.RIGHT_SOCKET_SLOT, ItemStack.EMPTY); }); }
             // The cockpit: the empty right hand (his arm in the frame's), nothing of the body looking down.
             case 590 -> { phase = "cockpit"; mc.setCameraEntity(mc.player); DevUtil.hideGui(mc, false); o.setCameraType(CameraType.FIRST_PERSON); }
             case 604 -> AutoPilot.shot(mc, "frame_cockpit_arm");

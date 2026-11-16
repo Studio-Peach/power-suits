@@ -23,7 +23,7 @@ Working notes for agents: `AGENTS.md` (the design spec and roadmap are kept outs
 | Jump | Hold Space to charge (the suit crouches), release |
 | Climb out | Shift |
 | Pack it up | **Pack** key in the suit menu, from outside (keeps damage, name, fuel, tool, helmet, engine, armour and the power switch) |
-| Install a tool | Put a power tool (Chaingun, EM Projector, Mining Drill, Chainsaw, Flamethrower, TNT Launcher, Rail Cannon) in the menu's socket slot (right of the suit preview, between the Power and Pack keys); it appears on the suit's left arm. **While piloting, the swap-hands key (F) swaps the tool in your hand with the socket's**: keep your tools on the hotbar and change them with F (an empty hand takes the tool out) |
+| Install a tool | **The hands are detachable** (2026-11-15): each arm ends in a hand or, with a power tool (Chaingun, EM Projector, Mining Drill, Chainsaw, Flamethrower, TNT Launcher, Rail Cannon) fitted, in that tool, and **both arms can carry one at once**. The menu has a socket for each: the left arm's right of the suit preview (the suit faces you), the right arm's at the foot of the left column, the engine beside the left one. **The right arm is the main hand, so its tool is the attack button (left click)**; **the left arm is the off hand, its tool the use button (right click)**, as before. An arm without a tool is a plain hand: its items work as in vanilla. **While piloting, F moves tools between your hand and the sockets**: a tool in your hand goes to the first free socket (left, then right; both full: swaps with the left's), an empty hand takes the left's tool out first (a non-tool item with no tool fitted: vanilla's swap of the hands). In the menu, F over a tool does the same, F over a socket swaps the arms' tools. The first tool (left, then right) decides what the suit does on its own |
 | Your hand | Works as normal while piloting: the suit's right hand holds your selected item; left click punches, fights and mines, right click places, opens doors, throws potions... 1.5 blocks extra reach. No eating or drinking (you're sealed in): food in your hand counts as nothing to do, so right click goes to the tool |
 | Use the tool | Right-click when your hand has nothing to do (empty hand, a sword, aiming at the air with blocks...), like a shield in the off hand; hold it as long as you need. The tool arm raises while in use |
 | EM Projector | Hold right-click on a dropped item or mob: it's pulled in and held floating (items go into your inventory); release to throw it (into a wall, or bowling through other mobs: 10 hearts each at full speed), tap to shove. The visor marks what it can pull. 1 fuel/tick while holding, 80 per throw |
@@ -257,11 +257,11 @@ blocks of home (config `rail_guard_radius`) and whatever attacks it or its owner
 beam (it goes on past the target), and its beam never breaks blocks. Rogue suits never carry one.
 
 **Right hand**: shows your selected hotbar item and carries it forward (`hold_item`), reaching out each time
-you use it (`use_item`). It's the suit's main hand, like yours: the tools sit on the left arm. In first person
+you use it (`use_item`). It's the suit's main hand, like yours: until a tool replaces it (a power tool on the right arm takes the hand's place and the attack button; the left arm's tool takes the off hand's). In first person
 the suit's gauntlet holds it at the lower right (cockpit viewmodel). It's a normal hand: left click attacks and mines
 (at normal speed: riding doesn't count as "in the air" while the suit stands), right click uses the item. When the hand
-has nothing to do, right click goes to the socket tool instead, exactly like vanilla tries your main hand and then a
-shield in your off hand (your real off-hand item isn't used while piloting). A powered-down suit's hand can't do anything.
+has nothing to do, right click goes to the left arm's tool instead, exactly like vanilla tries your main hand and then a
+shield in your off hand (with no tool on the left arm it is a plain hand: your off-hand item works as in vanilla). A powered-down suit's hand can't do anything.
 
 **Lights**: the firebox on the backpack (under the fuel hatch) glows through its grate while the engine runs (brighter under load,
 dimmer when fuel runs low, embers dying out after shutdown), and the visor shows who is in control:
@@ -330,7 +330,8 @@ src/main/java/dev/ajaczero/powersuits/
     entity/SuitDriving.java  how it moves: the pilot's keys, walk/sprint speeds, stepping down ledges, sinking and walking
                              in water and lava, the charged jump, crawling in an EM field, the legs turning under the torso
     entity/SuitPower.java    the engine and its energy: burning fuel, flooding, free power, the lightning knock-out
-    entity/SuitSocket.java   the arm socket's tool as the suit works it: trigger (pilot / mind), cooldown, synced spin/shots
+    entity/SuitSocket.java   one arm's socket tool as the suit works it (ToolArm LEFT / RIGHT): trigger (pilot / mind), cooldown, synced spin/shots;
+                             suit.socket() = the arm being ticked or drawn (onArm), else the primary one (the first tool)
     entity/SuitBrain.java    the machine mind's state: owner, home, aim, the job its tool gives it, rogues' gear and lifetime
   entity/SuitArmour.java   the frame's armour: one piece per part (slots 5-9), protection modifiers, the synced worn tiers, the full set
     entity/SocketVisuals.java   client: the tool arm's raise and recoil, the installed tool's ToolEffects
@@ -407,7 +408,7 @@ src/main/java/dev/ajaczero/powersuits/
     VisorConfig.java         the player's own visor colour and night vision (CLIENT config, power_suits-client.toml)
     VisorVision.java         the visor's night vision (raises the lightmap's floor); the lamp (a post effect, parked for an upgrade)
     VisorPower.java          the visor's warm-up and shutdown scan (lines sweeping from the screen's middle)
-    ToolInput.java           right click the hand passes on -> socket tool (vanilla's off-hand turn)
+    ToolInput.java           the right arm's tool on left click, the left arm's on the right click the hand passes on (vanilla's off-hand turn)
     HeldItemLayer.java       draws the pilot's selected item in the suit's right hand (third person)
     SuitGlowLayer.java       the suit's lights + the tool's ToolLights (the frame's glowmasks, tinted per frame): the
                              engine's fire, the visor, the status lamp, the chaingun's lights, the pilot light

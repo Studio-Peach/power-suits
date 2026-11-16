@@ -280,3 +280,18 @@ the end and `docs/guide.md` Notes).
 - The lens / vents and the tips are reserved dark reds (`frame_em_art.RES`), lit by `TOOL_GLOW` em_core / em_arc
   (`ToolLight.EM_CORE` / `EM_ARC`). Seen in `runAutopilotFrame` (`ap_frame_tool_<tool>`); the lit states and the drum's turn
   are not filmed yet (`runAutopilotTnt` and the EM scenes still to be looked at).
+
+## Two sockets, hands detachable (2026-11-15, user)
+- Either arm ends in its hand or, with a power tool fitted, the socket the tool hangs from; both arms can carry one.
+  Saved files (ARMOR=game) hold four looks per arm: `frame_<arm>` / `armor_<arm>` (the hand) and `frame_<arm>_socket` /
+  `armor_<arm>_socket` (cubes `fr_arm_socket_shell_*`, `ar_arm_socket_*`, plus their own shoulder plate / pauldron: same
+  texture strips), shown by `ArmourBones.show(bones, worn, toolMask)`. Every tool is built on both arms: the left arm's bones keep
+  the game's names, the right's carry an `_r` (`drill_r`, `drill_bit_r`, `rail_fork_out_r`...; cubes `tl_<tool>_<part>_r`
+  share the texture strips, built with side 'r'). `export-frame.py` copies the run animations as `<name>_r` (bones renamed).
+- Clearance checks: `alt()` marks tool cubes 'tool', which are apart from the hand looks only (frame_model `apart`).
+- Code: `suit.socket()` / `getSocketStack()` / `socketVisuals()` mean the arm being ticked or drawn (`onArm`), else the
+  primary one: the left if it has a tool, else the right. Tools, goals and tests written for one socket are unchanged.
+- Right arm = the main hand (its tool the attack button), left arm = the off hand (its tool the use button).
+- Known limits: a tool on the right arm swallows the main hand's turn, so with the left a plain hand its off-hand item can't be
+  used with right click; both arms' HUD readouts share their corners (two chaingun-style corners would overlap); the machine
+  mind uses the primary tool only; the cockpit's right tool is the left's view model mirrored.
