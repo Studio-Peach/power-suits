@@ -57,6 +57,10 @@ public final class CockpitHands {
     static float toolAimDistance = 10F;
     static Vector3f restAim = new Vector3f(-2.5F, -3.5F, -10F);
     static float restTurn = 0.6F;
+    /** Both arms are drawn at this scale about their shoulder pivot (user, 2026-11-15: in first person they were too big and
+     *  too extended: the frame's arm shell is 5 px wide and 16 long round the skin's 4 x 12 arm, vanilla's hand places
+     *  it close to the camera). Scaling about the pivot shortens the reach as it shrinks the arm. */
+    static float armScale = 0.75F;
     /** The chaingun's muzzle about the pilot's left arm pivot, in vanilla's arm space (y down the arm, x mirrored; px):
      *  the socket is 10 px down the arm and 1.25 px off its pivot's axis (tools/export-frame.py), the muzzle block's
      *  bottom 8.5 px under the socket. */
@@ -100,6 +104,7 @@ public final class CockpitHands {
         PoseStack pose = event.getPoseStack();
         pose.pushPose();
         vanillaArmTransform(pose, event.getSwingProgress(), event.getEquipProgress(), 1F);
+        pose.scale(armScale, armScale, armScale);
         event.getSubmitNodeCollector().submitModelPart(arm(slim, false), pose, RenderTypes.entityTranslucent(skin.body().texturePath()),
                 event.getPackedLight(), OverlayTexture.NO_OVERLAY, null);
         // (Picked 2026-11-14 over his bare arm, vanilla's.) Vanilla's model axes are y-down and x-mirrored; the frame's
@@ -159,7 +164,8 @@ public final class CockpitHands {
         Vector3f target = new Vector3f(0F, kick * 0.8F, -toolAimDistance);
         Quaternionf aimed = new Quaternionf().rotationTo(axis, target.sub(pivot).normalize());
         Quaternionf turn = rest.slerp(aimed, raise);
-        pose.last().pose().set(new Matrix4f(base).translate(pivot).rotate(turn).translate(-pivot.x, -pivot.y, -pivot.z).mul(local));
+        pose.last().pose().set(new Matrix4f(base).translate(pivot).rotate(turn).translate(-pivot.x, -pivot.y, -pivot.z).mul(local)
+                .scale(armScale));
         Matrix3f localNormal = new Matrix3f(baseNormal).invert().mul(pose.last().normal());
         pose.last().normal().set(new Matrix3f(baseNormal).rotate(turn).mul(localNormal));
     }
@@ -254,6 +260,7 @@ public final class CockpitHands {
             toolAimDistance = f.apply("toolAimDistance", toolAimDistance);
             if (j.has("restAim")) restAim = v.apply("restAim");
             restTurn = f.apply("restTurn", restTurn);
+            armScale = f.apply("armScale", armScale);
         } catch (Exception e) {
             PowerSuits.LOGGER.warn("[view] can't read {}: {}", file, e.toString());
         }
