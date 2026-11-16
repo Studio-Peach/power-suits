@@ -178,7 +178,7 @@ def dome(f, w, h):
     return g
 
 
-BONE_ORIGIN = {'star_core': (0, 21, 5.5)}   # raw; the star's spin pivot (the window's middle). The game draws the fuel slot's
+BONE_ORIGIN = {'star_core': (0, 21.5, 5.5)}   # raw; the star's spin pivot (the window's middle). The game draws the fuel slot's
                                                 # nether star there and turns the bone fast.
 
 
@@ -187,81 +187,105 @@ BONE_ORIGIN = {'star_core': (0, 21, 5.5)}   # raw; the star's spin pivot (the wi
 # light is only the star's violet (& % * =), as the tidal engine's glass is teal. User, 2026-11-16: "look at the firebox and
 # tidal engines ... textures are important and were the real detail lies. Currently your textures are flat and give no
 # shape": the boxes stay few and plain, the shape is painted.
+def px(paint):
+    """Paint at one pixel per block-pixel, the way vanilla textures are: paint(face, w_px, h_px) -> grid, each cell drawn as
+    2 x 2 texels (the frame's texture is 2 texels to the px). User, 2026-11-16: "the texels are too fine"."""
+    def up(f, w, h):
+        small = paint(f, w // 2, h // 2)
+        return [[small[j // 2][i // 2] for i in range(w)] for j in range(h)]
+    return up
+
+
 def bevel(w, h, base='U'):
     """A steel plate: W lit top row, V lit left column, G dark right column, X ink bottom row."""
     g = [[base] * w for _ in range(h)]
+    if h == 1: return [['V'] + ['U'] * (w - 2) + ['G']]               # a 1 px step: no room for both bevels
     for i in range(w): g[0][i] = 'W'; g[h - 1][i] = 'X'
     for j in range(1, h - 1): g[j][0] = 'V'; g[j][w - 1] = 'G'
     g[0][w - 1] = 'V'
     return g
 
 
-def body_art(f, w, h):
+def window_disc(g, cx, cy, R):
+    """The star's window in px cells: a violet rim, a deep well, a brighter heart."""
+    for j in range(len(g)):
+        for i in range(len(g[0])):
+            d = math.hypot(i + 0.5 - cx, j + 0.5 - cy)
+            if d <= R: g[j][i] = 'X' if d > R - 0.9 else '*' if d > R - 1.9 else '%'
+
+
+def mid_art(f, w, h):
     g = bevel(w, h)
     if f == 'south':
-        for j in range(1, h - 1):                                    # a second inner bevel gives the panel depth
-            for i in range(1, w - 1): g[j][i] = 'U' if (j + i) % 7 else 'V' if False else 'U'
-        cx, cy, R = w / 2, h / 2, 5.0
-        for j in range(h):
-            for i in range(w):
-                d = math.hypot(i + 0.5 - cx, j + 0.5 - cy)
-                if d <= R + 1: g[j][i] = 'X'                         # ink round the window
-                if d <= R: g[j][i] = '*' if d > R - 1 else '=' if d > R - 3 else '*' if d > R - 4 else '%'   # glass: a deep well, brighter toward the middle
-                if d <= R and i in (int(cx) - 3, int(cx) + 2): g[j][i] = 'X'   # two grille bars
-        for (i, j) in ((1, 2), (w - 2, 2), (1, h - 3), (w - 2, h - 3)):
-            g[j][i] = 'O'                                            # bolts in the corners
-    elif f in ('east', 'west'):
-        for i in range(1, w - 1):                                    # the lit slit down the side, ink above and below
-            g[h // 2 - 2][i] = 'X'; g[h // 2 + 2][i] = 'X'
-            g[h // 2 - 1][i] = '*'; g[h // 2][i] = '%'; g[h // 2 + 1][i] = '*'
-    elif f == 'up':
-        g = [['W'] * w] + [['V'] * w for _ in range(h - 2)] + [['U'] * w]
-    elif f == 'down':
-        g = [['X'] * w for _ in range(h)]
+        window_disc(g, w / 2, h / 2, 3.0)
+        for j in range(1, h - 1):                                    # vent slots down both sides of the window
+            for i in (1, w - 2): g[j][i] = 'N' if j in (2, 4) else 'U'
+        for (i, j) in ((0, 0), (w - 1, 0)): g[j][i] = 'O'
+    elif f in ('east', 'west'):                                      # the lit slit down the side, ink above and below
+        for i in range(1, w - 1):
+            g[h // 2 - 1][i] = 'X'; g[h // 2][i] = '%'; g[h // 2 + 1][i] = 'X'
+    elif f == 'up': g = [['W'] * w] + [['V'] * w for _ in range(h - 1)]
+    elif f == 'down': g = [['X'] * w for _ in range(h)]
     return g
 
 
-def crown_art(f, w, h):
-    g = bevel(w, h)
-    if f == 'south':
-        for i in range(2, w - 2): g[h // 2][i] = 'X' if i % 2 else 'N'   # vent slots
+def step_art(f, w, h):
+    """A narrower step (crown, lower body, foot): plain bevelled steel, vent slots on the back."""
+    g = bevel(w, h, 'U')
+    if f == 'south' and w >= 3 and h == 1 and w <= 4:
+        for i in range(1, w - 1): g[h // 2][i] = 'X' if i % 2 else 'N'
     if f == 'up': g = [['W'] * w] + [['V'] * w for _ in range(h - 1)]
-    return g
-
-
-def foot_art(f, w, h):
-    g = bevel(w, h, 'N')
-    if f == 'south':
-        for i in range(1, w - 1): g[1][i] = 'X' if i % 2 else 'N'        # the exhaust grille
     if f == 'down': g = [['X'] * w for _ in range(h)]
     return g
 
 
-def fin_art(f, w, h):
+def feather_art(f, w, h):
+    """One 1 px row of a wing: steel, a violet tip on the outer end (the lit edge sweeping down the wing)."""
+    g = [['N'] * w for _ in range(h)]
+    if f in ('south', 'north'):
+        g[0][0] = 'O'
+        g[0][w - 1] = '%'
+        if w > 2: g[0][w - 2] = '*'
+    elif f == 'up':
+        g = [['W'] * w for _ in range(h)]
+    elif f == 'down':
+        g = [['X'] * w for _ in range(h)]
+    else:
+        g = [['%' if f == 'east' else 'O'] * w for _ in range(h)] if f == 'east' else [['X'] * w for _ in range(h)]
+    return g
+
+
+# the wing, a triangle of 1 px plates hanging out and down from the lower step: (y bottom, x from, x to), body-side first
+WING = ((17.5, 4, 6), (16.5, 5, 7), (15.5, 6, 8), (14.5, 6, 8))
+
+
+def blade_art(f, w, h):
+    """A wing blade: steel, a lit edge down its outer side, ink inside it, violet at the tip."""
     g = [['N'] * w for _ in range(h)]
     for j in range(h): g[j][0] = 'O'; g[j][w - 1] = 'X'
-    if f in ('east', 'west'):
-        for j in range(2, h - 1):                                    # the lit stripe, ink on both sides
-            g[j][w // 2] = '%'
-            if w > 2: g[j][w // 2 - 1] = 'X'
-    g[h - 1] = ['X'] * w
+    if f in ('south', 'north'):
+        for j in range(1, h - 1): g[j][w - 1] = '%' if j % 2 else 'X'      # dashed: feather lines
+    if f == 'up': g = [['W'] * w for _ in range(h)]
     return g
 
 
 def jetpack():
-    """After the Fortnite Alien Jetpack, kept Minecraft-simple: a 8 x 7 x 2 px body with a 4 px crown and foot (a hexagon
-    from behind), a round violet window in its face (the star spins in front of it), two plain spikes at the foot. Plain
-    boxes; every bit of shape is in the texture."""
-    return [part('body', ((-4, 17.5, 3), (4, 24.5, 5)), body_art),
-            part('crown', ((-2, 24.5, 3), (2, 25.5, 5)), crown_art),
-            part('foot', ((-2, 16.5, 3), (2, 17.5, 5)), foot_art),
-            part('fin', ((2, 12.5, 3), (3, 16.5, 4)), fin_art, mirror=True),
-            _star_hub()]
+    """After the Fortnite Alien Jetpack, kept Minecraft-simple: stepped boxes make a gem (a 6 px crown over a 10 px body
+    over an 8 px and a 4 px step, 2 px deep), a round violet window in the body (the star spins in front of it) and a
+    wing either side, five 1 px plates stepping out and down to a point. Painted at the pixel scale; the shape is texture."""
+    P = [part('body', ((-5, 17.5, 3), (5, 24.5, 5)), px(mid_art)),
+         part('crown', ((-3, 24.5, 3), (3, 25.5, 5)), px(step_art)),
+         part('lower', ((-4, 16.5, 3), (4, 17.5, 5)), px(step_art)),
+         part('foot', ((-2, 15.5, 3), (2, 16.5, 5)), px(step_art))]
+    # the wing: one broad plate (2 x 8 px) swept out 28 degrees from the lower step, with a short one on its inner edge
+    P.append(part('wing', ((4, 9.5, 3), (6, 17.5, 4)), px(blade_art), mirror=True, rot=[0, 0, 28], origin=(4, 17.5, 3.5)))
+    P.append(_star_hub())
+    return P
 
 
 def _star_hub():
     """The spin bone's cube: hidden inside the body (the game draws the nether star at the bone's pivot)."""
-    h = part('hub', ((-0.5, 20.5, 3.5), (0.5, 21.5, 4.5)), hub)
+    h = part('hub', ((-0.5, 21, 3.5), (0.5, 22, 4.5)), hub)
     h['bone'] = 'star_core'
     return h
 
