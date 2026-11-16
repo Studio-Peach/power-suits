@@ -136,26 +136,21 @@ def shell(f, w, h):
     return blk(f, w, h)
 
 
-def glyph_face(f, w, h):
-    """The big plate on the back: a dark bezel, a violet ring, a pentagon star of thin lines, a dot at its hub."""
+def belly(f, w, h):
+    """The jetpack's body; on its back a round window (a dark well in a violet ring) for the star to spin in."""
     g = blk(f, w, h)
     if f != 'south': return g
-    cx, cy, R = w / 2, h / 2, min(w, h) / 2 - 0.5
+    cx, cy, R = w / 2, h / 2, 4.6
     for j in range(h):
         for i in range(w):
             d = math.hypot(i + 0.5 - cx, j + 0.5 - cy)
-            if d <= R + 0.9: g[j][i] = '$'
-            if R - 0.6 <= d <= R + 0.4: g[j][i] = '*'
-    pts = [(cx + (R - 1) * math.sin(math.radians(72 * k)), cy - (R - 1) * math.cos(math.radians(72 * k))) for k in range(5)]
-    for k in range(5):                                   # the star: each point to the one two on
-        (x0, y0), (x1, y1) = pts[k], pts[(k + 2) % 5]
-        for t in range(41):
-            x, y = x0 + (x1 - x0) * t / 40, y0 + (y1 - y0) * t / 40
-            i, j = int(x), int(y)
-            if 0 <= i < w and 0 <= j < h and g[j][i] in '$*=': g[j][i] = '%'
-    for (x, y) in pts: g[int(y)][int(x)] = '&'
-    g[int(cy)][int(cx)] = g[int(cy - 0.5)][int(cx - 0.5)] = '&'
+            if d <= R + 0.5: g[j][i] = '$'
+            if R - 0.5 <= d <= R + 0.5: g[j][i] = '*'
     return g
+
+
+def hub(f, w, h):
+    return [['&'] * w for _ in range(h)]
 
 
 def slit(f, w, h):
@@ -183,12 +178,21 @@ def dome(f, w, h):
     return g
 
 
+BONE_ORIGIN = {'star_core': (0, 20.5, 7.5)}   # raw; the star's spin pivot (the window's middle). The game draws the fuel slot's
+                                                # nether star there (SuitStar layer) and turns the bone fast.
+
+
 def jetpack():
     P = [part('foot', ((-3, 16, 3), (3, 17, 6)), shell),
-         part('belly', ((-4, 17, 3), (4, 24, 7)), shell),
-         part('plate', ((-3.5, 17.5, 7), (3.5, 23.5, 7.5)), glyph_face),
+         part('belly', ((-4, 17, 3), (4, 24, 7)), belly),
          part('crown', ((-2.5, 24, 3), (2.5, 25, 6)), shell),
-         part('dome', ((-0.5, 25, 4), (0.5, 25.5, 5)), dome)]
+         part('dome', ((-0.5, 25, 4), (0.5, 25.5, 5)), dome),
+         # the bezel round the window: four slim boxes, 0.5 proud
+         part('bez_t', ((-3.5, 23, 7), (3.5, 23.5, 7.5)), shell), part('bez_b', ((-3.5, 17.5, 7), (3.5, 18, 7.5)), shell),
+         part('bez_l', ((-3.5, 18, 7), (-3, 23, 7.5)), shell), part('bez_r', ((3, 18, 7), (3.5, 23, 7.5)), shell)]
+    hub_ = part('hub', ((-0.5, 20, 7), (0.5, 21, 8)), hub)
+    hub_['bone'] = 'star_core'
+    P.append(hub_)
     for k, (y0, y1) in enumerate(((18.5, 22.5),)):
         P.append(part(f'slit{k}', ((4, y0, 3.5), (4.5, y1, 6.5)), slit, mirror=True))
     P.append(part('fin', ((3, 12.5, 3.5), (3.5, 16.5, 5.5)), fin, mirror=True, rot=[0, 0, 20], origin=(3.25, 16.5, 4.5)))
