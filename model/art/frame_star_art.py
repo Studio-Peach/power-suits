@@ -39,13 +39,22 @@ white chrome, no ribs. Machined parts in gunmetal and steel, bolts, clamps, hydr
              through collars;
   B rail     a base plate with a raised rail down it, a continuous lit channel in the rail and steel clamps across it;
   C rams     A's stack with two hydraulic rams either side (barrel, lit strip, rod) and brackets, the exoskeleton.
+Round 8 (user: "drop the white tones and make it more slick black and purple", with a photo of the prop,
+blasters4masters.com sandevistan-cyberpunk-2077.jpg, .scratch/sand/ref.jpg: a chain of black wedge modules, each with
+a small lit screen on its face and thin lit connectors between, round black button pods either side of every module,
+a bigger boxy unit at the neck end and a rounded one at the hip end; its light green, ours violet): glossy black
+(obsidian $ 8 9, violet-tinged), the light only violet, no steel:
+  A chain    the prop: four wedge modules (a wide slab and a narrow ridge with its screen), a pod on a stalk either side
+             of each, a head unit with a wide screen at the neck and a base unit at the hip, the lit rod joining them;
+  B sleeve   the same under one slim black sleeve: a column of four screens and thin lit lines down its sides;
+  C rams     A with two black hydraulic rams outside the pods (lit strip) for the exoskeleton.
 The glass letters & % * = are the star's light (see above).
 """
 import math
 from frame_radial_art import part, grid, disc, K
 import frame_sea_art as sea
 
-EXTRA = {'&': (0xf4, 0xe6, 0xff),   # the core: white-violet
+EXTRA = {'&': (0xe6, 0xb4, 0xff),   # the core: light violet (not white: user, round 8)
          '%': (0xc0, 0x7c, 0xff),   # glass, bright
          '*': (0x80, 0x40, 0xd0),   # glass, mid
          '=': (0x4c, 0x2a, 0x82),   # glass, deep
@@ -129,87 +138,108 @@ BONE_ORIGIN = {}
 VERT = [(16, 2.0), (18, 2.0), (20, 1.5), (22, 1.5), (24, 2.0)]        # (bottom y, half width): the lumbar wider, the neck narrow
 
 
-def module(f, w, h):
-    """A machined module: a steel bezel round a lit slit, gunmetal sides."""
-    if f in ('south', 'north'):
-        g = [['h'] * w] + [['X'] + ['%'] * (w - 2) + ['X']] + [['e'] * w] if h == 3 else [['h'] * w for _ in range(h)]
-        if f == 'south' and h == 3:
-            for i in range(2, w - 2, 2): g[1][i] = '&'
+def blk(f, w, h):
+    """Glossy black: a violet-tinged edge light along the top and left, the base dark."""
+    g = [['8'] * w for _ in range(h)]
+    g[0] = ['9'] * w
+    g[-1] = ['$'] * w
+    for j in range(h): g[j][0] = '9' if f in ('south', 'north', 'up') else g[j][0]
+    return g
+
+
+def screen(w, h, wide=False):
+    """A small lit screen: a row of light over a dim row, a black bezel round it."""
+    def paint(f, w_, h_):
+        g = blk(f, w_, h_)
+        if f == 'south' and w_ >= 3 and h_ >= 2:
+            for i in range(1, w_ - 1):
+                g[h_ // 2 - 1][i] = '&' if i % 2 else '%'
+                if h_ >= 3: g[h_ // 2][i] = '*'
         return g
-    if f in ('up', 'down'): return grid(w, h, 'g' if f == 'up' else 'X')
-    return [['O'] * w] + [['N'] * w for _ in range(h - 2)] + [['X'] * w]
+    return paint
+
+
+def pod(f, w, h):
+    """A round button pod (a box): black with a dark slot across its face and a thin violet rim."""
+    g = blk(f, w, h)
+    if f == 'south':
+        for i in range(w): g[h // 2][i] = '$'
+        for i in range(1, w - 1): g[h // 2 - 1][i] = '='
+    return g
 
 
 def rodfill(f, w, h):
     g = [['*'] * w for _ in range(h)]
     if f in ('south', 'north'):
-        for j in range(h):
-            g[j][w // 2 - 1] = g[j][w // 2] = '%'
+        for j in range(h): g[j][w // 2 - 1] = g[j][w // 2] = '%'
     return g
 
 
-def steel(f, w, h):
-    g = [['h'] * w for _ in range(h)]
-    for j in range(h): g[j][0] = 'g'; g[j][-1] = 'e'
-    g[0] = ['g'] * w
-    return g
+MODS = (18, 19.5, 21, 22.5)                                              # four wedge modules, 1 px tall, 0.5 gaps
 
 
-def stack():
-    P = [part('rod', ((-1, 16, 3), (1, 25.5, 4.5)), rodfill)]
-    for k, (y, hw) in enumerate(VERT):
-        P.append(part(f'm{k}', ((-hw, y, 3), (hw, y + 1.5, 5)), module))
-    return P
-
-
-def guides():
-    """Two steel guide rods either side of the stack, through collars (the stack slides on them)."""
-    P = [part('guide', ((2.5, 16, 3), (3, 25.5, 3.5)), steel, mirror=True)]
-    for k, y in enumerate((17, 21, 24.5 - 0.5)):
-        P.append(part(f'collar{k}', ((2.25, y, 3), (3.25, y + 1, 4)), module, mirror=True))
+def chain():
+    P = [part('rod', ((-0.5, 16, 3), (0.5, 25.5, 4.5)), rodfill)]
+    def base(f, w, h):                                                   # the hip unit: rounded look, one lit bit
+        g = blk(f, w, h)
+        if f == 'south':
+            for i in range(2, w - 2): g[h // 2][i] = '%'
+        return g
+    P.append(part('base', ((-2, 16, 3), (2, 17.5, 5)), base))
+    def head(f, w, h):                                                   # the neck unit: a wide screen
+        g = blk(f, w, h)
+        if f == 'south':
+            for i in range(2, w - 2):
+                g[h // 2 - 1][i] = '&' if i % 2 else '%'
+                g[h // 2][i] = '*'
+        return g
+    P.append(part('head', ((-2.5, 24, 3), (2.5, 25.5, 5.5)), head))
+    for k, y in enumerate(MODS):
+        P.append(part(f'slab{k}', ((-1.5, y, 3), (1.5, y + 1, 4)), blk))
+        P.append(part(f'ridge{k}', ((-0.75, y, 4), (0.75, y + 1, 5)), screen(3, 2)))
+        P.append(part(f'stalk{k}', ((1.5, y + 0.25, 3), (2, y + 0.75, 3.5)), blk, mirror=True))
+        P.append(part(f'pod{k}', ((2, y, 3), (3.5, y + 1, 4)), pod, mirror=True))
     return P
 
 
 def spine_a():
-    return stack() + guides()
+    return chain()
 
 
 def spine_b():
     P = []
-    def base(f, w, h):
-        g = housing(f, w, h)
+    def sleeve(f, w, h):
+        g = blk(f, w, h)
         if f == 'south':
-            for j in (2, h - 3):
-                for i in (1, w - 2): g[j][i] = 'h'                           # bolts
-        return g
-    P.append(part('base', ((-2.5, 16, 3), (2.5, 25.5, 4.5)), base))
-    def rail(f, w, h):
-        g = [['O'] + ['N'] * (w - 2) + ['X'] for _ in range(h)]
-        if f == 'south':
+            for j in range(h): g[j][1] = g[j][w - 2] = '='                 # thin lit lines down its sides
             for j in range(h):
-                g[j][1] = g[j][w - 2] = '*'
-                g[j][w // 2 - 1] = g[j][w // 2] = '&'
-                g[j][2] = g[j][w - 3] = '%'
+                g[j][0] = '9'
         return g
-    P.append(part('rail', ((-1.5, 16, 4.5), (1.5, 25.5, 5.5)), rail))
-    for k, y in enumerate((17, 19.5, 22, 24.5 - 0.5)):                       # clamps across the rail
-        P.append(part(f'clamp{k}', ((-2, y, 5), (2, y + 1, 6)), steel))
+    P.append(part('sleeve', ((-2.5, 16, 3), (2.5, 25.5, 4.5)), sleeve))
+    def col(f, w, h):
+        g = blk(f, w, h)
+        if f == 'south':
+            for k in range(5):                                             # five screens down it, a dark gap between
+                j = k * 4
+                for jj in (j + 1, j + 2):
+                    if jj < h:
+                        for i in range(1, w - 1): g[jj][i] = ('&' if i % 2 else '%') if jj == j + 1 else '*'
+        return g
+    P.append(part('column', ((-1.5, 16, 4.5), (1.5, 25.5, 5.5)), col))
     return P
 
 
 def spine_c():
-    P = stack()
+    P = chain()
     def barrel(f, w, h):
-        g = [['h'] * w for _ in range(h)]
-        for j in range(h): g[j][0] = 'g'; g[j][-1] = 'e'
+        g = blk(f, w, h)
         if f in ('south', 'east'):
-            for j in range(2, h - 2): g[j][w // 2] = '%'                      # the lit strip
-        g[0] = ['g'] * w; g[-1] = ['X'] * w
+            for j in range(2, h - 2): g[j][w // 2] = '*'; g[j][w // 2 - 1 if w > 2 else 0] = '%'
         return g
-    P.append(part('barrel', ((2.5, 16, 3.5), (4, 21, 5)), barrel, mirror=True))
-    P.append(part('ram', ((3, 21, 4), (3.5, 25.5, 4.5)), steel, mirror=True))
+    P.append(part('barrel', ((4, 16, 3.5), (5.5, 21, 5)), barrel, mirror=True))
+    P.append(part('ram', ((4.5, 21, 4), (5, 25.5, 4.5)), blk, mirror=True))
     for k, y in enumerate((16.5, 24.5)):
-        P.append(part(f'bracket{k}', ((2, y, 3), (4.5, y + 1, 3.5)), module, mirror=True))
+        P.append(part(f'bracket{k}', ((3.5, y, 3), (5.5, y + 1, 3.5)), blk, mirror=True))
     return P
 
 
