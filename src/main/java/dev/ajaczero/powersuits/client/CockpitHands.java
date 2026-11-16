@@ -63,6 +63,12 @@ public final class CockpitHands {
     static float armScale = 0.75F;
     /** The tool arm's own scale (it turns toward the aim, so the same scale hides more of it than the plain right arm). */
     static float toolArmScale = 0.85F;
+    /** Where the tool sits in the view (blocks, vanilla's hand space: x right, y up, -z forward), added to the arm's place:
+     *  the tool is the subject (user, 2026-11-15): the arm drops toward the corner, mostly below the screen, so what shows is
+     *  the tool and a stub of sleeve. (Drawing the tool alone, showArm=false, left a floating block: its back cap showed.) */
+    static Vector3f toolShift = new Vector3f(-0.1F, -0.12F, 0F);
+    /** Draw the tool arm's sleeve (and skin) under the tool, or the tool alone. */
+    static boolean showArm = true;
     /** The chaingun's muzzle about the pilot's left arm pivot, in vanilla's arm space (y down the arm, x mirrored; px):
      *  the socket is 10 px down the arm and 1.25 px off its pivot's axis (tools/export-frame.py), the muzzle block's
      *  bottom 8.5 px under the socket. */
@@ -83,8 +89,9 @@ public final class CockpitHands {
         float kick = Math.max(recoil(partial), suit.socketVisuals().recoil(partial)); // EM push / chaingun shots
         pose.pushPose();
         toolArmTransform(pose, suit, suit.socketVisuals().raise(partial), kick);
+        view.hideArm = !showArm; // the tool alone: no skin arm, no shell (CockpitViewRenderer hides the shell)
         PlayerSkin skin = Minecraft.getInstance().player != null ? Minecraft.getInstance().player.getSkin() : null;
-        if (skin != null) {
+        if (showArm && skin != null) {
             event.getSubmitNodeCollector().submitModelPart(arm(view.slim, true), pose, RenderTypes.entityTranslucent(skin.body().texturePath()),
                     event.getPackedLight(), OverlayTexture.NO_OVERLAY, null);
         }
@@ -166,7 +173,7 @@ public final class CockpitHands {
         Vector3f target = new Vector3f(0F, kick * 0.8F, -toolAimDistance);
         Quaternionf aimed = new Quaternionf().rotationTo(axis, target.sub(pivot).normalize());
         Quaternionf turn = rest.slerp(aimed, raise);
-        pose.last().pose().set(new Matrix4f(base).translate(pivot).rotate(turn).translate(-pivot.x, -pivot.y, -pivot.z).mul(local)
+        pose.last().pose().set(new Matrix4f(base).translate(toolShift).translate(pivot).rotate(turn).translate(-pivot.x, -pivot.y, -pivot.z).mul(local)
                 .scale(toolArmScale));
         Matrix3f localNormal = new Matrix3f(baseNormal).invert().mul(pose.last().normal());
         pose.last().normal().set(new Matrix3f(baseNormal).rotate(turn).mul(localNormal));
@@ -264,6 +271,8 @@ public final class CockpitHands {
             restTurn = f.apply("restTurn", restTurn);
             armScale = f.apply("armScale", armScale);
             toolArmScale = f.apply("toolArmScale", toolArmScale);
+            if (j.has("toolShift")) toolShift = v.apply("toolShift");
+            if (j.has("showArm")) showArm = j.get("showArm").getAsBoolean();
         } catch (Exception e) {
             PowerSuits.LOGGER.warn("[view] can't read {}: {}", file, e.toString());
         }

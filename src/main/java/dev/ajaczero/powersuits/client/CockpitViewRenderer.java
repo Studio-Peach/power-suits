@@ -26,6 +26,7 @@ final class CockpitViewRenderer extends GeoObjectRenderer<CockpitView, Void, Geo
     private static final DataTicket<Part> PART = DataTicket.create("power_suits_view_part", Part.class);
     /** The pilot's skin is Alex's: the frame's slim arm (the same cubes about his arm, the slim build's texture). */
     private static final DataTicket<Boolean> SLIM = DataTicket.create("power_suits_view_slim", Boolean.class);
+    private static final DataTicket<Boolean> HIDE_ARM = DataTicket.create("power_suits_view_hide_arm", Boolean.class);
     private static final DataTicket<String> TOOL_BONE = DataTicket.create("power_suits_view_tool_bone", String.class);
     private static final DataTicket<Float> BARREL_ANGLE = DataTicket.create("power_suits_view_barrel_angle", Float.class);
     /** The rail cannon's charge and the time (ticks), for its shake. */
@@ -46,6 +47,7 @@ final class CockpitViewRenderer extends GeoObjectRenderer<CockpitView, Void, Geo
     public void addRenderData(CockpitView view, @Nullable Void ignored, GeoRenderState state, float partialTick) {
         state.addGeckolibData(PART, view.part);
         state.addGeckolibData(SLIM, view.slim);
+        state.addGeckolibData(HIDE_ARM, view.hideArm);
         var suit = view.suit;
         state.addGeckolibData(TOOL_BONE, suit != null && suit.getSocketStack().getItem() instanceof PowerTool tool ? tool.suitBone() : "");
         state.addGeckolibData(BARREL_ANGLE, suit == null ? 0F : suit.socketVisuals().rotorAngle(partialTick));
@@ -73,6 +75,13 @@ final class CockpitViewRenderer extends GeoObjectRenderer<CockpitView, Void, Geo
             bones.ifPresent(name, b -> b.skipRender(!show).skipChildrenRender(!show));
         }
         ArmourBones.show(bones, info.getOrDefaultGeckolibData(ARMOUR, 0)); // the arm's piece, or its bare frame
+        if (info.getOrDefaultGeckolibData(PART, Part.TOOL) == Part.TOOL && info.getOrDefaultGeckolibData(HIDE_ARM, false)) {
+            // The tool is the subject, drawn like a held item (user, 2026-11-15): its arm's cubes stay out of the view
+            // (their own bones only: the tool bones are children of view_tool).
+            for (String arm : new String[] {"view_tool", "frame_left_arm", "armor_left_arm"}) {
+                bones.ifPresent(arm, b -> b.skipRender(true));
+            }
+        }
         ToolRotors.pose(bones, info.getOrDefaultGeckolibData(BARREL_ANGLE, 0F)); // turns with the suit's spin
         float[] shake = info.getGeckolibData(RAIL_SHAKE);
         if (shake != null) {

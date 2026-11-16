@@ -29,6 +29,8 @@ final class CockpitView implements GeoAnimatable {
     CockpitViewRenderer.Part part = CockpitViewRenderer.Part.TOOL;
     /** The pilot's skin is Alex's (the frame's slim arm), set before each render. */
     boolean slim;
+    /** The tool pass leaves the arm's own cubes out (the tool alone). */
+    boolean hideArm;
 
     private CockpitView() {}
 
