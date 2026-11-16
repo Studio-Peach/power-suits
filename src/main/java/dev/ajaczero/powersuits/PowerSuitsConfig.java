@@ -190,7 +190,7 @@ public final class PowerSuitsConfig {
     // (energy_per_shot, 100 at the release, until 2026-10-27: the charge burns the fuel now, so the burn embers show it)
     public static final ModConfigSpec.IntValue RAIL_CHARGE_ENERGY = B
             .comment("Fuel energy per tick while the trigger is held: charging, and holding a full charge (walking burns 1;",
-                    "a coal holds 1600). The shot itself costs only the iron ingot.").translation(key("rail_charge_energy"))
+                    "a coal holds 1600). The shot itself costs only the amethyst shard.").translation(key("rail_charge_energy"))
             .defineInRange("charge_energy_per_tick", 3, 0, 1000);
     public static final ModConfigSpec.IntValue RAIL_COOLDOWN = B
             .comment("Ticks after a shot before it can charge again.").translation(key("rail_cooldown"))

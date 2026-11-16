@@ -29,11 +29,11 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.fml.loading.FMLPaths;
 
 /**
- * Autopilot scene for the rail cannon (Phase 11): a suit with the cannon and 6 iron ingots in its ammo slot on flat grass
+ * Autopilot scene for the rail cannon (Phase 11): a suit with the cannon and 6 amethyst shards in its ammo slot on flat grass
  * by day, facing +Z, a survival pilot inside. In front: a glass wall 6 blocks out, two husks (no AI) one behind the other
  * at 9 and 12, a cobblestone wall at 16. The pilot lets go early once (nothing fires), charges up from behind (the core
  * brightening, the HUD's charge bar) and fires through the glass and both husks, fires again from a still side camera and
- * once from the cockpit at the wall, holds the trigger with no ingots (no charge, the HUD's red 0), then climbs out: the
+ * once from the cockpit at the wall, holds the trigger with no shards (no charge, the HUD's red 0), then climbs out: the
  * machine mind guards home and snipes a husk off to the side. Last, the menu with the ammo slot.
  * Shots {@code ap_rail_*.png}, {@code ap_menu_rail.png}; log run/autopilot_rail.csv (tool uses, ammo on the server and
  * the client's copy, the charge on both sides, husks alive, glass and wall blocks left, the last shot's hits and broken
@@ -58,7 +58,7 @@ final class RailScene {
             case 26 -> sideCamera(mc);
             case 30 -> AutoPilot.shot(mc, "rail_idle_side");
             case 32 -> { mc.setCameraEntity(mc.player); o.setCameraType(CameraType.FIRST_PERSON); DevUtil.hideGui(mc, false); }
-            case 36 -> AutoPilot.shot(mc, "rail_idle_fp");                       // the viewmodel, the HUD's 6 ingots
+            case 36 -> AutoPilot.shot(mc, "rail_idle_fp");                       // the viewmodel, the HUD's 6 shards
             // let go early: it charges, winds down, nothing fires
             case 40 -> { phase = "early"; aim(b, 0, 1.0, 12); }
             case 44 -> AutoPilot.hold(o.keyUse, true);
@@ -83,21 +83,21 @@ final class RailScene {
             case 228 -> AutoPilot.shot(mc, "rail_charged_fp");
             case 234 -> AutoPilot.hold(o.keyUse, false);
             case 235, 236, 238, 242 -> AutoPilot.shot(mc, "rail_fire_fp_" + s);
-            // no ingots: it doesn't charge, the HUD shows a red 0
+            // no shards: it doesn't charge, the HUD shows a red 0
             case 250 -> { phase = "empty"; AutoPilot.onServer(mc, p -> { PowerSuitEntity x = suit; if (x != null) {
-                              ingots(p, 0); } }); }
+                              shards(p, 0); } }); }
             case 256 -> AutoPilot.hold(o.keyUse, true);
             case 276 -> AutoPilot.shot(mc, "rail_empty_fp");
             case 280 -> AutoPilot.hold(o.keyUse, false);
             // up close while it charges: the core's light running toward the muzzle, the shake, the sparks
             case 288 -> { phase = "close"; AutoPilot.onServer(mc, p -> { PowerSuitEntity x = suit; if (x != null) {
-                              ingots(p, 4); } });
+                              shards(p, 4); } });
                           aim(b, 0.5, 1.6, WALL_Z); closeCamera(mc); }
             case 292 -> AutoPilot.hold(o.keyUse, true);
             case 318 -> frontCamera(mc);   // the rest from in front: down the slot, the energy and the emitter in the band
             case 340 -> AutoPilot.hold(o.keyUse, false);
             // the machine mind: the pilot climbs out (the suit's home is where it stands; the mind needs no
-            // ingots), a husk comes in off to the left: the mind charges, aims and fires
+            // shards), a husk comes in off to the left: the mind charges, aims and fires
             case 360 -> { phase = "mind"; AutoPilot.aimTarget = null; AutoPilot.onServer(mc, p -> {
                               PowerSuitEntity x = suit;
                               BlockPos bb = base;
@@ -140,16 +140,16 @@ final class RailScene {
         }
     }
 
-    /** The pilot's iron ingots (the rail cannon's ammo, from their inventory): {@code n} of them, in slot 9. */
-    private static void ingots(net.minecraft.world.entity.player.Player p, int n) {
+    /** The pilot's amethyst shards (the rail cannon's ammo, from their inventory): {@code n} of them, in slot 9. */
+    private static void shards(net.minecraft.world.entity.player.Player p, int n) {
         var inv = p.getInventory();
         for (int i = 0; i < inv.getContainerSize(); i++) {
-            if (inv.getItem(i).is(Items.IRON_INGOT)) {
+            if (inv.getItem(i).is(Items.AMETHYST_SHARD)) {
                 inv.setItem(i, ItemStack.EMPTY);
             }
         }
         if (n > 0) {
-            inv.setItem(9, new ItemStack(Items.IRON_INGOT, n));
+            inv.setItem(9, new ItemStack(Items.AMETHYST_SHARD, n));
         }
     }
 
@@ -161,7 +161,7 @@ final class RailScene {
         level.addFreshEntity(husk);
     }
 
-    /** Flat grass 120 blocks east by day; the suit (firebox, coal, helmet, rail cannon, 6 ingots) with the player inside,
+    /** Flat grass 120 blocks east by day; the suit (firebox, coal, helmet, rail cannon, 6 shards) with the player inside,
      *  the glass, the husks and the wall in front of it. */
     private static void setup(Minecraft mc) {
         AutoPilot.onServer(mc, player -> {
@@ -195,7 +195,7 @@ final class RailScene {
             s.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.COAL, 16));
             s.getInventory().setItem(PowerSuitEntity.HELMET_SLOT, new ItemStack(ModItems.SUIT_HELMET.get())); DevUtil.ironArmour(s);
             s.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, new ItemStack(ModItems.RAIL_CANNON.get()));
-            ingots(player, 6); // the pilot's own: each shot takes one
+            shards(player, 6); // the pilot's own: each shot takes one
             s.snapTo(x + 0.5, g, z + 0.5, 0, 0);
             s.setYBodyRot(0);
             s.setYHeadRot(0);
@@ -203,7 +203,7 @@ final class RailScene {
             level.addFreshEntity(s);
             suit = s;
             player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY); // the hand would take the right click
-            player.setGameMode(GameType.SURVIVAL); // the ingots really run out
+            player.setGameMode(GameType.SURVIVAL); // the shards really run out
             player.setShiftKeyDown(false);
             player.teleportTo(x + 0.5, g, z - 1.5);
             player.startRiding(s, true, true);
@@ -284,7 +284,7 @@ final class RailScene {
         }
         String p = phase;
         PowerSuitEntity client = clientSuit(mc);
-        int clientAmmo = mc.player == null ? -1 : mc.player.getInventory().countItem(Items.IRON_INGOT); // the client's copy
+        int clientAmmo = mc.player == null ? -1 : mc.player.getInventory().countItem(Items.AMETHYST_SHARD); // the client's copy
         float clientCharge = client == null ? -1F : client.socket().getSpin();
         float recoil = client == null ? 0F : client.socketVisuals().recoil(0F);
         float raise = client == null ? 0F : client.socketVisuals().raise(0F);
@@ -303,7 +303,7 @@ final class RailScene {
             RailCannonItem.Shot shot = RailCannonItem.lastShot(x);
             try {
                 w.write(String.format(Locale.ROOT, "%d,%s,%d,%d,%d,%.2f,%.2f,%d,%d,%d,%d,%d,%.1f,%.2f,%.2f,%.2f,%s%n", s, p, x.socket().getUses(),
-                        player.getInventory().countItem(Items.IRON_INGOT), clientAmmo, x.socket().getSpin(), clientCharge,
+                        player.getInventory().countItem(Items.AMETHYST_SHARD), clientAmmo, x.socket().getSpin(), clientCharge,
                         husks, glass, wall, shot == null ? -1 : shot.hit().size(), shot == null ? -1 : shot.blocksBroken(),
                         shot == null ? -1D : shot.from().distanceTo(shot.to()), recoil, raise, glow, x.brain().runningGoalNames()));
             } catch (IOException ignored) {

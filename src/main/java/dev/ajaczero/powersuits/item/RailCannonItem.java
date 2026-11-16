@@ -51,7 +51,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * <p>Decided with the user: hold to charge, fires only at full charge (no weaker partial shots), an instant beam that
  * pierces, breaking the blocks a sprinting suit smashes through on its way (glass, panes, leaves, ice: the
- * {@code power_suits:suit_smashes_sprinting} tag) and stopping at anything solid; each shot costs an iron ingot from the
+ * {@code power_suits:suit_smashes_sprinting} tag) and stopping at anything solid; each shot costs an amethyst shard from the
  * pilot's inventory (2026-10-27; it was the suit's ammo slot) plus fuel; the machine mind uses it as a long-range guard (entity/ai/RailGuard); rogues never carry it.
  *
  * <p>A continuous tool: the suit calls {@link #holdTick} every tick the trigger is held (the charge builds), and
@@ -78,7 +78,7 @@ public class RailCannonItem extends Item implements PowerTool, ModTooltip {
         int charge;         // ticks charged, 0 .. RAIL_CHARGE
         boolean held;       // the trigger was held last tick
         int cooldown;       // ticks until it may charge again
-        int noAmmoMessage;  // ticks until the "no ingots" message may show again
+        int noAmmoMessage;  // ticks until the "no shards" message may show again
         @Nullable
         Shot lastShot;
     }
@@ -138,12 +138,12 @@ public class RailCannonItem extends Item implements PowerTool, ModTooltip {
         return false; // continuous: holdTick and release do the work
     }
 
-    /** Does this go in the cannon? An iron ingot, from the pilot's inventory. */
+    /** Does this go in the cannon? An amethyst shard, from the pilot's inventory. */
     public static boolean isRound(ItemStack stack) {
-        return stack.is(Items.IRON_INGOT);
+        return stack.is(Items.AMETHYST_SHARD);
     }
 
-    /** Server: can this operator fire a shot now (ammo and fuel)? A creative pilot needs no ingot, the machine mind never
+    /** Server: can this operator fire a shot now (ammo and fuel)? A creative pilot needs no shard, the machine mind never
      *  runs out (SuitAmmo). */
     public boolean canPay(PowerSuitEntity suit, LivingEntity operator) {
         boolean ammo = SuitAmmo.has(operator, RailCannonItem::isRound);
@@ -185,7 +185,7 @@ public class RailCannonItem extends Item implements PowerTool, ModTooltip {
     }
 
     /** Every tick the trigger is held: charge up, burning the charge's fuel (also while holding a full charge). It won't
-     *  start charging without an ingot and the fuel for a whole charge; out of fuel halfway, the charge stalls. */
+     *  start charging without a shard and the fuel for a whole charge; out of fuel halfway, the charge stalls. */
     @Override
     public void holdTick(PowerSuitEntity suit, LivingEntity operator, ItemStack tool) {
         State s = state(suit);
@@ -227,7 +227,7 @@ public class RailCannonItem extends Item implements PowerTool, ModTooltip {
         Vec3 muzzle = SocketAim.muzzlePosition(suit, operator);
         if (!SuitAmmo.take(operator, RailCannonItem::isRound)) {
             level.playSound(null, muzzle.x, muzzle.y, muzzle.z, SoundEvents.DISPENSER_FAIL, SoundSource.PLAYERS, 0.6F, 1.4F);
-            return; // (the ingot went while it charged; the fuel was paid while charging)
+            return; // (the shard went while it charged; the fuel was paid while charging)
         }
         s.lastShot = fire(level, suit, operator);
         s.cooldown = this.cooldownTicks();
@@ -319,7 +319,7 @@ public class RailCannonItem extends Item implements PowerTool, ModTooltip {
         return 0.3F + 0.7F * suit.socket().getSpin();
     }
 
-    /** Both sides: shots left for this pilot (the iron ingots they carry), or -1 for endless (creative). */
+    /** Both sides: shots left for this pilot (the amethyst shards they carry), or -1 for endless (creative). */
     public static int countRounds(PowerSuitEntity suit, Player pilot) {
         return SuitAmmo.count(pilot, RailCannonItem::isRound);
     }

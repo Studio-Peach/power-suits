@@ -123,7 +123,7 @@ final class HudScene {
             // see-through and uncovering the readouts as it passes (0.57 s; hud_open / visor_sweep columns)
             case 471, 472, 473, 474, 475, 476, 477, 479 -> AutoPilot.shot(mc, "hud_warm_" + (s - 468));
             // the rail cannon: charging, then full (it fires on release)
-            case 480 -> { phase = "rail"; tool(mc, ModItems.RAIL_CANNON.get(), new ItemStack(Items.IRON_INGOT, 6)); }
+            case 480 -> { phase = "rail"; tool(mc, ModItems.RAIL_CANNON.get(), new ItemStack(Items.AMETHYST_SHARD, 6)); }
             case 492 -> AutoPilot.shot(mc, "hud_rail_idle");
             case 494 -> AutoPilot.hold(o.keyUse, true);
             case 512 -> AutoPilot.shot(mc, "hud_rail_charging");

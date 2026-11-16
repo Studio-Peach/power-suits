@@ -2345,7 +2345,7 @@ public final class PowerSuitTests {
         suit.hurtServer(helper.getLevel(), helper.getLevel().damageSources().genericKill(), 1000F);
         helper.runAfterDelay(70, () -> {
             helper.assertItemEntityPresent(ModItems.EM_PROJECTOR.get());
-            helper.assertItemEntityNotPresent(Items.IRON_INGOT);
+            helper.assertItemEntityNotPresent(Items.AMETHYST_SHARD);
             helper.assertItemEntityNotPresent(ModItems.POWER_SUIT.get());
             helper.assertItemEntityNotPresent(ModItems.SUIT_HELMET.get()); // a rogue's helmet isn't loot either
             helper.succeed();
@@ -3799,10 +3799,10 @@ public final class PowerSuitTests {
         return helper.getLevel().getEntitiesOfClass(TntShell.class, helper.getBounds().inflate(2));
     }
 
-    /** The TNT and iron ingots the suit's pilot carries (0 without one). */
+    /** The TNT and amethyst shards the suit's pilot carries (0 without one). */
     private static int ammoLeft(PowerSuitEntity suit) {
         return suit.getControllingPassenger() instanceof Player pilot
-                ? pilot.getInventory().countItem(Items.TNT) + pilot.getInventory().countItem(Items.IRON_INGOT) : 0;
+                ? pilot.getInventory().countItem(Items.TNT) + pilot.getInventory().countItem(Items.AMETHYST_SHARD) : 0;
     }
 
     private static int drumOf(PowerSuitEntity suit) {
@@ -4031,8 +4031,8 @@ public final class PowerSuitTests {
     // Rail cannon (Phase 11, 2026-10-26)
     // =========================================================================================
 
-    /** A suit at (4, 2, 1) facing +Z with the rail cannon, fuel, and a survival pilot carrying {@code ingots} iron
-     *  ingots, looking at {@code target} (relative). */
+    /** A suit at (4, 2, 1) facing +Z with the rail cannon, fuel, and a survival pilot carrying {@code ingots} amethyst
+     *  shards, looking at {@code target} (relative). */
     private static Player railPilot(GameTestHelper helper, PowerSuitEntity[] out, Vec3 target, int ingots) {
         PowerSuitEntity suit = suitAt(helper, new BlockPos(4, 2, 1));
         suit.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.BLAZE_ROD, 2));
@@ -4041,7 +4041,7 @@ public final class PowerSuitTests {
         suit.setYBodyRot(0);
         Player pilot = boardedPilot(helper, suit);
         if (ingots > 0) {
-            pilot.getInventory().setItem(9, new ItemStack(Items.IRON_INGOT, ingots));
+            pilot.getInventory().setItem(9, new ItemStack(Items.AMETHYST_SHARD, ingots));
         }
         suit.positionRider(pilot);
         aim(helper, pilot, target);
@@ -4177,7 +4177,7 @@ public final class PowerSuitTests {
         return suit;
     }
 
-    /** The machine mind guards home with it: a husk across the pad gets shot (charge, aim, let go), needing no ingots; the
+    /** The machine mind guards home with it: a husk across the pad gets shot (charge, aim, let go), needing no shards; the
      *  suit stays home. */
     @SuitTest(timeoutTicks = 140)
     public static void railCannonMindShootsMonstersFromHome(GameTestHelper helper) {

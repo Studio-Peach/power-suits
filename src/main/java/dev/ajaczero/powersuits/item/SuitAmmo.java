@@ -13,8 +13,8 @@ import org.jetbrains.annotations.Nullable;
  * suit has no ammo of its own any more: the ammo slot and the hidden nugget store are gone (what old suits still hold
  * comes back out as items: PowerSuitEntity.returnOldAmmo).
  * <p>
- * Each tool says what a round is ({@code fits}): an iron nugget for the chaingun, TNT for the TNT launcher, an iron
- * ingot for the rail cannon.
+ * Each tool says what a round is ({@code fits}): a fire charge for the chaingun, TNT for the TNT launcher, an amethyst
+ * shard for the rail cannon.
  */
 public final class SuitAmmo {
     /** What {@link #count} returns for a pilot who never runs out (creative). */
