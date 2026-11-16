@@ -147,6 +147,20 @@ public final class PowerSuitTests {
         return suit;
     }
 
+    /** The suit's helmet is a Robot Helmet with a soul (companion design, 2026-11-16): the one thing that lets a friendly
+     *  mind run on an empty suit. */
+    private static PowerSuitEntity companion(GameTestHelper helper, PowerSuitEntity suit) {
+        suit.getInventory().setItem(PowerSuitEntity.HELMET_SLOT, soulHelmet(helper, Soul.VETERAN));
+        return suit;
+    }
+
+    private static ItemStack soulHelmet(GameTestHelper helper, Soul soul) {
+        ItemStack helmet = new ItemStack(ModItems.ROBOT_HELMET.get());
+        helmet.enchant(helper.getLevel().registryAccess().lookupOrThrow(Registries.ENCHANTMENT).getOrThrow(net.minecraft.resources.ResourceKey.create(
+                Registries.ENCHANTMENT, net.minecraft.resources.Identifier.fromNamespaceAndPath(PowerSuits.MODID, soul.id()))), 1);
+        return helmet;
+    }
+
     private static Player boardedPilot(GameTestHelper helper, PowerSuitEntity suit) {
         Player pilot = helper.makeMockPlayer(GameType.SURVIVAL);
         pilot.snapTo(helper.absoluteVec(new Vec3(1.5, 2, 4.5)));
@@ -1320,7 +1334,7 @@ public final class PowerSuitTests {
     }
 
     private static PowerSuitEntity toolSuit(GameTestHelper helper) {
-        return suitAt(helper, new BlockPos(4, 2, 1));
+        return companion(helper, suitAt(helper, new BlockPos(4, 2, 1)));
     }
 
     @SuitTest(timeoutTicks = 60)
@@ -1328,6 +1342,7 @@ public final class PowerSuitTests {
         wall(helper, Blocks.STONE);
         helper.setBlock(new BlockPos(4, 3, 6), Blocks.OBSIDIAN); // behind: slow, so it's still there when we check
         PowerSuitEntity suit = toolSuit(helper);
+        companion(helper, suit);
         Player pilot = toolPilot(helper, suit, new ItemStack(ModItems.DRILL.get()), new Vec3(4.5, 3.5, 5));
         int before = suit.power().getTotalEnergy();
         suit.socket().setTriggerHeld(pilot, true);
@@ -1772,6 +1787,7 @@ public final class PowerSuitTests {
     @SuitTest
     public static void pilotOwnsTheSuitAndExitMarksHome(GameTestHelper helper) {
         PowerSuitEntity suit = fueledSuit(helper, new ItemStack(Items.COAL, 4));
+        companion(helper, suit);
         helper.runAfterDelay(2, () -> { // the engine lights on the suit's first tick
             Player pilot = boardedPilot(helper, suit);
             helper.assertTrue(pilot.getUUID().equals(suit.brain().getOwnerId()), "climbing in claims the suit");
@@ -1820,7 +1836,7 @@ public final class PowerSuitTests {
      *  travel) and onto the block itself (vanilla's path for a 2-block-wide mob ended 1.7 blocks short). */
     @SuitTest(timeoutTicks = 140)
     public static void idleSuitWalksBackHome(GameTestHelper helper) {
-        PowerSuitEntity suit = suitAt(helper, new BlockPos(7, 2, 4));
+        PowerSuitEntity suit = companion(helper, suitAt(helper, new BlockPos(7, 2, 4)));
         suit.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.COAL, 2));
         BlockPos home = helper.absolutePos(new BlockPos(1, 2, 4));
         suit.brain().setHome(home);
@@ -1851,7 +1867,7 @@ public final class PowerSuitTests {
 
     @SuitTest(timeoutTicks = 40)
     public static void boardingStopsTheMind(GameTestHelper helper) {
-        PowerSuitEntity suit = suitAt(helper, new BlockPos(2, 2, 2));
+        PowerSuitEntity suit = companion(helper, suitAt(helper, new BlockPos(2, 2, 2)));
         suit.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.COAL, 2));
         suit.brain().setHome(helper.absolutePos(new BlockPos(6, 2, 6)));
         helper.runAfterDelay(8, () -> {
@@ -2103,6 +2119,7 @@ public final class PowerSuitTests {
 
     private static PowerSuitEntity chaingunMind(GameTestHelper helper, BlockPos at) {
         PowerSuitEntity suit = suitAt(helper, at);
+        companion(helper, suit);
         suit.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.BLAZE_ROD, 4));
         suit.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, new ItemStack(ModItems.CHAINGUN.get()));
         return suit;
@@ -2189,6 +2206,7 @@ public final class PowerSuitTests {
 
     private static PowerSuitEntity emGuard(GameTestHelper helper, BlockPos at) {
         PowerSuitEntity suit = suitAt(helper, at);
+        companion(helper, suit);
         suit.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.BLAZE_ROD, 4));
         suit.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, new ItemStack(ModItems.EM_PROJECTOR.get()));
         suit.brain().setHome(helper.absolutePos(at));
@@ -2253,6 +2271,7 @@ public final class PowerSuitTests {
 
     private static PowerSuitEntity worker(GameTestHelper helper, BlockPos at, ItemStack tool) {
         PowerSuitEntity suit = suitAt(helper, at);
+        companion(helper, suit);
         suit.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.BLAZE_ROD, 8));
         suit.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, tool);
         suit.brain().setHome(helper.absolutePos(at));
@@ -2377,23 +2396,21 @@ public final class PowerSuitTests {
         });
     }
 
-    /** Lightning reboots the mind friendly: nobody's, no home, one coal's worth of fuel; the first pilot claims it. */
+    /** Lightning only stuns a rogue (2026-11-16): it switches off and convulses, then wakes up still hostile. */
     @SuitTest(timeoutTicks = 200)
-    public static void lightningRebootsARogueFriendly(GameTestHelper helper) {
+    public static void lightningOnlyStunsARogue(GameTestHelper helper) {
         PowerSuitEntity suit = rogue(helper, SUIT_POS, true);
         helper.runAfterDelay(3, () -> {
             helper.assertTrue(suit.isRogue() && suit.isPowered(), "a running rogue");
             var bolt = EntityTypes.LIGHTNING_BOLT.create(helper.getLevel(), EntitySpawnReason.TRIGGERED);
             bolt.snapTo(suit.position());
             suit.thunderHit(helper.getLevel(), bolt);
-            helper.assertTrue(!suit.isRogue() && suit.brain().getOwnerId() == null && suit.brain().getHome() == null, "rebooted friendly, nobody's");
-            helper.assertTrue(suit.isStunned() && !suit.isPowered(), "knocked out first");
+            helper.assertTrue(suit.isRogue(), "still a rogue");
+            helper.assertTrue(suit.isStunned() && !suit.isPowered() && !suit.isAiDriven(), "knocked out: off, the mind with it");
         });
         helper.runAfterDelay(PowerSuitsConfig.LIGHTNING_STUN_TICKS.get() + 40, () -> {
-            helper.assertTrue(suit.isAiDriven() && suit.hasHelmet(), "back up as a friendly mind on its last fuel, helmet still on");
             suit.clearFire();
-            Player pilot = boardedPilot(helper, suit);
-            helper.assertTrue(pilot.getVehicle() == suit && pilot.getUUID().equals(suit.brain().getOwnerId()), "the first pilot claims it");
+            helper.assertTrue(suit.isRogue() && suit.isAiDriven() && !suit.isStunned(), "awake again, still hostile");
             helper.succeed();
         });
     }
@@ -2653,13 +2670,45 @@ public final class PowerSuitTests {
         });
         helper.runAfterDelay(20, () -> helper.assertTrue(suit.isPowered() && suit.power().getBurnLeft() > 0, "with its helmet on it runs"));
         helper.runAfterDelay(60, () -> {
-            helper.assertTrue(suit.isAiDriven(), "and its mind drives it");
+            helper.assertTrue(!suit.isAiDriven(), "a plain helmet carries no mind: it just stands there, running");
             SuitLoadout packed = suit.getLoadout();
             helper.assertTrue(packed.helmet().is(ModItems.SUIT_HELMET.get()), "a packed suit keeps its helmet");
             PowerSuitEntity loaded = ModEntities.POWER_SUIT.get().create(helper.getLevel(), EntitySpawnReason.LOAD);
             loadTag(helper, loaded, saveTag(helper, suit));
             helper.assertTrue(loaded.getInventory().getItem(PowerSuitEntity.HELMET_SLOT).is(ModItems.SUIT_HELMET.get()) && loaded.hasHelmet(),
                     "the helmet survives saving");
+            helper.succeed();
+        });
+    }
+
+    /** The friendly mind needs a Robot Helmet with a soul (companion design, 2026-11-16): a plain helmet, a Robot Helmet
+     *  without a soul or a broken one leave the suit standing; a soul wakes it, a broken helmet shuts it down again, a
+     *  gold ingot at the anvil (a repair) brings it back. */
+    @SuitTest(timeoutTicks = 60)
+    public static void onlyASouledRobotHelmetWakesTheMind(GameTestHelper helper) {
+        PowerSuitEntity suit = suitAt(helper, SUIT_POS);
+        suit.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.BLAZE_ROD, 4));
+        helper.runAfterDelay(4, () -> {
+            helper.assertTrue(suit.isPowered() && !suit.isAiDriven() && !suit.isCompanion(), "a plain helmet: running, no mind");
+            suit.getInventory().setItem(PowerSuitEntity.HELMET_SLOT, new ItemStack(ModItems.ROBOT_HELMET.get()));
+        });
+        helper.runAfterDelay(8, () -> {
+            helper.assertTrue(!suit.isAiDriven() && suit.getHelmetSoul() == null, "a Robot Helmet with no soul: no mind");
+            companion(helper, suit);
+        });
+        helper.runAfterDelay(12, () -> {
+            helper.assertTrue(suit.isAiDriven() && suit.isCompanion() && suit.getHelmetSoul() == Soul.VETERAN, "a soul wakes the mind");
+            ItemStack helmet = suit.getInventory().getItem(PowerSuitEntity.HELMET_SLOT);
+            helmet.setDamageValue(helmet.getMaxDamage());
+            suit.getInventory().setChanged();
+        });
+        helper.runAfterDelay(16, () -> {
+            helper.assertTrue(suit.isHelmetBroken() && !suit.isAiDriven() && !suit.isCompanion(), "a broken helmet shuts the companion down");
+            suit.getInventory().getItem(PowerSuitEntity.HELMET_SLOT).setDamageValue(0); // what the anvil does
+            suit.getInventory().setChanged();
+        });
+        helper.runAfterDelay(20, () -> {
+            helper.assertTrue(suit.isAiDriven(), "mended, it wakes again");
             helper.succeed();
         });
     }
@@ -3818,7 +3867,7 @@ public final class PowerSuitTests {
      *  and never sets blocks on fire (it guards you, not your house). */
     @SuitTest(timeoutTicks = 160)
     public static void flamethrowerMindBurnsMonstersNearItsOwner(GameTestHelper helper) {
-        PowerSuitEntity suit = suitAt(helper, new BlockPos(4, 2, 1));
+        PowerSuitEntity suit = companion(helper, suitAt(helper, new BlockPos(4, 2, 1)));
         suit.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.BLAZE_ROD, 4));
         suit.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, new ItemStack(ModItems.FLAMETHROWER.get()));
         var owner = ownerAt(helper, suit, new Vec3(1.5, 2, 1.5));
@@ -4243,6 +4292,7 @@ public final class PowerSuitTests {
 
     private static PowerSuitEntity railGuard(GameTestHelper helper, BlockPos at) {
         PowerSuitEntity suit = suitAt(helper, at);
+        companion(helper, suit);
         suit.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.BLAZE_ROD, 4));
         suit.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, new ItemStack(ModItems.RAIL_CANNON.get()));
         suit.brain().setHome(helper.absolutePos(at));

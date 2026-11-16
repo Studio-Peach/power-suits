@@ -251,7 +251,6 @@
   "power_suits.configuration.rogue_armour_chance": "Rogue armour chance",
   "power_suits.configuration.rogue_armour_chance.tooltip": "A new rogue suit wears each of the five armour pieces with this chance (rolled once, so rogues come in mixes from the bare frame to the full set). A defeated rogue still drops only its tool.",
   "entity.power_suits.power_suit.rogue": "Rogue Power Suit",
-  "message.power_suits.rogue_rebooted": "The rogue suit's mind rebooted: it's friendly now. Climb in to claim it.",
   "item.power_suits.suit_helmet.tooltip": "Put it on a Power Suit: right-click the suit with it, or use the helmet slot in its menu. With all five armour pieces on, it seals the suit (fire, frost, poison, air under water) and the suit's machine mind only runs with it on.",
   "item.power_suits.suit_helmet.protector": "Protector Helmet",
   "item.power_suits.suit_helmet.protector.flavour": "\"Would you kindly keep her safe?\"",

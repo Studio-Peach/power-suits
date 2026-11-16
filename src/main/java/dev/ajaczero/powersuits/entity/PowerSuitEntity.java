@@ -10,6 +10,7 @@ import dev.ajaczero.powersuits.SuitSeal;
 import dev.ajaczero.powersuits.entity.ai.SuitGoals;
 import dev.ajaczero.powersuits.item.HelmetStyle;
 import dev.ajaczero.powersuits.item.PowerSuitItem;
+import dev.ajaczero.powersuits.item.Soul;
 import dev.ajaczero.powersuits.item.SuitHelmetItem;
 import dev.ajaczero.powersuits.item.PowerTool;
 import dev.ajaczero.powersuits.item.SuitLoadout;
@@ -192,6 +193,9 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
     private static final EntityDataAccessor<Boolean> HELMET_BROKEN =
             SynchedEntityData.defineId(PowerSuitEntity.class, EntityDataSerializers.BOOLEAN);
     /** The worn helmet's style (HelmetStyle ordinal, -1 = the standard helmet or none): clients draw its bone. */
+    /** The soul of the Robot Helmet worn (Soul ordinal, -1 = none or not a Robot Helmet): what lets the friendly mind run. */
+    private static final EntityDataAccessor<Byte> HELMET_SOUL =
+            SynchedEntityData.defineId(PowerSuitEntity.class, EntityDataSerializers.BYTE);
     private static final EntityDataAccessor<Byte> HELMET_STYLE =
             SynchedEntityData.defineId(PowerSuitEntity.class, EntityDataSerializers.BYTE);
     /** The plates' paint: a dye's id (DyeColor.getId, 0..15), or -1 for bare steel. Synced: clients pick the texture by it. */
@@ -294,6 +298,7 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
         builder.define(HELMET, false);
         builder.define(HELMET_BROKEN, false);
         builder.define(HELMET_STYLE, (byte) -1);
+        builder.define(HELMET_SOUL, (byte) -1);
         builder.define(STUNNED, false);
         builder.define(MIND, (byte) SuitMind.FRIENDLY.ordinal());
         builder.define(FIELD_HELD, false);
@@ -381,9 +386,10 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
     // The machine mind (design sec. 8): drives the suit while it's powered and nobody is inside
     // =========================================================================================
 
-    /** Both sides: the mind is in control right now: powered, booted, not knocked out, no pilot. */
+    /** Both sides: the mind is in control right now: powered, booted, not knocked out, no pilot, and it is a rogue or a
+     *  companion (a friendly suit without a souled Robot Helmet just stands there). */
     public boolean isAiDriven() {
-        return this.isAlive() && this.canOperate() && !this.isStunned() && !this.isVehicle();
+        return this.isAlive() && this.canOperate() && !this.isStunned() && !this.isVehicle() && (this.isRogue() || this.isCompanion());
     }
 
     /** Both sides: someone drives the suit, the pilot or the mind. The model then aims the torso and raises the tool. */
@@ -579,6 +585,8 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
             this.entityData.set(HELMET_BROKEN, SuitHelmetItem.isBroken(this.inventory.getItem(HELMET_SLOT)));
             HelmetStyle style = SuitHelmetItem.style(this.inventory.getItem(HELMET_SLOT));
             this.entityData.set(HELMET_STYLE, (byte) (style == null ? -1 : style.ordinal()));
+            Soul soul = Soul.of(this.inventory.getItem(HELMET_SLOT));
+            this.entityData.set(HELMET_SOUL, (byte) (soul == null ? -1 : soul.ordinal()));
             SuitEngine engine = SuitEngine.of(this.inventory.getItem(ENGINE_SLOT));
             this.entityData.set(ENGINE, (byte) (engine == null ? -1 : engine.ordinal()));
             this.entityData.set(ARMOUR, SuitArmour.encode(this.inventory));
@@ -614,6 +622,21 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
     /** Both sides: the helmet in its slot is worn out (no armour points, no seal; the mind still runs). */
     public boolean isHelmetBroken() {
         return this.entityData.get(HELMET_BROKEN);
+    }
+
+    /** Both sides: the soul of the Robot Helmet worn, or null (none, or another helmet). */
+    public @Nullable Soul getHelmetSoul() {
+        int id = this.entityData.get(HELMET_SOUL);
+        return id >= 0 && id < Soul.values().length ? Soul.values()[id] : null;
+    }
+
+    /**
+     * Both sides: the suit is a companion (companion design, 2026-11-16): a Robot Helmet with a soul sits on it and isn't
+     * broken. It is the one thing that lets a friendly mind run: a broken helmet shuts the companion down, gold at an
+     * anvil wakes it.
+     */
+    public boolean isCompanion() {
+        return !this.isRogue() && this.getHelmetSoul() != null && !this.isHelmetBroken();
     }
 
     /** Both sides: the worn helmet's style (design sec. 4c), null for the standard one (or no helmet). */
@@ -1087,21 +1110,11 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
     public int lastStompVictims = -1;
 
     /** Struck by lightning (vanilla sets us on fire and hurts us first): the electrics trip. A suit with fuel shuts down,
-     *  convulsing, and restarts by itself after a few seconds; until then it can't move, fight or keep fire out. */
+     *  convulsing, and restarts by itself after a few seconds; until then it can't move, fight or keep fire out. A rogue
+     *  is only stunned the same way and wakes up still hostile (2026-11-16: the friendly reboot is gone with the friendly mind). */
     @Override
     public void thunderHit(ServerLevel level, LightningBolt lightning) {
         boolean wasPowered = this.isPowered();
-        if (this.isRogue() && this.isAlive()) {
-            // The rogue mind reboots friendly (design sec. 8): nobody's (the first pilot claims it), no home, and only the
-            // fuel left in its firebox (one coal's worth) to restart with after the knock-out below.
-            this.setMind(SuitMind.FRIENDLY);
-            this.brain.forget();
-            this.setTarget(null);
-            this.power.setBurn(1600, 1600);
-            for (Player near : level.getEntitiesOfClass(Player.class, this.getBoundingBox().inflate(32))) {
-                near.sendOverlayMessage(Component.translatable("message.power_suits.rogue_rebooted"));
-            }
-        }
         // Knock it out first, so the strike's damage below finds it already off: no flinch over the convulsion.
         int ticks = PowerSuitsConfig.LIGHTNING_STUN_TICKS.get();
         if (this.isAlive() && this.power.knockOut(ticks)) {

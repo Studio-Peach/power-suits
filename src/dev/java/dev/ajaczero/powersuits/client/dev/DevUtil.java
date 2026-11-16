@@ -41,5 +41,14 @@ final class DevUtil {
         }
     }
 
+    /** A Robot Helmet with a soul (companion design, 2026-11-16): what lets a friendly mind run on an empty suit. */
+    static ItemStack soulHelmet(net.minecraft.world.level.Level level) {
+        ItemStack helmet = new ItemStack(ModItems.ROBOT_HELMET.get());
+        helmet.enchant(level.registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.ENCHANTMENT).getOrThrow(
+                net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.ENCHANTMENT,
+                        net.minecraft.resources.Identifier.fromNamespaceAndPath(dev.ajaczero.powersuits.PowerSuits.MODID, "veteran"))), 1);
+        return helmet;
+    }
+
     private DevUtil() {}
 }

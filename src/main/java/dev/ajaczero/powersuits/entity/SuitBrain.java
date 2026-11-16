@@ -117,12 +117,6 @@ public final class SuitBrain {
         this.home = this.suit.blockPosition();
     }
 
-    /** Server: a rogue's mind was rebooted by lightning: nobody's (the first pilot claims it), no home. */
-    void forget() {
-        this.ownerId = null;
-        this.home = null;
-    }
-
     // ---- Aim ----------------------------------------------------------------------------------------------------
 
     /** Server: the point the mind aims the head (and so the torso and the tool) at, or null to let the look goals

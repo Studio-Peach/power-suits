@@ -36,7 +36,8 @@ import net.minecraft.world.phys.Vec3;
  * <ol>
  *   <li>the spawner puts a rogue 48-64 blocks from the player (logged); it's then brought 18 blocks away for the fight:
  *   it shoots the cows and the player (resistance V: unhurt), the player's own chaingun suit takes it on;</li>
- *   <li>a lightning bolt reboots it (convulse, slump, green visor); the player climbs in and claims it, then gets out;</li>
+ *   <li>a lightning bolt only stuns it (convulse, slump, wakes up hostile: 2026-11-16); then this scene turns it friendly by hand
+ *   (the reboot is gone from the game) so the player can climb in and claim it, then get out;</li>
  *   <li>a rogue with an EM projector hurls a cow and then the player; both friendly suits shoot it; it drops its tool.</li>
  * </ol>
  * Logs run/autopilot_rogue.csv.
@@ -66,6 +67,8 @@ final class RogueScene {
             case 300 -> { phase = "claim"; AutoPilot.onServer(mc, p -> {
                               if (rogue != null && rogue.isAlive()) {
                                   rogue.clearFire();
+                                  rogue.setMind(dev.ajaczero.powersuits.entity.SuitMind.FRIENDLY); // by hand: lightning no longer does it
+                                  rogue.power().setBurn(1600, 1600);
                                   p.teleportTo(rogue.getX() - 2, rogue.getY(), rogue.getZ());
                                   p.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
                                   rogue.interact(p, InteractionHand.MAIN_HAND, rogue.position());

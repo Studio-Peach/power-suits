@@ -193,7 +193,7 @@ final class RailScene {
             PowerSuitEntity s = ModEntities.POWER_SUIT.get().create(level, EntitySpawnReason.COMMAND);
             DevUtil.firebox(s);
             s.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.COAL, 16));
-            s.getInventory().setItem(PowerSuitEntity.HELMET_SLOT, new ItemStack(ModItems.SUIT_HELMET.get())); DevUtil.ironArmour(s);
+            s.getInventory().setItem(PowerSuitEntity.HELMET_SLOT, DevUtil.soulHelmet(s.level())); DevUtil.ironArmour(s);
             s.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, new ItemStack(ModItems.RAIL_CANNON.get()));
             shards(player, 6); // the pilot's own: each shot takes one
             s.snapTo(x + 0.5, g, z + 0.5, 0, 0);

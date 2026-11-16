@@ -1461,7 +1461,7 @@ public final class AutoPilot {
                 }
             }
             PowerSuitEntity suit = ModEntities.POWER_SUIT.get().create(level, EntitySpawnReason.COMMAND);
-            DevUtil.firebox(suit); suit.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.BLAZE_ROD, 16)); suit.getInventory().setItem(PowerSuitEntity.HELMET_SLOT, new ItemStack(ModItems.SUIT_HELMET.get())); DevUtil.ironArmour(suit);
+            DevUtil.firebox(suit); suit.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.BLAZE_ROD, 16)); suit.getInventory().setItem(PowerSuitEntity.HELMET_SLOT, DevUtil.soulHelmet(suit.level())); DevUtil.ironArmour(suit);
             suit.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, new ItemStack(ModItems.DRILL.get()));
             suit.snapTo(x + 0.5, y, z + 0.5, 0, 0);
             suit.setYBodyRot(0);
