@@ -178,24 +178,53 @@ def dome(f, w, h):
     return g
 
 
-BONE_ORIGIN = {'star_core': (0, 20.5, 7.5)}   # raw; the star's spin pivot (the window's middle). The game draws the fuel slot's
-                                                # nether star there (SuitStar layer) and turns the bone fast.
+BONE_ORIGIN = {'star_core': (0, 21.5, 5.5)}   # raw; the star's spin pivot (the window's middle). The game draws the fuel slot's
+                                                # nether star there and turns the bone fast.
+
+
+def lit_band(f, w, h):
+    """A body band: black, its side faces carrying the violet slit (the reference's lit slits)."""
+    g = blk(f, w, h)
+    if f == 'south':                                     # two facets, lit left / mid right, no seam between the bands
+        g = [['9' if i < w // 2 else '8' for i in range(w)] for j in range(h)]
+    if f in ('east', 'west'):
+        for j in range(1, h - 1):
+            for i in range(1, w - 1): g[j][i] = '%' if j == h // 2 else ('*' if j == h // 2 - 1 else g[j][i])
+    return g
+
+
+def faceted(f, w, h):
+    g = blk(f, w, h)
+    if f == 'south': g = [['9' if i < w // 2 else '8' for i in range(w)] for j in range(h)]
+    return g
+
+
+def window(f, w, h):
+    """The raised panel: a violet ring round a dark well (the star spins in front of it)."""
+    g = blk(f, w, h)
+    if f != 'south': return g
+    cx, cy, R = w / 2, h / 2, min(w, h) / 2 - 0.2
+    for j in range(h):
+        for i in range(w):
+            d = math.hypot(i + 0.5 - cx, j + 0.5 - cy)
+            if d <= R: g[j][i] = '$'
+            if R - 1 <= d <= R: g[j][i] = '*'
+    return g
 
 
 def jetpack():
-    P = [part('foot', ((-3, 16, 3), (3, 17, 6)), shell),
-         part('belly', ((-4, 17, 3), (4, 24, 7)), belly),
-         part('crown', ((-2.5, 24, 3), (2.5, 25, 6)), shell),
-         part('dome', ((-0.5, 25, 4), (0.5, 25.5, 5)), dome),
-         # the bezel round the window: four slim boxes, 0.5 proud
-         part('bez_t', ((-3.5, 23, 7), (3.5, 23.5, 7.5)), shell), part('bez_b', ((-3.5, 17.5, 7), (3.5, 18, 7.5)), shell),
-         part('bez_l', ((-3.5, 18, 7), (-3, 23, 7.5)), shell), part('bez_r', ((3, 18, 7), (3.5, 23, 7.5)), shell)]
-    hub_ = part('hub', ((-0.5, 20, 7), (0.5, 21, 8)), hub)
+    """After the Fortnite Alien Jetpack: slim and gem-like. Stepped bands (a hexagon seen from behind: narrow crown, widest
+    at the shoulders, tapering to the foot), only 2 px deep, a raised round window on its face, a dome on top, two long
+    swept-back fins at the foot."""
+    P = []
+    for k, (y0, y1, hw) in enumerate(((24, 25, 2.5), (23, 24, 3.5), (21, 23, 4.5), (19, 21, 4), (18, 19, 3.5), (17, 18, 2.5), (16, 17, 1.5))):
+        P.append(part(f'band{k}', ((-hw, y0, 3), (hw, y1, 5)), lit_band if hw >= 4 else faceted))
+    P.append(part('dome', ((-1, 25, 3.5), (1, 25.5, 4.5)), dome))
+    P.append(part('panel', ((-2.5, 19.5, 5), (2.5, 23.5, 5.5)), window))
+    hub_ = part('hub', ((-0.5, 21, 5), (0.5, 22, 6)), hub)
     hub_['bone'] = 'star_core'
     P.append(hub_)
-    for k, (y0, y1) in enumerate(((18.5, 22.5),)):
-        P.append(part(f'slit{k}', ((4, y0, 3.5), (4.5, y1, 6.5)), slit, mirror=True))
-    P.append(part('fin', ((3, 12.5, 3.5), (3.5, 16.5, 5.5)), fin, mirror=True, rot=[0, 0, 20], origin=(3.25, 16.5, 4.5)))
+    P.append(part('fin', ((2, 12.5, 3), (2.5, 18, 4.5)), fin, mirror=True, rot=[0, 0, 22], origin=(2.25, 18, 3.75)))
     return P
 
 
