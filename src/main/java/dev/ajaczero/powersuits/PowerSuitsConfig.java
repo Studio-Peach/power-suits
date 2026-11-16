@@ -184,6 +184,10 @@ public final class PowerSuitsConfig {
     public static final ModConfigSpec.DoubleValue RAIL_DAMAGE = B
             .comment("Damage to everything the beam passes through (2 = one heart; 40 kills an enderman, a third of an iron golem).").translation(key("rail_damage"))
             .defineInRange("damage", 40.0, 0, 10_000);
+    public static final ModConfigSpec.DoubleValue ROGUE_RAIL_DAMAGE = B
+            .comment("Damage of a rogue's rail cannon beam (20 = ten hearts: survivable at full health; the beam charges for a",
+                    "second and a half with the core glowing first).").translation(key("rogue_rail_damage"))
+            .defineInRange("rogue_damage", 20.0, 0, 10_000);
     public static final ModConfigSpec.DoubleValue RAIL_RANGE = B
             .comment("How far the beam reaches, blocks (it stops at the first solid block before that).").translation(key("rail_range"))
             .defineInRange("range", 64.0, 1, 256);

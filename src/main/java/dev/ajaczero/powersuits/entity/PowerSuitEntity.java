@@ -1182,6 +1182,11 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
             // reboot's reward: the whole suit).
             this.spawnAtLocation(level, this.inventory.getItem(SOCKET_SLOT).copy());
             this.spawnAtLocation(level, this.inventory.getItem(RIGHT_SOCKET_SLOT).copy());
+            // and its helmet's template (2026-11-16: the kits' helmets are the styles' own, so beating one is how you find it)
+            var template = ModItems.templateOf(SuitHelmetItem.style(this.inventory.getItem(HELMET_SLOT)));
+            if (template != null) {
+                this.spawnAtLocation(level, new ItemStack(template));
+            }
             this.inventory.clearContent();
             return;
         }

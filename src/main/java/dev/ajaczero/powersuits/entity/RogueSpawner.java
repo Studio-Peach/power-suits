@@ -29,7 +29,7 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Rogue suits turn up like the wandering trader (design sec. 8): once per in-game day the overworld rolls a small
- * chance (config); on a hit, a rogue with a chaingun or an EM projector appears 48-64 blocks from a random player, on
+ * chance (config); on a hit, a rogue of one of the three kits (RogueKit) appears 48-64 blocks from a random player, on
  * the surface. Only one at a time, never on peaceful, not with mob spawning off. The day countdown is saved with the
  * world ({@link SavedData}: a per-world file in data/), so quitting doesn't reset it.
  */
@@ -128,9 +128,9 @@ public final class RogueSpawner {
             if (!level.noCollision(rogue, rogue.getBoundingBox())) {
                 continue;
             }
-            // its weapon: a chaingun 2 in 5, an EM projector or a flamethrower otherwise
-            int pick = random.nextInt(5);
-            makeRogue(rogue, new ItemStack(pick < 2 ? ModItems.CHAINGUN.get() : pick < 4 ? ModItems.EM_PROJECTOR.get() : ModItems.FLAMETHROWER.get()));
+            // one of the three kits (RogueKit): the digger (brown, drill) 2 in 5, the hunter (red, rail cannon) 1 in 5, the
+            // line (green, chaingun) 2 in 5. (The EM and flamethrower rogues no longer turn up by themselves: /summon only.)
+            RogueKit.roll(random).apply(rogue);
             level.addFreshEntity(rogue);
             return rogue;
         }

@@ -38,7 +38,7 @@ import net.minecraft.world.phys.Vec3;
  * Logs run/autopilot_companion.csv (husk health, the suit's goals, the tool's uses, fire blocks seen).
  */
 final class CompanionScene {
-    private static final String[] PHASES = {"saw", "drill", "flame", "tnt", "voice"};
+    private static final String[] PHASES = {"saw", "drill", "flame", "tnt", "voice", "kits"};
     private static final int PHASE_TICKS = 170;
     private static volatile BlockPos base;
     private static final List<PowerSuitEntity> suits = new CopyOnWriteArrayList<>();
@@ -52,6 +52,17 @@ final class CompanionScene {
         if (phase >= PHASES.length) {
             close();
             return false;
+        }
+        if (phase == 5) { // the three rogue kits in a row, still (no AI), from the front and from behind
+            switch (at) {
+                case 0 -> kitsSetup(mc);
+                case 6 -> camera(mc, new Vec3(0, 2.5, 7), new Vec3(0, 1.5, 0));
+                case 30, 60 -> AutoPilot.shot(mc, "companion_kits_front_" + at);
+                case 70 -> camera(mc, new Vec3(0, 2.5, -7), new Vec3(0, 1.5, 0));
+                case 100, 130 -> AutoPilot.shot(mc, "companion_kits_back_" + at);
+                default -> {}
+            }
+            return true;
         }
         if (phase == 4) { // the souls' chat: four suits, one soul each, the GUI up so the chat shows
             switch (at) {
@@ -153,6 +164,35 @@ final class CompanionScene {
                 suits.add(s);
             }
             player.teleportTo(x + 5, y, z - 4);
+        });
+    }
+
+    /** Server: the digger (brown, drill), the hunter (red, rail cannon) and the line (green, chaingun) 4 blocks apart, still, in
+     *  front of the camera (the whole kit: paint, helmet, tool; no armour so the paint shows on the frame too). */
+    private static void kitsSetup(Minecraft mc) {
+        AutoPilot.onServer(mc, player -> {
+            ServerLevel level = player.level();
+            DevUtil.setTime(level, 6000);
+            player.setGameMode(GameType.CREATIVE);
+            for (PowerSuitEntity old : suits) {
+                old.discard();
+            }
+            suits.clear();
+            int x = player.getBlockX() + 60, z = player.getBlockZ() + 140;
+            int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING, x, z);
+            base = new BlockPos(x, y, z);
+            dev.ajaczero.powersuits.entity.RogueKit[] kits = dev.ajaczero.powersuits.entity.RogueKit.values();
+            for (int i = 0; i < kits.length; i++) {
+                PowerSuitEntity s = ModEntities.POWER_SUIT.get().create(level, EntitySpawnReason.COMMAND);
+                kits[i].apply(s);
+                DevUtil.firebox(s);
+                s.brain().skipRogueArmour();
+                s.setNoAi(true);
+                s.snapTo(x + 0.5 + 3 * (i - 1), y, z + 0.5, 0, 0);
+                level.addFreshEntity(s);
+                suits.add(s);
+            }
+            player.teleportTo(x + 20, y, z + 20);
         });
     }
 

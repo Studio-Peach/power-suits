@@ -85,6 +85,12 @@ public class DrillItem extends Item implements PowerTool, ModTooltip {
         return ToolUse.DRILL;
     }
 
+    /** A rogue's (the digger kit's) attack; a friendly mind's drill goals are every mind's (HomeGuard). */
+    @Override
+    public List<Goal> mindGoals(PowerSuitEntity suit) {
+        return List.of(new dev.ajaczero.powersuits.entity.ai.RogueDrillAttack(suit));
+    }
+
     @Override
     public boolean isContinuous() {
         return true;

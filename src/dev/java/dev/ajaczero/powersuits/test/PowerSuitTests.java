@@ -14,6 +14,7 @@ import dev.ajaczero.powersuits.entity.Bullet;
 import dev.ajaczero.powersuits.entity.FlameJet;
 import dev.ajaczero.powersuits.entity.PowerSuitEntity;
 import dev.ajaczero.powersuits.entity.ToolArm;
+import dev.ajaczero.powersuits.entity.RogueKit;
 import dev.ajaczero.powersuits.entity.RogueSpawner;
 import dev.ajaczero.powersuits.entity.StepSmoothing;
 import dev.ajaczero.powersuits.entity.SuitDriving;
@@ -25,6 +26,7 @@ import dev.ajaczero.powersuits.entity.SuitSmash;
 import dev.ajaczero.powersuits.entity.TntShell;
 import dev.ajaczero.powersuits.entity.Trajectory;
 import dev.ajaczero.powersuits.entity.ai.GunAttack;
+import dev.ajaczero.powersuits.entity.ai.RogueDrillAttack;
 import dev.ajaczero.powersuits.entity.ai.SuitTargets;
 import dev.ajaczero.powersuits.item.ChaingunItem;
 import dev.ajaczero.powersuits.item.EmProjectorItem;
@@ -2412,6 +2414,83 @@ public final class PowerSuitTests {
         });
     }
 
+    // ---- the three rogue kits (RogueKit, design sec. 8, 2026-11-16) ------------------------------------------------------
+
+    private static PowerSuitEntity kitRogue(GameTestHelper helper, BlockPos at, RogueKit kit) {
+        PowerSuitEntity suit = suitAt(helper, at);
+        kit.apply(suit);
+        suit.brain().skipRogueArmour();
+        return suit;
+    }
+
+    /** The kits come at 40 / 20 / 40 (digger / hunter / line) and each is a painted frame, a styled helmet and one tool. */
+    @SuitTest
+    public static void rogueKitsHaveTheirLookAndOdds(GameTestHelper helper) {
+        var random = net.minecraft.util.RandomSource.create(42);
+        int[] counts = new int[RogueKit.values().length];
+        for (int i = 0; i < 5000; i++) {
+            counts[RogueKit.roll(random).ordinal()]++;
+        }
+        helper.assertTrue(Math.abs(counts[0] - 2000) < 150 && Math.abs(counts[1] - 1000) < 120 && Math.abs(counts[2] - 2000) < 150,
+                "40 / 20 / 40 odds, got " + java.util.Arrays.toString(counts));
+        var expected = Map.of(RogueKit.DIGGER, new Object[]{DyeColor.BROWN, HelmetStyle.PROTECTOR, ModItems.DRILL.get()},
+                RogueKit.HUNTER, new Object[]{DyeColor.RED, HelmetStyle.HUNTER, ModItems.RAIL_CANNON.get()},
+                RogueKit.LINE, new Object[]{DyeColor.GREEN, HelmetStyle.SPARTAN, ModItems.CHAINGUN.get()});
+        for (RogueKit kit : RogueKit.values()) {
+            PowerSuitEntity suit = suitAt(helper, SUIT_POS);
+            kit.apply(suit);
+            helper.assertTrue(suit.isRogue() && suit.getPaint() == expected.get(kit)[0] && suit.getHelmetStyle() == expected.get(kit)[1]
+                    && suit.getInventory().getItem(PowerSuitEntity.SOCKET_SLOT).is((Item) expected.get(kit)[2]), kit + " looks wrong");
+            suit.discard();
+        }
+        helper.succeed();
+    }
+
+    /** A defeated kit rogue drops its tool and its helmet's template, nothing else. */
+    @SuitTest(timeoutTicks = 100)
+    public static void kitRoguesDropTheirToolAndTemplate(GameTestHelper helper) {
+        var drops = Map.of(RogueKit.DIGGER, ModItems.PROTECTOR_TEMPLATE.get(), RogueKit.HUNTER, ModItems.HUNTER_TEMPLATE.get(),
+                RogueKit.LINE, ModItems.SPARTAN_TEMPLATE.get());
+        for (RogueKit kit : RogueKit.values()) {
+            PowerSuitEntity suit = kitRogue(helper, new BlockPos(4, 2, 5), kit);
+            suit.hurtServer(helper.getLevel(), helper.getLevel().damageSources().genericKill(), 1000F);
+            helper.runAfterDelay(70, () -> {
+                helper.assertTrue(dropped(helper, kit.tool()) == 1 && dropped(helper, drops.get(kit)) == 1,
+                        kit + " drops its " + kit.tool() + " and " + drops.get(kit));
+            });
+        }
+        helper.runAfterDelay(80, () -> {
+            helper.assertItemEntityNotPresent(ModItems.POWER_SUIT.get());
+            helper.succeed();
+        });
+    }
+
+    /** The digger closes in and grinds what it sees (a pig stands for the player): hurt, slowed, never dug through. */
+    @SuitTest(timeoutTicks = 220)
+    public static void diggerRogueGrindsItsVictim(GameTestHelper helper) {
+        PowerSuitEntity suit = kitRogue(helper, new BlockPos(4, 2, 1), RogueKit.DIGGER);
+        Pig pig = helper.spawn(EntityTypes.PIG, new BlockPos(4, 2, 6));
+        pig.setNoAi(true);
+        helper.runAfterDelay(200, () -> {
+            helper.assertTrue(!pig.isAlive() || pig.getHealth() < pig.getMaxHealth(), "the pig is ground down, health " + pig.getHealth());
+            helper.succeed();
+        });
+    }
+
+    /** The hunter charges and shoots what it sees from where it stands: a pig 6 blocks off, no fuel, no shards. */
+    @SuitTest(timeoutTicks = 220)
+    public static void hunterRogueShootsItsVictim(GameTestHelper helper) {
+        PowerSuitEntity suit = kitRogue(helper, new BlockPos(4, 2, 1), RogueKit.HUNTER);
+        Pig pig = helper.spawn(EntityTypes.PIG, new BlockPos(4, 2, 7));
+        pig.setNoAi(true);
+        helper.runAfterDelay(200, () -> {
+            helper.assertTrue(!pig.isAlive(), "the pig is shot, health " + pig.getHealth() + " goals " + suit.brain().runningGoalNames()
+                    + " target " + suit.getTarget() + " ai " + suit.isAiDriven() + " spin " + suit.socket().getSpin() + " trig " + suit.socket().isActive());
+            helper.assertTrue(suit.socket().getUses() >= 1, "it fired, uses " + suit.socket().getUses());
+            helper.succeed();
+        });
+    }
+
     /** It leaves after its lifetime, but only unwatched. Own batch: other tests' mock players must not be around. */
     @SuppressWarnings("removal")
     @SuitTest(timeoutTicks = 160, batch = "rogue_lifetime")
@@ -3887,7 +3966,8 @@ public final class PowerSuitTests {
         PowerSuitEntity suit = spawnSuit(helper);
         suit.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, new ItemStack(ModItems.DRILL.get()));
         helper.runAfterDelay(2, () -> {
-            helper.assertTrue(suit.brain().toolGoals().isEmpty(), "the drill brings no goals of its own (HomeGuard is every mind's), got " + suit.brain().toolGoals());
+            helper.assertTrue(suit.brain().toolGoals().size() == 1 && suit.brain().toolGoals().get(0) instanceof RogueDrillAttack,
+                    "the drill brings a rogue's attack (the friendly goals are every mind's), got " + suit.brain().toolGoals());
             suit.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, new ItemStack(ModItems.CHAINGUN.get()));
         });
         helper.runAfterDelay(4, () -> {

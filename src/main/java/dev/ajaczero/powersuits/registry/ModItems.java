@@ -128,6 +128,20 @@ public final class ModItems {
                 props -> props.durability(tier.durability(piece)).repairable(tier.repairItem()));
     }
 
+    /** The smithing template of a helmet style (null: none, e.g. the Robot Helmet's look or no style). */
+    public static @org.jetbrains.annotations.Nullable HelmetTemplateItem templateOf(@org.jetbrains.annotations.Nullable HelmetStyle style) {
+        if (style == null) {
+            return null;
+        }
+        return switch (style) {
+            case PROTECTOR -> PROTECTOR_TEMPLATE.get();
+            case SPARTAN -> SPARTAN_TEMPLATE.get();
+            case NOBLE -> NOBLE_TEMPLATE.get();
+            case HUNTER -> HUNTER_TEMPLATE.get();
+            case ROBOT -> null;
+        };
+    }
+
     private static DeferredItem<HelmetTemplateItem> template(HelmetStyle style) {
         return ITEMS.registerItem(style.getSerializedName() + "_template", props -> new HelmetTemplateItem(props, style),
                 props -> props.rarity(Rarity.RARE));

@@ -48,6 +48,8 @@
   "power_suits.configuration.em_throw_energy.tooltip": "Energy per throw or shove.",
   "power_suits.configuration.em_range.tooltip": "How far away (blocks) the beam can grab something.",
   "power_suits.configuration.em_slam_damage.tooltip": "Damage of a full-speed throw's impact: a thrown mob slamming into a wall, or bowling into another mob (both take it). Slower impacts do less, in proportion to the speed above 0.5 blocks/tick.",
+  "power_suits.configuration.rogue_rail_damage.tooltip": "Damage of a rogue's rail cannon beam (20 = ten hearts: survivable at full health; the beam charges for a second and a half with the core glowing first).",
+  "power_suits.configuration.rogue_rail_damage": "Rogue rail damage",
   "power_suits.configuration.drill_energy.tooltip": "Energy per block dug (20: a 3x3 face costs 180, about 9 faces per coal).",
   "power_suits.configuration.drill_pause.tooltip": "Ticks of pause after each 3x3 before the next one starts.",
   "power_suits.configuration.chainsaw_energy.tooltip": "Energy per block cut, felled logs included (15: a 5-log oak costs 75, about 20 oaks per coal).",

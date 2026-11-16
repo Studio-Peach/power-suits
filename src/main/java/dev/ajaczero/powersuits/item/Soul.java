@@ -58,7 +58,7 @@ public enum Soul {
         if (!(stack.getItem() instanceof RobotHelmetItem)) {
             return null;
         }
-        for (var entry : stack.getEnchantments().entrySet()) {
+        for (var entry : stack.getTagEnchantments().entrySet()) {
             Holder<Enchantment> enchantment = entry.getKey();
             for (Soul soul : values()) {
                 if (enchantment.unwrapKey().map(k -> k.identifier().equals(soul.id)).orElse(false)) {

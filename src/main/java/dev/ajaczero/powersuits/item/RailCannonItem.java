@@ -125,7 +125,7 @@ public class RailCannonItem extends Item implements PowerTool, ModTooltip {
 
     @Override
     public List<Goal> mindGoals(PowerSuitEntity suit) {
-        return List.of(new RailGuard(suit));
+        return List.of(new RailGuard(suit), new dev.ajaczero.powersuits.entity.ai.RogueRailAttack(suit)); // a friendly guard; a rogue hunts
     }
 
     @Override
@@ -278,7 +278,7 @@ public class RailCannonItem extends Item implements PowerTool, ModTooltip {
         }
         // Everything living the beam passes through (the suit, its pilot and its passengers excepted).
         DamageSource source = level.damageSources().source(RAIL, operator);
-        float damage = PowerSuitsConfig.RAIL_DAMAGE.get().floatValue();
+        float damage = (suit.isRogue() ? PowerSuitsConfig.ROGUE_RAIL_DAMAGE : PowerSuitsConfig.RAIL_DAMAGE).get().floatValue();
         List<LivingEntity> hit = new ArrayList<>();
         for (Entity e : level.getEntities(suit, new AABB(eye, end).inflate(2.0), e -> e instanceof LivingEntity && e.isAlive()
                 && e != operator && !e.isSpectator() && !suit.hasPassenger(e) && e.isPickable())) {
