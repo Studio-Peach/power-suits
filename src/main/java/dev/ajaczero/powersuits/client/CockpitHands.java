@@ -8,6 +8,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import dev.ajaczero.powersuits.PowerSuits;
 import dev.ajaczero.powersuits.entity.PowerSuitEntity;
+import dev.ajaczero.powersuits.entity.ToolArm;
 import dev.ajaczero.powersuits.item.PowerTool;
 import dev.ajaczero.powersuits.item.SocketAim;
 import java.nio.file.Files;
@@ -79,23 +80,25 @@ public final class CockpitHands {
     private static double shotAt = -100;
 
     /** The socket tool, low on the left (the off hand's place). */
-    static void renderTool(RenderHandEvent event, PowerSuitEntity suit) {
+    static void renderTool(RenderHandEvent event, PowerSuitEntity suit, ToolArm arm) {
         PoseStack pose = event.getPoseStack();
         CockpitView view = CockpitView.INSTANCE;
         view.suit = suit;
+        view.arm = arm;
         view.slim = Minecraft.getInstance().player != null && Minecraft.getInstance().player.getSkin().model() == PlayerModelType.SLIM;
         pollShot(suit, view);
         float partial = event.getPartialTick();
-        float kick = Math.max(recoil(partial), suit.socketVisuals().recoil(partial)); // EM push / chaingun shots
+        float kick = Math.max(arm == ToolArm.LEFT ? recoil(partial) : 0F, suit.socketVisuals(arm).recoil(partial)); // EM push / chaingun shots
         pose.pushPose();
-        toolArmTransform(pose, suit, suit.socketVisuals().raise(partial), kick);
+        toolArmTransform(pose, suit, arm, suit.socketVisuals(arm).raise(partial), kick);
         view.hideArm = !showArm; // the tool alone: no skin arm, no shell (CockpitViewRenderer hides the shell)
         PlayerSkin skin = Minecraft.getInstance().player != null ? Minecraft.getInstance().player.getSkin() : null;
         if (showArm && skin != null) {
             event.getSubmitNodeCollector().submitModelPart(arm(view.slim, true), pose, RenderTypes.entityTranslucent(skin.body().texturePath()),
                     event.getPackedLight(), OverlayTexture.NO_OVERLAY, null);
         }
-        pose.scale(-1F, -1F, 1F); // into the frame's axes (see renderArm)
+        // into the frame's axes (see renderArm); the view model is the left arm's, the right arm's is its mirror image
+        pose.scale(arm == ToolArm.LEFT ? -1F : 1F, -1F, 1F);
         drawPart(pose, event, CockpitViewRenderer.Part.TOOL);
         pose.popPose();
     }
@@ -159,21 +162,22 @@ public final class CockpitHands {
      * a kick lifting it with each shot. The turn is worked out in view space (where the arm's pivot is and where its
      * axis points now) and put in front of the arm's transform.
      */
-    private static void toolArmTransform(PoseStack pose, PowerSuitEntity suit, float raise, float kick) {
+    private static void toolArmTransform(PoseStack pose, PowerSuitEntity suit, ToolArm arm, float raise, float kick) {
+        float side = arm == ToolArm.LEFT ? -1F : 1F; // vanilla's hand transform: 1 the right hand, -1 the left
         // The hand pass's pose stack doesn't start at identity (26.3: it holds a half turn about y), so the turn is
         // worked out in the hand space under it: the space vanilla's arm numbers are in (x right, y up, -z forward).
         Matrix4f base = new Matrix4f(pose.last().pose());
         Matrix3f baseNormal = new Matrix3f(pose.last().normal());
         pose.translate(0F, bob(suit), 0F);
-        vanillaArmTransform(pose, 0F, 0F, -1F);
+        vanillaArmTransform(pose, 0F, 0F, side);
         Matrix4f local = new Matrix4f(base).invert().mul(pose.last().pose());
         Vector3f pivot = local.transformPosition(new Vector3f());
         Vector3f axis = local.transformDirection(new Vector3f(0F, 1F, 0F)).normalize(); // down vanilla's arm, to the tool
-        Quaternionf rest = new Quaternionf().slerp(new Quaternionf().rotationTo(axis, new Vector3f(restAim).sub(pivot).normalize()), restTurn);
+        Quaternionf rest = new Quaternionf().slerp(new Quaternionf().rotationTo(axis, new Vector3f(restAim.x * -side, restAim.y, restAim.z).sub(pivot).normalize()), restTurn);
         Vector3f target = new Vector3f(0F, kick * 0.8F, -toolAimDistance);
         Quaternionf aimed = new Quaternionf().rotationTo(axis, target.sub(pivot).normalize());
         Quaternionf turn = rest.slerp(aimed, raise);
-        pose.last().pose().set(new Matrix4f(base).translate(toolShift).translate(pivot).rotate(turn).translate(-pivot.x, -pivot.y, -pivot.z).mul(local)
+        pose.last().pose().set(new Matrix4f(base).translate(toolShift.x * -side, toolShift.y, toolShift.z).translate(pivot).rotate(turn).translate(-pivot.x, -pivot.y, -pivot.z).mul(local)
                 .scale(toolArmScale));
         Matrix3f localNormal = new Matrix3f(baseNormal).invert().mul(pose.last().normal());
         pose.last().normal().set(new Matrix3f(baseNormal).rotate(turn).mul(localNormal));
@@ -244,9 +248,10 @@ public final class CockpitHands {
         PowerTool tool = suit.getSocketStack().getItem() instanceof PowerTool t ? t : null;
         float inset = tool != null ? tool.muzzleInsetPixels() : 0F;
         float forward = tool != null ? tool.barrelForwardPixels() : 0F; // the model's front is -z
+        ToolArm side = suit.arm(); // the arm whose tool is shooting (the effects run as that arm: PowerSuitEntity.onArm)
         PoseStack arm = new PoseStack();
-        toolArmTransform(arm, suit, suit.socketVisuals().raise(1F), 0F);
-        Vector3f p = arm.last().pose().transformPosition(new Vector3f(MUZZLE_PX.x, MUZZLE_PX.y - inset, -forward).div(16F));
+        toolArmTransform(arm, suit, side, suit.socketVisuals(side).raise(1F), 0F);
+        Vector3f p = arm.last().pose().transformPosition(new Vector3f(side == ToolArm.LEFT ? MUZZLE_PX.x : -MUZZLE_PX.x, MUZZLE_PX.y - inset, -forward).div(16F));
         double k = Math.tan(Math.toRadians(mc.options.fov().get()) / 2) / Math.tan(Math.toRadians(70) / 2);
         Camera camera = mc.gameRenderer.mainCamera();
         Vector3fc look = camera.forwardVector(), up = camera.upVector(), left = camera.leftVector();

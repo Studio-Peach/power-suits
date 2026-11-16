@@ -2,6 +2,8 @@ package dev.ajaczero.powersuits.client;
 
 import dev.ajaczero.powersuits.PowerSuits;
 import dev.ajaczero.powersuits.entity.PowerSuitEntity;
+import dev.ajaczero.powersuits.entity.ToolArm;
+import dev.ajaczero.powersuits.item.PowerTool;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
 import net.minecraft.resources.Identifier;
@@ -73,12 +75,18 @@ public final class PilotView {
             return;
         }
         boolean main = event.getHand() == InteractionHand.MAIN_HAND;
-        if (main || !toolDrawn) {
-            CockpitHands.renderTool(event, suit);
+        boolean leftTool = suit.getSocketStack(ToolArm.LEFT).getItem() instanceof PowerTool;
+        boolean rightTool = suit.getSocketStack(ToolArm.RIGHT).getItem() instanceof PowerTool;
+        if (leftTool && (main || !toolDrawn)) {
+            CockpitHands.renderTool(event, suit, ToolArm.LEFT);
         }
         toolDrawn = main; // the off hand comes after the main hand in the same frame
-        if (!main) {
+        if (main && rightTool) { // the main hand is detached: the right arm's tool is what the hand pass shows
+            CockpitHands.renderTool(event, suit, ToolArm.RIGHT);
             event.setCanceled(true);
+        } else if (!main) {
+            // The off hand: the left arm's tool (drawn above), or a plain hand, whose item vanilla draws as usual
+            event.setCanceled(leftTool);
         } else if (event.getItemStack().isEmpty()) {
             event.setCanceled(true);
             CockpitHands.renderArm(event, suit);

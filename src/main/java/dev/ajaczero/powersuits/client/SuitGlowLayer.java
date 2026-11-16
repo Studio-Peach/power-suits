@@ -61,6 +61,15 @@ public class SuitGlowLayer extends GeoRenderLayer<PowerSuitEntity, Void, LivingE
         for (int i = 0; i < lights.length; i++) {
             lights[i] = Math.max(lights[i], right[i]); // both arms' tools: a light is one mask, the brighter wins
         }
+        return tints(lights);
+    }
+
+    /** The cockpit view's: one arm's tool only. */
+    static int[] toolTints(PowerSuitEntity suit, ToolArm arm, float time, float partial) {
+        return tints(suit.socketVisuals(arm).lights(time, partial));
+    }
+
+    private static int[] tints(float[] lights) {
         int[] tints = new int[lights.length];
         ToolLight[] all = ToolLight.values();
         for (int i = 0; i < lights.length; i++) {

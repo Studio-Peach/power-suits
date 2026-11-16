@@ -1085,7 +1085,13 @@ public final class AutoPilot {
             case 305 -> shot(mc, "view_tnt");
             case 306 -> socket(mc, ModItems.RAIL_CANNON.get());
             case 318 -> shot(mc, "view_rail");
-            case 320 -> {
+            // both hands: a tool in each arm (2026-11-15), then the right arm alone (its mirror of the left's view)
+            case 319 -> { socket(mc, ModItems.CHAINGUN.get()); socketRight(mc, ModItems.RAIL_CANNON.get()); }
+            case 331 -> shot(mc, "view_both");
+            case 332 -> { socket(mc, null); socketRight(mc, ModItems.CHAINSAW.get()); }
+            case 344 -> shot(mc, "view_right");
+            case 345 -> socketRight(mc, null);
+            case 346 -> {
                 viewStep = -1;
                 try {
                     Files.writeString(dir.resolve("done"), "ok");
@@ -1112,6 +1118,15 @@ public final class AutoPilot {
     }
 
     /** Server: put this tool (or nothing) in the socket of the suit the player sits in. */
+    /** The right arm's socket (2026-11-15: either arm can carry a power tool). */
+    private static void socketRight(Minecraft mc, @Nullable Item tool) {
+        onServer(mc, player -> {
+            if (player.getVehicle() instanceof PowerSuitEntity suit) {
+                suit.getInventory().setItem(PowerSuitEntity.RIGHT_SOCKET_SLOT, tool == null ? ItemStack.EMPTY : new ItemStack(tool));
+            }
+        });
+    }
+
     private static void socket(Minecraft mc, @Nullable Item tool) {
         onServer(mc, player -> {
             if (player.getVehicle() instanceof PowerSuitEntity suit) {

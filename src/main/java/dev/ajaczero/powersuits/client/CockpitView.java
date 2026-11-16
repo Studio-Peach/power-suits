@@ -27,6 +27,8 @@ final class CockpitView implements GeoAnimatable {
     PowerSuitEntity suit;
     /** Which half the next render pass draws (copied into its render state: the model is drawn later). */
     CockpitViewRenderer.Part part = CockpitViewRenderer.Part.TOOL;
+    /** The arm whose tool the next tool pass draws (the view model is the left arm's; the right arm's is mirrored). */
+    dev.ajaczero.powersuits.entity.ToolArm arm = dev.ajaczero.powersuits.entity.ToolArm.LEFT;
     /** The pilot's skin is Alex's (the frame's slim arm), set before each render. */
     boolean slim;
     /** The tool pass leaves the arm's own cubes out (the tool alone). */
@@ -40,7 +42,7 @@ final class CockpitView implements GeoAnimatable {
     }
 
     private PlayState toolAnimation(AnimationTest<CockpitView> state) {
-        if (this.suit != null && this.suit.socket().isRunning() && this.suit.getSocketStack().getItem() instanceof PowerTool tool
+        if (this.suit != null && this.suit.socket(this.arm).isRunning() && this.suit.getSocketStack(this.arm).getItem() instanceof PowerTool tool
                 && tool.runAnimation() != null) {
             return state.setAndContinue(tool.runAnimation());
         }

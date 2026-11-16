@@ -49,14 +49,14 @@ final class CockpitViewRenderer extends GeoObjectRenderer<CockpitView, Void, Geo
         state.addGeckolibData(SLIM, view.slim);
         state.addGeckolibData(HIDE_ARM, view.hideArm);
         var suit = view.suit;
-        state.addGeckolibData(TOOL_BONE, suit != null && suit.getSocketStack().getItem() instanceof PowerTool tool ? tool.suitBone() : "");
-        state.addGeckolibData(BARREL_ANGLE, suit == null ? 0F : suit.socketVisuals().rotorAngle(partialTick));
+        state.addGeckolibData(TOOL_BONE, suit != null && suit.getSocketStack(view.arm).getItem() instanceof PowerTool tool ? tool.suitBone() : "");
+        state.addGeckolibData(BARREL_ANGLE, suit == null ? 0F : suit.socketVisuals(view.arm).rotorAngle(partialTick));
         state.addGeckolibData(ARMOUR, suit == null ? 0 : suit.armour().wornMask());
         state.addGeckolibData(PAINT, suit == null || suit.getPaint() == null ? -1 : suit.getPaint().getId());
         if (suit != null && view.part == Part.TOOL) {
             float time = (float) ClientUtil.getCurrentTick(partialTick);
-            state.addGeckolibData(GLOW, SuitGlowLayer.toolTints(suit, time, partialTick));
-            state.addGeckolibData(RAIL_SHAKE, new float[] {suit.socketVisuals().effects().shake(suit), time});
+            state.addGeckolibData(GLOW, SuitGlowLayer.toolTints(suit, view.arm, time, partialTick));
+            state.addGeckolibData(RAIL_SHAKE, new float[] {suit.socketVisuals(view.arm).shake(), time});
         }
     }
 
