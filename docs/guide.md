@@ -416,7 +416,6 @@ src/main/java/dev/ajaczero/powersuits/
     ClientSetup.java         registers the renderer
     PowerSuitsClient.java    client-only @Mod entry: the visor config + the in-game config screen
     SuitSounds.java          engine sounds now and then + tool loops (tickable sounds that follow the suit)
-    FuelTooltip.java         "Power Suit fuel: 1:20 of walking" on every fuel
 src/dev/java/dev/ajaczero/powersuits/   development tools: compiled against the mod, NOT in the jar players get
   dev/PowerSuitsDev.java     their @Mod entry point (dev runs load src/main + src/dev as one mod, see build.gradle)
   test/PowerSuitTests.java  GameTests (@SuitTest methods, registered by test/SuitTests.java)
