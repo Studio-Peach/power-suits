@@ -1,17 +1,15 @@
 """The star reactor for the frame (frame_model.py, draft knob STAR=A|B|C), 2026-11-16, after the tidal engine's diver
 (frame_sea_art.py): the user's rule for the engines, "the light and particles are good but they shouldn't follow the
-firebox's shape": a 3D component on the back and flat painted decals on the front and sides. It reuses the sea
-engine's harness (over the shoulders, down the waist, into the back body's sides) with its own paint: thin violet energy
-lines with sparks, and a glyph on the chest instead of the gauge.
+firebox's shape": a 3D component on the back and flat painted decals on the front.
 
-The big suit's reactor was a netherite housing between two upright energy canisters (twin tanks: the sea engine has
-those now), the glass lit violet-white, ender particles drawn into it. Three new directions, none of them twin tanks:
-  A crystal   an end-crystal-like gem (a cube turned 45 deg) floating in an obsidian cage: plinth, cap, two posts;
-              front: a four-pointed star (the nether star) on the chest.
-  B halo      a square obsidian ring standing off the back, a disc of violet light in it (the event horizon), concentric
-              rings turning in it; front: the same rings as a glyph.
-  C pylon     a tall obsidian spine with three stacked glass cells (charge) between two swept wings carrying the lines,
-              a short spire on top; front: a three-cell meter.
+Round 1 (commit "Star reactor drafts", A crystal in a cage / B halo ring / C pylon with three cells) was too much:
+"a bit simpler, more minimal ... maybe an arc reactor vibe. After all, it is a star ... the power of the sun in the
+palm of my hand". Round 2, all of them a single round plate on the back (a stepped disc, boxes at one depth) with its
+light painted, a glyph of the same on the chest, and as few lines as possible:
+  A arc    the arc reactor: a stepped disc with a lit ring, a dark coil band and a glass lens standing out of its middle;
+           on the chest the same as a ring glyph; one thin line pair over the shoulders joins them (nothing at the waist).
+  B sun    a smaller disc, a white core and eight rays painted out of it; a four-pointed glyph on the chest; no lines.
+  C palm   the least: a small disc with only a lens and one ring; the chest glyph the same; no lines.
 Light: the glass is the letters & % * = (lit: EXTRA; in the texture dark reserved colours, STAR_DARK, lit by a glowmask
 as the sea engine's); static obsidian is $ 8 9. STAR_GLOW=lit paints it lit for a review.
 
@@ -36,6 +34,15 @@ def fac(w, h, c): return grid(w, h, c)
 
 
 # ---------------------------------------------------------------- front glyphs (8 x 8 texels, centred on x 0, y 23)
+def arc_glyph():
+    g = grid(8, 8, '.')
+    disc(g, 4, 4, 4, '9', ring='$', rw=1)
+    disc(g, 4, 4, 3, '%', ring='*', rw=0.8)
+    disc(g, 4, 4, 2.0, '$')
+    disc(g, 4, 4, 1.2, '&')
+    return g
+
+
 def star_glyph():
     g = grid(8, 8, '.')
     for j in range(8):
@@ -47,141 +54,98 @@ def star_glyph():
     return g
 
 
-def rings_glyph():
+def lens_glyph():
     g = grid(8, 8, '.')
     disc(g, 4, 4, 4, '$', ring='9', rw=1)
-    disc(g, 4, 4, 3, '=', ring='*', rw=0.8)
-    disc(g, 4, 4, 1.8, '%')
-    disc(g, 4, 4, 0.9, '&')
+    disc(g, 4, 4, 3, '*')
+    disc(g, 4, 4, 2, '%')
+    disc(g, 4, 4, 1, '&')
     return g
 
 
-def meter_glyph():
-    g = grid(8, 8, '9')
-    for i in range(8): g[0][i] = g[7][i] = '$'
-    for j in range(8): g[j][0] = g[j][7] = '$'
-    for j, c in ((1, '&'), (2, '&'), (4, '%'), (5, '%')):
-        for i in range(1, 7): g[j][i] = c
-    for i in range(1, 7): g[3][i] = g[6][i] = '$'
-    return g
+GLYPHS = {'A': arc_glyph, 'B': star_glyph, 'C': lens_glyph}
 
 
-GLYPHS = {'A': star_glyph, 'B': rings_glyph, 'C': meter_glyph}
+# ---------------------------------------------------------------- the back: a stepped disc
+# Boxes at one depth (z 3 .. 4.5) whose back faces paint one picture by world coordinates (so the steps read as a
+# disc); the middle is raised by a lens or a core. Centre (0, 20.5).
+CY = 20.5
 
 
-# ---------------------------------------------------------------- A: crystal in a cage
-def crystal_back(st):
+def disc_paint(design):
+    def at(x, y):
+        d = math.hypot(x, y - CY)
+        a = math.atan2(y - CY, x)
+        if design == 'A':
+            if d < 2.0: return '$'                                              # under the lens
+            if d < 3.0: return '9' if int((a + math.pi) / (math.pi / 5)) % 2 else '$'   # the coils
+            if d < 3.4: return '$'
+            if d < 4.4: return '%' if d < 4.0 else '*'                          # the lit ring
+            return '9' if d < 4.9 else '8'
+        if design == 'B':
+            if d < 1.3: return '&'
+            if d < 2.0: return '%'
+            ray = abs(math.sin(4 * a)) > 0.93 and d < 4.2
+            if ray: return '%' if d < 3.0 else '*'
+            return '9' if d >= 4.3 else '$'
+        if d < 1.4: return '&'
+        if d < 2.0: return '*'
+        return '9' if d >= 2.3 else '$'
+    return at
+
+
+def disc_back(design, st):
+    at = disc_paint(design)
+    # (half width, y0, y1) of each box: the steps of the disc
+    steps = {'A': [(5, 18, 23), (4, 17, 24), (2.5, 16, 25)],
+             'B': [(4, 18, 23), (3, 17, 24), (2, 16.5, 24.5)],
+             'C': [(2.5, 18, 23), (2, 17.5, 23.5)]}[design]
     P = []
-    def plate(f, w, h):
-        g = [['8'] * w for _ in range(h)]
-        g[0] = ['9'] * w
-        g[-1] = ['$'] * w
-        if f in ('south', 'north'):
-            for i in range(2, w - 2, 4): g[h // 2][i] = '*'
-        return g
-    P.append(part('plinth', ((-4.5, 16, 3), (4.5, 17.5, 5.5)), plate))
-    P.append(part('cap', ((-4.5, 24, 3), (4.5, 25.5, 5.5)), plate))
-
-    def post(f, w, h):
-        g = [['9'] + ['8'] * (w - 2) + ['$'] for _ in range(h)]
-        if f in ('south', 'east') and w >= 3:
-            for j in range(1, h - 1): g[j][w // 2] = '='                    # an energy vein down it
-        return g
-    p = part('post', ((3.5, 17.5, 3), (4.5, 24, 4.5)), post, mirror=True)
-    sea.inlets(st, p['faces'], 3, 13, 24, (21.5, 18.5))
-    P.append(p)
-
-    def gem(f, w, h):                                                         # 7 x 7 texels a face: a glowing facet
-        g = grid(w, h, '*')
-        for j in range(h):
-            for i in range(w):
-                d = max(abs(i + 0.5 - w / 2), abs(j + 0.5 - h / 2))
-                g[j][i] = '&' if d < 1 else '%' if d < 2 else '*' if d < 3 else '='
-        if f == 'up': return grid(w, h, '*')
-        if f == 'down': return grid(w, h, '=')
-        return g
-    P.append(part('gem', ((-1.75, 19.5, 4), (1.75, 23, 7.5)), gem, rot=[0, 45, 0], origin=(0, 21.25, 5.75)))
-    return P, 4.5, 21.5, 18.5, 25.5
-
-
-# ---------------------------------------------------------------- B: halo ring
-def halo_back(st):
-    P = []
-    def bar(f, w, h):
-        g = [['8'] * w for _ in range(h)]
-        g[0] = ['9'] * w
-        g[-1] = ['$'] * w
-        for j in range(h): g[j][0] = '9'
-        return g
-    P.append(part('ring_bottom', ((-4, 16, 4.5), (4, 17.5, 5.5)), bar))
-    P.append(part('ring_top', ((-4, 23, 4.5), (4, 24.5, 5.5)), bar))
-    s = part('ring_side', ((2.5, 17.5, 4.5), (4, 23, 5.5)), bar, mirror=True)
-    sea.inlets(st, s['faces'], 2, 11, 23, (21.5, 18.5))
-    P.append(s)
-
-    def disc_(f, w, h):                                                       # the event horizon: rings turning
-        if f != 'south': return grid(w, h, '=') if f != 'up' else grid(w, h, '*')
-        g = grid(w, h, '=')
-        for j in range(h):
-            for i in range(w):
-                d = math.hypot(i + 0.5 - w / 2, j + 0.5 - h / 2)
-                g[j][i] = '&' if d < 1.2 else '%' if d < 2.0 else '*' if d < 3.0 else '=' if d < 3.6 else '*' if d < 4.4 else '='
-        for i, j in ((1, 1), (w - 2, 2), (2, h - 2), (w - 2, h - 3)): g[j][i] = '&'          # sparks
-        return g
-    P.append(part('horizon', ((-2.5, 18, 3), (2.5, 23, 4)), disc_))
-    return P, 4, 21.5, 18.5, 24.5
-
-
-# ---------------------------------------------------------------- C: pylon with wings
-def pylon_back(st):
-    P = []
-    def spine(f, w, h):
-        g = [['8'] * w for _ in range(h)]
-        g[0] = ['9'] * w
+    for k, (hx, y0, y1) in enumerate(steps):
+        def paint(f, w, h, hx=hx, y0=y0, y1=y1):
+            if f == 'south': return [[at(-hx + (i + 0.5) / K, y1 - (j + 0.5) / K) for i in range(w)] for j in range(h)]
+            g = [['8'] * w for _ in range(h)]
+            g[0] = ['9'] * w
+            return g
+        p = part(f'disc{k}', ((-hx, y0, 3), (hx, y1, 4.5)), paint)
+        P.append(p)
+    if design == 'A':                                                           # the wide box takes the line in
+        sea.inlets(st, P[0]['faces'], 3, 10, 23, (21.5,))
+    def lens(f, w, h):
         if f == 'south':
-            for c in range(3):                                                # three cells, charge rising up the middle
-                j0 = 1 + c * 6
-                for j in range(j0, j0 + 5):
-                    for i in range(1, w - 1):
-                        g[j][i] = ('&' if j == j0 else '%' if j == j0 + 1 else '*' if j < j0 + 4 else '=')
-                if j0 + 5 < h: g[j0 + 5] = ['$'] * w
-        elif f in ('east', 'west'):
-            for j in range(1, h - 1): g[j][w // 2] = '='
-        return g
-    P.append(part('spine', ((-2, 16, 3), (2, 25.5, 5)), spine))
-
-    def wing(f, w, h):
-        g = [['8'] * w for _ in range(h)]
-        g[0], g[-1] = ['9'] * w, ['$'] * w
-        if f in ('south', 'north'):
-            for i in range(1, w - 1):                                         # a swept vein, inner top to outer bottom
-                j = 1 + (i - 1) * (h - 4) // max(1, w - 3)
-                g[j][i] = '%'
-                g[j + 1][i] = '*'
-        return g
-    w = part('wing', ((2, 17.5, 3), (5, 24, 4)), wing, mirror=True)
-    sea.inlets(st, w['faces'], 2, 13, 24, (21.5, 18.5))
-    P.append(w)
-
-    def spire(f, w, h):
-        if f == 'up': return grid(w, h, '&')
-        return [['%'] * w for _ in range(h)]
-    P.append(part('spire', ((-0.5, 25.5, 4.5), (0.5, 28, 5.5)), spire))
-    return P, 5, 21.5, 18.5, 25.5
+            g = grid(w, h, '*')
+            disc(g, w / 2, h / 2, w / 2, '&', ring='%', rw=1)
+            return g
+        return grid(w, h, '*' if f != 'up' else '%')
+    if design == 'A': P.append(part('lens', ((-1.5, CY - 1.5, 4.5), (1.5, CY + 1.5, 5)), lens))
+    if design == 'B': P.append(part('core', ((-1, CY - 1, 4.5), (1, CY + 1, 5)), lens))
+    if design == 'C': P.append(part('lens', ((-1.5, CY - 1.5, 4.5), (1.5, CY + 1.5, 5.5)), lens))
+    return P, {'A': 5, 'B': 4, 'C': 2.5}[design], 21.5, 18.5, 25.5
 
 
-BACKS = {'A': crystal_back, 'B': halo_back, 'C': pylon_back}
+def glyph_plate(el):
+    """The chest's glyph alone (no lines): a 4 x 4 px plate on the chest, ink round it, the rest see-through."""
+    hx, y0, y1 = 2.0, 21, 25
+    def front(x, y):
+        e = el(x, y)
+        if e: return e
+        return 'X' if max(abs(x), abs(y - 23)) < 2.5 else '.'
+    def paint(f, w, h):
+        if f == 'north': return [[front(hx - (i + 0.5) / K, y1 - (j + 0.5) / K) for i in range(w)] for j in range(h)]
+        return grid(w, h, '.')
+    return part('glyph', ((-hx, y0, -3.5), (hx, y1, -3)), paint)
 
 
 def build(design, chest_x=6.0):
     """(back parts, open front, armoured front); frame_model.py prefixes them (rb_ / ro_ / ra_)."""
     st = STYLE
-    back, pack_x, up_c, low_c, pack_top = BACKS[design](st)
+    back, pack_x, up_c, low_c, pack_top = disc_back(design, st)
     cx = min(6, chest_x)
-    sx = sea.side(cx)[0]
     glyph = sea.element(GLYPHS[design]())
-    open_ = [sea.harness(st, cx, glyph, 2.0, 2.5, low_c), sea.strip_top(st, cx), sea.strip_side(st, cx, low_c),
-             sea.harness_back(st, cx, pack_x, up_c, low_c, pack_top)]
-    armoured = [sea.bezel(glyph), sea.harness_low(st, low_c, sx), sea.strip_side(st, cx, low_c),
-                sea.harness_back(st, cx, pack_x, up_c, low_c, pack_top, low_only=True)]
+    if design == 'A':   # one thin pair over the shoulders into the disc; under the breastplate only the glyph
+        open_ = [sea.harness(st, cx, glyph, 2.0, 2.5, low_c, lows=False), sea.strip_top(st, cx),
+                 sea.harness_back(st, cx, pack_x, up_c, low_c, pack_top, lows=False)]
+    else:
+        open_ = [glyph_plate(glyph)]
+    armoured = [sea.bezel(glyph)]
     return back, open_, armoured

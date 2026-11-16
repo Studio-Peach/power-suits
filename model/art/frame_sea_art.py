@@ -110,12 +110,12 @@ def paths(st, cx, start_hw, up_c, low_c, sx):
     return top, low
 
 
-def harness(st, cx, el, hw, ring, low_c):
+def harness(st, cx, el, hw, ring, low_c, lows=True):
     HR = st['HR']
-    x0, x1, y0, y1 = -cx, cx, low_c - HR - OUT, TOP_Y
+    x0, x1, y0, y1 = -cx, cx, (low_c - HR - OUT if lows else 20), TOP_Y
     sx = side(cx)[0]
     top, low = paths(st, cx, hw, 0, low_c, sx)
-    at = lines_at(st, [top, low], bands=lambda x, y: hw <= x <= hw + 0.5 and 20 < y < 25 or y >= 26 and x > cx - 2 * HR)
+    at = lines_at(st, [top, low] if lows else [top], bands=lambda x, y: hw <= x <= hw + 0.5 and 20 < y < 25 or y >= 26 and x > cx - 2 * HR)
 
     def front(x, y):
         ax = abs(x)
@@ -151,11 +151,11 @@ def strip_side(st, cx, low_c):
     return part('strip_side', ((sx - t, low_c - HR - OUT, -3.5), (sx, low_c + HR + OUT, BACK_Z)), paint, mirror=True)
 
 
-def harness_back(st, cx, pack_x, up_c, low_c, pack_top, low_only=False):
+def harness_back(st, cx, pack_x, up_c, low_c, pack_top, low_only=False, lows=True):
     HR = st['HR']
     sx = side(cx)[0]
-    x0, x1, y0, y1 = -max(cx, sx), max(cx, sx), low_c - HR - OUT, 20 if low_only else TOP_Y
-    ps = [[(max(cx, sx) + 0.5, low_c), (pack_x - 0.5, low_c)]]
+    x0, x1, y0, y1 = -max(cx, sx), max(cx, sx), (low_c if lows else up_c) - HR - OUT, 20 if low_only else TOP_Y
+    ps = [[(max(cx, sx) + 0.5, low_c), (pack_x - 0.5, low_c)]] if lows else []
     if not low_only: ps.insert(0, [(cx - HR, 27), (cx - HR, up_c), (pack_x - 0.5, up_c)])
     at = lines_at(st, ps)
 
