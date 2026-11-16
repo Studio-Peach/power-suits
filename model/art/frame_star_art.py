@@ -16,6 +16,15 @@ Light: the glass is the letters & % * = (lit: EXTRA; in the texture dark reserve
 as the sea engine's); STAR_GLOW=lit paints it lit for a review. $ 8 9 (obsidian) are no longer used.
 
 Coordinates raw (frame_model.py adds FY), right side +x, front -z, back +z; 2 texels per px. Faces as frame_sea_art.py.
+
+Round 5 (user: "a star accelerator sort of box where we could interpret the star spinning ... this will be the endgame
+engine, so it has to look cool as heck"): the cell housing becomes a containment box with an open window onto a star
+that spins (a bone turned by code, like the chaingun's barrels: ToolRotors; bones star_core / star_orbit, pivots
+BONE_ORIGIN), in a hollow shell (back plate, four bars; the inner walls and the plate behind painted as the
+accelerator's coils and a target):
+  A gyro     two gems (cubes turned 45 deg about y and x) as one star, spinning about the vertical axis;
+  B orbit    a small steady core and two beads that orbit it (a particle in the accelerator);
+  C column   a narrow tall window and a stack of three small spinning gems.
 """
 import math
 from frame_radial_art import part, grid, disc, K
@@ -99,74 +108,93 @@ def vents(g, j0, j1, i0, i1):
         for i in range(i0, i1): g[j][i] = 'X'
 
 
-# Round 4 (user: "I like A the best, but iterate on top of that concept further; I also don't like the steel cap on
-# top"): the cell housing without its finned cap, up to the helmet's bottom (raw y 25.5), three ways to take it on:
-#   A plain    the housing, a big framed window of three cells, vent slits below, bolts, side vent slits: nothing else;
-#   B framed   the window raised on its own 0.5 px frame (a second box) so the glass sits proud of the housing, a row of
-#              three status lamps over it, two latches down the sides, vents below;
-#   C meter    the window as four charge bars (columns of glass of rising height) with a row of lamps below it, the
-#              housing's side vents deeper.
-def lamps(g, row, cols, c='&'):
-    for i in cols:
-        g[row][i] = c
-        g[row][i + 1] = '%'
+# Round 5, see the docstring. The housing is a shell: z 3 .. 7 (4 px out of the back), the window x +-3 (C: +-2).
+BONE_ORIGIN = {'star_core': (0, 21, 5.25), 'star_orbit': (0, 21, 5.25)}   # raw; the spin pivots (the window's middle)
 
 
-def cell_back(design):
+def inner(w, h, vertical=False):
+    """A window wall: the accelerator's coil, a violet line every third texel across a dark liner."""
+    g = grid(w, h, 'X')
+    for j in range(h):
+        for i in range(w):
+            k = j if vertical else i
+            if k % 3 == 1: g[j][i] = '*'
+            if k % 3 == 2: g[j][i] = '='
+    return g
+
+
+def target(w, h):
+    """The plate behind the star: concentric squares of dim light round a cross, seen through the window."""
+    g = grid(w, h, 'X')
+    for j in range(h):
+        for i in range(w):
+            r = min(i, j, w - 1 - i, h - 1 - j)
+            if r % 3 == 1: g[j][i] = '='
+            if abs(i - (w - 1) / 2) < 0.6 or abs(j - (h - 1) / 2) < 0.6: g[j][i] = '*'
+    return g
+
+
+def shell(wx, y0, y1):
+    """The housing round a window x +-wx, raw y y0 .. y1 (its sides mirrored): back plate, top, bottom, sides."""
     P = []
-    W, H = 18, 19                                                             # the housing: 9 x 9.5 x 2.5 (back face)
-    def box(f, w, h):
-        g = housing(f, w, h)
-        if f == 'south':
-            if design == 'A':
-                win = glass(12, 9)
-                for j in range(9):
-                    for i in range(12): g[3 + j][3 + i] = win[j][i]
-                for i in range(2, 16): g[2][i] = g[12][i] = 'X'
-                for j in range(2, 13): g[j][2] = g[j][15] = 'X'
-                for i in (6, 11):
-                    for j in range(3, 12): g[j][i] = '='
-                vents(g, 14, 18, 2, 16)
-            elif design == 'B':
-                for j in range(2, 4): g[j] = ['N'] * w                         # the lamps' row
-                lamps(g, 3, (5, 8, 11))
-                vents(g, 15, 18, 2, 16)
-                for i in range(2, 16): g[5][i] = 'X'                           # a recess the frame sits in
-            else:
-                win = grid(12, 9, '=')
-                for k, hgt in enumerate((3, 5, 7, 9)):                         # four bars, rising
-                    for j in range(9):
-                        for i in range(3 * k, 3 * k + 3):
-                            if i % 3 == 2 and k < 3: win[j][i] = 'X'
-                            elif 9 - j <= hgt: win[j][i] = '&' if 9 - j == hgt else '%' if 9 - j > hgt - 3 else '*'
-                for j in range(9):
-                    for i in range(12): g[3 + j][3 + i] = win[j][i]
-                for i in range(2, 16): g[2][i] = g[12][i] = 'X'
-                for j in range(2, 13): g[j][2] = g[j][15] = 'X'
-                lamps(g, 14, (4, 7, 10, 13))
-                vents(g, 16, 19, 2, 16)
-            bolts(g, ((1, 1), (w - 2, 1), (1, h - 2), (w - 2, h - 2)))
-        if f in ('east', 'west'):                                              # side vents (C: deeper) and, B, a latch
-            vents(g, 6, 13 if design != 'C' else 15, 1, w - 1)
-            if design == 'B':
-                for j in range(h - 8, h - 3):
-                    for i in (2, 3): g[j][i] = 'h' if i == 2 else 'e'
-        return g
-    P.append(part('box', ((-4.5, 16, 3), (4.5, 25.5, 5.5)), box))
-    if design == 'B':
-        def frame(f, w, h):                                                    # 7 x 5.5 x 0.5: the glass in a proud frame
-            g = [['O'] * w for _ in range(h)]
+    def plate(f, w, h):
+        if f == 'south': return target(w, h)
+        g = grid(w, h, 'X'); return g
+    P.append(part('plate', ((-4.5, 16, 3), (4.5, 25.5, 3.5)), plate))
+    def bar(role):
+        def paint(f, w, h):
+            g = housing(f, w, h)
             if f == 'south':
-                win = glass(w - 4, h - 4)
-                for j in range(h - 4):
-                    for i in range(w - 4): g[2 + j][2 + i] = win[j][i]
-                for i in range(w - 4):
-                    if i in ((w - 4) // 3, 2 * (w - 4) // 3): 
-                        for j in range(1, h - 5): g[2 + j][2 + i] = '='
-                for i in range(1, w - 1): g[1][i] = g[h - 2][i] = 'X'
-                for j in range(1, h - 1): g[j][1] = g[j][w - 2] = 'X'
+                bolts(g, ((1, 1), (w - 2, 1), (1, h - 2), (w - 2, h - 2)))
+                if role == 'bottom': vents(g, 2, h - 2, 3, w - 3)
+            if f == 'down' and role == 'top': return inner(w, h, vertical=True)
+            if f == 'up' and role == 'bottom': return inner(w, h, vertical=True)
             return g
-        P.append(part('window', ((-3.5, 18.5, 5.5), (3.5, 24, 6)), frame))
+        return paint
+    P.append(part('top', ((-4.5, y1, 3.5), (4.5, 25.5, 7)), bar('top')))
+    P.append(part('bottom', ((-4.5, 16, 3.5), (4.5, y0, 7)), bar('bottom')))
+    def side(f, w, h):
+        if f == 'west': return inner(w, h)                                     # the wall facing the window (a mirrored part's inner)
+        return housing(f, w, h)
+    P.append(part('side', ((wx, y0, 3.5), (4.5, y1, 7)), side, mirror=True))
+    return P
+
+
+def gem(size, spin_x=False):
+    def paint(f, w, h):
+        g = grid(w, h, '*')
+        for j in range(h):
+            for i in range(w):
+                d = max(abs(i + 0.5 - w / 2), abs(j + 0.5 - h / 2))
+                g[j][i] = '&' if d < 1 else '%' if d < 1.8 else '*' if d < 2.8 else '='
+        if f == 'up': return grid(w, h, '%')
+        if f == 'down': return grid(w, h, '=')
+        return g
+    return paint
+
+
+def accelerator(design):
+    P = []
+    cx, cy, cz = BONE_ORIGIN['star_core']
+    if design in ('A', 'B'):
+        P += shell(3, 18.5, 23.5)
+    else:
+        P += shell(2, 17.5, 24.5)
+    def bone(p, name):
+        p['bone'] = name
+        return p
+    if design == 'A':
+        for rot in ([0, 45, 0], [45, 0, 0]):
+            P.append(bone(part(f'gem{rot[0] and 1 or 0}', ((-1.25, cy - 1.25, cz - 1.25), (1.25, cy + 1.25, cz + 1.25)), gem(2.5),
+                               rot=rot, origin=(cx, cy, cz)), 'star_core'))
+    elif design == 'B':
+        P.append(bone(part('heart', ((-0.75, cy - 0.75, cz - 0.75), (0.75, cy + 0.75, cz + 0.75)), gem(1.5), rot=[0, 45, 0],
+                           origin=(cx, cy, cz)), 'star_core'))
+        P.append(bone(part('bead', ((1.5, cy - 0.5, cz - 0.5), (2.5, cy + 0.5, cz + 0.5)), gem(1), mirror=True), 'star_orbit'))
+    else:
+        for k, y in enumerate((18.75, 21, 23.25)):
+            P.append(bone(part(f'gem{k}', ((-1, y - 1, cz - 1), (1, y + 1, cz + 1)), gem(2), rot=[0, 45, 0], origin=(0, y, cz)),
+                          'star_core'))
     return P
 
 
@@ -183,7 +211,7 @@ def glyph_plate(el):
     return part('glyph', ((-hx, y0, -3.5), (hx, y1, -3)), paint)
 
 
-BACKS = {k: (lambda k=k: cell_back(k)) for k in 'ABC'}
+BACKS = {k: (lambda k=k: accelerator(k)) for k in 'ABC'}
 
 
 def build(design, chest_x=6.0):

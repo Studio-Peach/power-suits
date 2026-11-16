@@ -769,7 +769,8 @@ if ENGINE == 'heart' and STAR != 'none':
     _back, _open, _armoured = star_art.build(STAR, CHEST_X)
     for prefix, parts_ in (('rb_', _back), ('ro_', _open)) + ((('ra_', _armoured),) if ARMOR == 'game' else ()):
         for p in parts_:
-            k = prefix + p['name']
+            # the star's turning parts live in bones of their own (star_core / star_orbit: the game spins them), keys rc_ / rd_
+            k = ({'star_core': 'rc_', 'star_orbit': 'rd_'}.get(p.get('bone')) or prefix) + p['name']
             ENGINE_BOX[k] = p['box']
             ENGINE_META[k] = p
             if p['faces']: SHELLS[f'en_{k}'] = dict(faces=p['faces'])
@@ -1544,6 +1545,8 @@ if ENGINE_BOX:
         fronts['rb_'] = star
         fronts.update({'ro_': group('star_open', (0, 14, 0), star), 'ra_': group('star_armored', (0, 14, 0), star)} if ARMOR == 'game'
                       else {'ro_': star})
+        for _k, _b in (('rc_', 'star_core'), ('rd_', 'star_orbit')):
+            if any(k.startswith(_k) for k in ENGINE_BOX): fronts[_k] = group(_b, star_art.BONE_ORIGIN[_b], star)
     for k, box in ENGINE_BOX.items():
         meta = ENGINE_META.get(k)
         if meta:   # a radial part (mirrored: the left one's turns about y and z flip)
