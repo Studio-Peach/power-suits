@@ -49,10 +49,10 @@ import net.neoforged.fml.loading.FMLPaths;
 final class FrameScene {
     private static BufferedWriter csv;
     private static Vec3 home;
-    private static volatile PowerSuitEntity parked, reactor;
+    private static volatile PowerSuitEntity parked, reactor, tidal;
     private static final PowerSuitEntity[] rogues = new PowerSuitEntity[4];
     /** The socket tools, in the order shot (ModItems), from tick TOOLS_AT, 16 ticks each. */
-    private static final int TOOLS_AT = 420;
+    private static final int TOOLS_AT = 450;
     private static final String[] TOOL_NAMES = {"chaingun", "em_projector", "drill", "chainsaw", "flamethrower", "tnt_launcher", "rail_cannon"};
     private static final List<Supplier<? extends Item>> TOOLS = List.of(
             ModItems.CHAINGUN, ModItems.EM_PROJECTOR, ModItems.DRILL, ModItems.CHAINSAW, ModItems.FLAMETHROWER, ModItems.TNT_LAUNCHER,
@@ -113,7 +113,15 @@ final class FrameScene {
             case 410 -> AutoPilot.shot(mc, "frame_engine_reactor_back");
             case 411 -> around(mc, reactor, 2.4);
             case 417 -> AutoPilot.shot(mc, "frame_engine_reactor_front");
-            case 418 -> AutoPilot.onServer(mc, p -> DevUtil.setTime(p.level(), 6000));
+            // the tidal engine (its own back and front: tanks, the gauge, glass lines; a water bucket in its fuel slot): by
+            // day, then by night with its glass lit, bare chest and the breastplate worn
+            case 418 -> { AutoPilot.onServer(mc, p -> DevUtil.setTime(p.level(), 6000)); around(mc, tidal, -2.4); }
+            case 430 -> AutoPilot.shot(mc, "frame_engine_tidal_back");
+            case 431 -> around(mc, tidal, 2.4);
+            case 437 -> AutoPilot.shot(mc, "frame_engine_tidal_front");
+            case 438 -> { AutoPilot.onServer(mc, p -> DevUtil.setTime(p.level(), 18000)); around(mc, tidal, -2.4); }
+            case 446 -> AutoPilot.shot(mc, "frame_engine_tidal_night_back");
+            case 447 -> AutoPilot.onServer(mc, p -> DevUtil.setTime(p.level(), 6000));
             default -> {}
         }
         // The tools in the left arm's socket, one after another (the last three stand in with the drill's body).
@@ -264,6 +272,17 @@ final class FrameScene {
             r.brain().setOwnerId(p.getUUID());
             p.level().addFreshEntity(r);
             reactor = r;
+            // a tidal frame (a water bucket: it drinks on land): in the second row, 3 blocks to the other side
+            PowerSuitEntity t = ModEntities.POWER_SUIT.get().create(p.level(), EntitySpawnReason.COMMAND);
+            t.getInventory().setItem(PowerSuitEntity.ENGINE_SLOT, new ItemStack(ModItems.TIDAL_ENGINE.get()));
+            t.getInventory().setItem(PowerSuitEntity.HELMET_SLOT, new ItemStack(ModItems.SUIT_HELMET.get()));
+            t.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.WATER_BUCKET));
+            t.snapTo(home.x + 3, home.y, home.z + 3, 0, 0);
+            t.setYBodyRot(0);
+            t.setYHeadRot(0);
+            t.brain().setOwnerId(p.getUUID());
+            p.level().addFreshEntity(t);
+            tidal = t;
         });
         try {
             csv = Files.newBufferedWriter(FMLPaths.GAMEDIR.get().resolve("autopilot_frame.csv"));

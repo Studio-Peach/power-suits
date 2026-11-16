@@ -42,6 +42,19 @@ the end and `docs/guide.md` Notes).
 - **The gap under the arm** is 1 px (wide) or 0.5 px (slim) beside the abdomen (x 5): a strip there is a decal, a
   zero-thickness plane in the middle of the slim gap (both sides are planes the arm cage and abdomen use).
 
+## Sea engine (2026-11-16)
+- The tidal engine has its own body, `frame_sea_art.py` (knob `SEA`, `A` default / `none`; group `engine_sea` with
+  `sea_open` / `sea_armored`; the renderer shows it for the tidal engine and `engine` for the others). User: the
+  engines' light and particles are good but shouldn't follow the firebox's shape; 3D on the back, 2D (flat) on the
+  front and sides. Drafted three (A diver, B prismarine conduit housing, C drum with a window of water), A picked
+  ("it looks great"); B and C are in git ("Sea engine drafts"). It reuses the heart's harness routing (over the
+  shoulders, down the waist, into the back body's sides) with its own paint.
+- Light: letters T S y q are reserved dark teals in the texture (`SEA_DARK`, `SEA_GLOW=lit` paints them lit for a
+  review); `export-frame.py` writes `power_frame_glow_sea`, `SuitGlowLayer` scales it by the tidal shimmer.
+  Bubbles: `ExhaustSmoke` VALVE_* (the tank valves' tops). The star reactor is next (same idea).
+- Review the bare and armoured fronts from a `SEA_GLOW=lit` game build (hide `engine`, show `engine_sea`, toggle
+  `sea_open` / `sea_armored`); `ARMOR=none` drafts show the open front only.
+
 ## Engine decisions (2026-11-11)
 - The front is 2D: a porthole core painted into the chest slot, four copper hoses drawn flat (lit / mid / shade across
   them, a 1-texel ink outline, brass bands), carried over the shoulders, along the waist and down the back by decal
@@ -173,7 +186,7 @@ the end and `docs/guide.md` Notes).
   show through, faintly). His hat layer hides under the helmet (it lies in the helmet's planes).
 - Step 4, the engine: the saved files carry it (`ENGINE=heart`, `FIRE=dark`: the texture holds the dead coals); the
   game shows the `engine` group with any engine installed. The exporter lights the coal colours into
-  `power_frame_glow_fire` and writes them white -> grey into `power_frame_glow_core` for the tidal engine and the star
+  `power_frame_glow_fire` and writes them white -> grey into `power_frame_glow_core` for the star
   reactor (tinting the fire's yellow -> red mask violet came out pink). Smoke from the caps' tops (`ExhaustSmoke`: 29.5 px
   up, 6 back, 3.5 out). The helmet clipping the blower looking up stays (user, 2026-11-14: "the cost of gameplay").
 - Step 5a, the tools: `TOOL=all` (the saved files' default) builds every tool at once on the left arm, each on bones

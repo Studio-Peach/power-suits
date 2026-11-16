@@ -4,6 +4,7 @@ import com.geckolib.renderer.GeoEntityRenderer;
 import com.geckolib.renderer.base.BoneSnapshots;
 import com.geckolib.renderer.base.RenderPassInfo;
 import dev.ajaczero.powersuits.entity.PowerSuitEntity;
+import dev.ajaczero.powersuits.entity.SuitEngine;
 import dev.ajaczero.powersuits.entity.ToolArm;
 import dev.ajaczero.powersuits.item.HelmetStyle;
 import dev.ajaczero.powersuits.item.PowerTool;
@@ -129,11 +130,14 @@ public class PowerSuitRenderer extends GeoEntityRenderer<PowerSuitEntity, Living
             bones.ifPresent(each.bone(), bone -> bone.skipRender(hide).skipChildrenRender(hide));
         }
         // Engine slot (design sec. 4b): the frame's engine (the heart: core and hoses on the front, the blower on the back)
-        // only with one installed; none without (the glowmasks follow: a hidden bone isn't drawn again). Every engine
-        // shows the heart for now: the tidal engine and the star reactor light its fire in their own colours
-        // (SuitGlowLayer) until they get frame art of their own.
-        boolean engine = info.getOrDefaultGeckolibData(SuitRenderData.ENGINE, -1) >= 0;
+        // only with one installed; none without (the glowmasks follow: a hidden bone isn't drawn again). The tidal engine
+        // has its own (engine_sea: tanks on the back, the gauge and glass lines on the front, 2026-11-16); the star
+        // reactor shows the heart for now and lights its fire in its own colour (SuitGlowLayer) until it gets its own.
+        int engineId = info.getOrDefaultGeckolibData(SuitRenderData.ENGINE, -1);
+        boolean sea = engineId == SuitEngine.TIDAL.ordinal();
+        boolean engine = engineId >= 0 && !sea;
         bones.ifPresent("engine", bone -> bone.skipRender(!engine).skipChildrenRender(!engine));
+        bones.ifPresent("engine_sea", bone -> bone.skipRender(!sea).skipChildrenRender(!sea));
         // Armour slots (frame step 6c): each part shows its piece while worn, its bare frame otherwise (ArmourBones);
         // the breastplate also swaps the engine's front for its armoured one.
         ArmourBones.show(bones, info.getOrDefaultGeckolibData(SuitRenderData.ARMOUR, 0), (installed.isEmpty() ? 0 : 1) | (installedRight.isEmpty() ? 0 : 2));

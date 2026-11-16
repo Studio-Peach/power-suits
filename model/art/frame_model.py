@@ -698,8 +698,10 @@ assert ENGINE in ('none', 'firebox', 'heart'), ENGINE
 import frame_engine_art as engine_art
 import frame_radial_art as radial_art
 import frame_heart_art as heart_art
+import frame_sea_art as sea_art
 PAL.update(radial_art.EXTRA)
 PAL.update(heart_art.EXTRA)
+PAL.update(sea_art.EXTRA)
 ENGINE_META = {}   # the radial's parts: their mirror / turn / shared paint (frame_radial_art.part)
 PAL.update({'F': (0xff, 0xdc, 0x6e), 'I': (0xff, 0x96, 0x32), 'J': (0xd2, 0x46, 0x19)})   # fire, lit (see engine_art)
 # Draft knob FIRE (2026-11-11): 'lit' paints the fire burning (review), 'dark' in the reserved coal colours of
@@ -740,6 +742,22 @@ PACK = os.environ.get('PACK', 'A')
 BACK = os.environ.get('BACK', 'blower')
 import frame_motor_art as motor_art
 PAL.update(motor_art.EXTRA)
+# Knob SEA ('A' / 'none'; 2026-11-16, user: the tidal engine shouldn't follow the firebox's shape; 3D on the back, 2D on
+# the front and sides; the diver A picked from three): the sea engine's own back and fronts (frame_sea_art.py), in a
+# group of its own, engine_sea (the game shows it for the tidal engine, `engine` for the others). SEA_GLOW 'dark' (the
+# texture's: reserved colours, lit by the glowmask) or 'lit' (a review).
+SEA = os.environ.get('SEA', 'A')
+assert SEA in ('A', 'none'), SEA
+SEA_GLOW = os.environ.get('SEA_GLOW', 'dark')
+if SEA_GLOW == 'dark': PAL.update(sea_art.SEA_DARK)
+if ENGINE == 'heart' and SEA != 'none':
+    _back, _open, _armoured = sea_art.build(CHEST_X)
+    for prefix, parts_ in (('sb_', _back), ('so_', _open)) + ((('sa_', _armoured),) if ARMOR == 'game' else ()):
+        for p in parts_:
+            k = prefix + p['name']
+            ENGINE_BOX[k] = p['box']
+            ENGINE_META[k] = p
+            if p['faces']: SHELLS[f'en_{k}'] = dict(faces=p['faces'])
 if ENGINE == 'heart':
     if BACK == 'pistons':
         PW_, PH_, PD, UP_Y, LOW_Y = PACKS[PACK]
@@ -1433,12 +1451,21 @@ def alt(e):
         return ('arm_r' if e['name'].endswith('_r') else 'arm_l'), 'tool'
     if g['name'].startswith(('frame_', 'armor_')) and g['_parent']['name'] in ALT_SLOT:
         return ALT_SLOT[g['_parent']['name']], g['name'].split('_')[0] + ('_socket' if g['name'].endswith('_socket') else '')
-    if g['name'] in ('engine_open', 'engine_armored'):
-        return 'torso', 'frame' if g['name'] == 'engine_open' else 'armor'
+    if g['name'] in ('engine_open', 'engine_armored', 'sea_open', 'sea_armored'):
+        return 'torso', 'frame' if g['name'].endswith('_open') else 'armor'
+    return None
+def engine_root(e):
+    """'engine' / 'engine_sea': the engine group a cube is in (None: not an engine part)."""
+    g = e['_g']
+    while g is not None:
+        if g['name'] in ('engine', 'engine_sea'): return g['name']
+        g = g.get('_parent')
     return None
 def apart(a, b):
     """Never drawn together (ALT)."""
     x, y = alt(a), alt(b)
+    if engine_root(a) != engine_root(b) and None not in (engine_root(a), engine_root(b)):
+        return True   # the heart's engine and the sea engine: one is drawn (the installed engine's)
     if x is not None and y is not None and {x, y} & {('hip', 'frame')} and {x, y} & {('leg_r', 'armor'), ('leg_l', 'armor')}:
         return True   # the belt goes when a leg piece goes on
     if x is not None and y is not None and x[0] == y[0] and 'tool' in (x[1], y[1]):
@@ -1492,6 +1519,11 @@ if ENGINE_BOX:
     eng = group('engine', (0, 14, 0), _t)
     fronts = {'ht_': group('engine_open', (0, 14, 0), eng), 'ha_': group('engine_armored', (0, 14, 0), eng)} \
         if ARMOR == 'game' else {}
+    if any(k.startswith('sb_') for k in ENGINE_BOX):   # the sea engine's: its own group, its fronts in it likewise
+        sea = group('engine_sea', (0, 14, 0), _t)
+        fronts['sb_'] = sea
+        fronts.update({'so_': group('sea_open', (0, 14, 0), sea), 'sa_': group('sea_armored', (0, 14, 0), sea)} if ARMOR == 'game'
+                      else {'so_': sea})
     for k, box in ENGINE_BOX.items():
         meta = ENGINE_META.get(k)
         if meta:   # a radial part (mirrored: the left one's turns about y and z flip)

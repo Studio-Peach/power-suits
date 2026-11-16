@@ -8,8 +8,10 @@ mod as GeckoLib files, without Blockbench (the frame is script-built: model/art/
   textures/entity/power_frame_glow_visor(_slim).png (the visor's glowmask: the glass texels, opaque white)
   textures/entity/power_frame_glow_fire(_slim).png (the engine's fire: the reserved coal colours of
       tools/make-glowmasks.py, painted dark in the texture (frame_model.py FIRE=dark), each lit to its glow colour)
-  textures/entity/power_frame_glow_core(_slim).png (the same texels in white -> grey: the tidal engine's and the star
-      reactor's light on the heart until they have frame art, tinted in their own colours)
+  textures/entity/power_frame_glow_core(_slim).png (the same texels in white -> grey: the star reactor's light on the
+      heart until it has frame art, tinted in its colour)
+  textures/entity/power_frame_glow_sea(_slim).png (the tidal engine's glass: its reserved dark teals, frame_sea_art.
+      SEA_DARK, each lit to its teal; the renderer scales it by the tidal glow)
   textures/entity/power_frame_glow_robot_<face>(_slim).png: the robot helmet's visor faces (robot_faces below)
   textures/entity/power_frame_glow_<light>(_slim).png for the tools' lights (TOOL_GLOW below): the flamethrower's pilot
       light, the status lamp red (idle) and green (running), the chaingun's green muzzle lights
@@ -304,6 +306,13 @@ TOOL_GLOW = {
 }
 
 
+def sea_glow():
+    """The sea engine's reserved dark colours -> their lit teals (frame_sea_art)."""
+    sys.path.insert(0, os.path.join(ROOT, 'model', 'art'))
+    import frame_sea_art
+    return {frame_sea_art.SEA_DARK[k]: frame_sea_art.EXTRA[k] for k in frame_sea_art.SEA_DARK}
+
+
 def textures(data):
     """The texture split (see the docstring): opaque, glass, the visor's glowmask, the fire's glowmask."""
     w, h, rows = unpng(data)
@@ -317,12 +326,15 @@ def textures(data):
     assert lit, 'no fire texels: build the saved files with the engine (ENGINE=heart, FIRE=dark)'
     grey = {k: (v,) * 3 for k, v in zip(FIRE, (255, 225, 190))}   # hottest -> coolest, as the fire's yellow -> red
     core = [[grey[p[:3]] + (255,) if p[3] == 255 and p[:3] in FIRE else clear for p in row] for row in rows]
+    seaglow = sea_glow()
+    sea = [[seaglow[p[:3]] + (255,) if p[3] == 255 and p[:3] in seaglow else clear for p in row] for row in rows]
+    assert any(p != clear for row in sea for p in row), 'no sea texels: build the saved files with the sea engine (SEA=A, SEA_GLOW=dark)'
     tools = {}
     for name, colours in TOOL_GLOW.items():
         mask = [[colours[p[:3]] + (255,) if p[3] == 255 and p[:3] in colours else clear for p in row] for row in rows]
         assert any(p != clear for row in mask for p in row), f'no {name} texels: build the saved files with every tool (TOOL=all, LAMP=dark)'
         tools[name] = png(w, h, mask)
-    return png(w, h, opaque), png(w, h, panes), png(w, h, visor), png(w, h, fire), png(w, h, core), tools
+    return png(w, h, opaque), png(w, h, panes), png(w, h, visor), png(w, h, fire), png(w, h, core), png(w, h, sea), tools
 
 
 def robot_faces(model, data):
@@ -389,13 +401,14 @@ if __name__ == '__main__':
         tool = ident.replace('power_frame', 'frame_tool')
         write(f'geckolib/models/view/{tool}.geo.json', json.dumps(tool_view(model, tool), indent=1).encode())
         source = model['textures'][0]['source']
-        opaque, glass, visor, fire, core, tools = textures(base64.b64decode(source.split(',', 1)[1]))
+        opaque, glass, visor, fire, core, sea, tools = textures(base64.b64decode(source.split(',', 1)[1]))
         slim = ident[len('power_frame'):]
         write(f'textures/entity/{ident}.png', opaque)
         write(f'textures/entity/power_frame_glass{slim}.png', glass)
         write(f'textures/entity/power_frame_glow_visor{slim}.png', visor)
         write(f'textures/entity/power_frame_glow_fire{slim}.png', fire)
         write(f'textures/entity/power_frame_glow_core{slim}.png', core)
+        write(f'textures/entity/power_frame_glow_sea{slim}.png', sea)
         for name, mask in tools.items():
             write(f'textures/entity/power_frame_glow_{name}{slim}.png', mask)
         for name, mask in robot_faces(model, base64.b64decode(source.split(',', 1)[1])).items():

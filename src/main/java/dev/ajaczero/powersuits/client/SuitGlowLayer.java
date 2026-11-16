@@ -123,11 +123,13 @@ public class SuitGlowLayer extends GeoRenderLayer<PowerSuitEntity, Void, LivingE
      *  colours lights with the engine: the radiator guard's slats, the protector helmet's cheek lamps (its lamps are
      *  "on when the suit is powered", so they borrow the fire's light). */
     private static final Identifier FRAME_FIRE = frameMask("fire"), FRAME_FIRE_SLIM = frameMask("fire_slim");
-    /** The same texels in white -> grey (FRAME_CORE): the tidal engine's and the star reactor's light on the heart until
-     *  they have frame art of their own, in the big suit's teal Heart of the Sea and violet core (tinting the fire's
-     *  yellow -> red mask instead came out a muddy pink). */
+    /** The same texels in white -> grey (FRAME_CORE): the star reactor's light on the heart until it has frame art of its
+     *  own, in the big suit's violet core (tinting the fire's yellow -> red mask instead came out a muddy pink). */
     private static final Identifier FRAME_CORE = frameMask("core"), FRAME_CORE_SLIM = frameMask("core_slim");
-    private static final float[] TIDAL_TINT = {0.3F, 1F, 0.95F}, REACTOR_TINT = {0.85F, 0.45F, 1F};
+    /** The tidal engine's glass (tools/export-frame.py: its reserved dark teals, painted in their lit teals): white tint,
+     *  scaled by the tidal glow's shimmer. */
+    private static final Identifier FRAME_SEA = frameMask("sea"), FRAME_SEA_SLIM = frameMask("sea_slim");
+    private static final float[] TIDAL_TINT = {1F, 1F, 1F}, REACTOR_TINT = {0.85F, 0.45F, 1F};
     /** How strongly the lit visor covers the glass: part strength, so the pilot's face still shows through. */
     private static final float VISOR_GLOW = 0.45F;
 
@@ -152,9 +154,11 @@ public class SuitGlowLayer extends GeoRenderLayer<PowerSuitEntity, Void, LivingE
         // The fire, in the installed engine's light (the fire's glow follows the power for any engine, so pick by the
         // engine; none installed: the engine isn't drawn, nor its mask).
         int engine = info.getOrDefaultGeckolibData(SuitRenderData.ENGINE, -1);
-        boolean firebox = engine != SuitEngine.TIDAL.ordinal() && engine != SuitEngine.REACTOR.ordinal();
+        boolean sea = engine == SuitEngine.TIDAL.ordinal();
+        boolean firebox = !sea && engine != SuitEngine.REACTOR.ordinal();
         int fire = engine == SuitEngine.TIDAL.ordinal() ? tints[2] : engine == SuitEngine.REACTOR.ordinal() ? tints[3] : tints[0];
-        Identifier fireMask = firebox ? (slim ? FRAME_FIRE_SLIM : FRAME_FIRE) : (slim ? FRAME_CORE_SLIM : FRAME_CORE);
+        Identifier fireMask = firebox ? (slim ? FRAME_FIRE_SLIM : FRAME_FIRE)
+                : sea ? (slim ? FRAME_SEA_SLIM : FRAME_SEA) : (slim ? FRAME_CORE_SLIM : FRAME_CORE);
         // No helmet, no visor (its tint stays on with the power).
         int visor = info.getOrDefaultGeckolibData(SuitRenderData.HELMET, false) ? tints[1] : 0xFF000000;
         // then the tool's lights (after the suit's four tints)
