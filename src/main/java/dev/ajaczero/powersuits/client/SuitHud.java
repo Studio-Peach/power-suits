@@ -195,7 +195,9 @@ public final class SuitHud {
         String toolShown = "";
         for (ToolArm arm : ToolArm.values()) { // both arms' tools have their readouts (each runs as "the socket" of its arm)
             ToolHud toolHud = suit.socket(arm).tool() == null ? null : ToolHuds.get(suit.getSocketStack(arm).getItem());
-            if (toolHud != null) {
+            // Two of the same tool (dual chainguns) have one readout: they'd draw over each other in the same corner.
+            boolean twin = arm == ToolArm.RIGHT && suit.getSocketStack(ToolArm.LEFT).is(suit.getSocketStack(ToolArm.RIGHT).getItem());
+            if (toolHud != null && !twin) {
                 String[] drawn = {""};
                 suit.onArm(arm, () -> drawn[0] = toolHud.render(g, new HudView(g, mc, suit, pilot, VisorConfig.colour(), delta.getGameTimeDeltaPartialTick(false))));
                 toolShown = toolShown.isEmpty() ? drawn[0] : toolShown + " | " + drawn[0];

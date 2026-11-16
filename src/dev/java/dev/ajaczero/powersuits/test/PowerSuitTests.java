@@ -2001,6 +2001,32 @@ public final class PowerSuitTests {
         });
     }
 
+    /** Dual wielding (2026-11-15): a chaingun in each arm, each with its own trigger, spin and shots. */
+    @SuitTest(timeoutTicks = 60)
+    public static void dualChainguns(GameTestHelper helper) {
+        PowerSuitEntity suit = toolSuit(helper);
+        suit.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.BLAZE_ROD, 4));
+        suit.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, new ItemStack(ModItems.CHAINGUN.get()));
+        suit.getInventory().setItem(PowerSuitEntity.RIGHT_SOCKET_SLOT, new ItemStack(ModItems.CHAINGUN.get()));
+        helper.runAfterDelay(2, () -> {
+            suit.brain().setAim(helper.absoluteVec(new Vec3(4.5, 3, 7)));
+            suit.socket(ToolArm.LEFT).setAiTrigger(true);
+            suit.socket(ToolArm.RIGHT).setAiTrigger(true);
+        });
+        helper.runAfterDelay(25, () -> {
+            helper.assertTrue(suit.socket(ToolArm.LEFT).getUses() > 0 && suit.socket(ToolArm.RIGHT).getUses() > 0,
+                    "both guns shoot, left " + suit.socket(ToolArm.LEFT).getUses() + " right " + suit.socket(ToolArm.RIGHT).getUses());
+            helper.assertTrue(suit.socket(ToolArm.LEFT).getSpin() > 0F && suit.socket(ToolArm.RIGHT).getSpin() > 0F, "both spin up");
+            suit.socket(ToolArm.LEFT).setAiTrigger(false); // release one: the other keeps going
+        });
+        helper.runAfterDelay(45, () -> {
+            helper.assertTrue(suit.socket(ToolArm.RIGHT).isActive() && !suit.socket(ToolArm.LEFT).isActive(),
+                    "letting go of the left gun leaves the right one firing");
+            suit.socket(ToolArm.RIGHT).setAiTrigger(false);
+            helper.succeed();
+        });
+    }
+
     // =========================================================================================
     // Phase 8 step 2: ammo (the hidden nugget store until 2026-10-27), the chaingun job (follow + defend the owner)
     // =========================================================================================
