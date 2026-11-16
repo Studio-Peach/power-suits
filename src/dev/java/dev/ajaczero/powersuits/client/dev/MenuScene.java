@@ -200,7 +200,7 @@ final class MenuScene {
             inv.setSelectedSlot(0);
             inv.setItem(1, new ItemStack(ModItems.DRILL.get()));
             inv.setItem(2, new ItemStack(ModItems.CHAINSAW.get()));
-            inv.setItem(9, new ItemStack(Items.IRON_NUGGET, 64));
+            inv.setItem(9, new ItemStack(Items.FIRE_CHARGE, 64));
             inv.setItem(10, new ItemStack(Items.TNT, 12));
             inv.setItem(11, new ItemStack(Items.COAL, 32));
             player.addEffect(new MobEffectInstance(MobEffects.SPEED, 20 * 600)); // listed under the suit's status panels

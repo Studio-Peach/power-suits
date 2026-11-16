@@ -745,8 +745,8 @@ public final class AutoPilot {
                     .min(Comparator.comparingDouble(s -> s.distanceToSqr(player))).orElse(null);
             if (suit != null) {
                 player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
-                player.getInventory().setItem(7, new ItemStack(Items.IRON_NUGGET, 64)); // bullets (survival here), not in the hand
-                player.getInventory().setItem(8, new ItemStack(Items.IRON_NUGGET, 64));
+                player.getInventory().setItem(7, new ItemStack(Items.FIRE_CHARGE, 64)); // bullets (survival here), not in the hand
+                player.getInventory().setItem(8, new ItemStack(Items.FIRE_CHARGE, 64));
                 suit.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT,
                         new ItemStack(ModItems.CHAINGUN.get()));
                 suit.interact(player, InteractionHand.MAIN_HAND, suit.position());
@@ -1071,7 +1071,7 @@ public final class AutoPilot {
             case 215 -> { o.setCameraType(CameraType.FIRST_PERSON); if (mc.player.getVehicle() instanceof PowerSuitEntity suit) suit.socket().setSpin(0F, 0F); }
             // tracers: a barrage diagonally up at the sky (yaw 45: the streaks must trail straight back along their flight)
             case 216 -> { giveHeld(mc, ItemStack.EMPTY); yaw = 45; pitch = -25;
-                          onServer(mc, p -> p.getInventory().setItem(8, new ItemStack(Items.IRON_NUGGET, 64))); }
+                          onServer(mc, p -> p.getInventory().setItem(8, new ItemStack(Items.FIRE_CHARGE, 64))); }
             case 220 -> hold(o.keyUse, true);
             case 250, 252 -> shot(mc, "view_tracers_" + s);
             case 253 -> { sideCamera(mc); o.setCameraType(CameraType.THIRD_PERSON_BACK); } // (a "first person" camera entity would draw the pilot's cockpit tracers)

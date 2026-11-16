@@ -87,9 +87,9 @@ final class HudScene {
             // the last bullets (the barrels are cold again by the shot)
             case 380 -> { phase = "last_bullets"; server(mc, (p, x) -> {
                               p.getInventory().clearContent();
-                              p.getInventory().setItem(9, new ItemStack(Items.IRON_NUGGET, 10)); }); }
+                              p.getInventory().setItem(9, new ItemStack(Items.FIRE_CHARGE, 10)); }); }
             case 396 -> AutoPilot.shot(mc, "hud_last_bullets");
-            case 397 -> server(mc, (p, x) -> p.getInventory().setItem(9, new ItemStack(Items.IRON_NUGGET, 64)));
+            case 397 -> server(mc, (p, x) -> p.getInventory().setItem(9, new ItemStack(Items.FIRE_CHARGE, 64)));
             // under half the hull: a warning (orange); then its last 15%: critical (red)
             case 398 -> { phase = "hull_warn"; server(mc, (p, x) -> x.setHealth(x.getMaxHealth() * 0.4F)); }
             case 404 -> AutoPilot.shot(mc, "hud_hull_warn");
@@ -348,8 +348,8 @@ final class HudScene {
             level.addFreshEntity(s);
             suit = s;
             player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
-            player.getInventory().setItem(9, new ItemStack(Items.IRON_NUGGET, 64));
-            player.getInventory().setItem(10, new ItemStack(Items.IRON_NUGGET, 64));
+            player.getInventory().setItem(9, new ItemStack(Items.FIRE_CHARGE, 64));
+            player.getInventory().setItem(10, new ItemStack(Items.FIRE_CHARGE, 64));
             player.setGameMode(GameType.SURVIVAL); // ammo really counts down
             player.setShiftKeyDown(false);
             player.teleportTo(x + 0.5, g, z - 1.5);

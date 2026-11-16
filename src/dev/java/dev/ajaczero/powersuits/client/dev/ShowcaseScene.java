@@ -702,7 +702,7 @@ public final class ShowcaseScene {
             inv.setItem(3, new ItemStack(Items.COBBLESTONE, 52));
             inv.setItem(4, new ItemStack(Items.OAK_LOG, 18));
             inv.setItem(6, new ItemStack(Items.COAL, 21));
-            inv.setItem(7, new ItemStack(Items.IRON_NUGGET, 64));
+            inv.setItem(7, new ItemStack(Items.FIRE_CHARGE, 64));
             inv.setItem(8, new ItemStack(Items.BREAD, 9));
             setPos = pos;
             setYaw = yaw;

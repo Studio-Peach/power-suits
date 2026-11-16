@@ -36,7 +36,7 @@ import org.jetbrains.annotations.Nullable;
  * it and the barrels spin up, firing faster and faster until it's a barrage (10 bullets/s by default). Let go and they
  * coast down; grab the trigger again before they stop and it picks up where it was.
  *
- * <p>Each bullet costs one iron nugget from the pilot's inventory (off hand first, like a bow's arrows; free in
+ * <p>Each bullet costs one fire charge from the pilot's inventory (off hand first, like a bow's arrows; free in
  * creative); the fuel goes with the spin: while the trigger is held it burns from walking's worth a tick with the barrels
  * just turning to three times that at full spin (user, 2026-10-27: the visor's burn embers then show the spin). Heavy single shots hit harder than the barrage's bullets. With
  * overheat on (config), too many bullets in a row overheat the barrels: the gun stops until they've cooled.
@@ -265,18 +265,18 @@ public class ChaingunItem extends Item implements PowerTool, ModTooltip {
         out.add(ParticleTypes.SMOKE, at.x, at.y, at.z, 1, 0.05, 0.02);
     }
 
-    /** A bullet: an iron nugget. */
+    /** A bullet: an fire charge. */
     public static boolean isBullet(ItemStack stack) {
-        return stack.is(Items.IRON_NUGGET);
+        return stack.is(Items.FIRE_CHARGE);
     }
 
-    /** One bullet for this operator: an iron nugget from a pilot's inventory (off hand first, like a bow's arrows; free
+    /** One bullet for this operator: an fire charge from a pilot's inventory (off hand first, like a bow's arrows; free
      *  in creative); the machine mind's never run out (SuitAmmo). */
     public static boolean takeBullet(PowerSuitEntity suit, LivingEntity operator) {
         return SuitAmmo.take(operator, ChaingunItem::isBullet);
     }
 
-    /** Both sides: how many bullets (iron nuggets) the pilot carries (HUD); SuitAmmo.ENDLESS in creative. */
+    /** Both sides: how many bullets (fire charges) the pilot carries (HUD); SuitAmmo.ENDLESS in creative. */
     public static int countBullets(Player player) {
         return SuitAmmo.count(player, ChaingunItem::isBullet);
     }

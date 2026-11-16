@@ -18,7 +18,7 @@ Working notes for agents: `AGENTS.md` (the design spec and roadmap are kept outs
 | Helmet | Right-click a suit with a Power Suit Helmet (or use the menu's helmet slot) to put it on. With the five armour pieces on it seals the suit (see *Armour*), and the machine mind only runs with it: without one the suit still runs with you inside (unsealed: fire, poison and water reach you, and you can eat), and an empty one stands powered down. Switching it off (below) or taking the helmet off parks a suit. Rogues always wear one. It wears like the armour pieces (durability 165, an iron helmet's) but never breaks off: worn out it stays on as "Power Suit Helmet (broken)" (styles too: "Spartan Helmet (broken)"), with no armour points and no seal, while the machine mind still runs (a parked suit doesn't die of scratches); an anvil with iron ingots repairs it (a style from the smithing table keeps its wear) |
 | Armour | The bare frame has no armour of its own (you see its cage and the pilot in it): it takes one piece per part, drawn over that part in place of its frame, torso, each arm, each leg (an arm or leg piece fits either side), in the suit's armour slots. Each piece adds its own protection to the suit (Iron: torso +6, arm +2, leg +3; the helmet +2: 18 with the full set and helmet; config `armour`). **All five pieces and the helmet** seal a running suit (*Sealed suit*). Pieces carry a tier (iron now). Put pieces on in the suit menu (shift-click sends a piece to its free slot). A bare part never exposes you: every hit lands on the hull, which takes less the more pieces are on. **Pieces wear** like vanilla armour (every worn piece loses max(1, damage / 4) durability per hit, times config `armour.wear`; hits that ignore armour, like `/kill` or the void, don't wear them; Iron: torso 240, arm 165, leg 225, as a chestplate, helmet and leggings): the menu's durability bars show it, an anvil with iron ingots repairs them, and a worn-out piece breaks and is gone (vanilla's break sound, bits of it flying), leaving that part bare and the suit unsealed (the helmet wears too, but stays on broken: *Helmet*) |
 | Fuel | Put anything a furnace burns in the fuel slot; it lasts as many ticks as in a furnace (coal 1:20 of walking, blaze rod 2:00, lava bucket 16:40 and the bucket stays, planks 0:15) (for the standard Firebox engine; see *Engines* below) |
-| Engines | The backpack is the suit's engine, swapped in the menu's engine slot. **Firebox** (a new suit has no engine: craft one): burns fuel, floods and dies when water covers it (no pack-up while flooded: drain the water or swap the engine). **Tidal Engine** (crafted with a Heart of the Sea; twin diving tanks that bubble under water): free while wet (its backpack under water, or in rain); on land it drinks water buckets (0:15) or bottles (0:05) from the fuel slot, so carry some to climb out of the water. **Star Reactor** (diamonds + an end crystal; glowing energy canisters drawing in ender particles): a Nether Star in the fuel slot runs everything, tools included, forever (bullets still take iron nuggets). Each engine is its own backpack on the suit |
+| Engines | The backpack is the suit's engine, swapped in the menu's engine slot. **Firebox** (a new suit has no engine: craft one): burns fuel, floods and dies when water covers it (no pack-up while flooded: drain the water or swap the engine). **Tidal Engine** (crafted with a Heart of the Sea; twin diving tanks that bubble under water): free while wet (its backpack under water, or in rain); on land it drinks water buckets (0:15) or bottles (0:05) from the fuel slot, so carry some to climb out of the water. **Star Reactor** (diamonds + an end crystal; glowing energy canisters drawing in ender particles): a Nether Star in the fuel slot runs everything, tools included, forever (bullets still take fire charges). Each engine is its own backpack on the suit |
 | Walk / run | WASD (3.0 blocks/s walk; S backs up at half speed) / sprint (6.25 blocks/s; double-tap W or tap Ctrl once, it keeps going while W is held) |
 | Jump | Hold Space to charge (the suit crouches), release |
 | Climb out | Shift |
@@ -88,7 +88,7 @@ balance pass), with what one piece of coal (1600) buys:
 |---|---|---|
 | Walking / standing / sprinting (piloted or the machine mind) | 1 / 0.25 / 2 per tick | 80 s / 5:20 / 40 s |
 | Jump | 20 | 80 jumps |
-| Chaingun | 1 per tick with the barrels just turning up to 3 at full spin, while the trigger is held; 1 iron nugget per bullet (4 hearts heavy, 1.5 barrage) | ~25 s of barrage (~250 bullets) |
+| Chaingun | 1 per tick with the barrels just turning up to 3 at full spin, while the trigger is held; 1 fire charge per bullet (4 hearts heavy, 1.5 barrage) | ~25 s of barrage (~250 bullets) |
 | EM Projector | 1 per tick holding, 80 per throw | 80 s of holding, or 20 throws |
 | Mining Drill | 20 per block (180 per 3x3); melee 3 per tick | ~9 faces (80 blocks) |
 | Chainsaw | 15 per log; melee 4 per tick | ~20 oaks (5 logs each) |
@@ -180,7 +180,7 @@ spin up over 2.5 s, firing faster and faster up to a barrage of 10 bullets a sec
 coast down over 1.5 s; grab the trigger again before they stop and it picks up where it was. While you hold the trigger it burns
 fuel with the spin: a walking's worth a tick with the barrels just turning, up to three times that at full spin (the
 HUD's burn embers climb from one to three; config `slow_spin_energy_per_tick`, `full_spin_energy_per_tick`). Each
-bullet uses **one iron nugget** from your inventory (off hand first, like a bow's arrows; free in creative); the HUD shows how many
+bullet uses **one fire charge** from your inventory (off hand first, like a bow's arrows; free in creative); the HUD shows how many
 you carry and the barrels' heat. Bullets are hot tracers at 80 blocks/s that fly along your line of sight (whatever is in the crosshair is what gets hit;
 they're drawn coming out of the gun and meet that line at the target). They ignore the half-second of immunity mobs
 get after a hit (so every bullet of a barrage counts), push lightly instead of vanilla's knockback, and spark off
@@ -362,7 +362,7 @@ src/main/java/dev/ajaczero/powersuits/
   entity/ai/SuitTargets.java who the mind may shoot, what to shoot first, line-of-fire check
   entity/ai/SuitWork.java    where the drill and chainsaw minds may work (the hall, natural trees)
   entity/RogueSpawner.java   rogue suits turning up once in a while (saved day countdown, like the wandering trader)
-  item/ChaingunItem.java     the first tool: spin-up, nugget ammo, overheat (continuous tool; also a GeckoLib item)
+  item/ChaingunItem.java     the first tool: spin-up, fire charge ammo, overheat (continuous tool; also a GeckoLib item)
   item/SuitAmmo.java         the tools' ammo: from the pilot's inventory (off hand first), endless for the machine mind
   item/EmProjectorItem.java  the second tool: grab / hold / collect / throw, slam and bowling damage (per-suit state in Beam)
   item/SocketAim.java        muzzle position, crosshair aim point, entity under the crosshair

@@ -72,7 +72,7 @@ import org.jetbrains.annotations.Nullable;
 public final class SuitHud {
     public static final Identifier ID = Identifier.fromNamespaceAndPath(PowerSuits.MODID, "suit_hud");
     /** The suit figure, one mask per armour piece on one 15x26 canvas (tools/make-hud-icons.py), so each piece can take
-     *  its own colour: today all are the visor's; with modular armour a critical piece could blink on its own. */
+     *  its own look (whole, worn, cracked, bare: see the draw). */
     private static final Identifier[] FIGURE = {hud("suit_helmet"), hud("suit_chest"), hud("suit_arm_left"),
             hud("suit_arm_right"), hud("suit_leg_left"), hud("suit_leg_right")};
     /** The same pieces with texels punched out, for a piece at half durability and in its last 15% (the visor is one

@@ -47,7 +47,7 @@ public final class PowerSuitsConfig {
     // embers show how fast the barrels turn)
     public static final ModConfigSpec.DoubleValue CHAINGUN_SLOW_SPIN_ENERGY = B.pop().translation(key("chaingun")).push("chaingun")
             .comment("Energy per tick while the trigger is held and the barrels have just started turning (walking burns 1).",
-                    "It rises with the spin to full_spin_energy_per_tick. Bullets themselves cost only an iron nugget.").translation(key("chaingun_slow_spin_energy"))
+                    "It rises with the spin to full_spin_energy_per_tick. Bullets themselves cost only a fire charge.").translation(key("chaingun_slow_spin_energy"))
             .defineInRange("slow_spin_energy_per_tick", 1.0, 0, 1000);
     public static final ModConfigSpec.DoubleValue CHAINGUN_FULL_SPIN_ENERGY = B
             .comment("Energy per tick while the trigger is held at full spin (the barrage).").translation(key("chaingun_full_spin_energy"))

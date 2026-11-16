@@ -609,10 +609,10 @@ public final class PowerSuitTests {
         return suit;
     }
 
-    /** A pilot carrying bullets (iron nuggets) for the chaingun. */
+    /** A pilot carrying bullets (iron fire charges) for the chaingun. */
     private static Player armedPilot(GameTestHelper helper, PowerSuitEntity suit) {
         Player pilot = boardedPilot(helper, suit);
-        pilot.getInventory().add(new ItemStack(Items.IRON_NUGGET, 64));
+        pilot.getInventory().add(new ItemStack(Items.FIRE_CHARGE, 64));
         return pilot;
     }
 
@@ -625,7 +625,7 @@ public final class PowerSuitTests {
         return pilot;
     }
 
-    /** A tap fires one heavy shot at once: one nugget, and only a tick of slow spin's fuel (bullets cost no fuel). */
+    /** A tap fires one heavy shot at once: one fire charge, and only a tick of slow spin's fuel (bullets cost no fuel). */
     @SuitTest(timeoutTicks = 40)
     public static void chaingunTapFiresOneHeavyShot(GameTestHelper helper) {
         PowerSuitEntity suit = armedSuit(helper, SUIT_POS, new ItemStack(Items.BLAZE_ROD, 2)); // 4800 energy
@@ -635,7 +635,7 @@ public final class PowerSuitTests {
         helper.runAfterDelay(3, () -> suit.socket().setTriggerHeld(pilot, false));
         helper.runAfterDelay(20, () -> {
             helper.assertTrue(suit.socket().getUses() == 1, "a tap fires exactly one shot, got " + suit.socket().getUses());
-            helper.assertTrue(pilot.getInventory().countItem(Items.IRON_NUGGET) == 63, "one nugget used");
+            helper.assertTrue(pilot.getInventory().countItem(Items.FIRE_CHARGE) == 63, "one fire charge used");
             int used = 2 * fireboxEnergy(helper, Items.BLAZE_ROD) - suit.power().getTotalEnergy();
             int most = (int) Math.ceil(2 * ChaingunItem.spinBurn(0.05F)) + 6;
             helper.assertTrue(used <= most, "a tap burns a tick or two of slow spin (+ idle): at most " + most + ", used " + used);
@@ -690,17 +690,17 @@ public final class PowerSuitTests {
         });
     }
 
-    /** Each bullet uses one iron nugget; without nuggets the gun only clicks (the barrels still burn their spin). */
+    /** Each bullet uses one iron fire charge; without fire charges the gun only clicks (the barrels still burn their spin). */
     @SuitTest(timeoutTicks = 80)
     public static void chaingunUsesOneNuggetPerBullet(GameTestHelper helper) {
         PowerSuitEntity suit = armedSuit(helper, SUIT_POS, new ItemStack(Items.BLAZE_ROD, 2));
         Player pilot = boardedPilot(helper, suit);
-        pilot.getInventory().add(new ItemStack(Items.IRON_NUGGET, 3));
+        pilot.getInventory().add(new ItemStack(Items.FIRE_CHARGE, 3));
         suit.positionRider(pilot);
         suit.socket().setTriggerHeld(pilot, true);
         helper.runAfterDelay(60, () -> {
-            helper.assertTrue(suit.socket().getUses() == 3, "three nuggets, three bullets, got " + suit.socket().getUses());
-            helper.assertTrue(pilot.getInventory().countItem(Items.IRON_NUGGET) == 0, "all nuggets used");
+            helper.assertTrue(suit.socket().getUses() == 3, "three fire charges, three bullets, got " + suit.socket().getUses());
+            helper.assertTrue(pilot.getInventory().countItem(Items.FIRE_CHARGE) == 0, "all fire charges used");
             int used = 2 * fireboxEnergy(helper, Items.BLAZE_ROD) - suit.power().getTotalEnergy();
             int most = (int) Math.ceil(61 * ChaingunItem.spinBurn(1F)) + 20;
             helper.assertTrue(used <= most, "only the spin (+ idle) costs fuel: at most " + most + ", used " + used);
@@ -715,7 +715,7 @@ public final class PowerSuitTests {
         suit.positionRider(pilot);
         suit.socket().setTriggerHeld(pilot, true);
         helper.runAfterDelay(5, () -> {
-            helper.assertTrue(suit.socket().getUses() == 1, "creative fires without nuggets, uses " + suit.socket().getUses());
+            helper.assertTrue(suit.socket().getUses() == 1, "creative fires without fire charges, uses " + suit.socket().getUses());
             helper.succeed();
         });
     }
@@ -1984,7 +1984,7 @@ public final class PowerSuitTests {
         });
     }
 
-    /** The chaingun with the mind at the trigger: it spins up and shoots, needing no nuggets (2026-10-27: the mind's
+    /** The chaingun with the mind at the trigger: it spins up and shoots, needing no fire charges (2026-10-27: the mind's
      *  tools never run out). */
     @SuitTest(timeoutTicks = 40)
     public static void mindChaingunNeedsNoAmmo(GameTestHelper helper) {
@@ -1996,7 +1996,7 @@ public final class PowerSuitTests {
             suit.socket().setAiTrigger(true);
         });
         helper.runAfterDelay(20, () -> {
-            helper.assertTrue(suit.socket().isActive() && suit.socket().getUses() > 0, "spins and shoots without nuggets, shots " + suit.socket().getUses());
+            helper.assertTrue(suit.socket().isActive() && suit.socket().getUses() > 0, "spins and shoots without fire charges, shots " + suit.socket().getUses());
             helper.succeed();
         });
     }
@@ -2067,8 +2067,8 @@ public final class PowerSuitTests {
     public static void pilotAmmoComesFromTheirInventory(GameTestHelper helper) {
         PowerSuitEntity suit = spawnSuit(helper);
         Player pilot = helper.makeMockPlayer(GameType.SURVIVAL);
-        pilot.getInventory().setItem(3, new ItemStack(Items.IRON_NUGGET, 2));
-        pilot.setItemInHand(InteractionHand.OFF_HAND, new ItemStack(Items.IRON_NUGGET, 1));
+        pilot.getInventory().setItem(3, new ItemStack(Items.FIRE_CHARGE, 2));
+        pilot.setItemInHand(InteractionHand.OFF_HAND, new ItemStack(Items.FIRE_CHARGE, 1));
         helper.assertTrue(ChaingunItem.countBullets(pilot) == 3, "counts every nugget carried, got " + ChaingunItem.countBullets(pilot));
         helper.assertTrue(ChaingunItem.takeBullet(suit, pilot) && pilot.getOffhandItem().isEmpty(), "the off hand first");
         helper.assertTrue(ChaingunItem.takeBullet(suit, pilot) && ChaingunItem.takeBullet(suit, pilot), "then the inventory");
@@ -2326,7 +2326,7 @@ public final class PowerSuitTests {
         return suit;
     }
 
-    /** No fuel, no nuggets: a rogue runs anyway, and shoots any mob it sees (a cow here). */
+    /** No fuel, no fire charges: a rogue runs anyway, and shoots any mob it sees (a cow here). */
     @SuitTest(timeoutTicks = 120)
     public static void rogueRunsOnNothingAndShootsAnyMob(GameTestHelper helper) {
         PowerSuitEntity suit = rogue(helper, new BlockPos(4, 2, 1), true);
@@ -2335,7 +2335,7 @@ public final class PowerSuitTests {
         helper.succeedWhen(() -> {
             helper.assertTrue(!cow.isAlive(), "the cow should be shot");
             helper.assertTrue(suit.power().getTotalEnergy() == 0 && suit.socket().getUses() > 0,
-                    "fired without fuel or nuggets");
+                    "fired without fuel or fire charges");
         });
     }
 

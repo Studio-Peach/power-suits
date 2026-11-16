@@ -137,7 +137,7 @@ public final class RogueSpawner {
         return null;
     }
 
-    /** A rogue mind with a chaingun (or an EM projector). It needs no fuel and no nuggets. */
+    /** A rogue mind with a chaingun (or an EM projector). It needs no fuel and no fire charges. */
     public static void makeRogue(PowerSuitEntity suit, boolean chaingun) {
         makeRogue(suit, new ItemStack(chaingun ? ModItems.CHAINGUN.get() : ModItems.EM_PROJECTOR.get()));
     }
