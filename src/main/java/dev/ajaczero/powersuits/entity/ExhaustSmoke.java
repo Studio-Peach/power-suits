@@ -21,9 +21,9 @@ final class ExhaustSmoke {
     /** The tidal engine's tank valves (model/power_frame.bbmodel, en_sb_valve_*, 2026-11-16): their tops 1.78 up (28.5 px),
      *  0.31 behind the centre (5 px), 0.27 to each side (4.25 px). The bubbles come out of their tops. */
     private static final double VALVE_UP = 28.5 / 16, VALVE_BACK = 5.0 / 16, VALVE_SIDE = 4.25 / 16;
-    /** The star reactor's motes, until it has frame art: round the blower's block (its middle 1.375 up, 22 px; its sides
-     *  0.31 from the centre, 5 px). */
-    private static final double GLASS_UP = 22.0 / 16, GLASS_SIDE = 5.0 / 16;
+    /** The star reactor's motes: drawn into its chain (model/power_frame.bbmodel, en_rb_*, 2026-11-16): the middle of the
+     *  spine 1.42 up (22.75 px), the pods 0.19 to each side (3 px), 0.25 behind the centre (4 px). */
+    private static final double GLASS_UP = 22.75 / 16, GLASS_SIDE = 3.0 / 16, GLASS_BACK = 4.0 / 16;
 
     /** Called every client tick. Smoke only while someone is driving: a parked suit's engine is off. */
     static void tick(PowerSuitEntity suit) {
@@ -117,8 +117,8 @@ final class ExhaustSmoke {
         Vec3 side = new Vec3(forward.z, 0, -forward.x);
         int which = random.nextBoolean() ? 1 : -1;
         // a point on a canister's glass (its outer side or its back), somewhere up its height
-        Vec3 glass = suit.position().add(0, GLASS_UP + suit.animator().getStepOffset(1F) + (random.nextDouble() - 0.5) * 0.3, 0)
-                .subtract(forward.scale(PIPE_BACK + random.nextDouble() * 0.12)).add(side.scale(which * (GLASS_SIDE - random.nextDouble() * 0.12)));
+        Vec3 glass = suit.position().add(0, GLASS_UP + suit.animator().getStepOffset(1F) + (random.nextDouble() - 0.5) * 0.55, 0)
+                .subtract(forward.scale(GLASS_BACK + random.nextDouble() * 0.12)).add(side.scale(which * (GLASS_SIDE - random.nextDouble() * 0.12)));
         // where the speck starts, relative to the glass: out to the side or back, and up (cancelling most of the 1 block)
         Vec3 out = side.scale(which * (0.15 + random.nextDouble() * 0.35)).subtract(forward.scale(random.nextDouble() * 0.3));
         suit.level().addParticle(ParticleTypes.PORTAL, glass.x, glass.y, glass.z, out.x, -0.5 - random.nextDouble() * 0.3, out.z);

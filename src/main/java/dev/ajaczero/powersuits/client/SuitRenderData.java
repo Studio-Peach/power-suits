@@ -55,6 +55,8 @@ final class SuitRenderData {
     @SuppressWarnings("unchecked")
     static final DataTicket<Consumer<Float>> HIP_SINK = DataTicket.create("power_suits_hip_sink", (Class<Consumer<Float>>) (Class<?>) Consumer.class);
     /** The lights (SuitGlowLayer): one packed ARGB tint per glowmask, 0 = off. */
+    /** The star reactor's chain: a tint per glowmask (the steady one, then the segments from the hip up). */
+    static final DataTicket<int[]> STAR = DataTicket.create("power_suits_star", int[].class);
     static final DataTicket<int[]> GLOW = DataTicket.create("power_suits_glow", int[].class);
     /** The robot helmet's visor face (SuitFace.Face ordinal, -1 = none: dark). */
     static final DataTicket<Integer> VISOR_FACE = DataTicket.create("power_suits_visor_face", Integer.class);

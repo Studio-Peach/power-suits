@@ -131,12 +131,14 @@ public class PowerSuitRenderer extends GeoEntityRenderer<PowerSuitEntity, Living
         }
         // Engine slot (design sec. 4b): the frame's engine (the heart: core and hoses on the front, the blower on the back)
         // only with one installed; none without (the glowmasks follow: a hidden bone isn't drawn again). The tidal engine
-        // has its own (engine_sea: tanks on the back, the gauge and glass lines on the front, 2026-11-16); the star
-        // reactor shows the heart for now and lights its fire in its own colour (SuitGlowLayer) until it gets its own.
+        // has its own (engine_sea: tanks on the back, the gauge and glass lines on the front, 2026-11-16), and so has the
+        // star reactor (engine_star: the Sandevistan chain down the back, the lens on the chest).
         int engineId = info.getOrDefaultGeckolibData(SuitRenderData.ENGINE, -1);
         boolean sea = engineId == SuitEngine.TIDAL.ordinal();
-        boolean engine = engineId >= 0 && !sea;
+        boolean star = engineId == SuitEngine.REACTOR.ordinal();
+        boolean engine = engineId >= 0 && !sea && !star;
         bones.ifPresent("engine", bone -> bone.skipRender(!engine).skipChildrenRender(!engine));
+        bones.ifPresent("engine_star", bone -> bone.skipRender(!star).skipChildrenRender(!star));
         bones.ifPresent("engine_sea", bone -> bone.skipRender(!sea).skipChildrenRender(!sea));
         // Armour slots (frame step 6c): each part shows its piece while worn, its bare frame otherwise (ArmourBones);
         // the breastplate also swaps the engine's front for its armoured one.

@@ -51,7 +51,12 @@ the end and `docs/guide.md` Notes).
   shoulders, down the waist, into the back body's sides) with its own paint.
 - Light: letters T S y q are reserved dark teals in the texture (`SEA_DARK`, `SEA_GLOW=lit` paints them lit for a
   review); `export-frame.py` writes `power_frame_glow_sea`, `SuitGlowLayer` scales it by the tidal shimmer.
-  Bubbles: `ExhaustSmoke` VALVE_* (the tank valves' tops). The star reactor is next (same idea).
+  Bubbles: `ExhaustSmoke` VALVE_* (the tank valves' tops).
+- Star reactor (`frame_star_art.py`, knob `STAR` A / none; group `engine_star`): eight draft rounds, the story is in its
+  docstring (discs and cages "too far out", "grounded in technology, no wheels", then the Sandevistan: "mechanical,
+  not boney", "slick black and purple", the chain A picked). Chest: the lens. The module screens + head + base are
+  SEGMENTS, each its own glowmask (`export-frame.py star_masks`), lit in a climbing pulse by `SuitLights.getStarSegments`.
+  The texture grew to 320 rows for the three engines. Not built: the afterimage trail the real implant leaves.
 - Review the bare and armoured fronts from a `SEA_GLOW=lit` game build (hide `engine`, show `engine_sea`, toggle
   `sea_open` / `sea_armored`); `ARMOR=none` drafts show the open front only.
 

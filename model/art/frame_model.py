@@ -760,10 +760,10 @@ if ENGINE == 'heart' and SEA != 'none':
             ENGINE_BOX[k] = p['box']
             ENGINE_META[k] = p
             if p['faces']: SHELLS[f'en_{k}'] = dict(faces=p['faces'])
-# Knob STAR ('none' / 'A' crystal / 'B' halo / 'C' pylon; 2026-11-16, user: the star reactor too, after the tidal engine's
-# diver): its own back and fronts (frame_star_art.py), group engine_star. STAR_GLOW as SEA_GLOW.
-STAR = os.environ.get('STAR', 'none')
-assert STAR in ('none', 'A', 'B', 'C'), STAR
+# Knob STAR ('A' / 'none'; 2026-11-16, user: the star reactor too, after the tidal engine's diver; the Sandevistan chain,
+# A, picked from eight rounds of drafts): its own back and fronts (frame_star_art.py), group engine_star. STAR_GLOW as SEA_GLOW.
+STAR = os.environ.get('STAR', 'A')
+assert STAR in ('none', 'A'), STAR
 if os.environ.get('STAR_GLOW', 'dark') == 'dark': PAL.update(star_art.STAR_DARK)
 if ENGINE == 'heart' and STAR != 'none':
     _back, _open, _armoured = star_art.build(STAR, CHEST_X)
@@ -930,7 +930,7 @@ SHELL_AT.update({'en_pack': (136, 57), 'en_exhaust': (64, 8), 'en_exhaust_cap': 
                  'en_pipe_t0': (64, 34), 'en_pipe_t1': (64, 52), 'en_pipe_t2': (96, 34), 'en_pipe_b0': (84, 52),
                  'en_pipe_b1': (96, 38), 'en_pipe_ts': (64, 64), 'en_pipe_bs': (100, 64)})
 if ENGINE_META:   # the radial's parts, shelf-packed below the texture's old bottom (it grows to 256 tall)
-    TH = 256
+    TH = 320   # (256 until the star reactor joined the heart and the tidal engine, 2026-11-16)
     _u, _v, _rh = 0, 128, 0
     for k in [k for k in ENGINE_META if f'en_{k}' in SHELLS]:
         fs = SHELLS[f'en_{k}']['faces']

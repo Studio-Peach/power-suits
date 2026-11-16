@@ -12,6 +12,8 @@ mod as GeckoLib files, without Blockbench (the frame is script-built: model/art/
       heart until it has frame art, tinted in its colour)
   textures/entity/power_frame_glow_sea(_slim).png (the tidal engine's glass: its reserved dark teals, frame_sea_art.
       SEA_DARK, each lit to its teal; the renderer scales it by the tidal glow)
+  textures/entity/power_frame_glow_star(_slim).png, power_frame_glow_star_<0..5>(_slim).png (the star reactor's light:
+      its reserved dark violets lit; <i> the chain's segments from the hip up, see star_masks)
   textures/entity/power_frame_glow_robot_<face>(_slim).png: the robot helmet's visor faces (robot_faces below)
   textures/entity/power_frame_glow_<light>(_slim).png for the tools' lights (TOOL_GLOW below): the flamethrower's pilot
       light, the status lamp red (idle) and green (running), the chaingun's green muzzle lights
@@ -358,6 +360,36 @@ def robot_faces(model, data):
     return out
 
 
+def star_masks(model, data):
+    """The star reactor's glowmasks (frame_star_art): its reserved dark violets lit. 'star' holds every lit texel but the
+    segments' (the rod, the pods' rims, the chest lens), 'star_<i>' the texels of SEGMENTS[i] (base, the four module
+    screens, head: from the hip up), which the game lights one after another up the spine."""
+    sys.path.insert(0, os.path.join(ROOT, 'model', 'art'))
+    import frame_star_art
+    w, h, rows = unpng(data)
+    lit = {frame_star_art.STAR_DARK[k]: frame_star_art.EXTRA[k] for k in frame_star_art.STAR_DARK}
+    seg_texels = []
+    for name in frame_star_art.SEGMENTS:
+        els = [e for e in model['elements'] if e['name'] == 'en_rb_' + name]
+        assert len(els) == 1, f'no star segment {name}: build the saved files with the star reactor (STAR=A, STAR_GLOW=dark)'
+        seen = set()
+        for face in els[0]['faces'].values():
+            u0, v0, u1, v1 = (int(round(c)) for c in face['uv'])
+            for y in range(min(v0, v1), max(v0, v1)):
+                for x in range(min(u0, u1), max(u0, u1)):
+                    if 0 <= x < w and 0 <= y < h and rows[y][x][3] == 255 and rows[y][x][:3] in lit: seen.add((x, y))
+        assert seen, f'star segment {name} has no lit texels'
+        seg_texels.append(seen)
+    clear = (0, 0, 0, 0)
+    taken = set().union(*seg_texels)
+    out = {'star': png(w, h, [[lit[p[:3]] + (255,) if p[3] == 255 and p[:3] in lit and (x, y) not in taken else clear
+                              for x, p in enumerate(row)] for y, row in enumerate(rows)])}
+    for i, seen in enumerate(seg_texels):
+        out[f'star_{i}'] = png(w, h, [[lit[p[:3]] + (255,) if (x, y) in seen else clear for x, p in enumerate(row)]
+                                    for y, row in enumerate(rows)])
+    return out
+
+
 def write(rel, data):
     path = os.path.join(ASSETS, rel)
     os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -410,6 +442,8 @@ if __name__ == '__main__':
         write(f'textures/entity/power_frame_glow_core{slim}.png', core)
         write(f'textures/entity/power_frame_glow_sea{slim}.png', sea)
         for name, mask in tools.items():
+            write(f'textures/entity/power_frame_glow_{name}{slim}.png', mask)
+        for name, mask in star_masks(model, base64.b64decode(source.split(',', 1)[1])).items():
             write(f'textures/entity/power_frame_glow_{name}{slim}.png', mask)
         for name, mask in robot_faces(model, base64.b64decode(source.split(',', 1)[1])).items():
             write(f'textures/entity/power_frame_glow_robot_{name}{slim}.png', mask)

@@ -10,6 +10,7 @@ import dev.ajaczero.powersuits.PowerSuits;
 import dev.ajaczero.powersuits.entity.PowerSuitEntity;
 import dev.ajaczero.powersuits.entity.SuitEngine;
 import dev.ajaczero.powersuits.entity.SuitFace;
+import dev.ajaczero.powersuits.entity.SuitLights;
 import dev.ajaczero.powersuits.entity.ToolArm;
 import dev.ajaczero.powersuits.item.HelmetStyle;
 import dev.ajaczero.powersuits.item.ToolLight;
@@ -105,6 +106,13 @@ public class SuitGlowLayer extends GeoRenderLayer<PowerSuitEntity, Void, LivingE
         int[] tints = Arrays.copyOf(suitTints, suitTints.length + toolTints.length);
         System.arraycopy(toolTints, 0, tints, suitTints.length, toolTints.length);
         state.addGeckolibData(SuitRenderData.GLOW, tints);
+        float[] chain = suit.lights().getStarSegments(time);
+        int[] star = new int[1 + chain.length];
+        star[0] = tint(suit.lights().getReactorGlow(time), 1F, 1F, 1F);   // the rod, the pods' rims, the lens: steady
+        for (int i = 0; i < chain.length; i++) {
+            star[1 + i] = tint(chain[i], 1F, 1F, 1F);
+        }
+        state.addGeckolibData(SuitRenderData.STAR, star);
         state.addGeckolibData(SuitRenderData.RAIL_SHAKE, new float[] {suit.socketVisuals(ToolArm.LEFT).shake(), time});
         state.addGeckolibData(SuitRenderData.RAIL_SHAKE_R, new float[] {suit.socketVisuals(ToolArm.RIGHT).shake(), time});
     }
@@ -130,6 +138,18 @@ public class SuitGlowLayer extends GeoRenderLayer<PowerSuitEntity, Void, LivingE
      *  scaled by the tidal glow's shimmer. */
     private static final Identifier FRAME_SEA = frameMask("sea"), FRAME_SEA_SLIM = frameMask("sea_slim");
     private static final float[] TIDAL_TINT = {1F, 1F, 1F}, REACTOR_TINT = {0.85F, 0.45F, 1F};
+    /** The star reactor's glowmasks per build (tools/export-frame.py star_masks): the steady one, then the chain's segments
+     *  from the hip up (the violet is painted in them: white tint, scaled by the level). */
+    private static final Identifier[] STAR = starMasks(""), STAR_SLIM = starMasks("_slim");
+
+    private static Identifier[] starMasks(String build) {
+        Identifier[] masks = new Identifier[1 + SuitLights.STAR_SEGMENTS];
+        masks[0] = frameMask("star" + build);
+        for (int i = 0; i < SuitLights.STAR_SEGMENTS; i++) {
+            masks[1 + i] = frameMask("star_" + i + build);
+        }
+        return masks;
+    }
     /** How strongly the lit visor covers the glass: part strength, so the pilot's face still shows through. */
     private static final float VISOR_GLOW = 0.45F;
 
@@ -155,10 +175,11 @@ public class SuitGlowLayer extends GeoRenderLayer<PowerSuitEntity, Void, LivingE
         // engine; none installed: the engine isn't drawn, nor its mask).
         int engine = info.getOrDefaultGeckolibData(SuitRenderData.ENGINE, -1);
         boolean sea = engine == SuitEngine.TIDAL.ordinal();
-        boolean firebox = !sea && engine != SuitEngine.REACTOR.ordinal();
+        boolean star = engine == SuitEngine.REACTOR.ordinal();
+        boolean firebox = !sea && !star;
         int fire = engine == SuitEngine.TIDAL.ordinal() ? tints[2] : engine == SuitEngine.REACTOR.ordinal() ? tints[3] : tints[0];
         Identifier fireMask = firebox ? (slim ? FRAME_FIRE_SLIM : FRAME_FIRE)
-                : sea ? (slim ? FRAME_SEA_SLIM : FRAME_SEA) : (slim ? FRAME_CORE_SLIM : FRAME_CORE);
+                : sea ? (slim ? FRAME_SEA_SLIM : FRAME_SEA) : null;   // (the reactor's own masks: below)
         // No helmet, no visor (its tint stays on with the power).
         int visor = info.getOrDefaultGeckolibData(SuitRenderData.HELMET, false) ? tints[1] : 0xFF000000;
         // then the tool's lights (after the suit's four tints)
@@ -178,6 +199,10 @@ public class SuitGlowLayer extends GeoRenderLayer<PowerSuitEntity, Void, LivingE
         System.arraycopy(tools, 0, masks, 2, tools.length);
         System.arraycopy(tints, 4, all, 2, tools.length);
         drawMasks(this.renderer, info, renderTasks, masks, all, 1);
+        int[] chain = info.getGeckolibData(SuitRenderData.STAR);
+        if (star && chain != null) {
+            drawMasks(this.renderer, info, renderTasks, slim ? STAR_SLIM : STAR, chain, 1);   // the star reactor's chain
+        }
         if (face != null) {
             // The robot's face: on top of the glass (HelmetGlassLayer, order 1). In the same order the passes' sort
             // depended on the texture, so some faces showed through the smoked glass at a fifth of their light.

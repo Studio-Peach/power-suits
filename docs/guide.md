@@ -455,14 +455,19 @@ its outer layer) when the suit has one, his face behind its smoked glass, the gl
 strength (amber: a pilot; green: the mind; red: a rogue; dark without power), his hat layer hidden under it; without a
 helmet his own head with its hat layer. The frame's left hand is the socket (the arm ends at his hand). Step 4: the engine (the heart: a
 porthole core and copper hoses painted on the front, the hot-rod blower on the back with its fire window, supercharger
-and exhaust caps) with the firebox (the star reactor lights the same heart violet until it gets frame art), smoke from the caps. The
+and exhaust caps) with the firebox, smoke from the caps. The
 tidal engine has a body of its own (2026-11-16, the diver, picked from three drafts: the engines shouldn't follow the
 firebox's shape, so the back is 3D and the front and sides are flat decals): two dark iron diving tanks with teal
 level windows and a valve each (the bubbles come out of them), a manifold between them with the Heart of the Sea in a
 porthole, a dive gauge on the chest (in a steel ring under the breastplate) and glass water lines with bubbles over the
 shoulders and down the waist into the tanks; the glass is painted in dark reserved teals and lit by
 `power_frame_glow_sea` with the tidal shimmer (`model/art/frame_sea_art.py`, groups `engine_sea` / `sea_open` /
-`sea_armored`). The helmet clips into the
+`sea_armored`). The star reactor has its own too (2026-11-16, eight rounds of drafts; the user's reference the
+Cyberpunk Sandevistan, `.scratch/sand/ref.jpg`): a chain of glossy black wedge modules down the back, each with a violet screen,
+button pods either side, a head unit at the neck and a base unit at the hip, a lit rod through them, and a lens on the
+chest (in a steel ring under the breastplate). The screens light one after another up the spine, faster the harder
+the engine works (`SuitLights.getStarSegments`, the masks `power_frame_glow_star` and `_star_0..5`,
+`model/art/frame_star_art.py`, groups `engine_star` / `star_open` / `star_armored`); ender motes are drawn into the chain. The helmet clips into the
 blower looking far up (user: fine, it rarely happens). Step 5a: the tools in the left arm's socket (the drill, the
 chainsaw, the chaingun, the flamethrower, the rail cannon, the TNT launcher (a turning four-chamber drum with red TNT ends over a barrel) and the EM projector (four copper-wound poles with red tips under a housing with a redstone lens), each in the fist's place, the last two the big suit's designs (2026-11-15); the rail cannon (2026-11-15, the big suit's as the reference, draft A): a steel receiver with a copper band, two vented prongs with a 1 px gap between them whose walls carry the core, lit in three bands that run toward the tips as it charges (`ToolLight.RAIL_FLOW_*`, `power_frame_glow_rail_flow_<n>`), the prongs straining apart as it shakes); the drill's bit spins and the chain runs (their run animations, kept
 from the big suit's file: the frame names those bones the same), the chaingun's barrels turn (ToolRotors). Step 5b: using a tool raises the left arm

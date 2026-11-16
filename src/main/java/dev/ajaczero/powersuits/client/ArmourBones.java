@@ -8,7 +8,7 @@ import dev.ajaczero.powersuits.entity.SuitArmour;
  * frame's files hold both (model/art/frame_model.py, ARMOR=game): a part's frame cubes in {@code frame_<bone>}, its
  * piece in {@code armor_<bone>}; a piece takes its frame's place, so exactly one of the two is drawn. The torso piece
  * also covers the engine's front (the open hoses and core, {@code engine_open}; under the breastplate the lower hoses and
- * the radiator grille, {@code engine_armored}; the tidal engine's two, {@code sea_open} / {@code sea_armored}); the belt and its piece, the hip, go with the legs (the hip with either
+ * the radiator grille, {@code engine_armored}; the tidal engine's two, {@code sea_open} / {@code sea_armored}; the star reactor's, {@code star_open} / {@code star_armored}); the belt and its piece, the hip, go with the legs (the hip with either
  * leg piece on). Bones a model hasn't (the cockpit's arm has only its arm) are left alone.
  */
 final class ArmourBones {
@@ -28,6 +28,8 @@ final class ArmourBones {
         hide(bones, "engine_armored", !torso);
         hide(bones, "sea_open", torso);   // the tidal engine's own (its group engine_sea is shown by the renderer)
         hide(bones, "sea_armored", !torso);
+        hide(bones, "star_open", torso);   // the star reactor's likewise
+        hide(bones, "star_armored", !torso);
     }
 
     static boolean worn(int mask, SuitArmour.Part part) {
