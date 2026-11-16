@@ -2,6 +2,7 @@ package dev.ajaczero.powersuits.client;
 
 import dev.ajaczero.powersuits.PowerSuits;
 import dev.ajaczero.powersuits.entity.PowerSuitEntity;
+import dev.ajaczero.powersuits.entity.ToolArm;
 import dev.ajaczero.powersuits.item.PowerTool;
 import dev.ajaczero.powersuits.registry.ModSounds;
 import java.util.HashMap;
@@ -62,18 +63,22 @@ public final class SuitSounds {
         TOOLS.values().removeIf(loop -> loop.isStopped() || !mc.getSoundManager().isActive(loop));
         for (PowerSuitEntity suit : mc.level.getEntitiesOfClass(PowerSuitEntity.class, mc.player.getBoundingBox().inflate(RANGE))) {
             engineTick(mc, suit);
-            SoundEvent toolSound = toolSound(suit);
-            if (toolSound != null && !TOOLS.containsKey(suit.getId()) && mc.level.getGameTime() >= retryAt) {
-                start(mc, TOOLS, suit, new Loop(toolSound, suit, s -> toolSound(s) == toolSound, SuitSounds::toolVolume, SuitSounds::toolPitch));
+            for (ToolArm arm : ToolArm.values()) { // one loop per arm's tool (2026-11-15: either arm can carry one)
+                SoundEvent toolSound = toolSound(suit, arm);
+                int key = suit.getId() * 2 + arm.ordinal();
+                if (toolSound != null && !TOOLS.containsKey(key) && mc.level.getGameTime() >= retryAt) {
+                    start(mc, TOOLS, key, suit, new Loop(toolSound, suit, s -> toolSound(s, arm) == toolSound,
+                            s -> toolVolume(s, arm), s -> toolPitch(s, arm)));
+                }
             }
         }
     }
 
-    private static void start(Minecraft mc, Map<Integer, Loop> playing, PowerSuitEntity suit, Loop loop) {
+    private static void start(Minecraft mc, Map<Integer, Loop> playing, int key, PowerSuitEntity suit, Loop loop) {
         // The engine may refuse a sound (all channels busy, sound turned off): only remember a loop that really plays,
         // or the suit would never get its sound (the map says it has one).
         if (mc.getSoundManager().play(loop) != SoundEngine.PlayResult.NOT_STARTED) {
-            playing.put(suit.getId(), loop);
+            playing.put(key, loop);
         } else {
             // Refused: try again in a second, not every tick (each try logs a warning, and when every channel is taken
             // the engine waits for one on the render thread).
@@ -124,16 +129,20 @@ public final class SuitSounds {
         };
     }
 
-    private static float toolVolume(PowerSuitEntity suit) {
-        return suit.getSocketStack().getItem() instanceof PowerTool tool ? tool.runSoundVolume(suit) : 1F;
+    private static float toolVolume(PowerSuitEntity suit, ToolArm arm) {
+        float[] out = {1F};
+        suit.onArm(arm, () -> out[0] = suit.getSocketStack().getItem() instanceof PowerTool tool ? tool.runSoundVolume(suit) : 1F);
+        return out[0];
     }
 
-    private static float toolPitch(PowerSuitEntity suit) {
-        return suit.getSocketStack().getItem() instanceof PowerTool tool ? tool.runSoundPitch(suit) : 1F;
+    private static float toolPitch(PowerSuitEntity suit, ToolArm arm) {
+        float[] out = {1F};
+        suit.onArm(arm, () -> out[0] = suit.getSocketStack().getItem() instanceof PowerTool tool ? tool.runSoundPitch(suit) : 1F);
+        return out[0];
     }
 
-    private static SoundEvent toolSound(PowerSuitEntity suit) {
-        return suit.isAlive() && suit.socket().isRunning() && suit.getSocketStack().getItem() instanceof PowerTool tool ? tool.runSound() : null;
+    private static SoundEvent toolSound(PowerSuitEntity suit, ToolArm arm) {
+        return suit.isAlive() && suit.socket(arm).isRunning() && suit.getSocketStack(arm).getItem() instanceof PowerTool tool ? tool.runSound() : null;
     }
 
     /** A loop that follows its suit, eases toward its target volume / pitch, and fades out when it should stop. */

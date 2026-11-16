@@ -32,6 +32,7 @@ import dev.ajaczero.powersuits.item.HelmetStyle;
 import dev.ajaczero.powersuits.item.HelmetTemplateItem;
 import dev.ajaczero.powersuits.item.PowerTool;
 import dev.ajaczero.powersuits.item.RailCannonItem;
+import dev.ajaczero.powersuits.item.SocketAim;
 import dev.ajaczero.powersuits.item.SuitHelmetItem;
 import dev.ajaczero.powersuits.item.SuitAmmo;
 import dev.ajaczero.powersuits.item.SuitLoadout;
@@ -1961,6 +1962,24 @@ public final class PowerSuitTests {
             var loadout = suit.getLoadout();
             helper.assertTrue(loadout.socket().is(ModItems.CHAINGUN.get()) && loadout.rightSocket().is(ModItems.DRILL.get()),
                     "a packed suit carries both tools");
+            helper.succeed();
+        });
+    }
+
+    /** Each arm shoots from its own shoulder: the same view, the two muzzles on opposite sides of the suit's middle. */
+    @SuitTest(timeoutTicks = 20)
+    public static void eachArmShootsFromItsShoulder(GameTestHelper helper) {
+        PowerSuitEntity suit = toolSuit(helper);
+        suit.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, new ItemStack(ModItems.CHAINGUN.get()));
+        suit.getInventory().setItem(PowerSuitEntity.RIGHT_SOCKET_SLOT, new ItemStack(ModItems.CHAINGUN.get()));
+        helper.runAfterDelay(3, () -> {
+            Vec3[] muzzle = new Vec3[2];
+            for (ToolArm arm : ToolArm.values()) {
+                suit.onArm(arm, () -> muzzle[arm.ordinal()] = SocketAim.muzzlePosition(suit, suit));
+            }
+            Vec3 across = muzzle[0].subtract(muzzle[1]);
+            helper.assertTrue(across.horizontalDistance() > 0.45 && Math.abs(across.y) < 1e-6,
+                    "the arms' muzzles are a shoulder-width apart, level: " + across);
             helper.succeed();
         });
     }

@@ -303,7 +303,7 @@ public final class SuitAnimator {
     /** Client: how hard the engine works, 0 idle .. 1 sprinting, +0.3 while a tool runs (engine sound). */
     public float engineLoad() {
         float load = this.isWalking() ? (this.isRunning() ? 1F : 0.55F) : 0F;
-        return this.suit.socket().isRunning() ? load + 0.3F : load;
+        return this.suit.socket(ToolArm.LEFT).isRunning() || this.suit.socket(ToolArm.RIGHT).isRunning() ? load + 0.3F : load;
     }
     /** Client: smoothed ground speed in blocks/s (for camera effects). */
     public double getVisualSpeed() {

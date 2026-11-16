@@ -4,6 +4,7 @@ import dev.ajaczero.powersuits.HudAlert;
 import dev.ajaczero.powersuits.PowerSuits;
 import dev.ajaczero.powersuits.PowerSuitsConfig;
 import dev.ajaczero.powersuits.entity.PowerSuitEntity;
+import dev.ajaczero.powersuits.entity.ToolArm;
 import dev.ajaczero.powersuits.item.PowerSuitItem;
 import dev.ajaczero.powersuits.client.hud.HudView;
 import dev.ajaczero.powersuits.client.hud.ToolHud;
@@ -192,9 +193,13 @@ public final class SuitHud {
 
         // ---- the socket tool's own readout (client/hud), if it has one ----------------------------------------------
         String toolShown = "";
-        ToolHud toolHud = suit.socket().tool() == null ? null : ToolHuds.get(suit.getSocketStack().getItem());
-        if (toolHud != null) {
-            toolShown = toolHud.render(g, new HudView(g, mc, suit, pilot, VisorConfig.colour(), delta.getGameTimeDeltaPartialTick(false)));
+        for (ToolArm arm : ToolArm.values()) { // both arms' tools have their readouts (each runs as "the socket" of its arm)
+            ToolHud toolHud = suit.socket(arm).tool() == null ? null : ToolHuds.get(suit.getSocketStack(arm).getItem());
+            if (toolHud != null) {
+                String[] drawn = {""};
+                suit.onArm(arm, () -> drawn[0] = toolHud.render(g, new HudView(g, mc, suit, pilot, VisorConfig.colour(), delta.getGameTimeDeltaPartialTick(false))));
+                toolShown = toolShown.isEmpty() ? drawn[0] : toolShown + " | " + drawn[0];
+            }
         }
 
         if (clipped) {

@@ -41,9 +41,10 @@ public final class SocketAim {
         float yaw = aimYaw(operator) * Mth.DEG_TO_RAD;
         float pitch = operator.getXRot() * Mth.DEG_TO_RAD; // + = looking down
         double reach = REACH - (suit.getSocketStack().getItem() instanceof PowerTool tool ? tool.muzzleInsetPixels() / 16.0 : 0);
+        double shoulder = suit.arm() == dev.ajaczero.powersuits.entity.ToolArm.LEFT ? SHOULDER_LEFT : -SHOULDER_LEFT; // the arm shooting
         Vec3 view = new Vec3(-Mth.sin(yaw) * Mth.cos(pitch), -Mth.sin(pitch), Mth.cos(yaw) * Mth.cos(pitch));
         Vec3 left = new Vec3(Mth.cos(yaw), 0, Mth.sin(yaw));
-        return suit.position().add(0, SHOULDER_UP, 0).add(left.scale(SHOULDER_LEFT)).add(view.scale(reach));
+        return suit.position().add(0, SHOULDER_UP, 0).add(left.scale(shoulder)).add(view.scale(reach));
     }
 
     /** Which way the operator faces. A player's yaw is their view; a mob's view is its head (yRot is where it walks). */

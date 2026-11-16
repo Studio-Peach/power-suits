@@ -48,7 +48,7 @@ public final class SuitFace {
                          int hurtTime, int fuel, boolean toolActive, boolean rogue) {
         static Inputs of(PowerSuitEntity suit) {
             return new Inputs(suit.hasHelmet(), suit.isPowered(), suit.isHelmetBroken(), suit.isStunned(), suit.driving().isFieldHeld(),
-                    suit.isVehicle(), suit.hurtTime, suit.getFuelStack().getCount(), suit.socket().isActive(), suit.isRogue());
+                    suit.isVehicle(), suit.hurtTime, suit.getFuelStack().getCount(), suit.socket(ToolArm.LEFT).isActive() || suit.socket(ToolArm.RIGHT).isActive(), suit.isRogue());
         }
     }
 
