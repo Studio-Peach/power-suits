@@ -2,6 +2,7 @@ package dev.ajaczero.powersuits.network;
 
 import dev.ajaczero.powersuits.PowerSuits;
 import dev.ajaczero.powersuits.entity.PowerSuitEntity;
+import dev.ajaczero.powersuits.entity.ToolArm;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
@@ -14,12 +15,14 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * Client -> server: "the pilot started / stopped using the socket tool" (right click the hand passed on, see
  * ToolInput). Mouse buttons only exist on the client,
  * but tools act on the world, which only the server may change. So the client sends this tiny message
- * (one boolean) and the server's suit runs the tool while it's held.
+ * (which arm, and down or up) and the server's suit runs the tool while it's held.
  */
-public record ToolTriggerPayload(boolean down) implements CustomPacketPayload {
+public record ToolTriggerPayload(boolean down, ToolArm arm) implements CustomPacketPayload {
     public static final Type<ToolTriggerPayload> TYPE = new Type<>(Identifier.fromNamespaceAndPath(PowerSuits.MODID, "tool_trigger"));
     public static final StreamCodec<ByteBuf, ToolTriggerPayload> STREAM_CODEC =
-            ByteBufCodecs.BOOL.map(ToolTriggerPayload::new, ToolTriggerPayload::down);
+            StreamCodec.composite(ByteBufCodecs.BOOL, ToolTriggerPayload::down,
+                    ByteBufCodecs.BYTE.map(b -> ToolArm.byIndex(b), arm -> (byte) arm.ordinal()), ToolTriggerPayload::arm,
+                    ToolTriggerPayload::new);
 
     @Override
     public Type<ToolTriggerPayload> type() {
@@ -34,7 +37,7 @@ public record ToolTriggerPayload(boolean down) implements CustomPacketPayload {
     /** Server, main thread. Never trust the client: the suit checks that this player is its pilot. */
     private static void handle(ToolTriggerPayload payload, IPayloadContext context) {
         if (context.player().getVehicle() instanceof PowerSuitEntity suit) {
-            suit.socket().setTriggerHeld(context.player(), payload.down());
+            suit.socket(payload.arm()).setTriggerHeld(context.player(), payload.down());
         }
     }
 }

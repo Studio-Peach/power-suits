@@ -1,6 +1,7 @@
 package dev.ajaczero.powersuits;
 
 import dev.ajaczero.powersuits.entity.PowerSuitEntity;
+import dev.ajaczero.powersuits.entity.ToolArm;
 import dev.ajaczero.powersuits.item.PowerTool;
 import dev.ajaczero.powersuits.item.ToolMining;
 import java.util.List;
@@ -57,7 +58,7 @@ public final class PilotHands {
     // ---- the swap-hands key: the socket is the suit's off hand -------------------------------------
 
     /**
-     * Server: F while piloting swaps the item in the pilot's hand with the socket tool, instead of with the player's own
+     * Server: F while piloting moves tools between the pilot's hand and the arms' sockets, instead of swapping with the player's own
      * off hand (user, 2026-10-27: keep tools on the hotbar and change them with F). A power tool in hand goes into the
      * socket and the old tool comes out into the hand; an empty hand takes the tool out; anything else stays where it is.
      * Works powered or not (it's only a swap). NeoForge posts this event for the swap packet; cancelling it stops
@@ -69,21 +70,34 @@ public final class PilotHands {
                 || suit.getControllingPassenger() != player) {
             return;
         }
+        ItemStack hand = player.getMainHandItem();
+        ItemStack left = suit.getInventory().getItem(ToolArm.LEFT.slot), right = suit.getInventory().getItem(ToolArm.RIGHT.slot);
+        boolean handIsTool = hand.getItem() instanceof PowerTool && hand.getCount() == 1;
+        if (!hand.isEmpty() && !handIsTool && left.isEmpty() && right.isEmpty()) {
+            return; // no tool anywhere: the hands are plain hands, vanilla swaps main and off hand
+        }
         event.setCanceled(true);
         if (player.level().isClientSide()) {
             return;
         }
-        ItemStack hand = player.getMainHandItem();
-        ItemStack tool = suit.getInventory().getItem(PowerSuitEntity.SOCKET_SLOT);
-        if (!hand.isEmpty() && !(hand.getItem() instanceof PowerTool && hand.getCount() == 1)) {
+        if (!hand.isEmpty() && !handIsTool) {
             player.sendOverlayMessage(Component.translatable("message.power_suits.not_a_tool"));
             return;
         }
-        if (hand.isEmpty() && tool.isEmpty()) {
-            return;
+        if (hand.isEmpty()) { // an empty hand takes a tool out: the left arm's first, then the right's
+            ToolArm from = !left.isEmpty() ? ToolArm.LEFT : ToolArm.RIGHT;
+            if (suit.getInventory().getItem(from.slot).isEmpty()) {
+                return;
+            }
+            player.setItemInHand(InteractionHand.MAIN_HAND, suit.getInventory().getItem(from.slot).copy());
+            suit.getInventory().setItem(from.slot, ItemStack.EMPTY);
+        } else {
+            // a tool goes into the first free socket (left, then right); with both full it swaps with the left's
+            ToolArm into = left.isEmpty() ? ToolArm.LEFT : right.isEmpty() ? ToolArm.RIGHT : ToolArm.LEFT;
+            ItemStack out = suit.getInventory().getItem(into.slot).copy();
+            suit.getInventory().setItem(into.slot, hand.copy());
+            player.setItemInHand(InteractionHand.MAIN_HAND, out);
         }
-        suit.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, hand.copy());
-        player.setItemInHand(InteractionHand.MAIN_HAND, tool.copy());
         suit.playSound(SoundEvents.ARMOR_EQUIP_IRON.value(), 0.8F, 1.1F);
     }
 
@@ -92,7 +106,7 @@ public final class PilotHands {
     @SubscribeEvent
     public static void attack(AttackEntityEvent event) {
         PowerSuitEntity suit = suitOf(event.getEntity());
-        if (suit != null && !suit.canOperate()) {
+        if (suit != null && (!suit.canOperate() || rightIsTool(suit))) {
             event.setCanceled(true);
             tellUnpowered(event.getEntity());
         }
@@ -101,9 +115,9 @@ public final class PilotHands {
     @SubscribeEvent
     public static void startMining(PlayerInteractEvent.LeftClickBlock event) {
         PowerSuitEntity suit = suitOf(event.getEntity());
-        if (suit != null && !suit.canOperate()) {
+        if (suit != null && (!suit.canOperate() || rightIsTool(suit))) {
             event.setCanceled(true);
-            if (event.getLevel().isClientSide()) {
+            if (event.getLevel().isClientSide() && !rightIsTool(suit)) {
                 tellUnpowered(event.getEntity());
             }
         }
@@ -151,7 +165,7 @@ public final class PilotHands {
             // (ToolInput). Holding bread then works like holding a stick, instead of blocking the tool.
             event.setCanceled(true);
             event.setCancellationResult(InteractionResult.FAIL);
-            if (event.getLevel().isClientSide() && suit.getSocketStack().isEmpty()) {
+            if (event.getLevel().isClientSide() && suit.getSocketStack(ToolArm.LEFT).isEmpty()) {
                 event.getEntity().sendOverlayMessage(Component.translatable("message.power_suits.sealed_in"));
             }
             return;
@@ -186,14 +200,20 @@ public final class PilotHands {
         if (suit == null) {
             return;
         }
-        if (event.getHand() == InteractionHand.OFF_HAND) {
-            cancellable.setCanceled(true); // the off hand's turn belongs to the socket tool (ToolInput)
+        boolean handIsTool = suit.getSocketStack(event.getHand() == InteractionHand.OFF_HAND ? ToolArm.LEFT : ToolArm.RIGHT).getItem() instanceof PowerTool;
+        if (handIsTool) {
+            cancellable.setCanceled(true); // a detached hand (a tool on that arm): its turn belongs to the tool (ToolInput)
         } else if (!suit.canOperate()) {
             cancellable.setCanceled(true);
             if (event.getLevel().isClientSide()) {
                 tellUnpowered(event.getEntity());
             }
         }
+    }
+
+    /** The right arm carries a power tool: that hand is detached, its items and fist stay unused (the tool has its button). */
+    public static boolean rightIsTool(PowerSuitEntity suit) {
+        return suit.getSocketStack(ToolArm.RIGHT).getItem() instanceof PowerTool;
     }
 
     private static void tellUnpowered(Player player) {

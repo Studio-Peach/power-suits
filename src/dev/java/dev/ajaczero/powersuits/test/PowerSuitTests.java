@@ -576,16 +576,24 @@ public final class PowerSuitTests {
         pilot.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.CHAINSAW.get()));
         var event = CommonHooks.onLivingSwapHandItems(pilot);
         helper.assertTrue(event.isCanceled(), "the suit takes over the swap");
-        helper.assertTrue(suit.getInventory().getItem(PowerSuitEntity.SOCKET_SLOT).is(ModItems.CHAINSAW.get())
-                && pilot.getMainHandItem().is(ModItems.DRILL.get()), "F while piloting swaps the chainsaw in, the drill into the hand");
+        helper.assertTrue(suit.getInventory().getItem(PowerSuitEntity.RIGHT_SOCKET_SLOT).is(ModItems.CHAINSAW.get())
+                && suit.getInventory().getItem(PowerSuitEntity.SOCKET_SLOT).is(ModItems.DRILL.get()) && pilot.getMainHandItem().isEmpty(),
+                "F while piloting puts the chainsaw in the free (right) socket");
+        pilot.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.CHAINGUN.get()));
+        CommonHooks.onLivingSwapHandItems(pilot);
+        helper.assertTrue(suit.getInventory().getItem(PowerSuitEntity.SOCKET_SLOT).is(ModItems.CHAINGUN.get())
+                && pilot.getMainHandItem().is(ModItems.DRILL.get()), "with both full it swaps with the left's");
         pilot.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
         CommonHooks.onLivingSwapHandItems(pilot);
         helper.assertTrue(suit.getInventory().getItem(PowerSuitEntity.SOCKET_SLOT).isEmpty()
-                && pilot.getMainHandItem().is(ModItems.CHAINSAW.get()), "an empty hand takes the tool out");
+                && pilot.getMainHandItem().is(ModItems.CHAINGUN.get()), "an empty hand takes the left's tool out first");
         pilot.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.STONE, 5));
         CommonHooks.onLivingSwapHandItems(pilot);
         helper.assertTrue(suit.getInventory().getItem(PowerSuitEntity.SOCKET_SLOT).isEmpty()
-                && pilot.getMainHandItem().is(Items.STONE), "stone stays in the hand");
+                && pilot.getMainHandItem().is(Items.STONE), "stone stays in the hand while a tool is fitted");
+        suit.getInventory().setItem(PowerSuitEntity.RIGHT_SOCKET_SLOT, ItemStack.EMPTY);
+        var plain = CommonHooks.onLivingSwapHandItems(pilot);
+        helper.assertTrue(!plain.isCanceled(), "with no tool on either arm F is vanilla's: the hands are plain hands");
         helper.succeed();
     }
 
@@ -941,18 +949,31 @@ public final class PowerSuitTests {
         });
     }
 
-    /** The socket tool is the suit's off hand: the player's real off-hand item isn't used from inside. */
+    /** A hand is a plain hand until a power tool replaces it (2026-11-15): the left arm is the off hand, the right arm the
+     *  main hand. A tool on an arm takes that hand's turn; an arm without one uses its items as in vanilla. */
     @SuitTest(timeoutTicks = 20)
-    public static void offHandBelongsToTheTool(GameTestHelper helper) {
+    public static void aToolReplacesItsHand(GameTestHelper helper) {
         PowerSuitEntity suit = fueledSuit(helper, new ItemStack(Items.COAL, 4));
         Player pilot = boardedPilot(helper, suit);
         BlockPos block = helper.absolutePos(new BlockPos(4, 1, 6));
         BlockHitResult hit = new BlockHitResult(Vec3.atCenterOf(block).add(0, 0.5, 0), Direction.UP, block, false);
         helper.runAfterDelay(5, () -> {
-            helper.assertTrue(CommonHooks.onRightClickBlock(pilot, InteractionHand.OFF_HAND, block, hit).isCanceled(),
-                    "off-hand use is cancelled while piloting");
+            helper.assertTrue(!CommonHooks.onRightClickBlock(pilot, InteractionHand.OFF_HAND, block, hit).isCanceled(),
+                    "no tool on the left arm: the off hand is a plain hand");
             helper.assertTrue(!CommonHooks.onRightClickBlock(pilot, InteractionHand.MAIN_HAND, block, hit).isCanceled(),
                     "the main hand still uses things");
+            suit.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, new ItemStack(ModItems.DRILL.get()));
+        });
+        helper.runAfterDelay(8, () -> {
+            helper.assertTrue(CommonHooks.onRightClickBlock(pilot, InteractionHand.OFF_HAND, block, hit).isCanceled(),
+                    "a tool on the left arm takes the off hand's turn");
+            helper.assertTrue(!CommonHooks.onRightClickBlock(pilot, InteractionHand.MAIN_HAND, block, hit).isCanceled(),
+                    "the main hand is still a hand");
+            suit.getInventory().setItem(PowerSuitEntity.RIGHT_SOCKET_SLOT, new ItemStack(ModItems.CHAINSAW.get()));
+        });
+        helper.runAfterDelay(11, () -> {
+            helper.assertTrue(CommonHooks.onRightClickBlock(pilot, InteractionHand.MAIN_HAND, block, hit).isCanceled(),
+                    "a tool on the right arm takes the main hand's turn");
             helper.succeed();
         });
     }
