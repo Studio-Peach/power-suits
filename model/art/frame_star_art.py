@@ -182,60 +182,86 @@ BONE_ORIGIN = {'star_core': (0, 21, 5.5)}   # raw; the star's spin pivot (the wi
                                                 # nether star there and turns the bone fast.
 
 
-def px(paint):
-    """Paint at one pixel per block-pixel, the way vanilla textures are: paint(face, w_px, h_px) -> grid, each cell drawn
-    as 2 x 2 texels (the frame's texture is 2 texels to the px). User, 2026-11-16: "too high in its dimensionality,
-    out of place in minecraft": few boxes, big flat pixels."""
-    def up(f, w, h):
-        small = paint(f, w // 2, h // 2)
-        return [[small[j // 2][i // 2] for i in range(w)] for j in range(h)]
-    return up
+# Steel as the firebox's and the tidal engine's housings are drawn (letters of frame_model.PAL: W V U G steel light -> dark,
+# O N X gunmetal): a light bevel on top and left, a dark one below and right, ink round every inset, bolts, vent slots; the
+# light is only the star's violet (& % * =), as the tidal engine's glass is teal. User, 2026-11-16: "look at the firebox and
+# tidal engines ... textures are important and were the real detail lies. Currently your textures are flat and give no
+# shape": the boxes stay few and plain, the shape is painted.
+def bevel(w, h, base='U'):
+    """A steel plate: W lit top row, V lit left column, G dark right column, X ink bottom row."""
+    g = [[base] * w for _ in range(h)]
+    for i in range(w): g[0][i] = 'W'; g[h - 1][i] = 'X'
+    for j in range(1, h - 1): g[j][0] = 'V'; g[j][w - 1] = 'G'
+    g[0][w - 1] = 'V'
+    return g
 
 
-def body_px(f, w, h):
-    g = [['8'] * w for _ in range(h)]
-    for i in range(w): g[0][i] = '9'                                  # lit top edge
-    for i in range(w): g[h - 1][i] = '$'                              # dark underside
+def body_art(f, w, h):
+    g = bevel(w, h)
     if f == 'south':
-        for j in range(h): g[j][0] = '9'
-        # the window: a 4 x 4 px violet ring round a dark well, in the middle
-        cx, cy = w // 2, h // 2
-        ring = ((1, 0), (2, 0), (0, 1), (3, 1), (0, 2), (3, 2), (1, 3), (2, 3))
-        for dy in range(4):
-            for dx in range(4):
-                g[cy - 2 + dy][cx - 2 + dx] = '*' if (dx, dy) in ring else '$'
-    elif f in ('east', 'west'):                                       # the lit slit down the side
-        for i in range(w): g[h // 2][i] = '%'
+        for j in range(1, h - 1):                                    # a second inner bevel gives the panel depth
+            for i in range(1, w - 1): g[j][i] = 'U' if (j + i) % 7 else 'V' if False else 'U'
+        cx, cy, R = w / 2, h / 2, 5.0
+        for j in range(h):
+            for i in range(w):
+                d = math.hypot(i + 0.5 - cx, j + 0.5 - cy)
+                if d <= R + 1: g[j][i] = 'X'                         # ink round the window
+                if d <= R: g[j][i] = '*' if d > R - 1 else '=' if d > R - 3 else '*' if d > R - 4 else '%'   # glass: a deep well, brighter toward the middle
+                if d <= R and i in (int(cx) - 3, int(cx) + 2): g[j][i] = 'X'   # two grille bars
+        for (i, j) in ((1, 2), (w - 2, 2), (1, h - 3), (w - 2, h - 3)):
+            g[j][i] = 'O'                                            # bolts in the corners
+    elif f in ('east', 'west'):
+        for i in range(1, w - 1):                                    # the lit slit down the side, ink above and below
+            g[h // 2 - 2][i] = 'X'; g[h // 2 + 2][i] = 'X'
+            g[h // 2 - 1][i] = '*'; g[h // 2][i] = '%'; g[h // 2 + 1][i] = '*'
+    elif f == 'up':
+        g = [['W'] * w] + [['V'] * w for _ in range(h - 2)] + [['U'] * w]
+    elif f == 'down':
+        g = [['X'] * w for _ in range(h)]
     return g
 
 
-def cap_px(f, w, h):
-    g = [['8'] * w for _ in range(h)]
-    if f in ('south', 'north'):
-        for j in range(h): g[j][0] = '9'
-    g[0] = ['9'] * w
+def crown_art(f, w, h):
+    g = bevel(w, h)
+    if f == 'south':
+        for i in range(2, w - 2): g[h // 2][i] = 'X' if i % 2 else 'N'   # vent slots
+    if f == 'up': g = [['W'] * w] + [['V'] * w for _ in range(h - 1)]
     return g
 
 
-def fin_px(f, w, h):
-    g = [['8'] * w for _ in range(h)]
+def foot_art(f, w, h):
+    g = bevel(w, h, 'N')
+    if f == 'south':
+        for i in range(1, w - 1): g[1][i] = 'X' if i % 2 else 'N'        # the exhaust grille
+    if f == 'down': g = [['X'] * w for _ in range(h)]
+    return g
+
+
+def fin_art(f, w, h):
+    g = [['N'] * w for _ in range(h)]
+    for j in range(h): g[j][0] = 'O'; g[j][w - 1] = 'X'
     if f in ('east', 'west'):
-        for j in range(1, h - 1): g[j][w // 2] = '%'                 # a lit stripe down the spike's side
+        for j in range(2, h - 1):                                    # the lit stripe, ink on both sides
+            g[j][w // 2] = '%'
+            if w > 2: g[j][w // 2 - 1] = 'X'
+    g[h - 1] = ['X'] * w
     return g
 
 
 def jetpack():
-    """After the Fortnite Alien Jetpack, kept Minecraft-simple: a 8 x 6 x 2 px body with a 4 px crown and foot (a hexagon
-    from behind), a violet ring window on its face for the star, two plain spikes at the foot. Five boxes and a hub."""
-    return [part('body', ((-4, 18, 3), (4, 24, 5)), px(body_px)),
-            part('crown', ((-2, 24, 3), (2, 25, 5)), px(cap_px)),
-            part('foot', ((-2, 17, 3), (2, 18, 5)), px(cap_px)),
-            part('fin', ((2, 13, 3), (3, 17, 4)), px(fin_px), mirror=True),
+    """After the Fortnite Alien Jetpack, kept Minecraft-simple: a 8 x 7 x 2 px body with a 4 px crown and foot (a hexagon
+    from behind), a round violet window in its face (the star spins in front of it), two plain spikes at the foot. Plain
+    boxes; every bit of shape is in the texture."""
+    return [part('body', ((-4, 17.5, 3), (4, 24.5, 5)), body_art),
+            part('crown', ((-2, 24.5, 3), (2, 25.5, 5)), crown_art),
+            part('foot', ((-2, 16.5, 3), (2, 17.5, 5)), foot_art),
+            part('fin', ((2, 12.5, 3), (3, 16.5, 4)), fin_art, mirror=True),
             _star_hub()]
 
 
 def _star_hub():
-    h = part('hub', ((-0.5, 20.5, 5), (0.5, 21.5, 5.5)), hub)
+    """The spin bone's cube: hidden inside the body (the game draws the nether star at the bone's pivot)."""
+    h = part('hub', ((-0.5, 20.5, 3.5), (0.5, 21.5, 4.5)), hub)
     h['bone'] = 'star_core'
     return h
 
