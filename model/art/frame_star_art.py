@@ -228,33 +228,34 @@ def floor_art(f, w, h):
     return g
 
 
-def wall_art(f, w, h):
-    """A wall (the wing): the plate's steel, the branch lines running in across its inner face, a lit stripe sweeping its outer."""
+def fin_art(f, w, h):
+    """A wing plate, as round 14's (the shape the user liked): steel, a lit stripe sweeping down its outer face; on its inner
+    face the power lines run in from the floor (rows from the top, as the wings' tops sit level with the floor's)."""
     if f == 'up': return top(w, h)
     if f == 'down': return bottom(w, h)
     g = plate(w, h)
     if f == 'west':                                                  # the inner face (a mirrored part's west)
         for j0 in LINE_ROWS:
-            for i in range(0, w - 1):
-                g[j0 - 1][i], g[j0][i], g[j0 + 1][i] = 'X', '%', 'X'
-    elif f == 'east':                                                # the outer face: a violet stripe sweeping back and down
-        for i in range(1, w - 1): g[h - 5][i], g[h - 4][i] = 'h', 'e'    # a strap along the foot
-        for j in range(2, h - 2): g[j][w - 4], g[j][w - 3] = 'h', 'e'    # and a spar down the trailing edge
+            if j0 + 1 < h - 2:
+                for i in range(0, w - 1): g[j0 - 1][i], g[j0][i], g[j0 + 1][i] = 'X', '%', 'X'
+    elif f == 'east':
         for j in range(h):
             for i in range(w):
-                t = abs((j - 4) - (i - 2) * 1.1)
-                if 1 < i < w - 2 and 2 < j < h - 2 and t < 1.3: g[j][i] = '%' if t < 0.6 else '*'
+                t = abs((j - (h - 3)) + (i - 2) * 1.6)
+                if 1 < i < w - 1 and 1 < j < h - 2 and t < 1.1: g[j][i] = '%' if t < 0.5 else '*'   # the diagonal violet stripe
     return g
 
 
 def jetpack():
-    """After the Fortnite Alien Jetpack, as simple as it goes (user, 2026-11-16: "narrow the body and let each wing be the
-    side of the box ... reduce the stack of boxes ... make the core different from the one in front, it could be power
-    lines"): a cradle, three boxes. A floor plate 7 px wide against the back, a wall each side standing 4 px proud and
-    reaching back (the wings: nothing spreads sideways over the arms), the star spinning between them in front of a vertical
-    power channel, lit lines branching from it across the floor and in along the walls."""
+    """After the Fortnite Alien Jetpack (user, 2026-11-16: "narrow the body and let each wing be the side of the box ...
+    reduce the stack of boxes ... make the core different from the one in front, it could be power lines"; and, when the
+    wings had become plain walls, "you destroyed the whole shape of the wings": round 14's fins are the shape): a floor plate
+    7 px wide against the back, a wing standing on each edge of it, reaching back in two steps with the tip rising level
+    with the top (nothing spreads sideways over the arms, nothing at the foot), the star spinning between them in front of
+    a vertical power channel, lit lines branching from it across the floor and in along the wings."""
     return [part('floor', ((-3.5, 17.5, 3), (3.5, 25.5, 5)), floor_art),
-            part('wall', ((3.5, 17.5, 3), (4.5, 25.5, 8)), wall_art, mirror=True),
+            part('fin', ((2.5, 19.5, 5), (3.5, 25.5, 8)), fin_art, mirror=True),
+            part('fin2', ((2.5, 22.5, 8), (3.5, 25.5, 10)), fin_art, mirror=True),
             _star_hub()]
 
 
