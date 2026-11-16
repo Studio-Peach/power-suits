@@ -228,7 +228,7 @@ the end and `docs/guide.md` Notes).
   windows on the sides and top, oxygen hoses ("less is more"). Lesson: the reference's signature (the window, the
   split, the lamps), not its parts list; on 18 texels four bolts can only space evenly at gaps of 3 or 5, and both
   looked off: two a face matched the rest.
-- The spartan (Master Chief, `.scratch/helm7/spartan/ref.png`, 2026-11-15, 23 rounds; picked, not in game yet): the
+- The spartan (Master Chief, `.scratch/helm7/spartan/ref.png`, 2026-11-15, 23 rounds; picked, in game; the helmet icons redrawn from the four styles' front faces): the
   user finished it by painting in Blockbench themselves (rounds 18-23: their texels carried into the generator exactly,
   full 18-texel maps in `SPARTAN_FRONT` / `_SIDE` / `_BACK`). What it is: a brow whose 6-wide tab hangs a row into the
   visor, a lit lower lip, the wide visor wrapping the corners, a 1-texel border, the slate mouthpiece over a chin

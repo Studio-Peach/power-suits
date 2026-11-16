@@ -162,26 +162,28 @@ def helmet_standard(ic):
         ic.rect(x, 10, x, 11, SLATE[0])
 
 
-def helmet_protector(ic):  # Subject Delta: a porthole in a riveted frame, three bars across it
+def helmet_protector(ic):  # Subject Delta: a camera over a big oval window with three bars, red lamps below
     shell(ic)
-    ic.box(2, 3, 12, 11, STEEL, 3)               # the frame
-    glass(ic, 4, 4, 10, 9)
-    for x in (5, 7, 9):
-        ic.rect(x, 4, x, 9, STEEL[6])
-        ic.set(x, 9, STEEL[4])
-    for x, y in ((3, 4), (11, 4), (3, 10), (11, 10), (7, 10)):
-        ic.set(x, y, STEEL[7])                   # rivets
+    ic.rect(6, 1, 8, 2, SLATE[1]); ic.set(7, 2, STEEL[6])   # the camera on the brow (its lens)
+    glass(ic, 3, 4, 11, 10, cut=2)               # the window, an oval
+    ic.rect(7, 4, 7, 10, GLASS[1])               # the middle bar, dark
+    for x in (6, 8):
+        ic.rect(x, 5, x, 9, GLASS[2])
+    ic.rect(3, 11, 4, 12, RED[1]); ic.rect(10, 11, 11, 12, RED[1])   # the cheek lamps, unlit
+    ic.set(3, 11, RED[2]); ic.set(10, 11, RED[2])
 
 
-def helmet_spartan(ic):  # Master Chief: a band over the top, a wide flat visor with a stepped lower edge
+def helmet_spartan(ic):  # Master Chief: a pale V on the crown, a brow lip, a wide dark visor, a stepped lower edge
     shell(ic)
-    ic.rect(1, 3, 13, 3, STEEL[2])               # the band's lower edge, wrapping the sides
-    ic.rect(2, 2, 12, 2, STEEL[5])
-    glass(ic, 3, 5, 11, 8)
-    ic.rect(3, 8, 3, 8, STEEL[4]); ic.rect(11, 8, 11, 8, STEEL[3])   # the step: visor narrower at the bottom
-    ic.rect(4, 9, 10, 9, STEEL[2])
-    ic.box(5, 10, 9, 12, STEEL, 3)               # chin
-    ic.rect(6, 11, 8, 11, SLATE[1])
+    ic.rect(5, 1, 9, 2, STEEL[3]); ic.rect(6, 1, 8, 1, STEEL[5]); ic.set(7, 2, STEEL[5])   # the crown plate and its notch
+    ic.rect(1, 4, 13, 4, STEEL[6])               # the brow lip
+    ic.rect(1, 5, 13, 5, STEEL[1])               # its shadow
+    glass(ic, 1, 6, 13, 9)
+    ic.rect(1, 6, 1, 9, GLASS[1]); ic.rect(13, 6, 13, 9, GLASS[0])   # the dome rolling round
+    ic.rect(2, 10, 12, 10, STEEL[6])             # the lit edge under the visor
+    ic.rect(5, 10, 9, 10, STEEL[1])              # the mouthpiece
+    ic.rect(6, 11, 8, 11, STEEL[2])
+    ic.rect(2, 11, 4, 11, STEEL[3]); ic.rect(10, 11, 12, 11, STEEL[3])   # the cheeks' V
 
 
 def helmet_noble(ic):  # Emile's EVA helmet: a big bubble visor, red bars on the cheeks
@@ -195,27 +197,24 @@ def helmet_noble(ic):  # Emile's EVA helmet: a big bubble visor, red bars on the
     ic.rect(5, 12, 9, 12, STEEL[2])
 
 
-def helmet_robot(ic):  # Guy-Manuel: a big flat visor in a raised gold U
+def helmet_robot(ic):  # Guy-Manuel: the whole front one dark visor, over a gold chin curving up at the corners
     shell(ic)
-    ic.rect(2, 3, 2, 12, GOLD[4]); ic.rect(12, 3, 12, 12, GOLD[2]); ic.rect(2, 12, 12, 12, GOLD[1])
-    ic.rect(3, 12, 11, 12, GOLD[2])
-    ic.set(2, 3, GOLD[5])
-    glass(ic, 3, 3, 11, 11)
-    ic.rect(3, 3, 11, 3, GLASS[2])
-    ic.set(4, 4, GLASS[4]); ic.set(5, 4, GLASS[3])
+    glass(ic, 2, 2, 12, 12, cut=1)
+    ic.rect(2, 12, 12, 12, GOLD[3]); ic.rect(3, 11, 11, 11, GOLD[3])   # the chin
+    ic.rect(2, 10, 2, 11, GOLD[4]); ic.rect(12, 10, 12, 11, GOLD[2])   # rising into the corners
+    ic.rect(3, 12, 11, 12, GOLD[4])
 
 
-def helmet_hunter(ic):  # Samus: a crest, a painted brow, a visor wrapping round, hoses at the jaw
+def helmet_hunter(ic):  # Samus: an antenna, a rounded dark visor outlined in black, a V brow, a pale chin notch
     shell(ic)
-    ic.rect(6, 0, 8, 3, STEEL[3]); ic.rect(6, 0, 6, 3, STEEL[5]); ic.rect(8, 0, 8, 3, STEEL[2])   # crest
-    ic.rect(1, 5, 13, 8, GLASS[1])               # the wrap visor, edge to edge
-    glass(ic, 2, 5, 12, 8)
-    ic.rect(1, 5, 1, 8, GLASS[2]); ic.rect(13, 5, 13, 8, GLASS[0])
-    ic.rect(3, 4, 11, 4, STEEL[2])               # the brow over it
-    ic.set(7, 4, STEEL[1])
-    for x in (3, 4, 10, 11):                     # hoses down the jaw
-        ic.rect(x, 10, x, 12, SLATE[3] if x in (3, 10) else SLATE[1])
-    ic.rect(6, 11, 8, 11, STEEL[2])
+    ic.rect(7, 1, 7, 3, STEEL[6])                # the antenna / crest line down the brow
+    glass(ic, 2, 4, 12, 9, cut=2)
+    ic.rect(2, 5, 12, 5, GLASS[1]) ; ic.set(3, 5, GLASS[4])
+    for x, y in ((2, 4), (3, 3), (11, 3), (12, 4)):
+        ic.set(x, y, STEEL[2])                   # the brow's V, over the visor's corners
+    ic.rect(6, 10, 8, 11, STEEL[6])              # the chin notch
+    ic.rect(7, 10, 7, 10, SLATE[1])
+    ic.set(3, 10, STEEL[1]); ic.set(11, 10, STEEL[1])
 
 def power_suit(ic):
     """The suit as a bust (helmet, chest, pauldrons): a whole suit at 16 px was a blur of limbs."""
