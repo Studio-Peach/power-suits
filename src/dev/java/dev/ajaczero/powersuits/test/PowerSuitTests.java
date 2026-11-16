@@ -2887,6 +2887,36 @@ public final class PowerSuitTests {
         });
     }
 
+    /** The visor's figure follows each piece's durability (synced): fine, half gone (warning), last 15% (critical); a
+     *  repair at the anvil brings it back, and the helmet has its own. */
+    @SuitTest(timeoutTicks = 30)
+    public static void armourConditionIsSyncedPerPiece(GameTestHelper helper) {
+        PowerSuitEntity suit = fueledSuit(helper, new ItemStack(Items.COAL, 4));
+        boardedPilot(helper, suit);
+        armoured(suit);
+        ItemStack arm = suit.getInventory().getItem(PowerSuitEntity.LEFT_ARM_SLOT);
+        ItemStack leg = suit.getInventory().getItem(PowerSuitEntity.RIGHT_LEG_SLOT);
+        ItemStack helmet = suit.getInventory().getItem(PowerSuitEntity.HELMET_SLOT);
+        arm.setDamageValue(arm.getMaxDamage() * 6 / 10);
+        leg.setDamageValue(leg.getMaxDamage() * 9 / 10);
+        helmet.setDamageValue(helmet.getMaxDamage() * 6 / 10);
+        suit.getInventory().setChanged(); // what the wear code does after it damages a stack in place
+        helper.runAfterDelay(3, () -> {
+            var armour = suit.armour();
+            helper.assertTrue(armour.condition(SuitArmour.Part.LEFT_ARM) == HudAlert.WARNING, "a 40% arm piece warns");
+            helper.assertTrue(armour.condition(SuitArmour.Part.RIGHT_LEG) == HudAlert.CRITICAL, "a 10% leg piece is critical");
+            helper.assertTrue(armour.condition(SuitArmour.Part.TORSO) == HudAlert.NONE && armour.condition(SuitArmour.Part.LEFT_LEG) == HudAlert.NONE,
+                    "untouched pieces are fine");
+            helper.assertTrue(armour.helmetCondition() == HudAlert.WARNING, "the helmet has its own");
+            arm.setDamageValue(0); // the anvil
+            suit.getInventory().setChanged();
+        });
+        helper.runAfterDelay(6, () -> {
+            helper.assertTrue(suit.armour().condition(SuitArmour.Part.LEFT_ARM) == HudAlert.NONE, "repaired, fine again");
+            helper.succeed();
+        });
+    }
+
     /** A worn-out piece breaks and is gone: its protection and the seal with it (the menu, the synced copy). */
     @SuitTest(timeoutTicks = 30)
     public static void wornOutPieceBreaksAndUnseals(GameTestHelper helper) {

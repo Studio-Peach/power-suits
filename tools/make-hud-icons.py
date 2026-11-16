@@ -5,6 +5,9 @@
 Writes src/main/resources/assets/power_suits/textures/gui/hud/:
   suit_<piece>.png      the suit figure by the hull bar, one mask per armour piece, all on one canvas (white: the HUD
                         tints each piece)
+  suit_<piece>_worn.png / _cracked.png
+                        the same piece with texels punched out (14% / 43%) for a piece at half / in its last 15% of
+                        durability: the visor is one colour, so wear shows as missing texels, not as another colour
   seal.png              the seal shield by HULL
   ember.png             one burn-rate ember, unlit (white mask, tinted dim)
   ember_lit.png         the same ember burning: a bright tip over a shaded body, white (tinted the visor colour,
@@ -96,7 +99,15 @@ def main():
         (OUT / "tool").rmdir()
     (OUT / "suit.png").unlink(missing_ok=True)  # the one-piece silhouette before 2026-10-27
     for letter, name in PIECES.items():
-        mask(FIGURE, mark=letter).save(OUT / f"suit_{name}.png")
+        base = mask(FIGURE, mark=letter)
+        base.save(OUT / f"suit_{name}.png")
+        for stage, holes in (("worn", (0,)), ("cracked", (0, 2, 4))):
+            worn = base.copy()
+            for y in range(worn.height):
+                for x in range(worn.width):
+                    if (x * 3 + y * 5 + ord(letter)) % 7 in holes:
+                        worn.putpixel((x, y), (0, 0, 0, 0))
+            worn.save(OUT / f"suit_{name}_{stage}.png")
     seal = mask(SEAL)
     for y, row in enumerate(SEAL.strip("\n").split("\n")):
         for x, ch in enumerate(row):

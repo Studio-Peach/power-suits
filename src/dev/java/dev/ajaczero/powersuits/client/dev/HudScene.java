@@ -96,6 +96,17 @@ final class HudScene {
             case 405 -> { phase = "hull_low"; server(mc, (p, x) -> x.setHealth(x.getMaxHealth() * 0.1F)); }
             case 410 -> AutoPilot.shot(mc, "hud_hull_low");
             case 412 -> server(mc, (p, x) -> x.setHealth(x.getMaxHealth()));
+            // the figure's pieces by wear: arm at 40% left (texels missing), a leg in its last 10% (blinking), the other leg
+            // bare (faint), torso and the other arm whole; the AP shot catches the blink's lit half, the second its dim half
+            case 413 -> { phase = "figure_wear"; server(mc, (p, x) -> {
+                var inv = x.getInventory();
+                inv.getItem(PowerSuitEntity.LEFT_ARM_SLOT).setDamageValue(inv.getItem(PowerSuitEntity.LEFT_ARM_SLOT).getMaxDamage() * 6 / 10);
+                inv.getItem(PowerSuitEntity.RIGHT_LEG_SLOT).setDamageValue(inv.getItem(PowerSuitEntity.RIGHT_LEG_SLOT).getMaxDamage() * 9 / 10);
+                inv.setItem(PowerSuitEntity.LEFT_LEG_SLOT, ItemStack.EMPTY);
+                inv.setChanged(); }); }
+            case 416 -> AutoPilot.shot(mc, "hud_figure_wear_a");
+            case 418 -> AutoPilot.shot(mc, "hud_figure_wear_b");
+            case 419 -> server(mc, (p, x) -> DevUtil.ironArmour(x)); // whole again
             // low fuel: the last few hundred energy in the burning item, nothing in the slot
             case 420 -> { phase = "fuel_low"; server(mc, (p, x) -> {
                               x.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, ItemStack.EMPTY);

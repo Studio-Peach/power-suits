@@ -200,6 +200,9 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
     /** The armour worn on each part (SuitArmour: its tier per part, packed): clients draw the pieces and count the seal. */
     static final EntityDataAccessor<Integer> ARMOUR =
             SynchedEntityData.defineId(PowerSuitEntity.class, EntityDataSerializers.INT);
+    /** How worn each armour piece and the helmet are (SuitArmour.encodeWear: a HudAlert level per piece): the visor's figure. */
+    static final EntityDataAccessor<Integer> ARMOUR_WEAR =
+            SynchedEntityData.defineId(PowerSuitEntity.class, EntityDataSerializers.INT);
     /** The installed engine (SuitEngine ordinal, -1 = none): clients draw its backpack, smoke and gauge. */
     private static final EntityDataAccessor<Byte> ENGINE =
             SynchedEntityData.defineId(PowerSuitEntity.class, EntityDataSerializers.BYTE);
@@ -298,6 +301,7 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
         builder.define(PAINT, (byte) -1);
         builder.define(ENGINE, (byte) -1);
         builder.define(ARMOUR, 0);
+        builder.define(ARMOUR_WEAR, 0);
         builder.define(ENGINE_UNDER_WATER, false);
         builder.define(FREE_POWER, false);
     }
@@ -578,6 +582,7 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
             SuitEngine engine = SuitEngine.of(this.inventory.getItem(ENGINE_SLOT));
             this.entityData.set(ENGINE, (byte) (engine == null ? -1 : engine.ordinal()));
             this.entityData.set(ARMOUR, SuitArmour.encode(this.inventory));
+            this.entityData.set(ARMOUR_WEAR, SuitArmour.encodeWear(this.inventory));
             this.armour.applyProtection();
         }
     }

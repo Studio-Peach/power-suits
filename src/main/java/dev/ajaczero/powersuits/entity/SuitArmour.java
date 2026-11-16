@@ -1,5 +1,6 @@
 package dev.ajaczero.powersuits.entity;
 
+import dev.ajaczero.powersuits.HudAlert;
 import dev.ajaczero.powersuits.PowerSuits;
 import dev.ajaczero.powersuits.PowerSuitsConfig;
 import dev.ajaczero.powersuits.item.ArmourPiece;
@@ -106,6 +107,42 @@ public final class SuitArmour {
             }
         }
         return worn;
+    }
+
+    /** Server: how worn each piece is, packed for the synced copy: 2 bits per part (then the helmet's), the piece's
+     *  {@link HudAlert} from what is left of its durability (fine / half gone / last 15%): the visor's figure shows it. A
+     *  broken helmet counts as nothing left. */
+    static int encodeWear(Container slots) {
+        int wear = 0;
+        for (Part part : Part.values()) {
+            ItemStack stack = slots.getItem(part.slot);
+            if (part.fits(stack)) {
+                wear |= left(stack).ordinal() << (part.ordinal() * 2);
+            }
+        }
+        ItemStack helmet = slots.getItem(PowerSuitEntity.HELMET_SLOT);
+        if (helmet.getItem() instanceof SuitHelmetItem) {
+            wear |= left(helmet).ordinal() << (Part.values().length * 2);
+        }
+        return wear;
+    }
+
+    private static HudAlert left(ItemStack stack) {
+        return stack.isDamageableItem() ? HudAlert.ofLeft(1F - (float) stack.getDamageValue() / stack.getMaxDamage()) : HudAlert.NONE;
+    }
+
+    /** Both sides: how worn the piece on this part is (NONE for a bare part too: see {@link #worn}). */
+    public HudAlert condition(Part part) {
+        return alert(this.suit.getEntityData().get(PowerSuitEntity.ARMOUR_WEAR) >> (part.ordinal() * 2));
+    }
+
+    /** Both sides: how worn the helmet is. */
+    public HudAlert helmetCondition() {
+        return alert(this.suit.getEntityData().get(PowerSuitEntity.ARMOUR_WEAR) >> (Part.values().length * 2));
+    }
+
+    private static HudAlert alert(int bits) {
+        return HudAlert.values()[Math.min(bits & 3, HudAlert.values().length - 1)];
     }
 
     /** Both sides: the tier of the piece on this part, or null for a bare part. */

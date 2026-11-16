@@ -4,6 +4,7 @@ import dev.ajaczero.powersuits.HudAlert;
 import dev.ajaczero.powersuits.PowerSuits;
 import dev.ajaczero.powersuits.PowerSuitsConfig;
 import dev.ajaczero.powersuits.entity.PowerSuitEntity;
+import dev.ajaczero.powersuits.entity.SuitArmour;
 import dev.ajaczero.powersuits.entity.ToolArm;
 import dev.ajaczero.powersuits.item.PowerSuitItem;
 import dev.ajaczero.powersuits.client.hud.HudView;
@@ -74,7 +75,13 @@ public final class SuitHud {
      *  its own colour: today all are the visor's; with modular armour a critical piece could blink on its own. */
     private static final Identifier[] FIGURE = {hud("suit_helmet"), hud("suit_chest"), hud("suit_arm_left"),
             hud("suit_arm_right"), hud("suit_leg_left"), hud("suit_leg_right")};
+    /** The same pieces with texels punched out, for a piece at half durability and in its last 15% (the visor is one
+     *  colour, so wear shows as missing texels; tools/make-hud-icons.py). */
+    private static final Identifier[] FIGURE_WORN = variants("worn"), FIGURE_CRACKED = variants("cracked");
     private static final int FIGURE_W = 15, FIGURE_H = 26;
+    /** The armour part each figure piece stands for (the helmet, index 0, is the helmet slot's: no part). */
+    private static final SuitArmour.Part[] PART_OF_FIGURE = {null, SuitArmour.Part.TORSO, SuitArmour.Part.LEFT_ARM,
+            SuitArmour.Part.RIGHT_ARM, SuitArmour.Part.LEFT_LEG, SuitArmour.Part.RIGHT_LEG};
     private static final Identifier SEAL = hud("seal");
     private static final Identifier EMBER = hud("ember");
     /** A burning ember: the same shape in two shades of white (a bright tip over a shaded body), tinted like the rest. */
@@ -163,8 +170,18 @@ public final class SuitHud {
         }
 
         // ---- top left: the suit ---------------------------------------------------------------------------------
-        for (Identifier piece : FIGURE) {
-            g.blit(RenderPipelines.GUI_TEXTURED, piece, x0 + 5, y0 + 4, 0F, 0F, FIGURE_W, FIGURE_H, FIGURE_W, FIGURE_H, main);
+        // Each piece shows its own state, in the visor's one colour: whole, with texels missing at half durability, with
+        // many missing (and blinking, like every critical readout) in its last 15%; a bare part is just faint.
+        SuitArmour armour = suit.armour();
+        for (int i = 0; i < FIGURE.length; i++) {
+            Identifier piece = FIGURE[i];
+            int tint = faint;
+            if (i == 0 || armour.worn(PART_OF_FIGURE[i]) != null) {
+                HudAlert wear = i == 0 ? armour.helmetCondition() : armour.condition(PART_OF_FIGURE[i]);
+                piece = wear == HudAlert.NONE ? FIGURE[i] : wear == HudAlert.WARNING ? FIGURE_WORN[i] : FIGURE_CRACKED[i];
+                tint = wear == HudAlert.CRITICAL && !blink ? dim : main;
+            }
+            g.blit(RenderPipelines.GUI_TEXTURED, piece, x0 + 5, y0 + 4, 0F, 0F, FIGURE_W, FIGURE_H, FIGURE_W, FIGURE_H, tint);
         }
         int lx = x0 + 26, rx = x1 - 4, segments = (rx - lx + 1) / 4;
         Component hullLabel = Component.translatable("hud.power_suits.hull");
@@ -339,6 +356,16 @@ public final class SuitHud {
 
     private static Identifier hud(String name) {
         return Identifier.fromNamespaceAndPath(PowerSuits.MODID, "textures/gui/hud/" + name + ".png");
+    }
+
+    /** The figure's pieces at a wear stage ("worn", "cracked"), in FIGURE's order. */
+    private static Identifier[] variants(String stage) {
+        String[] names = {"helmet", "chest", "arm_left", "arm_right", "leg_left", "leg_right"};
+        Identifier[] out = new Identifier[names.length];
+        for (int i = 0; i < names.length; i++) {
+            out[i] = hud("suit_" + names[i] + "_" + stage);
+        }
+        return out;
     }
 
     // ---- The burn rate: measured from the fuel going down ---------------------------------------------------------

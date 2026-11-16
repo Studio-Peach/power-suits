@@ -117,7 +117,7 @@ top and bottom, switching everything off behind them, meet in the middle and shr
 dark. It's terminal green by default: pick another under **Mods > Power Suits > Config > Visor > Visor colour** (green,
 amber, blue, white, red, or Custom for any `#RRGGBB` in *Custom colour*; `visor_preset` / `visor_colour` in
 `config/power_suits-client.toml`; only you see it).
-- **Top left, the suit:** a blocky figure of the suit (one block per armour piece), **HULL** (its health, % and a bar)
+- **Top left, the suit:** a blocky figure of the suit (one block per armour piece, each showing its own wear in the visor's one colour: whole above half durability, with texels missing from half, with many missing and blinking in its last 15%; a bare part is faint; the helmet counts too, broken = cracked), **HULL** (its health, % and a bar)
   with a **shield** that's lit while the suit is sealed (running with the helmet and all five armour pieces on) and faded when not, and **FUEL**: how long it lasts at walking pace (∞ on a wet
   tidal engine or a star reactor), a bar for how full the fuel slot is, and three
   **embers** for how fast it burns, about one per walking's worth: one idling or walking, two sprinting, three with a
