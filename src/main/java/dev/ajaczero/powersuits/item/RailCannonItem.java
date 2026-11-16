@@ -107,10 +107,10 @@ public class RailCannonItem extends Item implements PowerTool, ModTooltip {
         return "rail_cannon";
     }
 
-    /** The prongs end 12 px below the socket base, 3 px past the chaingun's muzzle. */
+    /** The frame's prongs end 10 px under the socket, 1 px past the chaingun's muzzle (the big suit's: 12, 3 past). */
     @Override
     public float muzzleInsetPixels() {
-        return -3F;
+        return -1F;
     }
 
     @Override

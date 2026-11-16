@@ -35,8 +35,8 @@ import org.jspecify.annotations.Nullable;
  */
 public class SuitGlowLayer extends GeoRenderLayer<PowerSuitEntity, Void, LivingEntityRenderState> {
     /** The frame's tool lights' glowmasks (tools/export-frame.py), per build, indexed by ToolLight.ordinal(); null for a
-     *  light the frame's tools don't have yet (the chaingun's heat, the EM projector's redstone, the rail cannon's core:
-     *  the big suit's tools had them). Also drawn on the cockpit viewmodel. */
+     *  light the frame's tools don't have yet (the chaingun's heat, the EM projector's redstone: the big suit's
+     *  tools had them; the rail cannon's core has three bands). Also drawn on the cockpit viewmodel. */
     static final Identifier[] FRAME_TOOL_MASKS = toolMasks(""), FRAME_TOOL_MASKS_SLIM = toolMasks("_slim");
 
     private static Identifier[] toolMasks(String build) {
@@ -45,6 +45,9 @@ public class SuitGlowLayer extends GeoRenderLayer<PowerSuitEntity, Void, LivingE
             case LAMP_IDLE -> frameMask("lamp_idle" + build);   // the status lamp, red
             case LAMP_RUN -> frameMask("lamp_run" + build);     // and green
             case GUN_LIGHT -> frameMask("gun_light" + build);   // the chaingun's green muzzle lights
+            case RAIL_FLOW_0 -> frameMask("rail_flow_0" + build);   // the rail cannon's core, three bands along its prongs
+            case RAIL_FLOW_1 -> frameMask("rail_flow_1" + build);
+            case RAIL_FLOW_2 -> frameMask("rail_flow_2" + build);
             default -> null;
         }).toArray(Identifier[]::new);
     }

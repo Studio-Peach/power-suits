@@ -203,7 +203,7 @@ def arm_view(model, ident):
     return {'format_version': '1.12.0', 'minecraft:geometry': [built]}
 
 
-TOOL_BONES = ('drill', 'chainsaw', 'chaingun', 'flamethrower')
+TOOL_BONES = ('drill', 'chainsaw', 'chaingun', 'flamethrower', 'rail_cannon')
 
 
 def tool_view(model, ident):
@@ -292,6 +292,9 @@ TOOL_GLOW = {
     'lamp_idle': {_h('3d2622'): _h('ffb0a0'), _h('2e1915'): _h('e8402a')},   # frame_drill_art LAMPS dark -> red
     'lamp_run': {_h('3d2622'): _h('c8ffc0'), _h('2e1915'): _h('4fe05a')},    # ... -> green
     'gun_light': {_h('c8ffc0'): _h('c8ffc0'), _h('3cf060'): _h('3cf060')},  # the chaingun's green lights, as painted
+    # the rail cannon's core in three bands along the prongs (frame_rail_art.CORE dark colours -> the lit blue / hot white)
+    **{f'rail_flow_{n}': {_h(('1d3f5e', '1d3f6f', '1d3f7f')[n]): _h('2f9cff'), _h(('254e73', '254e74', '254e75')[n]): _h('a8f0ff')}
+       for n in range(3)},
 }
 
 

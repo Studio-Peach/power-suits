@@ -826,12 +826,13 @@ if ENGINE == 'firebox':
 # on its own bones, named as the game's tools (GAME_BONES), in one texture.
 TOOL = os.environ.get('TOOL', 'all')
 assert TOOL in ('none', 'drill', 'saw', 'gun', 'flame', 'rail', 'all'), TOOL
-TOOLS = ('drill', 'saw', 'gun', 'flame') if TOOL == 'all' else () if TOOL == 'none' else (TOOL,)
+TOOLS = ('drill', 'saw', 'gun', 'flame', 'rail') if TOOL == 'all' else () if TOOL == 'none' else (TOOL,)
 # Each tool's bones: (the tool, its moving part) named as the game's (PowerTool.suitBone; the drill's bit and the chain
 # spin / run by animation, the chaingun's barrels in code: ToolRotors).
 GAME_BONES = {'drill': ('drill', 'drill_bit'), 'saw': ('chainsaw', 'chainsaw_chain'),
               'gun': ('chaingun', 'chaingun_barrels'), 'flame': ('flamethrower', 'flamethrower_bit'),
-              'rail': ('rail_cannon', 'rail_cannon_prongs')}
+              'rail': ('rail_cannon', 'rail_fork_out')}
+EXTRA_BONES = {'rail': {'fork_in': 'rail_fork_in'}}   # a tool's other moving bones (the rail cannon's inner prong)
 SHELLS['arm_socket_shell'] = dict(SHELLS['arm_shell'], below=[], end='socket')
 if ARMOR != 'none': SHELLS['arm_socket_armor'] = dict(SHELLS['arm_armor'], below=[], end='socket')
 def _tool_parts(TOOL):
@@ -868,7 +869,7 @@ def _tool_parts(TOOL):
                                    float(os.environ.get('FLAME_BODY_H', '2')), os.environ.get('FLAME_HOLES', 'even'),
                                    float(os.environ.get('FLAME_TANK_H', '5')), float(os.environ.get('FLAME_TANK_W', '3')))
 # The rail cannon (frame_rail_art.py; 2026-11-15, the big suit's as the reference): RAIL=A gap | B core | C split,
-# RAIL_CORE=dark | lit, RAIL_L the prongs' length. Drafts: not in TOOL=all until one is picked.
+# RAIL_CORE=dark | lit, RAIL_L the prongs' length. A picked (user, 2026-11-15): in TOOL=all; B, C kept as knobs.
   if TOOL == 'rail':
     import frame_rail_art as rail_art
     TOOL_PARTS = rail_art.build(6.25 + ARM_OUT, SOCKET_Y, 'dark', os.environ.get('RAIL', 'A'),
@@ -1162,6 +1163,7 @@ for side in ('r', 'l'):
         # socket (a drill's bit spins about y)
         tg = group(GAME_BONES[t][0], (-(6.25 + ARM_OUT), SOCKET_Y, 0), arm)
         bones = {'tool': tg, 'bit': group(GAME_BONES[t][1], (-(6.25 + ARM_OUT), SOCKET_Y, 0), tg)}   # the bit moves, the rest not
+        for key, name in EXTRA_BONES.get(t, {}).items(): bones[key] = group(name, (-(6.25 + ARM_OUT), SOCKET_Y, 0), tg)
         for tp in parts_:
             g_ = bones[tp.get('bone', 'tool')]
             e = painted(g_, 'l', f"tl_{t}_{tp['name']}", f"tl_{t}_{tp['name']}", *tp['box'])

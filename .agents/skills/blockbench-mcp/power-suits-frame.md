@@ -260,3 +260,14 @@ the end and `docs/guide.md` Notes).
   other face is tested only against its own and the neighbouring buckets: the same clashes found (checked against
   the old loop with eps loosened to 0.3: 13 clashes both), a saved-files build ~25 s, a layered draft ~8 s, a flat
   helmet draft under 1 s. Profile first (`python3 -m cProfile -s cumtime model/art/frame_model.py`) before guessing.
+
+## Rail cannon (2026-11-15)
+- `frame_rail_art.py`, TOOL=rail (now in TOOL=all): the big suit's picked design (T2 prongs, see-through core, copper
+  band; reference `.scratch/rail/charge_seethrough_frames.jpg`). Draft A picked (user: "A") of A gap | B core | C split
+  (`RAIL=`, kept as knobs; `RAIL_L` prong length 6, `RAIL_CORE=dark|lit`). Receiver 5x4x5 in the fist's place; the outer
+  prong on `rail_fork_out`, the inner on `rail_fork_in` (frame_model `EXTRA_BONES`) so `ToolRotors.railShake` pulls them
+  apart as on the big suit.
+- The core is the prongs' inner faces, painted in three bands of reserved dark blues (K / L per band, a shade apart:
+  `frame_rail_art.CORE`), each its own glowmask (`TOOL_GLOW` rail_flow_0..2 -> `ToolLight.RAIL_FLOW_0..2`: the wave that
+  runs toward the tips). The big suit's emitter light (`RAIL_EMIT`) has no frame texels yet. `muzzleInsetPixels` -1 (tips 10 px
+  under the socket, 1 px past the chaingun's muzzle). `runAutopilotRail` shows it.
