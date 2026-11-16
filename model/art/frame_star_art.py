@@ -8,9 +8,10 @@ drafts round 2") the user liked the front of C (the lens, no lines) but: "these 
 look more grounded in technology, and don't do wheels anymore". Round 3 (this): the front is C's lens glyph on the
 chest (open: on the chest; under the breastplate: in a steel ring), no lines; the back is a plain piece of equipment in
 gunmetal and steel (the firebox's and the blower's materials) with the reactor's violet glass as its only light:
-  A cell     one housing: a rectangular window over the lit cells, vent slits below, a finned cap on top.
-  B module   two stepped blocks: vents and bolts below, a smaller core module over it with a long glass window.
-  C fins     a radiator: a lit core bar between five vertical steel fins, a base and a cap.
+  (the three of round 3: A cell housing with a finned cap, B two stepped blocks, C a radiator of fins; A picked.)
+Round 4 (user: "I like A the best, but iterate on top of that concept further; I also don't like the steel cap on top"):
+the cell housing without its cap, up to the helmet's bottom: A plain, B the window on a proud frame with status lamps,
+C four charge bars (see cell_back).
 Light: the glass is the letters & % * = (lit: EXTRA; in the texture dark reserved colours, STAR_DARK, lit by a glowmask
 as the sea engine's); STAR_GLOW=lit paints it lit for a review. $ 8 9 (obsidian) are no longer used.
 
@@ -98,87 +99,75 @@ def vents(g, j0, j1, i0, i1):
         for i in range(i0, i1): g[j][i] = 'X'
 
 
-def cell_back():
+# Round 4 (user: "I like A the best, but iterate on top of that concept further; I also don't like the steel cap on
+# top"): the cell housing without its finned cap, up to the helmet's bottom (raw y 25.5), three ways to take it on:
+#   A plain    the housing, a big framed window of three cells, vent slits below, bolts, side vent slits: nothing else;
+#   B framed   the window raised on its own 0.5 px frame (a second box) so the glass sits proud of the housing, a row of
+#              three status lamps over it, two latches down the sides, vents below;
+#   C meter    the window as four charge bars (columns of glass of rising height) with a row of lamps below it, the
+#              housing's side vents deeper.
+def lamps(g, row, cols, c='&'):
+    for i in cols:
+        g[row][i] = c
+        g[row][i + 1] = '%'
+
+
+def cell_back(design):
     P = []
-    def box(f, w, h):                                                         # 9 x 8 x 2.5: 18 x 16 texels on the back
+    W, H = 18, 19                                                             # the housing: 9 x 9.5 x 2.5 (back face)
+    def box(f, w, h):
         g = housing(f, w, h)
         if f == 'south':
-            win = glass(12, 7)
-            for j in range(7):
-                for i in range(12): g[3 + j][3 + i] = win[j][i]
-            for i in range(2, 16): g[2][i] = g[10][i] = 'X'                  # the frame
-            for j in range(2, 11): g[j][2] = g[j][15] = 'X'
-            for i in (6, 11):                                                # cell dividers
-                for j in range(3, 10): g[j][i] = '='
-            vents(g, 12, 15, 2, 16)
+            if design == 'A':
+                win = glass(12, 9)
+                for j in range(9):
+                    for i in range(12): g[3 + j][3 + i] = win[j][i]
+                for i in range(2, 16): g[2][i] = g[12][i] = 'X'
+                for j in range(2, 13): g[j][2] = g[j][15] = 'X'
+                for i in (6, 11):
+                    for j in range(3, 12): g[j][i] = '='
+                vents(g, 14, 18, 2, 16)
+            elif design == 'B':
+                for j in range(2, 4): g[j] = ['N'] * w                         # the lamps' row
+                lamps(g, 3, (5, 8, 11))
+                vents(g, 15, 18, 2, 16)
+                for i in range(2, 16): g[5][i] = 'X'                           # a recess the frame sits in
+            else:
+                win = grid(12, 9, '=')
+                for k, hgt in enumerate((3, 5, 7, 9)):                         # four bars, rising
+                    for j in range(9):
+                        for i in range(3 * k, 3 * k + 3):
+                            if i % 3 == 2 and k < 3: win[j][i] = 'X'
+                            elif 9 - j <= hgt: win[j][i] = '&' if 9 - j == hgt else '%' if 9 - j > hgt - 3 else '*'
+                for j in range(9):
+                    for i in range(12): g[3 + j][3 + i] = win[j][i]
+                for i in range(2, 16): g[2][i] = g[12][i] = 'X'
+                for j in range(2, 13): g[j][2] = g[j][15] = 'X'
+                lamps(g, 14, (4, 7, 10, 13))
+                vents(g, 16, 19, 2, 16)
             bolts(g, ((1, 1), (w - 2, 1), (1, h - 2), (w - 2, h - 2)))
+        if f in ('east', 'west'):                                              # side vents (C: deeper) and, B, a latch
+            vents(g, 6, 13 if design != 'C' else 15, 1, w - 1)
+            if design == 'B':
+                for j in range(h - 8, h - 3):
+                    for i in (2, 3): g[j][i] = 'h' if i == 2 else 'e'
         return g
-    P.append(part('box', ((-4.5, 16, 3), (4.5, 24, 5.5)), box))
-    def fins(f, w, h):                                                        # the cap: finned
-        if f in ('up', 'down'): return grid(w, h, 'g' if f == 'up' else 'X')
-        g = [['h' if i % 2 == 0 else 'p' for i in range(w)] for _ in range(h)]
-        for i in range(w): g[0][i] = 'g' if i % 2 == 0 else 'e'
-        return g
-    P.append(part('fins', ((-3.5, 24, 3.5), (3.5, 25.5, 5)), fins))
+    P.append(part('box', ((-4.5, 16, 3), (4.5, 25.5, 5.5)), box))
+    if design == 'B':
+        def frame(f, w, h):                                                    # 7 x 5.5 x 0.5: the glass in a proud frame
+            g = [['O'] * w for _ in range(h)]
+            if f == 'south':
+                win = glass(w - 4, h - 4)
+                for j in range(h - 4):
+                    for i in range(w - 4): g[2 + j][2 + i] = win[j][i]
+                for i in range(w - 4):
+                    if i in ((w - 4) // 3, 2 * (w - 4) // 3): 
+                        for j in range(1, h - 5): g[2 + j][2 + i] = '='
+                for i in range(1, w - 1): g[1][i] = g[h - 2][i] = 'X'
+                for j in range(1, h - 1): g[j][1] = g[j][w - 2] = 'X'
+            return g
+        P.append(part('window', ((-3.5, 18.5, 5.5), (3.5, 24, 6)), frame))
     return P
-
-
-def module_back():
-    P = []
-    def lower(f, w, h):                                                       # 9 x 5 x 2.5
-        g = housing(f, w, h)
-        if f == 'south':
-            vents(g, 3, 9, 2, 16)
-            bolts(g, ((1, 1), (w - 2, 1), (1, h - 2), (w - 2, h - 2)))
-        return g
-    P.append(part('base', ((-4.5, 16, 3), (4.5, 21, 5.5)), lower))
-    def core(f, w, h):                                                        # 6 x 4 x 2: 12 x 8 on the back
-        g = housing(f, w, h, base='O', top='W', bottom='X')
-        if f == 'south':
-            win = glass(10, 4)
-            for j in range(4):
-                for i in range(10): g[2 + j][1 + i] = win[j][i]
-            for i in range(0, w): g[1][i] = 'X'
-            for i in range(0, w): g[h - 2][i] = 'X'
-        return g
-    P.append(part('core', ((-3, 21, 3), (3, 25, 5)), core))
-    def band(f, w, h):                                                        # a steel clamp band round the base, 0.5 proud
-        return [['h'] * w] + [['e'] * w for _ in range(h - 1)] if f in ('south', 'north') else grid(w, h, 'e')
-    P.append(part('band', ((-4.5, 17.5, 5.5), (4.5, 18.5, 6)), band))
-    return P
-
-
-def fin_back():
-    P = []
-    def plate(f, w, h):
-        return housing(f, w, h)
-    P.append(part('base', ((-4.5, 16, 3), (4.5, 18, 5.5)), plate))
-    P.append(part('cap', ((-4.5, 24, 3), (4.5, 25.5, 5.5)), plate))
-    def core(f, w, h):                                                        # the lit bar the fins stand on: 8 x 6 x 1.5
-        g = [['X'] * w for _ in range(h)]
-        if f == 'south':
-            for j in range(1, h - 1):
-                for i in range(w):
-                    g[j][i] = '*' if j in (1, h - 2) else '%' if j in (2, h - 3) else '&'
-        return g
-    P.append(part('core', ((-4, 18, 3), (4, 24, 4.5)), core))
-    def fin(f, w, h):
-        if f == 'up': return grid(w, h, 'g')
-        if f == 'down': return grid(w, h, 'X')
-        g = [['h'] * w for _ in range(h)]
-        for j in range(h): g[j][0] = 'w' if f in ('north', 'south') else 'g'
-        g[0] = ['g'] * w
-        return g
-    for k, x in enumerate((0.25, 1.75, 3.25)):                               # five fins: the middle, two pairs
-        P.append(part(f'fin{k}', ((x - 0.5, 18, 4.5), (x, 24, 6.5)), fin, mirror=k > 0))
-    return P
-
-
-BACKS = {'A': cell_back, 'B': module_back, 'C': fin_back}
-
-
-def disc_back(design, st):
-    return BACKS[design](), 4.5, 21.5, 18.5, 25.5
 
 
 def glyph_plate(el):
@@ -192,6 +181,9 @@ def glyph_plate(el):
         if f == 'north': return [[front(hx - (i + 0.5) / K, y1 - (j + 0.5) / K) for i in range(w)] for j in range(h)]
         return grid(w, h, '.')
     return part('glyph', ((-hx, y0, -3.5), (hx, y1, -3)), paint)
+
+
+BACKS = {k: (lambda k=k: cell_back(k)) for k in 'ABC'}
 
 
 def build(design, chest_x=6.0):
