@@ -54,7 +54,7 @@ public class PowerSuitScreen extends AbstractContainerScreen<PowerSuitMenu> {
     private static final int PREVIEW_X0 = 26, PREVIEW_Y0 = 8, PREVIEW_X1 = 75, PREVIEW_Y1 = 78, PREVIEW_SCALE = 21;
     /** The keys: Power where the crafting result slot was, Pack up where the recipe book's button sits (vanilla's
      *  InventoryScreen: leftPos + 104, 22 above the middle = y 61). Public: the menu scene points the mouse at them. */
-    public static final int POWER_X = 153, POWER_Y = 27, PACK_X = 104, PACK_Y = 61;
+    public static final int POWER_X = 153, POWER_Y = 27, PACK_X = 130, PACK_Y = 61;
     /** The title where vanilla writes "Crafting", in vanilla's label grey. */
     private static final int TITLE_X = 97, TITLE_W = 75, LABEL = 0xFF404040;
 
@@ -263,6 +263,7 @@ public class PowerSuitScreen extends AbstractContainerScreen<PowerSuitMenu> {
         int index = this.menu.slots.indexOf(this.hoveredSlot);
         int armour = index - PowerSuitMenu.MENU_ARMOUR;
         String key = index == PowerSuitMenu.MENU_SOCKET ? "gui.power_suits.socket_slot"
+                : index == PowerSuitMenu.MENU_RIGHT_SOCKET ? "gui.power_suits.right_socket_slot"
                 : index == PowerSuitMenu.MENU_FUEL ? "gui.power_suits.fuel_slot"
                 : index == PowerSuitMenu.MENU_HELMET ? "gui.power_suits.helmet_slot"
                 : index == PowerSuitMenu.MENU_ENGINE ? "gui.power_suits.engine_slot"

@@ -43,12 +43,14 @@ public class PowerSuitMenu extends AbstractContainerMenu {
     /** The armour (frame step 6b): menu slot MENU_ARMOUR + i is SuitArmour.Part i (torso, left arm, right arm, left
      *  leg, right leg). */
     public static final int MENU_ARMOUR = 4;
-    private static final int SUIT_SLOTS = MENU_ARMOUR + SuitArmour.Part.values().length;
+    /** The right arm's socket (2026-11-15): after the armour, so the numbers above stay. */
+    public static final int MENU_RIGHT_SOCKET = MENU_ARMOUR + SuitArmour.Part.values().length;
+    private static final int SUIT_SLOTS = MENU_RIGHT_SOCKET + 1;
     /** Menu slots of the player's inventory (27, top-left first) and hotbar (9). */
     public static final int INV_START = SUIT_SLOTS, HOTBAR_START = INV_START + 27, END = HOTBAR_START + 9;
     /** Where a shift-click from the player's side tries to put an item, first that takes it and has room (the fuel slot
      *  last: it takes the most; the right arm and leg before the left: reading order). */
-    private static final int[] SHIFT_CLICK_ORDER = {MENU_SOCKET, MENU_HELMET, MENU_ARMOUR, MENU_ARMOUR + 2, MENU_ARMOUR + 1,
+    private static final int[] SHIFT_CLICK_ORDER = {MENU_SOCKET, MENU_RIGHT_SOCKET, MENU_HELMET, MENU_ARMOUR, MENU_ARMOUR + 2, MENU_ARMOUR + 1,
             MENU_ARMOUR + 4, MENU_ARMOUR + 3, MENU_ENGINE, MENU_FUEL};
     /** Button ids sent by the "Pack up" and power switch buttons (vanilla's built-in menu button packet carries them). */
     public static final int BUTTON_PACK = 0, BUTTON_POWER = 1;
@@ -57,6 +59,9 @@ public class PowerSuitMenu extends AbstractContainerMenu {
      *  armour column (x 8) and the column right of the preview (x 77, the off-hand slot at its foot), rows 18 apart from
      *  y 8; the fuel slot in the crafting corner, level with the result slot. tools/make-gui.py draws the frames. */
     public static final int LEFT_X = 8, RIGHT_X = 77, ROW_Y = 8, ROW = 18, FUEL_X = 112, FUEL_Y = 28;
+    /** The engine (the backpack) moved from the armour column's foot to the foot's right side, beside the left arm's socket,
+     *  when the right arm got a socket at that foot (2026-11-15): the sockets are the arms' two ends. */
+    public static final int ENGINE_X = 95;
     /** Empty-slot outlines: vanilla's for the helmet, chest (the torso) and legs, ours for an arm. */
     private static final Identifier EMPTY_HELMET = Identifier.withDefaultNamespace("container/slot/helmet");
     private static final Identifier EMPTY_TORSO = Identifier.withDefaultNamespace("container/slot/chestplate");
@@ -108,7 +113,7 @@ public class PowerSuitMenu extends AbstractContainerMenu {
                 return 1;
             }
         });
-        this.addSlot(new Slot(suitInventory, PowerSuitEntity.ENGINE_SLOT, LEFT_X, ROW_Y + 3 * ROW) { // the backpack: worn too
+        this.addSlot(new Slot(suitInventory, PowerSuitEntity.ENGINE_SLOT, ENGINE_X, ROW_Y + 3 * ROW) { // the backpack: worn too
             @Override
             public boolean mayPlace(ItemStack stack) {
                 return stack.getItem() instanceof EngineItem;
@@ -143,6 +148,18 @@ public class PowerSuitMenu extends AbstractContainerMenu {
                 }
             });
         }
+        // The right arm's socket, at the foot of the left column: the suit faces you, so it sits under its right arm's piece.
+        this.addSlot(new Slot(suitInventory, PowerSuitEntity.RIGHT_SOCKET_SLOT, LEFT_X, ROW_Y + 3 * ROW) {
+            @Override
+            public boolean mayPlace(ItemStack stack) {
+                return stack.getItem() instanceof PowerTool;
+            }
+
+            @Override
+            public int getMaxStackSize() {
+                return 1;
+            }
+        });
         // Player inventory and hotbar, where vanilla's inventory screen has them.
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 9; col++) {
@@ -207,8 +224,8 @@ public class PowerSuitMenu extends AbstractContainerMenu {
     }
 
     /**
-     * The swap-hands key (F) over a slot swaps that slot with the socket, not with the player's real off hand: in this
-     * screen the socket is the off hand (vanilla's swap would move the player's hidden off-hand item instead). A tool
+     * The swap-hands key (F) over a slot swaps that slot with a socket, not with the player's real off hand: in this
+     * screen the sockets are the hands (vanilla's swap would move the player's hidden off-hand item instead). A tool
      * goes in, whatever was in the socket comes out; anything that isn't a power tool stays put. Runs on both sides (the
      * client predicts the click, the server's result is the real one).
      */
@@ -216,9 +233,13 @@ public class PowerSuitMenu extends AbstractContainerMenu {
     public void clicked(int slotIndex, int buttonNum, ContainerInput input, Player player) {
         if (input == ContainerInput.SWAP && buttonNum == Inventory.SLOT_OFFHAND && slotIndex >= 0 && slotIndex < this.slots.size()) {
             Slot target = this.slots.get(slotIndex);
-            Slot socket = this.slots.get(MENU_SOCKET);
-            if (target != socket) {
-                swap(target, socket, player);
+            Slot left = this.slots.get(MENU_SOCKET), right = this.slots.get(MENU_RIGHT_SOCKET);
+            if (target == left || target == right) {
+                swap(left, right, player); // F over a socket moves its tool to the other arm
+            } else {
+                // A tool goes to the first empty socket (left, then right); with both full it swaps with the left's.
+                boolean toRight = !left.getItem().isEmpty() && right.getItem().isEmpty() && !target.getItem().isEmpty();
+                swap(target, toRight ? right : left, player);
             }
             return;
         }

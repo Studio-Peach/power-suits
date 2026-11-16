@@ -553,8 +553,19 @@ public final class PowerSuitTests {
         player.getInventory().setItem(0, new ItemStack(ModItems.DRILL.get())); // hotbar slot 0
         player.setItemInHand(InteractionHand.OFF_HAND, new ItemStack(Items.TORCH));
         menu.clicked(PowerSuitMenu.HOTBAR_START, Inventory.SLOT_OFFHAND, ContainerInput.SWAP, player);
+        helper.assertTrue(suit.getInventory().getItem(PowerSuitEntity.RIGHT_SOCKET_SLOT).is(ModItems.DRILL.get())
+                && suit.getInventory().getItem(PowerSuitEntity.SOCKET_SLOT).is(ModItems.CHAINGUN.get())
+                && player.getInventory().getItem(0).isEmpty(), "F in the menu puts the drill in the free (right) socket");
+        player.getInventory().setItem(0, new ItemStack(ModItems.CHAINSAW.get()));
+        menu.clicked(PowerSuitMenu.HOTBAR_START, Inventory.SLOT_OFFHAND, ContainerInput.SWAP, player);
+        helper.assertTrue(suit.getInventory().getItem(PowerSuitEntity.SOCKET_SLOT).is(ModItems.CHAINSAW.get())
+                && player.getInventory().getItem(0).is(ModItems.CHAINGUN.get()), "with both full it swaps with the left's");
+        menu.clicked(PowerSuitMenu.MENU_SOCKET, Inventory.SLOT_OFFHAND, ContainerInput.SWAP, player);
         helper.assertTrue(suit.getInventory().getItem(PowerSuitEntity.SOCKET_SLOT).is(ModItems.DRILL.get())
-                && player.getInventory().getItem(0).is(ModItems.CHAINGUN.get()), "F in the menu swaps the drill in, the chaingun out");
+                && suit.getInventory().getItem(PowerSuitEntity.RIGHT_SOCKET_SLOT).is(ModItems.CHAINSAW.get()), "F over a socket swaps the two arms' tools");
+        // back to one tool in the left socket (the drill) for the rest
+        suit.getInventory().setItem(PowerSuitEntity.RIGHT_SOCKET_SLOT, ItemStack.EMPTY);
+        player.getInventory().setItem(0, ItemStack.EMPTY);
         helper.assertTrue(player.getOffhandItem().is(Items.TORCH), "the real off hand is left alone");
         player.getInventory().setItem(1, new ItemStack(Items.DIRT));
         menu.clicked(PowerSuitMenu.HOTBAR_START + 1, Inventory.SLOT_OFFHAND, ContainerInput.SWAP, player);

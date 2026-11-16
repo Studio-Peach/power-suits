@@ -8,7 +8,8 @@ slot, with the suit's things in vanilla's places:
 - the armour column (left of the preview) and the column above the off-hand slot (right of it) hold the frame's parts
   like a body round the preview (the suit faces you, so its right side is on your left): helmet / right arm / right leg
   / engine (the backpack: worn too) on the left, torso / left arm / left leg on the right;
-- the off-hand slot is the tool socket (the swap-hands key moves tools in and out: it already was the suit's off hand);
+- the off-hand slot is the left arm's tool socket (the swap-hands key moves tools in and out: it already was the suit's
+  off hand); the right arm's socket is at the left column's foot, and the engine moved beside the left socket (2026-11-15);
 - the crafting corner: the suit's name where "Crafting" is, the fuel slot where the grid was, vanilla's arrow, the Power
   key in the result slot's place (fuel in, power out); the Pack up key small where the recipe book's button sits.
 The status (hull, fuel, sealed) moved out of the menu into panels beside it, drawn like the inventory's potion effects
@@ -42,6 +43,7 @@ fill(152, 26, 172, 46, PANEL)               # ...and the result slot (the Power 
 for y in (7, 25, 43):                       # three slots above the off-hand slot: torso, left arm, left leg
     img.paste(slot_frame, (76, y))
 img.paste(slot_frame, (111, 27))            # the fuel slot, before vanilla's arrow (x 135..150)
+img.paste(slot_frame, (94, 61))             # the engine, beside the left arm's socket (the right arm's socket took its old place)
 img.save('src/main/resources/assets/power_suits/textures/gui/power_suit.png')
 print('wrote textures/gui/power_suit.png')
 
