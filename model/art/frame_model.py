@@ -1164,33 +1164,44 @@ for side in ('r', 'l'):
     # One box: the fist (the big suit's, sized down: 5x4x5 over his hand, so 2 px past it) and the cage above it, up to
     # his shoulder's top. Its footprint is 0.5 px round his arm front and back, 0.25 px inside (the closest encloses()
     # allows) and 0.75 px outside.
-    # the left arm (the tool arm) ends in the socket instead of the fist (SOCKET)
-    hollow(arm, side, 'arm_socket_shell' if side == 'l' else 'arm_shell', f'fr_arm_shell_{side}',
-           (3.75 + ARM_OUT, SOCKET_Y if side == 'l' else 10, -2.5), (8.75 + ARM_OUT, 26, 2.5))
-    for t, parts_ in (TOOL_PARTS.items() if side == 'l' else ()):   # each tool, its pivot on the arm's axis at the
-        # socket (a drill's bit spins about y)
-        tg = group(GAME_BONES[t][0], (-(6.25 + ARM_OUT), SOCKET_Y, 0), arm)
-        bones = {'tool': tg, 'bit': group(GAME_BONES[t][1], (-(6.25 + ARM_OUT), SOCKET_Y, 0), tg)}   # the bit moves, the rest not
-        for key, name in EXTRA_BONES.get(t, {}).items(): bones[key] = group(name, (-(6.25 + ARM_OUT), SOCKET_Y, 0), tg)
+    # An arm ends in its hand (the fist) or, with a power tool fitted (2026-11-15: hands are detachable, either arm can
+    # carry one), in the socket the tool hangs from (SOCKET). The saved files (ARMOR=game) hold both looks of both arms,
+    # the game shows the one that fits what is fitted; the draft builds keep the old way: the left arm the tool arm.
+    SOCKET_ARMS = ('l', 'r') if ARMOR == 'game' else ('l',)
+    hand_arm = side not in SOCKET_ARMS or ARMOR == 'game'
+    if hand_arm:
+        hollow(arm, side, 'arm_shell', f'fr_arm_shell_{side}', (3.75 + ARM_OUT, 10, -2.5), (8.75 + ARM_OUT, 26, 2.5))
+    if side in SOCKET_ARMS:
+        hollow(arm, side, 'arm_socket_shell', f'fr_arm_socket_shell_{side}' if ARMOR == 'game' else f'fr_arm_shell_{side}',
+               (3.75 + ARM_OUT, SOCKET_Y, -2.5), (8.75 + ARM_OUT, 26, 2.5))
+    for t, parts_ in (TOOL_PARTS.items() if side in SOCKET_ARMS else ()):   # each tool, its pivot on the arm's axis at the
+        # socket (a drill's bit spins about y); the right arm's bones and cubes carry an _r (the left's keep the game's names)
+        sfx = '_r' if side == 'r' else ''
+        piv = ((6.25 + ARM_OUT) * s, SOCKET_Y, 0)
+        tg = group(GAME_BONES[t][0] + sfx, piv, arm)
+        bones = {'tool': tg, 'bit': group(GAME_BONES[t][1] + sfx, piv, tg)}   # the bit moves, the rest not
+        for key, name in EXTRA_BONES.get(t, {}).items(): bones[key] = group(name + sfx, piv, tg)
         for tp in parts_:
             g_ = bones[tp.get('bone', 'tool')]
-            e = painted(g_, 'l', f"tl_{t}_{tp['name']}", f"tl_{t}_{tp['name']}", *tp['box'])
-            if tp['rot']: e['rotation'], e['origin'] = [0, -tp['rot'], 0], list(g_['origin'])
+            e = painted(g_, side, f"tl_{t}_{tp['name']}", f"tl_{t}_{tp['name']}{sfx}", *tp['box'])
+            if tp['rot']: e['rotation'], e['origin'] = [0, -tp['rot'] * -s, 0], list(g_['origin'])
             for f in FACES:   # a face all see-through isn't drawn (the drill's open base: its bottom lies in the socket's plane)
                 if all(c == '.' for r in tp['faces'][f] for c in r): e['faces'][f]['texture'] = None
     p = group(f'pilot_{nm}_arm', ((6 + ARM_OUT) * s, 26, 0), arm)
     st = steve(p, f'st_arm_{side}', *sx((4 + ARM_OUT, 14, -2), (4 + AW + ARM_OUT, 26, 2)), STEVE[f'arm_{side}'])
-    if side == 'l': st['faces']['down']['texture'] = None   # in the socket's plane, under it (SOCKET)
-    # the shoulder plate on the arm box's top, its inner side over the arm box's inner wall
-    if SHOULDER == 'plate':
-        painted(arm, side, 'shoulder_plate', f'fr_shoulder_plate_{side}',
-                (3.75 + ARM_OUT, 26, -2.5 - PLATE_FB), (8.75 + ARM_OUT + PLATE_OUT, 27, 2.5 + PLATE_FB))
-    elif SHOULDER == 'decal':   # 3.5 px of the arm's top, 0.5 off it outside, front, back and above
-        hollow(arm, side, 'shoulder_plate', f'fr_shoulder_plate_{side}',
-               (3.75 + ARM_OUT, 23, -2.5 - DECAL), (8.75 + ARM_OUT + DECAL, 26 + DECAL, 2.5 + DECAL))
-    else:   # the lid: 0.1 px over his arm's top (in its plane it would flicker)
-        hollow(arm, side, 'shoulder_plate', f'fr_shoulder_plate_{side}',
-               (3.75 + ARM_OUT, 26, -2.5), (8.75 + ARM_OUT, 26.1, 2.5))
+    if side in SOCKET_ARMS: st['faces']['down']['texture'] = None   # in the socket's plane, under it (SOCKET)
+    # the shoulder plate on the arm box's top, its inner side over the arm box's inner wall (one per look of the arm: hand,
+    # and socket in the saved files, which hold both)
+    for _sp in (('', '_socket') if ARMOR == 'game' else ('',)):
+        if SHOULDER == 'plate':
+            painted(arm, side, 'shoulder_plate', f'fr_shoulder_plate{_sp}_{side}',
+                    (3.75 + ARM_OUT, 26, -2.5 - PLATE_FB), (8.75 + ARM_OUT + PLATE_OUT, 27, 2.5 + PLATE_FB))
+        elif SHOULDER == 'decal':   # 3.5 px of the arm's top, 0.5 off it outside, front, back and above
+            hollow(arm, side, 'shoulder_plate', f'fr_shoulder_plate{_sp}_{side}',
+                   (3.75 + ARM_OUT, 23, -2.5 - DECAL), (8.75 + ARM_OUT + DECAL, 26 + DECAL, 2.5 + DECAL))
+        else:   # the lid: 0.1 px over his arm's top (in its plane it would flicker)
+            hollow(arm, side, 'shoulder_plate', f'fr_shoulder_plate{_sp}_{side}',
+                   (3.75 + ARM_OUT, 26, -2.5), (8.75 + ARM_OUT, 26.1, 2.5))
 
 # ---------------------------------------------------------------- clearance check, in the posed rest pose
 # Every cube in world space (its own rotation, then each bone's, all about z), as an xy quad plus a z range. Fails on
@@ -1381,18 +1392,18 @@ def check():
 # ---------------------------------------------------------------- armour (draft)
 # One piece per bone, each in its own group (so a piece can be shown / hidden as one): helmet, torso, arms, legs. A
 # piece replaces the frame cubes it covers (unlink drops them).
-def _armor(bone, side, piece, name, raw=False, box=None, addon=False):
+def _armor(bone, side, piece, name, raw=False, box=None, addon=False, variant=''):
     g = next(x for x in groups if x['name'] == bone)
-    ga = next((x for x in groups if x['name'] == f'armor_{bone}'), None) or \
-        group(f'armor_{bone}', [g['origin'][0], g['origin'][1] - FY, g['origin'][2]], g)
+    ga = next((x for x in groups if x['name'] == f'armor_{bone}{variant}'), None) or \
+        group(f'armor_{bone}{variant}', [g['origin'][0], g['origin'][1] - FY, g['origin'][2]], g)
     open_ = any('.' in r for rows in SHELLS[f'{piece}_armor']['faces'].values() for r in rows) \
         if 'faces' in SHELLS[f'{piece}_armor'] else False
     e = (hollow if open_ else painted)(ga, side, f'{piece}_armor', name, *(box or ARMOR_BOX[piece]), raw=raw)
     e['_armor'] = 'addon' if addon else True
-def unlink(name):
+def unlink(name, variant=''):
     e = next(x for x in elements if x['name'] == name)
     if ARMOR == 'game':   # kept, in the part's frame group (shown while the part is bare)
-        return regroup(e, f"frame_{e['_g']['name']}")
+        return regroup(e, f"frame_{e['_g']['name']}{variant}")
     elements.remove(e)
     e['_g']['children'].remove(e['uuid'])
 
@@ -1418,8 +1429,10 @@ def alt(e):
     g = e['_g']
     if g['name'].startswith('helm_'):   # the helmet styles: one drawn at a time
         return 'head', g['name']
+    if e['name'].startswith('tl_'):     # a power tool: drawn with the arm's socket looks, never with its hand looks
+        return ('arm_r' if e['name'].endswith('_r') else 'arm_l'), 'tool'
     if g['name'].startswith(('frame_', 'armor_')) and g['_parent']['name'] in ALT_SLOT:
-        return ALT_SLOT[g['_parent']['name']], g['name'].split('_')[0]
+        return ALT_SLOT[g['_parent']['name']], g['name'].split('_')[0] + ('_socket' if g['name'].endswith('_socket') else '')
     if g['name'] in ('engine_open', 'engine_armored'):
         return 'torso', 'frame' if g['name'] == 'engine_open' else 'armor'
     return None
@@ -1428,6 +1441,8 @@ def apart(a, b):
     x, y = alt(a), alt(b)
     if x is not None and y is not None and {x, y} & {('hip', 'frame')} and {x, y} & {('leg_r', 'armor'), ('leg_l', 'armor')}:
         return True   # the belt goes when a leg piece goes on
+    if x is not None and y is not None and x[0] == y[0] and 'tool' in (x[1], y[1]):
+        return (y[1] if x[1] == 'tool' else x[1]) in ('frame', 'armor')   # (not the socket looks: they hold the tool)
     return x is not None and y is not None and x[0] == y[0] and x[1] != y[1]
 if 'helmet_armor' in SHELLS:
     _armor('head', 'r', 'helmet', 'ar_helmet')
@@ -1453,15 +1468,22 @@ if ARMOR != 'none':
     unlink('fr_belt_shell')
     _armor('body', 'r', 'hip', 'ar_hip')
     for side, nm in (('r', 'right'), ('l', 'left')):
-        for frame in (f'fr_arm_shell_{side}', f'fr_shoulder_plate_{side}', f'fr_leg_shell_{side}'): unlink(frame)
-        _armor(f'{nm}_arm', side, 'arm_socket' if side == 'l' else 'arm', f'ar_arm_{side}')
-        if ARMOR_FORM == 'solid': _armor(f'{nm}_arm', side, 'pauldron', f'ar_pauldron_{side}', addon=True)
-        else:   # the decal: 0.5 px off the arm piece's top, outer side, front and back, its inner edge where the solid
-            # pauldron's was (1 px off the arm's inner wall: clear of the helmet's corners turned 50 deg)
-            g = next(x for x in groups if x['name'] == f'armor_{nm}_arm')
-            # checked as its box, like the solid one (texel by texel, the check's pairs ran to minutes)
-            e = painted(g, side, 'pauldron_armor', f'ar_pauldron_{side}', *PAULDRON_DECAL)
-            e['_armor'] = 'addon'
+        # the arm's two looks (ARMOR=game: hand and socket, the shown one picked by what is fitted): the cubes of each
+        # in groups frame_<arm> / armor_<arm> (the hand) and frame_<arm>_socket / armor_<arm>_socket
+        for variant in (('', '_socket') if ARMOR == 'game' else ('',)):
+            sock = variant == '_socket'
+            shell = f'fr_arm_socket_shell_{side}' if sock else f'fr_arm_shell_{side}'
+            if ARMOR != 'game' and side == 'l': shell, sock = f'fr_arm_shell_{side}', True
+            for frame in (shell, f'fr_shoulder_plate{variant}_{side}'): unlink(frame, variant)
+            _armor(f'{nm}_arm', side, 'arm_socket' if sock else 'arm', f'ar_arm{variant}_{side}', variant=variant)
+            if ARMOR_FORM == 'solid': _armor(f'{nm}_arm', side, 'pauldron', f'ar_pauldron{variant}_{side}', addon=True, variant=variant)
+            else:   # the decal: 0.5 px off the arm piece's top, outer side, front and back, its inner edge where the solid
+                # pauldron's was (1 px off the arm's inner wall: clear of the helmet's corners turned 50 deg)
+                g = next(x for x in groups if x['name'] == f'armor_{nm}_arm{variant}')
+                # checked as its box, like the solid one (texel by texel, the check's pairs ran to minutes)
+                e = painted(g, side, 'pauldron_armor', f'ar_pauldron{variant}_{side}', *PAULDRON_DECAL)
+                e['_armor'] = 'addon'
+        unlink(f'fr_leg_shell_{side}')
         _armor(f'{nm}_leg', side, 'leg', f'ar_leg_{side}', raw=True)
 
 # ---------------------------------------------------------------- engine (draft, ENGINE)

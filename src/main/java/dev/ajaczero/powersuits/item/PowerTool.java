@@ -81,6 +81,16 @@ public interface PowerTool {
         return null;
     }
 
+    /** The same on the right arm: the keys on the bones with an _r (tools/export-frame.py writes `<animation>_r`). */
+    default RawAnimation runAnimationRight() {
+        return null;
+    }
+
+    /** The run animation for the tool on `arm`. */
+    default RawAnimation runAnimation(dev.ajaczero.powersuits.entity.ToolArm arm) {
+        return arm == dev.ajaczero.powersuits.entity.ToolArm.LEFT ? this.runAnimation() : this.runAnimationRight();
+    }
+
     /** Continuous tools: a looping sound played (client side, see SuitSounds) while the tool runs, or null. */
     @Nullable
     default SoundEvent runSound() {

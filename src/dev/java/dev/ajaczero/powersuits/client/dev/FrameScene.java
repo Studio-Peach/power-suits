@@ -270,6 +270,8 @@ final class FrameScene {
         AutoPilot.onServer(mc, p -> {
             if (p.getVehicle() instanceof PowerSuitEntity suit) {
                 suit.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, i < 0 ? ItemStack.EMPTY : new ItemStack(TOOLS.get(i).get()));
+                // the right arm carries another tool (2026-11-15: either arm can): the third one on from the left's
+                suit.getInventory().setItem(PowerSuitEntity.RIGHT_SOCKET_SLOT, i < 0 ? ItemStack.EMPTY : new ItemStack(TOOLS.get((i + 3) % TOOLS.size()).get()));
             }
         });
     }

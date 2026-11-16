@@ -14,12 +14,13 @@ import dev.ajaczero.powersuits.entity.SuitArmour;
 final class ArmourBones {
     private ArmourBones() {}
 
-    /** worn: SuitArmour.wornMask (a bit per Part). */
-    static void show(BoneSnapshots bones, int worn) {
+    /** worn: SuitArmour.wornMask (a bit per Part); tools: which arms carry a power tool (bit 0 the left, bit 1 the right):
+     *  an arm shows its hand look or, with a tool fitted, its socket look (2026-11-15). */
+    static void show(BoneSnapshots bones, int worn, int tools) {
         boolean torso = worn(worn, SuitArmour.Part.TORSO);
         pair(bones, "torso", torso);
-        pair(bones, "right_arm", worn(worn, SuitArmour.Part.RIGHT_ARM));
-        pair(bones, "left_arm", worn(worn, SuitArmour.Part.LEFT_ARM));
+        arm(bones, "right_arm", worn(worn, SuitArmour.Part.RIGHT_ARM), (tools & 2) != 0);
+        arm(bones, "left_arm", worn(worn, SuitArmour.Part.LEFT_ARM), (tools & 1) != 0);
         pair(bones, "right_leg", worn(worn, SuitArmour.Part.RIGHT_LEG));
         pair(bones, "left_leg", worn(worn, SuitArmour.Part.LEFT_LEG));
         pair(bones, "body", worn(worn, SuitArmour.Part.RIGHT_LEG) || worn(worn, SuitArmour.Part.LEFT_LEG));
@@ -29,6 +30,14 @@ final class ArmourBones {
 
     static boolean worn(int mask, SuitArmour.Part part) {
         return (mask & 1 << part.ordinal()) != 0;
+    }
+
+    /** An arm's four looks: frame / armour, with its hand / with the socket (frame_<arm>_socket): exactly one is drawn. */
+    private static void arm(BoneSnapshots bones, String bone, boolean armoured, boolean socket) {
+        hide(bones, "frame_" + bone, armoured || socket);
+        hide(bones, "armor_" + bone, !armoured || socket);
+        hide(bones, "frame_" + bone + "_socket", armoured || !socket);
+        hide(bones, "armor_" + bone + "_socket", !armoured || !socket);
     }
 
     private static void pair(BoneSnapshots bones, String bone, boolean armoured) {

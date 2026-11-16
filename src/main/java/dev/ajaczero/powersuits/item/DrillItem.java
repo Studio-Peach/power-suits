@@ -46,6 +46,7 @@ public class DrillItem extends Item implements PowerTool, ModTooltip {
     /** Mining speed of a diamond pickaxe / shovel (no enchantments). */
     public static final float SPEED = 8F;
     private static final RawAnimation RUN = RawAnimation.begin().thenLoop("animation.power_suit.drill_run");
+    private static final RawAnimation RUN_RIGHT = RawAnimation.begin().thenLoop("animation.power_suit.drill_run_r");
 
 
     public DrillItem(Properties properties) {
@@ -120,6 +121,11 @@ public class DrillItem extends Item implements PowerTool, ModTooltip {
     @Override
     public RawAnimation runAnimation() {
         return RUN;
+    }
+
+    @Override
+    public RawAnimation runAnimationRight() {
+        return RUN_RIGHT;
     }
 
     @Override

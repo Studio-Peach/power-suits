@@ -61,6 +61,13 @@ public final class SocketVisuals {
         }
     }
 
+    /** Client: how hard the tool shakes this frame (the rail cannon fighting its charge; the effects read "the socket"). */
+    public float shake() {
+        float[] out = new float[1];
+        this.suit.onArm(this.arm, () -> out[0] = this.effects.shake(this.suit));
+        return out[0];
+    }
+
     /** Client: the installed tool's effects (NONE without a tool). */
     public ToolEffects effects() {
         return this.effects;

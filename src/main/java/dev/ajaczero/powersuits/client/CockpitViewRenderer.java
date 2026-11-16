@@ -74,11 +74,11 @@ final class CockpitViewRenderer extends GeoObjectRenderer<CockpitView, Void, Geo
             boolean show = name.equals(shown);
             bones.ifPresent(name, b -> b.skipRender(!show).skipChildrenRender(!show));
         }
-        ArmourBones.show(bones, info.getOrDefaultGeckolibData(ARMOUR, 0)); // the arm's piece, or its bare frame
+        ArmourBones.show(bones, info.getOrDefaultGeckolibData(ARMOUR, 0), info.getOrDefaultGeckolibData(PART, Part.TOOL) == Part.TOOL ? 1 : 0); // the arm's piece, or its bare frame
         if (info.getOrDefaultGeckolibData(PART, Part.TOOL) == Part.TOOL && info.getOrDefaultGeckolibData(HIDE_ARM, false)) {
             // The tool is the subject, drawn like a held item (user, 2026-11-15): its arm's cubes stay out of the view
             // (their own bones only: the tool bones are children of view_tool).
-            for (String arm : new String[] {"view_tool", "frame_left_arm", "armor_left_arm"}) {
+            for (String arm : new String[] {"view_tool", "frame_left_arm", "armor_left_arm", "frame_left_arm_socket", "armor_left_arm_socket"}) {
                 bones.ifPresent(arm, b -> b.skipRender(true));
             }
         }

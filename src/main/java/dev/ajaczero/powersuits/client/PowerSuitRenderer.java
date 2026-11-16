@@ -4,6 +4,7 @@ import com.geckolib.renderer.GeoEntityRenderer;
 import com.geckolib.renderer.base.BoneSnapshots;
 import com.geckolib.renderer.base.RenderPassInfo;
 import dev.ajaczero.powersuits.entity.PowerSuitEntity;
+import dev.ajaczero.powersuits.entity.ToolArm;
 import dev.ajaczero.powersuits.item.HelmetStyle;
 import dev.ajaczero.powersuits.item.PowerTool;
 import net.minecraft.client.Minecraft;
@@ -47,7 +48,8 @@ public class PowerSuitRenderer extends GeoEntityRenderer<PowerSuitEntity, Living
             state.addGeckolibData(SuitRenderData.PILOT_SLIM, skin.model() == PlayerModelType.SLIM);
         }
         state.addGeckolibData(SuitRenderData.SLUMP, suit.isPowered() ? 0F : 1F - suit.animator().getAimBlend());
-        state.addGeckolibData(SuitRenderData.TOOL_BONE, suit.getSocketStack().getItem() instanceof PowerTool tool ? tool.suitBone() : "");
+        state.addGeckolibData(SuitRenderData.TOOL_BONE, suit.getSocketStack(ToolArm.LEFT).getItem() instanceof PowerTool tool ? tool.suitBone() : "");
+        state.addGeckolibData(SuitRenderData.TOOL_BONE_R, suit.getSocketStack(ToolArm.RIGHT).getItem() instanceof PowerTool tool ? tool.suitBone() : "");
         state.addGeckolibData(SuitRenderData.HELMET, suit.hasHelmet());
         state.addGeckolibData(SuitRenderData.HELMET_STYLE, suit.getHelmetStyle() == null ? -1 : suit.getHelmetStyle().ordinal());
         state.addGeckolibData(SuitRenderData.ENGINE, suit.getEngine() == null ? -1 : suit.getEngine().ordinal());
@@ -56,9 +58,12 @@ public class PowerSuitRenderer extends GeoEntityRenderer<PowerSuitEntity, Living
         state.addGeckolibData(SuitRenderData.STEP_OFFSET, (float) suit.animator().getStepOffset(partialTick));
         state.addGeckolibData(SuitRenderData.AIMING, suit.isDriven() && !suit.isDeadOrDying());
         state.addGeckolibData(SuitRenderData.AIM_BLEND, suit.animator().getAimBlend());
-        state.addGeckolibData(SuitRenderData.TOOL_RAISE, suit.socketVisuals().raise(partialTick));
-        state.addGeckolibData(SuitRenderData.RECOIL, suit.socketVisuals().recoil(partialTick));
-        state.addGeckolibData(SuitRenderData.BARREL_ANGLE, suit.socketVisuals().rotorAngle(partialTick));
+        state.addGeckolibData(SuitRenderData.TOOL_RAISE, suit.socketVisuals(ToolArm.LEFT).raise(partialTick));
+        state.addGeckolibData(SuitRenderData.RECOIL, suit.socketVisuals(ToolArm.LEFT).recoil(partialTick));
+        state.addGeckolibData(SuitRenderData.BARREL_ANGLE, suit.socketVisuals(ToolArm.LEFT).rotorAngle(partialTick));
+        state.addGeckolibData(SuitRenderData.TOOL_RAISE_R, suit.socketVisuals(ToolArm.RIGHT).raise(partialTick));
+        state.addGeckolibData(SuitRenderData.RECOIL_R, suit.socketVisuals(ToolArm.RIGHT).recoil(partialTick));
+        state.addGeckolibData(SuitRenderData.BARREL_ANGLE_R, suit.socketVisuals(ToolArm.RIGHT).rotorAngle(partialTick));
         state.addGeckolibData(SuitRenderData.HIP_SINK, suit.animator()::setHipHeight);
     }
 
@@ -102,10 +107,13 @@ public class PowerSuitRenderer extends GeoEntityRenderer<PowerSuitEntity, Living
         // projector: every tool; a tool added later without frame art shows the drill's body until it gets its own
         // (user, 2026-11-14: "reuse the drill model or something, whatever is easiest").
         String installed = info.getOrDefaultGeckolibData(SuitRenderData.TOOL_BONE, "");
+        String installedRight = info.getOrDefaultGeckolibData(SuitRenderData.TOOL_BONE_R, "");
         String shown = installed.isEmpty() || info.model().getBone(installed).isPresent() ? installed : STAND_IN_TOOL;
-        for (String toolBone : ToolBones.all()) {
-            boolean hide = !toolBone.equals(shown);
+        String shownRight = installedRight.isEmpty() || info.model().getBone(installedRight + "_r").isPresent() ? installedRight : STAND_IN_TOOL;
+        for (String toolBone : ToolBones.all()) { // each arm shows its own tool's bones (the right arm's carry an _r)
+            boolean hide = !toolBone.equals(shown), hideRight = !toolBone.equals(shownRight);
             bones.ifPresent(toolBone, bone -> bone.skipRender(hide).skipChildrenRender(hide));
+            bones.ifPresent(toolBone + "_r", bone -> bone.skipRender(hideRight).skipChildrenRender(hideRight));
         }
         // Helmet slot: the frame's helmet (armor_head) only when one is worn; without it the pilot's own head shows
         // (PilotLayer). Inside it one helmet at a time (frame step 7b, design sec. 4c): the worn style's (helm_<style>,
@@ -128,11 +136,16 @@ public class PowerSuitRenderer extends GeoEntityRenderer<PowerSuitEntity, Living
         bones.ifPresent("engine", bone -> bone.skipRender(!engine).skipChildrenRender(!engine));
         // Armour slots (frame step 6c): each part shows its piece while worn, its bare frame otherwise (ArmourBones);
         // the breastplate also swaps the engine's front for its armoured one.
-        ArmourBones.show(bones, info.getOrDefaultGeckolibData(SuitRenderData.ARMOUR, 0));
+        ArmourBones.show(bones, info.getOrDefaultGeckolibData(SuitRenderData.ARMOUR, 0), (installed.isEmpty() ? 0 : 1) | (installedRight.isEmpty() ? 0 : 2));
         ToolRotors.pose(bones, info.getOrDefaultGeckolibData(SuitRenderData.BARREL_ANGLE, 0F)); // turn (and coast) always
+        ToolRotors.pose(bones, info.getOrDefaultGeckolibData(SuitRenderData.BARREL_ANGLE_R, 0F), "_r");
         float[] shake = info.getGeckolibData(SuitRenderData.RAIL_SHAKE);
         if (shake != null) {
             ToolRotors.railShake(bones, shake[0], shake[1]);
+        }
+        float[] shakeRight = info.getGeckolibData(SuitRenderData.RAIL_SHAKE_R);
+        if (shakeRight != null) {
+            ToolRotors.railShake(bones, shakeRight[0], shakeRight[1], "_r");
         }
         aim(info, bones);
     }
@@ -152,7 +165,8 @@ public class PowerSuitRenderer extends GeoEntityRenderer<PowerSuitEntity, Living
         LivingEntityRenderState state = info.renderState();
         boolean aiming = info.getOrDefaultGeckolibData(SuitRenderData.AIMING, false);
         float raise = aiming ? info.getOrDefaultGeckolibData(SuitRenderData.TOOL_RAISE, 0F) : 0F;
-        walk(state, bones, raise);
+        float raiseRight = aiming ? info.getOrDefaultGeckolibData(SuitRenderData.TOOL_RAISE_R, 0F) : 0F;
+        walk(state, bones, raise, raiseRight);
         float slump = info.getOrDefaultGeckolibData(SuitRenderData.SLUMP, 0F);
         if (slump > 0F) {
             // Out of power the pilot's weight hangs in the frame: head down, the torso tipped a little forward.
@@ -175,7 +189,10 @@ public class PowerSuitRenderer extends GeoEntityRenderer<PowerSuitEntity, Living
             head.setRotX(head.getRotX() - pitch * Mth.DEG_TO_RAD); // the whole look, like a player's head
         });
         if (raise > 0F) {
-            raiseTool(info, bones, raise, headYaw, pitch);
+            raiseTool(info, bones, "left_arm", SuitRenderData.RECOIL, raise, headYaw, pitch);
+        }
+        if (raiseRight > 0F) {
+            raiseTool(info, bones, "right_arm", SuitRenderData.RECOIL_R, raiseRight, headYaw, pitch);
         }
     }
 
@@ -186,9 +203,10 @@ public class PowerSuitRenderer extends GeoEntityRenderer<PowerSuitEntity, Living
      * one rigid bone, like a player's, so this is a player's aiming pose (a bow's, one-armed); SocketAim fires from where
      * it puts the muzzle. Each shot kicks the muzzle up a little (recoil; at full spin a shudder).
      */
-    private static void raiseTool(RenderPassInfo<LivingEntityRenderState> info, BoneSnapshots bones, float w, float headYaw, float pitch) {
-        float kick = info.getOrDefaultGeckolibData(SuitRenderData.RECOIL, 0F) * w;
-        bones.ifPresent("left_arm", arm -> {
+    private static void raiseTool(RenderPassInfo<LivingEntityRenderState> info, BoneSnapshots bones, String armBone,
+                                  com.geckolib.constant.dataticket.DataTicket<Float> recoil, float w, float headYaw, float pitch) {
+        float kick = info.getOrDefaultGeckolibData(recoil, 0F) * w;
+        bones.ifPresent(armBone, arm -> {
             arm.setRotX(arm.getRotX() + ((90F - pitch) * w + 4F * kick) * Mth.DEG_TO_RAD);
             arm.setRotY(arm.getRotY() - headYaw * w * Mth.DEG_TO_RAD);
         });
@@ -199,13 +217,13 @@ public class PowerSuitRenderer extends GeoEntityRenderer<PowerSuitEntity, Living
      * distance walked and speed, which Minecraft keeps for every mob, ridden ones too). Vanilla's x turns are the other
      * way round (its models are y-down, x-mirrored), hence the minus.
      */
-    private static void walk(LivingEntityRenderState state, BoneSnapshots bones, float raise) {
+    private static void walk(LivingEntityRenderState state, BoneSnapshots bones, float raise, float raiseRight) {
         float pos = state.walkAnimationPos * 0.6662F, speed = state.walkAnimationSpeed;
         if (speed <= 0F) {
             return;
         }
         float swing = Mth.cos(pos) * speed, counter = Mth.cos(pos + Mth.PI) * speed;
-        bones.ifPresent("right_arm", arm -> arm.setRotX(arm.getRotX() - counter));
+        bones.ifPresent("right_arm", arm -> arm.setRotX(arm.getRotX() - counter * (1F - raiseRight)));
         bones.ifPresent("left_arm", arm -> arm.setRotX(arm.getRotX() - swing * (1F - raise))); // a raised tool stays on aim
         bones.ifPresent("right_leg", leg -> leg.setRotX(leg.getRotX() - 1.4F * swing));
         bones.ifPresent("left_leg", leg -> leg.setRotX(leg.getRotX() - 1.4F * counter));

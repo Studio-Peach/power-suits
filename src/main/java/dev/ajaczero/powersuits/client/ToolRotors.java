@@ -13,8 +13,13 @@ import net.minecraft.util.Mth;
  */
 final class ToolRotors {
     static void pose(BoneSnapshots bones, float angle) {
-        bones.ifPresent("chaingun_barrels", barrels -> barrels.setRotY(angle * Mth.DEG_TO_RAD));
-        bones.ifPresent("tnt_launcher_drum", drum -> drum.setRotY(angle * Mth.DEG_TO_RAD));
+        pose(bones, angle, "");
+    }
+
+    /** The turning parts of the arm whose bones carry `suffix` ("" the left arm's, "_r" the right's). */
+    static void pose(BoneSnapshots bones, float angle, String suffix) {
+        bones.ifPresent("chaingun_barrels" + suffix, barrels -> barrels.setRotY(angle * Mth.DEG_TO_RAD));
+        bones.ifPresent("tnt_launcher_drum" + suffix, drum -> drum.setRotY(angle * Mth.DEG_TO_RAD));
     }
 
     /**
@@ -25,6 +30,10 @@ final class ToolRotors {
      * (rail_fork_out / rail_fork_in) carry no animation, the cannon bone only the arm's; offsets are added.
      */
     static void railShake(BoneSnapshots bones, float charge, float time) {
+        railShake(bones, charge, time, "");
+    }
+
+    static void railShake(BoneSnapshots bones, float charge, float time, String suffix) {
         float s = Math.max(0F, (charge - 0.2F) / 0.8F);
         if (s <= 0F) {
             return;
@@ -32,12 +41,12 @@ final class ToolRotors {
         s = s * s * (charge >= 0.999F ? 1.3F : 1F);
         float a = jitter(time, 0F), b = jitter(time, 1.7F), c = jitter(time, 3.1F), d = jitter(time, 4.6F);
         float deg = 1.6F * s * Mth.DEG_TO_RAD, shift = 0.15F * s;
-        bones.ifPresent("rail_cannon", g -> g.setRotX(g.getRotX() + deg * a).setRotZ(g.getRotZ() + deg * b)
+        bones.ifPresent("rail_cannon" + suffix, g -> g.setRotX(g.getRotX() + deg * a).setRotZ(g.getRotZ() + deg * b)
                 .setTranslateX(g.getTranslateX() + shift * c).setTranslateZ(g.getTranslateZ() + shift * d));
         // apart: the outer prong toward -x, the inner one toward +x (GeckoLib 5 offsets have Blockbench's signs), plus a buzz
         float apart = 0.2F * s, buzz = 0.15F * s;
-        bones.ifPresent("rail_fork_out", g -> g.setTranslateX(g.getTranslateX() - apart - buzz * c).setRotZ(g.getRotZ() - deg * 0.8F * (1F + d)));
-        bones.ifPresent("rail_fork_in", g -> g.setTranslateX(g.getTranslateX() + apart + buzz * d).setRotZ(g.getRotZ() + deg * 0.8F * (1F + c)));
+        bones.ifPresent("rail_fork_out" + suffix, g -> g.setTranslateX(g.getTranslateX() - apart - buzz * c).setRotZ(g.getRotZ() - deg * 0.8F * (1F + d)));
+        bones.ifPresent("rail_fork_in" + suffix, g -> g.setTranslateX(g.getTranslateX() + apart + buzz * d).setRotZ(g.getRotZ() + deg * 0.8F * (1F + c)));
     }
 
     /** A fast irregular wobble in -1..1 (three sines at unrelated rates). */

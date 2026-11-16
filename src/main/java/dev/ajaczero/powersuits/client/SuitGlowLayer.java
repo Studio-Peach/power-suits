@@ -10,6 +10,7 @@ import dev.ajaczero.powersuits.PowerSuits;
 import dev.ajaczero.powersuits.entity.PowerSuitEntity;
 import dev.ajaczero.powersuits.entity.SuitEngine;
 import dev.ajaczero.powersuits.entity.SuitFace;
+import dev.ajaczero.powersuits.entity.ToolArm;
 import dev.ajaczero.powersuits.item.HelmetStyle;
 import dev.ajaczero.powersuits.item.ToolLight;
 import java.util.Arrays;
@@ -55,7 +56,11 @@ public class SuitGlowLayer extends GeoRenderLayer<PowerSuitEntity, Void, LivingE
 
     /** This frame's tints of the socket tool's lights (ToolLight order), from the installed tool's effects. */
     static int[] toolTints(PowerSuitEntity suit, float time, float partial) {
-        float[] lights = suit.socketVisuals().lights(time, partial);
+        float[] lights = suit.socketVisuals(ToolArm.LEFT).lights(time, partial);
+        float[] right = suit.socketVisuals(ToolArm.RIGHT).lights(time, partial);
+        for (int i = 0; i < lights.length; i++) {
+            lights[i] = Math.max(lights[i], right[i]); // both arms' tools: a light is one mask, the brighter wins
+        }
         int[] tints = new int[lights.length];
         ToolLight[] all = ToolLight.values();
         for (int i = 0; i < lights.length; i++) {
@@ -91,7 +96,8 @@ public class SuitGlowLayer extends GeoRenderLayer<PowerSuitEntity, Void, LivingE
         int[] tints = Arrays.copyOf(suitTints, suitTints.length + toolTints.length);
         System.arraycopy(toolTints, 0, tints, suitTints.length, toolTints.length);
         state.addGeckolibData(SuitRenderData.GLOW, tints);
-        state.addGeckolibData(SuitRenderData.RAIL_SHAKE, new float[] {suit.socketVisuals().effects().shake(suit), time});
+        state.addGeckolibData(SuitRenderData.RAIL_SHAKE, new float[] {suit.socketVisuals(ToolArm.LEFT).shake(), time});
+        state.addGeckolibData(SuitRenderData.RAIL_SHAKE_R, new float[] {suit.socketVisuals(ToolArm.RIGHT).shake(), time});
     }
 
     /** The frame's visor glowmask per build (tools/export-frame.py: its glass texels). */

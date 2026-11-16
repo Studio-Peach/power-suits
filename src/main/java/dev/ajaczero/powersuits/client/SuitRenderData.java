@@ -22,6 +22,13 @@ final class SuitRenderData {
     static final DataTicket<Float> SLUMP = DataTicket.create("power_suits_slump", Float.class);
     /** The installed tool's bone (PowerTool.suitBone), or "" for the bare socket. */
     static final DataTicket<String> TOOL_BONE = DataTicket.create("power_suits_tool_bone", String.class);
+    /** The right arm's tool bone (its bones carry an _r), and that arm's raise / recoil / turning part / rail shake: the same as
+     *  the left's above (2026-11-15: either arm can carry a tool). */
+    static final DataTicket<String> TOOL_BONE_R = DataTicket.create("power_suits_tool_bone_r", String.class);
+    static final DataTicket<Float> TOOL_RAISE_R = DataTicket.create("power_suits_tool_raise_r", Float.class);
+    static final DataTicket<Float> RECOIL_R = DataTicket.create("power_suits_recoil_r", Float.class);
+    static final DataTicket<Float> BARREL_ANGLE_R = DataTicket.create("power_suits_barrel_angle_r", Float.class);
+    static final DataTicket<float[]> RAIL_SHAKE_R = DataTicket.create("power_suits_rail_shake_r", float[].class);
     /** The helmet is on (else its bone isn't drawn). */
     static final DataTicket<Boolean> HELMET = DataTicket.create("power_suits_helmet", Boolean.class);
     /** The worn helmet's style (HelmetStyle ordinal, -1 = standard): which helmet bone is drawn. */

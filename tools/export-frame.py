@@ -185,7 +185,7 @@ def arm_parts(bones, arm, root, shift):
             out.append(c)
         return out
     parts = [{'name': root, 'pivot': [0, 0, 0], 'cubes': moved(bones[arm].get('cubes', []))}]
-    for name in (f'frame_{arm}', f'armor_{arm}'):
+    for name in (f'frame_{arm}', f'armor_{arm}', f'frame_{arm}_socket', f'armor_{arm}_socket'):   # the hand looks and the socket looks
         if name in bones:
             parts.append({'name': name, 'parent': root, 'pivot': [0, 0, 0], 'cubes': moved(bones[name].get('cubes', []))})
     return parts
@@ -237,6 +237,9 @@ def animations(bones):
     for name, a in names.items():
         if a.get('bones') and set(a['bones']) <= bones:
             out[name] = a
+            right = {k + '_r': v for k, v in a['bones'].items()}   # the right arm's tool: the same keys on its _r bones
+            if set(right) <= bones:
+                out[name + '_r'] = dict(a, bones=right)
             continue
         empty = {'animation_length': a.get('animation_length', 0.05), 'bones': {}}
         if 'loop' in a:

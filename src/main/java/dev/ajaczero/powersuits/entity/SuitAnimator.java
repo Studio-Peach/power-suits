@@ -185,6 +185,7 @@ public final class SuitAnimator {
         // Controller 3: the socket tool's own loop (drill spin, chainsaw chain) while it runs. It keys only
         // the tool's bones, so the arm keeps following walk/run and the aim.
         controllers.add(new AnimationController<>("tool", 3, this::toolAnimation));
+        controllers.add(new AnimationController<>("tool_right", 3, this::toolAnimationRight)); // the right arm's tool
         // Controller 4: the right hand. Added last, so while it plays it owns the right arm (the gait's arm
         // swing pauses, like a person carrying a torch). Stops when there's nothing to hold or no power.
         controllers.add(new AnimationController<>("right_hand", 4, this::handAnimation)
@@ -227,8 +228,14 @@ public final class SuitAnimator {
         return state.setAndContinue(IDLE);
     }
     private PlayState toolAnimation(AnimationTest<PowerSuitEntity> state) {
-        if (this.suit.socket().isRunning() && this.suit.getSocketStack().getItem() instanceof PowerTool tool && tool.runAnimation() != null) {
-            return state.setAndContinue(tool.runAnimation());
+        return this.toolAnimationOf(state, ToolArm.LEFT);
+    }
+    private PlayState toolAnimationRight(AnimationTest<PowerSuitEntity> state) {
+        return this.toolAnimationOf(state, ToolArm.RIGHT);
+    }
+    private PlayState toolAnimationOf(AnimationTest<PowerSuitEntity> state, ToolArm arm) {
+        if (this.suit.socket(arm).isRunning() && this.suit.getSocketStack(arm).getItem() instanceof PowerTool tool && tool.runAnimation(arm) != null) {
+            return state.setAndContinue(tool.runAnimation(arm));
         }
         return PlayState.STOP;
     }

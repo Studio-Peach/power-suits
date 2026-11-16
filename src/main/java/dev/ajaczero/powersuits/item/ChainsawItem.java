@@ -53,6 +53,7 @@ public class ChainsawItem extends Item implements PowerTool, ModTooltip {
     /** A tree needs at least this many natural leaf blocks touching its logs. */
     private static final int MIN_LEAVES = 4;
     private static final RawAnimation RUN = RawAnimation.begin().thenLoop("animation.power_suit.chainsaw_run");
+    private static final RawAnimation RUN_RIGHT = RawAnimation.begin().thenLoop("animation.power_suit.chainsaw_run_r");
 
 
     public ChainsawItem(Properties properties) {
@@ -158,6 +159,11 @@ public class ChainsawItem extends Item implements PowerTool, ModTooltip {
     @Override
     public RawAnimation runAnimation() {
         return RUN;
+    }
+
+    @Override
+    public RawAnimation runAnimationRight() {
+        return RUN_RIGHT;
     }
 
     @Override
