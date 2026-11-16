@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:chest",
+  "pools": [
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:empty",
+          "weight": 2
+        },
+        {
+          "type": "minecraft:item",
+          "name": "power_suits:robot_helmet",
+          "modifier": {
+            "type": "minecraft:set_damage",
+            "damage": 0.0
+          }
+        }
+      ]
+    }
+  ]
+}

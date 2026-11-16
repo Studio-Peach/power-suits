@@ -23,7 +23,8 @@ public enum HelmetStyle implements StringRepresentable {
     SPARTAN("spartan"),
     /** After Emile's EVA helmet (Halo: Reach): a visor over the whole front, a steel band, red ear marks. */
     NOBLE("noble"),
-    /** After Guy-Manuel's helmet (Daft Punk): one big dark visor in a gold frame, ear discs. */
+    /** After Guy-Manuel's helmet (Daft Punk): one big dark visor in a gold frame, ear discs. Not a style any more
+     *  (2026-11-16): it is the look of the Robot Helmet item (RobotHelmetItem), which SuitHelmetItem.style reports. */
     ROBOT("robot"),
     /** After Samus's helmet as in Smash Bros. Ultimate (2026-10-22): a shield visor wrapping the sides, a crest, a
      *  silver mouth grille with corrugated hoses round the jaw into ports on the sides. Last: the synced ordinal of

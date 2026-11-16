@@ -6,11 +6,15 @@
       "entries": [
         {
           "type": "minecraft:empty",
-          "weight": 9
+          "weight": 19
         },
         {
           "type": "minecraft:item",
-          "name": "power_suits:robot_template"
+          "name": "power_suits:robot_helmet",
+          "modifier": {
+            "type": "minecraft:set_damage",
+            "damage": 0.0
+          }
         }
       ]
     }

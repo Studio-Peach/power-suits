@@ -79,7 +79,11 @@ public class PowerSuits {
             event.accept(ModItems.RAIL_CANNON);
             event.accept(ModItems.SUIT_HELMET);
             // the styled helmets and their templates (design sec. 4c): in survival these come from structure chests
+            event.accept(ModItems.ROBOT_HELMET); // (the robot look is its own item, not a style)
             for (var style : HelmetStyle.values()) {
+                if (style == HelmetStyle.ROBOT) {
+                    continue;
+                }
                 ItemStack helmet = new ItemStack(ModItems.SUIT_HELMET.get());
                 helmet.set(ModDataComponents.HELMET_STYLE.get(), style);
                 event.accept(helmet);
@@ -87,7 +91,6 @@ public class PowerSuits {
             event.accept(ModItems.PROTECTOR_TEMPLATE);
             event.accept(ModItems.SPARTAN_TEMPLATE);
             event.accept(ModItems.NOBLE_TEMPLATE);
-            event.accept(ModItems.ROBOT_TEMPLATE);
             event.accept(ModItems.HUNTER_TEMPLATE);
             event.accept(ModItems.SUIT_TORSO);
             event.accept(ModItems.SUIT_ARM);

@@ -16,6 +16,7 @@ import dev.ajaczero.powersuits.item.HelmetTemplateItem;
 import dev.ajaczero.powersuits.item.PowerSuitItem;
 import dev.ajaczero.powersuits.item.RailCannonItem;
 import dev.ajaczero.powersuits.item.SuitArmourItem;
+import dev.ajaczero.powersuits.item.RobotHelmetItem;
 import dev.ajaczero.powersuits.item.SuitHelmetItem;
 import dev.ajaczero.powersuits.item.SuitPartItem;
 import dev.ajaczero.powersuits.item.TntLauncherItem;
@@ -81,11 +82,16 @@ public final class ModItems {
                     .durability(SuitHelmetItem.DURABILITY)
                     .repairable(Items.IRON_INGOT));
 
+    /** The Robot Helmet (companion design, 2026-11-16): gold, found broken in bastions, mended with gold ingots. */
+    public static final DeferredItem<RobotHelmetItem> ROBOT_HELMET = ITEMS.registerItem("robot_helmet", RobotHelmetItem::new, props -> props
+                    .durability(SuitHelmetItem.DURABILITY)
+                    .repairable(Items.GOLD_INGOT)
+                    .rarity(Rarity.RARE));
+
     // The helmet styles' smithing templates (design sec. 4c, 2026-10-22): Easter eggs found in structure chests.
     public static final DeferredItem<HelmetTemplateItem> PROTECTOR_TEMPLATE = template(HelmetStyle.PROTECTOR);
     public static final DeferredItem<HelmetTemplateItem> SPARTAN_TEMPLATE = template(HelmetStyle.SPARTAN);
     public static final DeferredItem<HelmetTemplateItem> NOBLE_TEMPLATE = template(HelmetStyle.NOBLE);
-    public static final DeferredItem<HelmetTemplateItem> ROBOT_TEMPLATE = template(HelmetStyle.ROBOT);
     public static final DeferredItem<HelmetTemplateItem> HUNTER_TEMPLATE = template(HelmetStyle.HUNTER);
 
     // The engines (design sec. 4b, 2026-10-21): the suit's backpack, swapped in the menu's engine slot. Every suit comes

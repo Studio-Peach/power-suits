@@ -26,6 +26,9 @@ public class SuitHelmetItem extends SuitPartItem {
 
     /** The helmet's style, or null for the standard helmet. */
     public static @Nullable HelmetStyle style(ItemStack stack) {
+        if (stack.getItem() instanceof RobotHelmetItem) {
+            return HelmetStyle.ROBOT; // its own item, not a style a smithing table can give
+        }
         return stack.get(ModDataComponents.HELMET_STYLE.get());
     }
 

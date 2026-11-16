@@ -3381,17 +3381,15 @@ public final class PowerSuitTests {
                 HelmetStyle.PROTECTOR, new ItemStack(Items.TURTLE_HELMET),
                 HelmetStyle.SPARTAN, new ItemStack(Items.TOTEM_OF_UNDYING),
                 HelmetStyle.NOBLE, new ItemStack(Items.PHANTOM_MEMBRANE),
-                HelmetStyle.ROBOT, new ItemStack(Items.GOLD_BLOCK), // its own gold (user, 2026-11-15)
                 HelmetStyle.HUNTER, new ItemStack(Items.SLIME_BALL));
         var templates = Map.of(
                 HelmetStyle.PROTECTOR, ModItems.PROTECTOR_TEMPLATE.get(),
                 HelmetStyle.SPARTAN, ModItems.SPARTAN_TEMPLATE.get(),
                 HelmetStyle.NOBLE, ModItems.NOBLE_TEMPLATE.get(),
-                HelmetStyle.ROBOT, ModItems.ROBOT_TEMPLATE.get(),
                 HelmetStyle.HUNTER, ModItems.HUNTER_TEMPLATE.get());
         ItemStack named = new ItemStack(ModItems.SUIT_HELMET.get());
         named.set(DataComponents.CUSTOM_NAME, Component.literal("Bucket"));
-        for (var style : HelmetStyle.values()) {
+        for (var style : templates.keySet()) { // (the robot look is the Robot Helmet item, no style: below)
             ItemStack out = smith(helper, new ItemStack(templates.get(style)), named, objects.get(style));
             helper.assertTrue(SuitHelmetItem.style(out) == style, style + ": got " + out);
             helper.assertTrue(out.has(DataComponents.CUSTOM_NAME), style + ": the helmet keeps its name");
@@ -3400,8 +3398,7 @@ public final class PowerSuitTests {
             helper.assertTrue(SuitHelmetItem.style(again) == style, style + ": restyling, got " + again);
             // the template copies like vanilla's trims: 7 diamonds round the template and the style object
             ItemStack d = new ItemStack(Items.DIAMOND);
-            // (the robot's copy still takes a music disc: gold is what makes the helmet, the disc is the nod)
-            ItemStack copyObject = style == HelmetStyle.ROBOT ? new ItemStack(Items.MUSIC_DISC_CAT) : objects.get(style);
+            ItemStack copyObject = objects.get(style);
             var grid = CraftingInput.of(3, 3, List.of(
                     d, new ItemStack(templates.get(style)), d, d, copyObject, d, d, d, d));
             ItemStack copies = helper.getLevel().recipeAccess().getRecipeFor(RecipeType.CRAFTING, grid, helper.getLevel())
@@ -3414,8 +3411,8 @@ public final class PowerSuitTests {
                 && t.getKey().equals("item.power_suits.suit_helmet.spartan"), "a styled helmet is named after its style, got " + spartan.getHoverName());
         helper.assertTrue(smith(helper, new ItemStack(ModItems.SPARTAN_TEMPLATE.get()), new ItemStack(ModItems.SUIT_HELMET.get()),
                 new ItemStack(Items.TURTLE_HELMET)).isEmpty(), "a template only takes its own style object");
-        helper.assertTrue(smith(helper, new ItemStack(ModItems.ROBOT_TEMPLATE.get()), new ItemStack(ModItems.SUIT_HELMET.get()),
-                new ItemStack(Items.MUSIC_DISC_CAT)).isEmpty(), "the robot helmet takes a gold block now, not a music disc");
+        helper.assertTrue(smith(helper, ItemStack.EMPTY, new ItemStack(ModItems.SUIT_HELMET.get()), new ItemStack(Items.GOLD_BLOCK)).isEmpty(),
+                "no gold-block recipe makes a robot helmet any more");
         helper.assertTrue(smith(helper, new ItemStack(ModItems.SPARTAN_TEMPLATE.get()), new ItemStack(Items.IRON_HELMET),
                 new ItemStack(Items.TOTEM_OF_UNDYING)).isEmpty(), "templates are for the suit's helmet only");
         ItemStack plain = smith(helper, ItemStack.EMPTY, spartan, new ItemStack(Items.IRON_BLOCK));
@@ -3515,6 +3512,50 @@ public final class PowerSuitTests {
         helper.succeed();
     }
 
+    /** The Robot Helmet (2026-11-16) is an item of its own, not a style: it reads as the robot look, never takes a smithing
+     *  template's style, is repaired with gold (not iron), and a worn suit shows it like any helmet. */
+    @SuitTest
+    public static void robotHelmetIsItsOwnItem(GameTestHelper helper) {
+        ItemStack robot = new ItemStack(ModItems.ROBOT_HELMET.get());
+        helper.assertTrue(SuitHelmetItem.style(robot) == HelmetStyle.ROBOT, "it shows the robot look");
+        helper.assertTrue(robot.isValidRepairItem(new ItemStack(Items.GOLD_INGOT)) && !robot.isValidRepairItem(new ItemStack(Items.IRON_INGOT)),
+                "gold mends it, iron doesn't");
+        helper.assertTrue(ModItems.SUIT_HELMET.get().getDefaultInstance().isValidRepairItem(new ItemStack(Items.IRON_INGOT)), "the standard helmet still takes iron");
+        helper.assertTrue(robot.getHoverName().getString().equals("Robot Helmet"), "named Robot Helmet, got " + robot.getHoverName().getString());
+        helper.assertTrue(smith(helper, new ItemStack(ModItems.PROTECTOR_TEMPLATE.get()), robot, new ItemStack(Items.TURTLE_HELMET)).isEmpty(),
+                "a smithing template only restyles the suit helmet");
+        PowerSuitEntity suit = suitAt(helper, SUIT_POS);
+        suit.getInventory().setItem(PowerSuitEntity.HELMET_SLOT, robot);
+        helper.assertTrue(suit.hasHelmet() && suit.getHelmetStyle() == HelmetStyle.ROBOT, "a suit shows it");
+        helper.succeed();
+    }
+
+    /** Bastions hold the Robot Helmet, broken: about one treasure chest in three, one in twenty of the others. */
+    @SuitTest
+    public static void robotHelmetHidesBrokenInBastions(GameTestHelper helper) {
+        var chests = Map.of(BuiltInLootTables.BASTION_TREASURE, new int[]{150, 260}, BuiltInLootTables.BASTION_OTHER, new int[]{3, 65},
+                BuiltInLootTables.BASTION_BRIDGE, new int[]{3, 65}, BuiltInLootTables.BASTION_HOGLIN_STABLE, new int[]{3, 65});
+        var params = new LootParams.Builder(helper.getLevel())
+                .withParameter(LootContextParams.ORIGIN, helper.absoluteVec(Vec3.ZERO))
+                .create(LootContextParamSets.CHEST);
+        int rolls = 600;
+        for (var chest : chests.entrySet()) {
+            var table = helper.getLevel().getServer().reloadableRegistries().getLootTable(chest.getKey());
+            int found = 0;
+            for (int i = 0; i < rolls; i++) {
+                for (ItemStack stack : table.getRandomItems(params)) {
+                    if (stack.is(ModItems.ROBOT_HELMET.get())) {
+                        found++;
+                        helper.assertTrue(stack.isBroken(), "it is found broken: " + stack + " damage " + stack.getDamageValue() + "/" + stack.getMaxDamage());
+                    }
+                }
+            }
+            helper.assertTrue(found >= chest.getValue()[0] && found <= chest.getValue()[1],
+                    chest.getKey().identifier() + ": " + found + " robot helmets in " + rolls + " chests");
+        }
+        helper.succeed();
+    }
+
     /** The templates turn up in the chests of their structures (loot modifiers), about one chest in ten. */
     @SuitTest
     public static void helmetTemplatesHideInStructureChests(GameTestHelper helper) {
@@ -3523,7 +3564,6 @@ public final class PowerSuitTests {
                 BuiltInLootTables.SHIPWRECK_TREASURE, ModItems.PROTECTOR_TEMPLATE.get(),
                 BuiltInLootTables.TRIAL_CHAMBERS_REWARD, ModItems.SPARTAN_TEMPLATE.get(),
                 BuiltInLootTables.END_CITY_TREASURE, ModItems.NOBLE_TEMPLATE.get(),
-                BuiltInLootTables.ANCIENT_CITY, ModItems.ROBOT_TEMPLATE.get(),
                 BuiltInLootTables.DESERT_PYRAMID, ModItems.HUNTER_TEMPLATE.get(),
                 BuiltInLootTables.JUNGLE_TEMPLE, ModItems.HUNTER_TEMPLATE.get());
         var params = new LootParams.Builder(helper.getLevel())

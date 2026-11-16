@@ -26,13 +26,6 @@
         }
       },
       {
-        "when": "robot",
-        "model": {
-          "type": "minecraft:model",
-          "model": "power_suits:item/suit_helmet_robot"
-        }
-      },
-      {
         "when": "hunter",
         "model": {
           "type": "minecraft:model",

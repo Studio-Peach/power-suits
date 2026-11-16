@@ -274,7 +274,7 @@ public final class SuitBrain {
             ItemStack helmet = new ItemStack(ModItems.SUIT_HELMET.get());
             if (this.suit.getRandom().nextInt(4) == 0) {
                 // one rogue in four wears a styled helmet (design sec. 4c): only a look, and not loot (rogues drop their tool only)
-                HelmetStyle[] styles = HelmetStyle.values();
+                HelmetStyle[] styles = java.util.Arrays.stream(HelmetStyle.values()).filter(s -> s != HelmetStyle.ROBOT).toArray(HelmetStyle[]::new);
                 helmet.set(ModDataComponents.HELMET_STYLE.get(), styles[this.suit.getRandom().nextInt(styles.length)]);
             }
             slots.setItem(PowerSuitEntity.HELMET_SLOT, helmet);

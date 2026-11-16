@@ -137,8 +137,7 @@ final class RobotFaceScene {
             }
             player.teleportTo(x + 0.5, y, z + 3.5); // behind it, out of the front shots
             PowerSuitEntity s = ModEntities.POWER_SUIT.get().create(level, EntitySpawnReason.COMMAND);
-            ItemStack helmet = new ItemStack(ModItems.SUIT_HELMET.get());
-            helmet.set(ModDataComponents.HELMET_STYLE.get(), HelmetStyle.ROBOT);
+            ItemStack helmet = new ItemStack(ModItems.ROBOT_HELMET.get());
             DevUtil.firebox(s);
             s.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.BLAZE_ROD, 4));
             s.getInventory().setItem(PowerSuitEntity.HELMET_SLOT, helmet);
