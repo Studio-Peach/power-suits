@@ -22,7 +22,9 @@ public enum Soul {
     /** Dry, formal, politely sarcastic. */
     BUTLER("butler", ChatFormatting.AQUA),
     /** Anxious, sees danger everywhere, brave anyway. */
-    NERVOUS("nervous", ChatFormatting.LIGHT_PURPLE);
+    NERVOUS("nervous", ChatFormatting.LIGHT_PURPLE),
+    /** Wistful and philosophical about blocks and the night; every line is a haiku (5-7-5, the lines divided by slashes). */
+    POET("poet", ChatFormatting.GREEN);
 
     private final String name;
     private final Identifier id;
