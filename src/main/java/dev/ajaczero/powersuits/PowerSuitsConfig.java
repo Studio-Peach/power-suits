@@ -99,6 +99,22 @@ public final class PowerSuitsConfig {
     public static final ModConfigSpec.IntValue DRILL_PAUSE = B
             .comment("Ticks of pause after each 3x3 before the next one starts.").translation(key("drill_pause"))
             .defineInRange("pause_ticks", 4, 0, 100);
+    public static final ModConfigSpec.DoubleValue DRILL_MELEE_DAMAGE = B
+            .comment("Melee: damage per hit to a mob in front of the bit (2 = one heart). Lower than the chainsaw's, but see armour_wear.").translation(key("drill_melee_damage"))
+            .defineInRange("melee_damage", 1.5, 0, 1000);
+    public static final ModConfigSpec.IntValue DRILL_MELEE_INTERVAL = B
+            .comment("Melee: ticks between hits while the bit is on a mob.").translation(key("drill_melee_interval"))
+            .defineInRange("melee_interval_ticks", 3, 1, 200);
+    public static final ModConfigSpec.IntValue DRILL_MELEE_ENERGY = B
+            .comment("Melee: energy per tick while the bit is on a mob (walking burns 1).").translation(key("drill_melee_energy"))
+            .defineInRange("melee_energy_per_tick", 3, 0, 1000);
+    public static final ModConfigSpec.IntValue DRILL_MELEE_SLOW = B
+            .comment("Melee: strength of the slowness the bit puts on a mob (1 = Slowness I, 0 = none). It has no knockback.").translation(key("drill_melee_slow"))
+            .defineInRange("melee_slow_level", 1, 0, 5);
+    public static final ModConfigSpec.IntValue DRILL_ARMOUR_WEAR = B
+            .comment("Melee: durability each worn armour piece of the mob (or each piece of a suit) loses per hit, on top of the normal",
+                    "wear. Iron chestplate = 240 durability.").translation(key("drill_armour_wear"))
+            .defineInRange("armour_wear_per_hit", 4, 0, 1000);
 
     // ---- chainsaw ------------------------------------------------------------------------------------
     public static final ModConfigSpec.IntValue CHAINSAW_ENERGY = B.pop().translation(key("chainsaw")).push("chainsaw")
@@ -110,6 +126,18 @@ public final class PowerSuitsConfig {
     public static final ModConfigSpec.IntValue CHAINSAW_LOGS_PER_TICK = B
             .comment("How fast a tree comes down (logs per tick).").translation(key("chainsaw_logs_per_tick"))
             .defineInRange("logs_per_tick", 3, 1, 64);
+    public static final ModConfigSpec.DoubleValue CHAINSAW_MELEE_DAMAGE = B
+            .comment("Melee: damage per hit to a mob in front of the chain (2 = one heart). Every hit counts: no hit immunity.").translation(key("chainsaw_melee_damage"))
+            .defineInRange("melee_damage", 2.5, 0, 1000);
+    public static final ModConfigSpec.IntValue CHAINSAW_MELEE_INTERVAL = B
+            .comment("Melee: ticks between hits while the chain is on a mob (2.5 every 2 = 25 damage a second).").translation(key("chainsaw_melee_interval"))
+            .defineInRange("melee_interval_ticks", 2, 1, 200);
+    public static final ModConfigSpec.IntValue CHAINSAW_MELEE_ENERGY = B
+            .comment("Melee: energy per tick while the chain is on a mob (walking burns 1).").translation(key("chainsaw_melee_energy"))
+            .defineInRange("melee_energy_per_tick", 4, 0, 1000);
+    public static final ModConfigSpec.IntValue CHAINSAW_MELEE_SLOW = B
+            .comment("Melee: strength of the slowness the chain puts on a mob (2 = Slowness II, 0 = none). It has no knockback.").translation(key("chainsaw_melee_slow"))
+            .defineInRange("melee_slow_level", 2, 0, 5);
 
     // ---- flamethrower (Phase 11) -------------------------------------------------------------------------
     public static final ModConfigSpec.IntValue FLAMETHROWER_ENERGY = B.pop().translation(key("flamethrower")).push("flamethrower")

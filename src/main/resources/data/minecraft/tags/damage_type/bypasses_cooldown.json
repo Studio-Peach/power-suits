@@ -1,6 +1,8 @@
 {
   "values": [
     "power_suits:bullet",
-    "power_suits:rail"
+    "power_suits:rail",
+    "power_suits:saw",
+    "power_suits:drill"
   ]
 }

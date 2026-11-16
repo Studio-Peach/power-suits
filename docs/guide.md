@@ -27,8 +27,8 @@ Working notes for agents: `AGENTS.md` (the design spec and roadmap are kept outs
 | Your hand | Works as normal while piloting: the suit's right hand holds your selected item; left click punches, fights and mines, right click places, opens doors, throws potions... 1.5 blocks extra reach. No eating or drinking (you're sealed in): food in your hand counts as nothing to do, so right click goes to the tool |
 | Use the tool | Right-click when your hand has nothing to do (empty hand, a sword, aiming at the air with blocks...), like a shield in the off hand; hold it as long as you need. The tool arm raises while in use |
 | EM Projector | Hold right-click on a dropped item or mob: it's pulled in and held floating (items go into your inventory); release to throw it (into a wall, or bowling through other mobs: 10 hearts each at full speed), tap to shove. The visor marks what it can pull. 1 fuel/tick while holding, 80 per throw |
-| Mining Drill | Hold right-click on a block: digs it and the 8 around it (a 3x3 face of a wall, floor or ceiling) like a diamond pickaxe + shovel. 20 fuel per block |
-| Chainsaw | Hold right-click on wood or leaves to cut it; cutting a tree's trunk fells everything above the cut. 15 fuel per log |
+| Mining Drill | Hold right-click on a block: digs it and the 8 around it (a 3x3 face of a wall, floor or ceiling) like a diamond pickaxe + shovel. 20 fuel per block. **Melee:** aimed at a mob within 4 blocks (a pilot only), it grinds it instead: 1.5 damage every 3 ticks (~10 a second, no hit immunity), no knockback, Slowness I, and every hit tears 4 durability off each armour piece the mob wears (or each piece of a suit), on top of the normal wear; 3 fuel a tick |
+| Chainsaw | Hold right-click on wood or leaves to cut it; cutting a tree's trunk fells everything above the cut. 15 fuel per log. **Melee:** aimed at a mob within 4 blocks (a pilot only), it shreds it: 2.5 damage every 2 ticks (~25 a second, no hit immunity), no knockback, Slowness II; 4 fuel a tick (config `chainsaw`, `drill`) |
 | Flamethrower | Hold right-click: a stream of fire about 7 blocks toward your crosshair. Sets mobs and blocks alight, melts ice and snow, lights campfires and candles, sets off TNT, cooks food lying on the ground. Dead under water. 6 fuel per tick |
 | TNT Launcher | Right-click: lobs a block of primed TNT toward your crosshair that blows up the moment it hits something (real TNT: it breaks blocks). A 4-round drum: hold to fire it empty, a round every half second; it then loads its chambers back one a second with TNT from **your inventory** (the HUD shows the drum and counts what you carry); free in creative. No fuel |
 | Rail Cannon | Hold right-click to charge (1.5 s, the core between its prongs glows brighter, the HUD shows a charge bar), let go at full charge: an instant beam along your crosshair, 20 hearts to every mob on the line (it goes through them all), breaking glass, panes, leaves and ice on the way; it stops at anything solid. Let go early and nothing fires. Each shot is an iron ingot from your inventory; charging (and holding the charge) burns 3 fuel a tick |
@@ -90,8 +90,8 @@ balance pass), with what one piece of coal (1600) buys:
 | Jump | 20 | 80 jumps |
 | Chaingun | 1 per tick with the barrels just turning up to 3 at full spin, while the trigger is held; 1 iron nugget per bullet (4 hearts heavy, 1.5 barrage) | ~25 s of barrage (~250 bullets) |
 | EM Projector | 1 per tick holding, 80 per throw | 80 s of holding, or 20 throws |
-| Mining Drill | 20 per block (180 per 3x3) | ~9 faces (80 blocks) |
-| Chainsaw | 15 per log | ~20 oaks (5 logs each) |
+| Mining Drill | 20 per block (180 per 3x3); melee 3 per tick | ~9 faces (80 blocks) |
+| Chainsaw | 15 per log; melee 4 per tick | ~20 oaks (5 logs each) |
 | Flamethrower | 6 per tick of flame (1.5 hearts per hit, then 5 s of burning) | ~13 s of flame |
 | TNT Launcher | no fuel (config `energy_per_shot`): one TNT per round | - |
 | Rail Cannon | 3 per tick while the trigger is held (90 per 1.5 s charge) + 1 iron ingot per shot (20 hearts to everything on the beam) | ~17 shots |

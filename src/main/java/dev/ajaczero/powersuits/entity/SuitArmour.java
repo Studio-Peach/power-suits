@@ -208,7 +208,14 @@ public final class SuitArmour {
         if (damage <= 0 || wear <= 0) {
             return;
         }
-        int amount = Math.max(1, (int) (damage / 4.0F * wear));
+        this.wearBy(level, source, Math.max(1, (int) (damage / 4.0F * wear)));
+    }
+
+    /** Every worn piece loses exactly {@code amount} durability (the drill's melee tears armour up through this). */
+    void wearBy(ServerLevel level, DamageSource source, int amount) {
+        if (amount <= 0) {
+            return;
+        }
         Container slots = this.suit.getInventory();
         boolean changed = false;
         for (Part part : Part.values()) {

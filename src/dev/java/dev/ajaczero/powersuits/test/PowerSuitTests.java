@@ -4207,5 +4207,91 @@ public final class PowerSuitTests {
         });
     }
 
+
+    // =========================================================================================
+    // Chainsaw and drill as melee weapons (2026-11-16)
+    // =========================================================================================
+
+    /** A suit at (4, 2, 1) facing +Z with {@code tool} in its socket, fuel, a pilot aiming at an iron golem (no AI, wearing an
+     *  iron chestplate) 3 blocks ahead; out[0] is the suit, out[1] the golem's chest piece holder. */
+    private static net.minecraft.world.entity.animal.golem.IronGolem meleeScene(GameTestHelper helper, Item tool, PowerSuitEntity[] out, Player[] pilot) {
+        var golem = helper.spawn(EntityTypes.IRON_GOLEM, new BlockPos(4, 2, 4));
+        golem.setNoAi(true);
+        golem.setItemSlot(net.minecraft.world.entity.EquipmentSlot.CHEST, new ItemStack(Items.IRON_CHESTPLATE));
+        PowerSuitEntity suit = suitAt(helper, new BlockPos(4, 2, 1));
+        suit.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.BLAZE_ROD, 2));
+        suit.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, new ItemStack(tool));
+        suit.setYRot(0);
+        suit.setYBodyRot(0);
+        pilot[0] = boardedPilot(helper, suit);
+        suit.positionRider(pilot[0]);
+        aim(helper, pilot[0], new Vec3(4.5, 3, 4.5));
+        out[0] = suit;
+        return golem;
+    }
+
+    /** The chainsaw shreds a mob in front of it: steady damage every interval (no hit immunity), slowness, no knockback,
+     *  fuel per tick; the armour wears only as a normal hit does. */
+    @SuitTest(timeoutTicks = 80)
+    public static void chainsawShredsMobsInFront(GameTestHelper helper) {
+        PowerSuitEntity[] suit = new PowerSuitEntity[1];
+        Player[] pilot = new Player[1];
+        var golem = meleeScene(helper, ModItems.CHAINSAW.get(), suit, pilot);
+        float health = golem.getHealth();
+        int[] energy = new int[1];
+        helper.runAfterDelay(2, () -> {
+            energy[0] = suit[0].power().getTotalEnergy();
+            suit[0].socket().setTriggerHeld(pilot[0], true);
+        });
+        helper.runAfterDelay(42, () -> {
+            suit[0].socket().setTriggerHeld(pilot[0], false);
+            float dealt = health - golem.getHealth();
+            float expected = 40F / PowerSuitsConfig.CHAINSAW_MELEE_INTERVAL.get() * PowerSuitsConfig.CHAINSAW_MELEE_DAMAGE.get().floatValue();
+            helper.assertTrue(dealt > expected * 0.6F, "steady damage, dealt " + dealt + " expected about " + expected + " (armour takes some)");
+            helper.assertTrue(golem.hasEffect(MobEffects.SLOWNESS), "it slows the mob");
+            helper.assertTrue(golem.getDeltaMovement().horizontalDistanceSqr() < 1.0E-4, "no knockback, moved " + golem.getDeltaMovement());
+            helper.assertTrue(energy[0] - suit[0].power().getTotalEnergy() >= 30 * PowerSuitsConfig.CHAINSAW_MELEE_ENERGY.get(),
+                    "it burns fuel while grinding");
+            helper.succeed();
+        });
+    }
+
+    /** The drill hurts less than the chainsaw but tears the target's armour: far more durability than a hit alone. */
+    @SuitTest(timeoutTicks = 80)
+    public static void drillTearsArmourOffMobs(GameTestHelper helper) {
+        PowerSuitEntity[] suit = new PowerSuitEntity[1];
+        Player[] pilot = new Player[1];
+        var golem = meleeScene(helper, ModItems.DRILL.get(), suit, pilot);
+        float health = golem.getHealth();
+        helper.runAfterDelay(2, () -> suit[0].socket().setTriggerHeld(pilot[0], true));
+        helper.runAfterDelay(42, () -> {
+            suit[0].socket().setTriggerHeld(pilot[0], false);
+            int hits = 40 / PowerSuitsConfig.DRILL_MELEE_INTERVAL.get();
+            float dealt = health - golem.getHealth();
+            helper.assertTrue(dealt > 0 && dealt < hits * PowerSuitsConfig.DRILL_MELEE_DAMAGE.get().floatValue() * 1.1F, "it hurts, but gently: " + dealt);
+            helper.assertTrue(dealt < 40F / PowerSuitsConfig.CHAINSAW_MELEE_INTERVAL.get() * PowerSuitsConfig.CHAINSAW_MELEE_DAMAGE.get().floatValue(),
+                    "less than the chainsaw");
+            int worn = golem.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.CHEST).getDamageValue();
+            helper.assertTrue(worn >= (hits - 2) * PowerSuitsConfig.DRILL_ARMOUR_WEAR.get(), "the chestplate is torn up, worn " + worn);
+            helper.assertTrue(golem.hasEffect(MobEffects.SLOWNESS), "it slows the mob");
+            helper.assertTrue(golem.getDeltaMovement().horizontalDistanceSqr() < 1.0E-4, "no knockback");
+            helper.succeed();
+        });
+    }
+
+    /** A mob behind a wall isn't ground: the tool digs instead. */
+    @SuitTest(timeoutTicks = 80)
+    public static void drillIgnoresMobsBehindWalls(GameTestHelper helper) {
+        PowerSuitEntity[] suit = new PowerSuitEntity[1];
+        Player[] pilot = new Player[1];
+        var golem = meleeScene(helper, ModItems.DRILL.get(), suit, pilot);
+        helper.setBlock(new BlockPos(4, 3, 3), Blocks.OBSIDIAN); // (stone would be dug through in 6 ticks)
+        helper.runAfterDelay(2, () -> suit[0].socket().setTriggerHeld(pilot[0], true));
+        helper.runAfterDelay(30, () -> {
+            suit[0].socket().setTriggerHeld(pilot[0], false);
+            helper.assertTrue(golem.getHealth() == golem.getMaxHealth(), "a wall between: no grinding, health " + golem.getHealth());
+            helper.succeed();
+        });
+    }
     private PowerSuitTests() {}
 }

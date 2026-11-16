@@ -1057,6 +1057,11 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
         }
     }
 
+    /** Server: wear every worn armour piece by {@code amount} durability, as a hit would (SuitArmour.wearBy). */
+    public void wearArmour(ServerLevel level, DamageSource source, int amount) {
+        this.armour.wearBy(level, source, amount);
+    }
+
     /** Only a running suit flinches when hit. Switched off (empty, knocked out, still standing up) it can't react: and the
      *  flinch (on the "action" controller, which overrides the body's controller) would cut into the electrified
      *  convulsion, the slump or the startup, e.g. on every tick of fire after a lightning strike. */

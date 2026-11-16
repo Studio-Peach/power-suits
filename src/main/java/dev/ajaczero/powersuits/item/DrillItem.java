@@ -145,6 +145,13 @@ public class DrillItem extends Item implements PowerTool, ModTooltip {
         }
         ToolMining.Progress state = suit.socket().toolData(ToolMining.Progress.class, () -> new ToolMining.Progress(suit));
         state.ticks++;
+        // A mob in front of the bit: grind it (slow, much armour wear) instead of digging.
+        if (ToolMelee.grind(suit, operator, ToolMelee.DRILL, PowerSuitsConfig.DRILL_MELEE_DAMAGE.get().floatValue(),
+                PowerSuitsConfig.DRILL_MELEE_INTERVAL.get(), PowerSuitsConfig.DRILL_MELEE_ENERGY.get(),
+                PowerSuitsConfig.DRILL_MELEE_SLOW.get(), PowerSuitsConfig.DRILL_ARMOUR_WEAR.get())) {
+            state.clear(level);
+            return;
+        }
         BlockHitResult hit = ToolMining.target(suit, operator);
         if (hit == null || !suit.socket().isReady()) {
             state.clear(level); // spinning in the air, or catching its breath after a 3x3

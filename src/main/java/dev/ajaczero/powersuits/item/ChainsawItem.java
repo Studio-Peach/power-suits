@@ -188,6 +188,13 @@ public class ChainsawItem extends Item implements PowerTool, ModTooltip {
         }
         State state = suit.socket().toolData(State.class, () -> new State(suit));
         state.ticks++;
+        // A mob in front of the chain: shred it (high damage, slow) instead of cutting wood.
+        if (ToolMelee.grind(suit, operator, ToolMelee.SAW, PowerSuitsConfig.CHAINSAW_MELEE_DAMAGE.get().floatValue(),
+                PowerSuitsConfig.CHAINSAW_MELEE_INTERVAL.get(), PowerSuitsConfig.CHAINSAW_MELEE_ENERGY.get(),
+                PowerSuitsConfig.CHAINSAW_MELEE_SLOW.get(), 0)) {
+            state.clear(level);
+            return;
+        }
         BlockHitResult hit = ToolMining.target(suit, operator);
         if (hit == null || !suit.socket().isReady()) {
             state.clear(level);

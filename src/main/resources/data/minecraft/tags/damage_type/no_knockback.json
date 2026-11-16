@@ -2,6 +2,8 @@
   "replace": false,
   "values": [
     "power_suits:bullet",
-    "power_suits:flamethrower"
+    "power_suits:flamethrower",
+    "power_suits:saw",
+    "power_suits:drill"
   ]
 }
