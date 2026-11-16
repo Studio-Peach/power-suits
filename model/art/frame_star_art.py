@@ -254,8 +254,8 @@ def jetpack():
     with the top (nothing spreads sideways over the arms, nothing at the foot), the star spinning between them in front of
     a vertical power channel, lit lines branching from it across the floor and in along the wings."""
     return [part('floor', ((-3, 17.5, 3), (3, 25.5, 6)), floor_art),
-            part('fin', ((3, 17.5, 3), (4, 25.5, 8)), fin_art, mirror=True),
-            part('fin2', ((3, 19.5, 8), (4, 23.5, 10)), lambda f, w, h: fin_art(f, w, h, False), mirror=True),
+            part('fin', ((3, 19.5, 3), (4, 25.5, 8)), fin_art, mirror=True),
+            part('fin2', ((3, 22.5, 8), (4, 25.5, 10)), fin_art, mirror=True),
             _star_hub()]
 
 
