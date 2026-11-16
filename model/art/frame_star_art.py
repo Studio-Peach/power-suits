@@ -25,6 +25,15 @@ accelerator's coils and a target):
   A gyro     two gems (cubes turned 45 deg about y and x) as one star, spinning about the vertical axis;
   B orbit    a small steady core and two beads that orbit it (a particle in the accelerator);
   C column   a narrow tall window and a stack of three small spinning gems.
+
+Round 6 (user: "lean into the exoskeleton vibe for the back ... do you know what a Sandevistan is?" The Cyberpunk 2077 /
+Edgerunners spinal implant: chrome vertebrae down the back, a lit seam between them, afterimages when it runs; "yes, do
+it"): the accelerator box is dropped for a spine, vertebrae (boxes, the lit rod showing in the gaps between them) from
+under the helmet to the waist, in the iron's chrome:
+  A bare     five vertebrae, each with a spinous process pointing back, the rod glowing in the gaps;
+  B plated   the spine under a slim plated housing: a ridge of segments over a base plate, the seams glowing as slits;
+  C braced   A's spine with exoskeleton bracing: ribs out of every vertebra and two struts up to the shoulders.
+The glass letters & % * = are the star's light (see above).
 """
 import math
 from frame_radial_art import part, grid, disc, K
@@ -108,93 +117,88 @@ def vents(g, j0, j1, i0, i1):
         for i in range(i0, i1): g[j][i] = 'X'
 
 
-# Round 5, see the docstring. The housing is a shell: z 3 .. 7 (4 px out of the back), the window x +-3 (C: +-2).
-BONE_ORIGIN = {'star_core': (0, 21, 5.25), 'star_orbit': (0, 21, 5.25)}   # raw; the spin pivots (the window's middle)
+# Round 6, see the docstring. Raw coords: the spine runs y 16 .. 25.5 (under the helmet), five vertebrae 1.5 px tall with
+# 0.5 px gaps (the lit rod shows in them), on the back from z 3.
+BONE_ORIGIN = {}
+VERT = [(16, 2.0), (18, 2.0), (20, 1.5), (22, 1.5), (24, 2.0)]        # (bottom y, half width): the lumbar wider, the neck narrow
 
 
-def inner(w, h, vertical=False):
-    """A window wall: the accelerator's coil, a violet line every third texel across a dark liner."""
-    g = grid(w, h, 'X')
-    for j in range(h):
-        for i in range(w):
-            k = j if vertical else i
-            if k % 3 == 1: g[j][i] = '*'
-            if k % 3 == 2: g[j][i] = '='
+def vertebra(f, w, h):
+    """A chrome vertebra: lit top edge, a centre groove down the back, a shaded base."""
+    g = [['h'] * w for _ in range(h)]
+    g[0] = ['w'] * w
+    g[-1] = ['e'] * w
+    if f in ('south', 'north'):
+        for j in range(1, h - 1):
+            g[j][0], g[j][-1] = 'g', 'l'
+            if w >= 5: g[j][w // 2] = 'x'
     return g
 
 
-def target(w, h):
-    """The plate behind the star: concentric squares of dim light round a cross, seen through the window."""
-    g = grid(w, h, 'X')
-    for j in range(h):
-        for i in range(w):
-            r = min(i, j, w - 1 - i, h - 1 - j)
-            if r % 3 == 1: g[j][i] = '='
-            if abs(i - (w - 1) / 2) < 0.6 or abs(j - (h - 1) / 2) < 0.6: g[j][i] = '*'
+def rod(f, w, h):
+    g = [['*'] * w for _ in range(h)]
+    if f in ('south', 'north'):
+        for j in range(h):
+            g[j][w // 2 - 1], g[j][w // 2] = '%', '%'
+            if w >= 4 and w // 2 + 1 < w: g[j][w // 2 - 1] = g[j][w // 2] = '&'
     return g
 
 
-def shell(wx, y0, y1):
-    """The housing round a window x +-wx, raw y y0 .. y1 (its sides mirrored): back plate, top, bottom, sides."""
-    P = []
-    def plate(f, w, h):
-        if f == 'south': return target(w, h)
-        g = grid(w, h, 'X'); return g
-    P.append(part('plate', ((-4.5, 16, 3), (4.5, 25.5, 3.5)), plate))
-    def bar(role):
-        def paint(f, w, h):
-            g = housing(f, w, h)
-            if f == 'south':
-                bolts(g, ((1, 1), (w - 2, 1), (1, h - 2), (w - 2, h - 2)))
-                if role == 'bottom': vents(g, 2, h - 2, 3, w - 3)
-            if f == 'down' and role == 'top': return inner(w, h, vertical=True)
-            if f == 'up' and role == 'bottom': return inner(w, h, vertical=True)
-            return g
-        return paint
-    P.append(part('top', ((-4.5, y1, 3.5), (4.5, 25.5, 7)), bar('top')))
-    P.append(part('bottom', ((-4.5, 16, 3.5), (4.5, y0, 7)), bar('bottom')))
-    def side(f, w, h):
-        if f == 'west': return inner(w, h)                                     # the wall facing the window (a mirrored part's inner)
-        return housing(f, w, h)
-    P.append(part('side', ((wx, y0, 3.5), (4.5, y1, 7)), side, mirror=True))
+def spine_a():
+    P = [part('rod', ((-1, 16, 3), (1, 25.5, 4.5)), rod)]
+    for k, (y, hw) in enumerate(VERT):
+        P.append(part(f'v{k}', ((-hw, y, 3), (hw, y + 1.5, 5.5)), vertebra))
+        P.append(part(f'p{k}', ((-0.5, y + 0.25, 5.5), (0.5, y + 1.25, 6.5)),
+                      lambda f, w, h: [['g'] * w for _ in range(h)] if f != 'up' else grid(w, h, 'w')))
     return P
 
 
-def gem(size, spin_x=False):
-    def paint(f, w, h):
-        g = grid(w, h, '*')
-        for j in range(h):
-            for i in range(w):
-                d = max(abs(i + 0.5 - w / 2), abs(j + 0.5 - h / 2))
-                g[j][i] = '&' if d < 1 else '%' if d < 1.8 else '*' if d < 2.8 else '='
-        if f == 'up': return grid(w, h, '%')
-        if f == 'down': return grid(w, h, '=')
-        return g
-    return paint
-
-
-def accelerator(design):
+def spine_b():
     P = []
-    cx, cy, cz = BONE_ORIGIN['star_core']
-    if design in ('A', 'B'):
-        P += shell(3, 18.5, 23.5)
-    else:
-        P += shell(2, 17.5, 24.5)
-    def bone(p, name):
-        p['bone'] = name
-        return p
-    if design == 'A':
-        for rot in ([0, 45, 0], [45, 0, 0]):
-            P.append(bone(part(f'gem{rot[0] and 1 or 0}', ((-1.25, cy - 1.25, cz - 1.25), (1.25, cy + 1.25, cz + 1.25)), gem(2.5),
-                               rot=rot, origin=(cx, cy, cz)), 'star_core'))
-    elif design == 'B':
-        P.append(bone(part('heart', ((-0.75, cy - 0.75, cz - 0.75), (0.75, cy + 0.75, cz + 0.75)), gem(1.5), rot=[0, 45, 0],
-                           origin=(cx, cy, cz)), 'star_core'))
-        P.append(bone(part('bead', ((1.5, cy - 0.5, cz - 0.5), (2.5, cy + 0.5, cz + 0.5)), gem(1), mirror=True), 'star_orbit'))
-    else:
-        for k, y in enumerate((18.75, 21, 23.25)):
-            P.append(bone(part(f'gem{k}', ((-1, y - 1, cz - 1), (1, y + 1, cz + 1)), gem(2), rot=[0, 45, 0], origin=(0, y, cz)),
-                          'star_core'))
+    def base(f, w, h):
+        g = housing(f, w, h)
+        if f == 'south':
+            for k in range(4):                                              # the seams: lit slits either side of the ridge
+                j = round((25.5 - (17.5 + 2 * k + 0.25)) * 2)
+                for i in list(range(2, w // 2 - 2)) + list(range(w // 2 + 2, w - 2)): g[j][i] = '%'; g[j + 1][i] = '*' if j + 1 < h else g[j + 1][i]
+            for i in (0, w - 1):
+                for j in range(h): g[j][i] = 'X'
+        return g
+    P.append(part('base', ((-2.5, 16, 3), (2.5, 25.5, 4.5)), base))
+    def ridge(f, w, h):
+        g = [['h'] * w for _ in range(h)]
+        if f in ('south', 'east', 'west'):
+            for k in range(5):                                              # segments with a lit gap between
+                j = round((25.5 - (16 + 2 * k)) * 2)                          # the segment's bottom row (from the top)
+                for jj in range(max(0, j - 1), j):                            # (a 1-texel gap above each)
+                    pass
+            for k in range(4):
+                j = round((25.5 - (17.5 + 2 * k)) * 2)
+                if 0 <= j - 1 < h:
+                    for i in range(w): g[j - 1][i] = '&'
+            for j in range(h): g[j][0] = 'g' if f == 'south' else g[j][0]
+        g[0] = ['w'] * w
+        return g
+    P.append(part('ridge', ((-1, 16, 4.5), (1, 25.5, 5.5)), ridge))
+    return P
+
+
+def spine_c():
+    P = spine_a()
+    def rib(f, w, h):
+        g = [['h'] * w for _ in range(h)]
+        for j in range(h): g[j][-1] = '%' if f in ('south', 'north', 'up') else g[j][-1]
+        g[0] = ['w'] * w
+        return g
+    for k, y in enumerate((16.5, 18.5, 20.5, 22.5)):                        # a rib off every gap, 0.5 tall, out to x 4.5
+        P.append(part(f'rib{k}', ((VERT[k][1] if k < 2 else 1.5, y + 1, 3), (4.5, y + 1.5, 4)), rib, mirror=True))
+    def strut(f, w, h):
+        g = [['g'] * w for _ in range(h)]
+        for j in range(h): g[j][0], g[j][-1] = 'w', 'e'
+        if f in ('south', 'north'):
+            for j in range(1, h - 1, 3): g[j][w // 2] = '%'
+        return g
+    P.append(part('strut', ((1.5, 22.5, 4.5), (2.0, 26.5, 5.5)), strut, mirror=True, rot=[0, 0, -35], origin=(1.75, 22.5, 5)))
     return P
 
 
@@ -211,7 +215,7 @@ def glyph_plate(el):
     return part('glyph', ((-hx, y0, -3.5), (hx, y1, -3)), paint)
 
 
-BACKS = {k: (lambda k=k: accelerator(k)) for k in 'ABC'}
+BACKS = {'A': spine_a, 'B': spine_b, 'C': spine_c}
 
 
 def build(design, chest_x=6.0):
