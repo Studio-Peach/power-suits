@@ -23,9 +23,15 @@ import net.minecraft.world.item.ItemStack;
  * needs a Codec (how to save it to disk) and a StreamCodec (how to send it over the network).
  */
 public record SuitLoadout(ItemStack fuel, ItemStack socket, int burnLeft, int burnTotal, int nuggets, ItemStack helmet,
-        Optional<ItemStack> engine, ItemStack ammo, boolean switchedOn, List<ItemStack> armour) {
+        Optional<ItemStack> engine, ItemStack ammo, boolean switchedOn, List<ItemStack> armour, ItemStack rightSocket) {
+    /** The loadouts from before the right arm's socket (2026-11-15) had none. */
+    public SuitLoadout(ItemStack fuel, ItemStack socket, int burnLeft, int burnTotal, int nuggets, ItemStack helmet,
+            Optional<ItemStack> engine, ItemStack ammo, boolean switchedOn, List<ItemStack> armour) {
+        this(fuel, socket, burnLeft, burnTotal, nuggets, helmet, engine, ammo, switchedOn, armour, ItemStack.EMPTY);
+    }
+
     public static final SuitLoadout EMPTY = new SuitLoadout(ItemStack.EMPTY, ItemStack.EMPTY, 0, 0, 0, ItemStack.EMPTY, Optional.empty(),
-            ItemStack.EMPTY, true, List.of());
+            ItemStack.EMPTY, true, List.of(), ItemStack.EMPTY);
 
     public static final Codec<SuitLoadout> CODEC = RecordCodecBuilder.create(i -> i.group(
             ItemStack.OPTIONAL_CODEC.optionalFieldOf("fuel", ItemStack.EMPTY).forGetter(SuitLoadout::fuel),
@@ -38,7 +44,8 @@ public record SuitLoadout(ItemStack fuel, ItemStack socket, int burnLeft, int bu
             ItemStack.OPTIONAL_CODEC.optionalFieldOf("engine").forGetter(SuitLoadout::engine),
             ItemStack.OPTIONAL_CODEC.optionalFieldOf("ammo", ItemStack.EMPTY).forGetter(SuitLoadout::ammo),
             Codec.BOOL.optionalFieldOf("switched_on", true).forGetter(SuitLoadout::switchedOn),
-            ItemStack.OPTIONAL_CODEC.listOf().optionalFieldOf("armour", List.of()).forGetter(SuitLoadout::armour)
+            ItemStack.OPTIONAL_CODEC.listOf().optionalFieldOf("armour", List.of()).forGetter(SuitLoadout::armour),
+            ItemStack.OPTIONAL_CODEC.optionalFieldOf("right_socket", ItemStack.EMPTY).forGetter(SuitLoadout::rightSocket)
     ).apply(i, SuitLoadout::new));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, SuitLoadout> STREAM_CODEC = StreamCodec.composite(
@@ -52,6 +59,7 @@ public record SuitLoadout(ItemStack fuel, ItemStack socket, int burnLeft, int bu
             ItemStack.OPTIONAL_STREAM_CODEC, SuitLoadout::ammo,
             ByteBufCodecs.BOOL, SuitLoadout::switchedOn,
             ItemStack.OPTIONAL_LIST_STREAM_CODEC, SuitLoadout::armour,
+            ItemStack.OPTIONAL_STREAM_CODEC, SuitLoadout::rightSocket,
             SuitLoadout::new);
 
     // ItemStack has no equals(), but components are compared to decide whether two stacks are the same.
@@ -63,7 +71,7 @@ public record SuitLoadout(ItemStack fuel, ItemStack socket, int burnLeft, int bu
                 && this.engine.isPresent() == other.engine.isPresent()
                 && (this.engine.isEmpty() || ItemStack.matches(this.engine.get(), other.engine.get()))
                 && ItemStack.matches(this.ammo, other.ammo) && this.switchedOn == other.switchedOn
-                && stacksMatch(this.armour, other.armour);
+                && stacksMatch(this.armour, other.armour) && ItemStack.matches(this.rightSocket, other.rightSocket);
     }
 
     /** ItemStack.listMatches is deprecated: the same, by hand. */

@@ -11,6 +11,7 @@ import dev.ajaczero.powersuits.item.SuitArmourItem;
 import dev.ajaczero.powersuits.entity.Bullet;
 import dev.ajaczero.powersuits.entity.FlameJet;
 import dev.ajaczero.powersuits.entity.PowerSuitEntity;
+import dev.ajaczero.powersuits.entity.ToolArm;
 import dev.ajaczero.powersuits.entity.RogueSpawner;
 import dev.ajaczero.powersuits.entity.StepSmoothing;
 import dev.ajaczero.powersuits.entity.SuitDriving;
@@ -1892,6 +1893,42 @@ public final class PowerSuitTests {
             helper.assertTrue(wallLeft(helper) == 0, "the face should be gone, left " + wallLeft(helper));
             helper.assertTrue(dropped(helper, Items.COBBLESTONE) == 9, "9 cobblestone should drop, got " + dropped(helper, Items.COBBLESTONE));
             helper.assertTrue(owner.equals(breaker), "broken as the owner, got " + breaker);
+            helper.succeed();
+        });
+    }
+
+    /** Either arm carries a power tool (2026-11-15): a tool in the right socket alone is the primary one and works, and with
+     *  tools in both sockets each has its own trigger, running state and stack: the left's drill spins while the right's
+     *  chaingun stays idle. A packed suit keeps both. */
+    @SuitTest(timeoutTicks = 60)
+    public static void bothArmsCarryTools(GameTestHelper helper) {
+        PowerSuitEntity suit = toolSuit(helper);
+        suit.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.BLAZE_ROD, 4));
+        suit.getInventory().setItem(PowerSuitEntity.RIGHT_SOCKET_SLOT, new ItemStack(ModItems.DRILL.get()));
+        helper.runAfterDelay(2, () -> {
+            helper.assertTrue(suit.arm() == ToolArm.RIGHT, "a tool in the right socket alone is the primary one, got " + suit.arm());
+            helper.assertTrue(suit.getSocketStack().is(ModItems.DRILL.get()), "\"the socket\" is the right one's: " + suit.getSocketStack());
+            suit.socket().setAiTrigger(true);
+        });
+        helper.runAfterDelay(6, () -> {
+            helper.assertTrue(suit.socket(ToolArm.RIGHT).isActive(), "the right arm's tool runs");
+            helper.assertFalse(suit.socket(ToolArm.LEFT).isActive(), "the left socket (empty) stays idle");
+            suit.socket().setAiTrigger(false);
+            suit.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, new ItemStack(ModItems.CHAINGUN.get()));
+        });
+        helper.runAfterDelay(10, () -> {
+            helper.assertTrue(suit.arm() == ToolArm.LEFT, "with both, the left is the primary (the first tool)");
+            helper.assertTrue(suit.getSocketStack(ToolArm.RIGHT).is(ModItems.DRILL.get())
+                    && suit.getSocketStack(ToolArm.LEFT).is(ModItems.CHAINGUN.get()), "each socket keeps its own tool");
+            suit.socket(ToolArm.RIGHT).setAiTrigger(true);
+        });
+        helper.runAfterDelay(16, () -> {
+            helper.assertTrue(suit.socket(ToolArm.RIGHT).isActive() && !suit.socket(ToolArm.LEFT).isActive(),
+                    "each arm has its own trigger: the right's runs, the left's doesn't");
+            suit.socket(ToolArm.RIGHT).setAiTrigger(false);
+            var loadout = suit.getLoadout();
+            helper.assertTrue(loadout.socket().is(ModItems.CHAINGUN.get()) && loadout.rightSocket().is(ModItems.DRILL.get()),
+                    "a packed suit carries both tools");
             helper.succeed();
         });
     }

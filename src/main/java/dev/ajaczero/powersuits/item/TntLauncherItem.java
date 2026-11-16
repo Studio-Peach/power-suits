@@ -100,7 +100,7 @@ public class TntLauncherItem extends Item implements PowerTool, ModTooltip {
      *  free would be a TNT tap). */
     @Override
     public void serverTick(PowerSuitEntity suit) {
-        ItemStack launcher = suit.getInventory().getItem(PowerSuitEntity.SOCKET_SLOT);
+        ItemStack launcher = suit.getInventory().getItem(suit.socketSlot());
         Drum drum = suit.socket().toolData(Drum.class, Drum::new);
         drum.sinceShot = Math.min(drum.sinceShot + 1, Integer.MAX_VALUE / 2);
         int loaded = loaded(launcher);

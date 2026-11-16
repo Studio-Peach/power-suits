@@ -29,8 +29,11 @@ public final class SocketVisuals {
     /** 0 = tool arm in its hip carry, 1 = raised to aim (follows the synced "active", like raising a shield). */
     private float raise, raiseO;
 
-    SocketVisuals(PowerSuitEntity suit) {
+    private final ToolArm arm;
+
+    SocketVisuals(PowerSuitEntity suit, ToolArm arm) {
         this.suit = suit;
+        this.arm = arm;
     }
 
     /** Client, every tick. */
@@ -82,7 +85,7 @@ public final class SocketVisuals {
     /** Client: every tool light's brightness this frame, indexed by ToolLight.ordinal() (0 = off). */
     public float[] lights(float time, float partial) {
         float[] out = new float[LIGHTS];
-        this.effects.lights(this.suit, time, partial, out);
+        this.suit.onArm(this.arm, () -> this.effects.lights(this.suit, time, partial, out)); // the effects read "the socket"
         return out;
     }
 

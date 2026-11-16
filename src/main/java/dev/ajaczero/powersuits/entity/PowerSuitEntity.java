@@ -11,6 +11,7 @@ import dev.ajaczero.powersuits.entity.ai.SuitGoals;
 import dev.ajaczero.powersuits.item.HelmetStyle;
 import dev.ajaczero.powersuits.item.PowerSuitItem;
 import dev.ajaczero.powersuits.item.SuitHelmetItem;
+import dev.ajaczero.powersuits.item.PowerTool;
 import dev.ajaczero.powersuits.item.SuitLoadout;
 import dev.ajaczero.powersuits.menu.PowerSuitMenu;
 import dev.ajaczero.powersuits.registry.ModItems;
@@ -109,8 +110,10 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
     /** The frame's armour (design sec. 10, 2026-11-14): one piece per part, after the old slots (saves keep their
      *  numbers). See SuitArmour. */
     public static final int TORSO_SLOT = 5, LEFT_ARM_SLOT = 6, RIGHT_ARM_SLOT = 7, LEFT_LEG_SLOT = 8, RIGHT_LEG_SLOT = 9;
+    /** The right arm's socket (2026-11-15: a hand is detachable, either arm can carry a power tool; the left's is SOCKET_SLOT). */
+    public static final int RIGHT_SOCKET_SLOT = 10;
     /** How many slots the suit has (its container's size; the menu's client copy too). */
-    public static final int SLOTS = 10;
+    public static final int SLOTS = 11;
     // Drain per tick (idle / walking / sprinting), energy per jump and the low-fuel warning level are balance
     // knobs in PowerSuitsConfig. Walking = 1 per tick, so SuitFuel values read as ticks of walking.
     /** Length of the startup animation (1.4 s): the suit can't move until it has stood up. */
@@ -144,6 +147,21 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
     /** Where the rail cannon's last beam ended (world position): with the shot counter, every client draws the beam. */
     static final EntityDataAccessor<Vector3fc> RAIL_END =
             SynchedEntityData.defineId(PowerSuitEntity.class, EntityDataSerializers.VECTOR3);
+    /** The right arm's socket: the same state as the left's above (see SuitSocket, which picks by arm). */
+    static final EntityDataAccessor<Integer> BEAM_TARGET_R =
+            SynchedEntityData.defineId(PowerSuitEntity.class, EntityDataSerializers.INT);
+    static final EntityDataAccessor<Boolean> TOOL_RUNNING_R =
+            SynchedEntityData.defineId(PowerSuitEntity.class, EntityDataSerializers.BOOLEAN);
+    static final EntityDataAccessor<Boolean> TOOL_ACTIVE_R =
+            SynchedEntityData.defineId(PowerSuitEntity.class, EntityDataSerializers.BOOLEAN);
+    static final EntityDataAccessor<Float> TOOL_SPIN_R =
+            SynchedEntityData.defineId(PowerSuitEntity.class, EntityDataSerializers.FLOAT);
+    static final EntityDataAccessor<Float> TOOL_HEAT_R =
+            SynchedEntityData.defineId(PowerSuitEntity.class, EntityDataSerializers.FLOAT);
+    static final EntityDataAccessor<Integer> TOOL_SHOTS_R =
+            SynchedEntityData.defineId(PowerSuitEntity.class, EntityDataSerializers.INT);
+    static final EntityDataAccessor<Vector3fc> RAIL_END_R =
+            SynchedEntityData.defineId(PowerSuitEntity.class, EntityDataSerializers.VECTOR3);
     /** Who the machine mind works for (SuitMind ordinal): the visor shows it. */
     private static final EntityDataAccessor<Byte> MIND =
             SynchedEntityData.defineId(PowerSuitEntity.class, EntityDataSerializers.BYTE);
@@ -164,6 +182,8 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
     static final EntityDataAccessor<Integer> FUEL_ENERGY =
             SynchedEntityData.defineId(PowerSuitEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<ItemStack> SOCKET_ITEM =
+            SynchedEntityData.defineId(PowerSuitEntity.class, EntityDataSerializers.ITEM_STACK);
+    private static final EntityDataAccessor<ItemStack> SOCKET_ITEM_R =
             SynchedEntityData.defineId(PowerSuitEntity.class, EntityDataSerializers.ITEM_STACK);
     /** Is a helmet in its slot: clients draw it (or not) and know whether the suit is sealed. */
     private static final EntityDataAccessor<Boolean> HELMET =
@@ -195,9 +215,13 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
     /** How it moves: the pilot's keys, speeds, ledges, water, the jump, the legs' turning: see SuitDriving. */
     private final SuitDriving driving = new SuitDriving(this);
     /** The socket tool as the suit works it (trigger, cooldown, synced spin/shots...): see SuitSocket. */
-    private final SuitSocket socket = new SuitSocket(this);
+    private final SuitSocket[] sockets = {new SuitSocket(this, ToolArm.LEFT), new SuitSocket(this, ToolArm.RIGHT)};
     /** Client: how this client draws the socket tool (raise, recoil, the tool's ToolEffects): see SocketVisuals. */
-    private final SocketVisuals socketVisuals = new SocketVisuals(this);
+    private final SocketVisuals[] socketVisuals = {new SocketVisuals(this, ToolArm.LEFT), new SocketVisuals(this, ToolArm.RIGHT)};
+    /** Which arm's socket {@link #socket()}, {@link #getSocketStack()} and the tools' other "the socket" calls mean right
+     *  now: set while that arm's socket ticks or draws ({@link #onArm}); null outside: the primary arm. */
+    @Nullable
+    private ToolArm contextArm;
     /** Client: motion bookkeeping and the animation choice (gaits, jumps, landings, step easing): see SuitAnimator. */
     private final SuitAnimator animator = new SuitAnimator(this);
     /** Client: the fire, the visor, the engines' glass, lightning sparks: see SuitLights. */
@@ -256,6 +280,14 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
         builder.define(TOOL_SHOTS, 0);
         builder.define(RAIL_END, new Vector3f());
         builder.define(SOCKET_ITEM, ItemStack.EMPTY);
+        builder.define(SOCKET_ITEM_R, ItemStack.EMPTY);
+        builder.define(BEAM_TARGET_R, -1);
+        builder.define(TOOL_RUNNING_R, false);
+        builder.define(TOOL_ACTIVE_R, false);
+        builder.define(TOOL_SPIN_R, 0F);
+        builder.define(TOOL_HEAT_R, 0F);
+        builder.define(TOOL_SHOTS_R, 0);
+        builder.define(RAIL_END_R, new Vector3f());
         builder.define(HELMET, false);
         builder.define(HELMET_BROKEN, false);
         builder.define(HELMET_STYLE, (byte) -1);
@@ -407,7 +439,8 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
         super.addPassenger(passenger);
         if (!this.level().isClientSide() && passenger instanceof Player player) {
             this.brain.pilotBoarded(player);
-            this.socket.setAiTrigger(false);
+            this.sockets[0].setAiTrigger(false);
+            this.sockets[1].setAiTrigger(false);
             this.getNavigation().stop();
         }
     }
@@ -446,14 +479,53 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
         return this.power;
     }
 
-    /** The left-arm socket and the tool in it. */
-    public SuitSocket socket() {
-        return this.socket;
+    /**
+     * The arm whose socket "the socket" means: the one being ticked or drawn (see {@link #onArm}), else the PRIMARY arm:
+     * the left if it carries a power tool, else the right if that does, else the left. The machine mind works with the
+     * first tool (user, 2026-11-15), and the tools, tests and goals written for one socket keep meaning it.
+     */
+    public ToolArm arm() {
+        if (this.contextArm != null) {
+            return this.contextArm;
+        }
+        if (!(this.getSocketStack(ToolArm.LEFT).getItem() instanceof PowerTool) && this.getSocketStack(ToolArm.RIGHT).getItem() instanceof PowerTool) {
+            return ToolArm.RIGHT;
+        }
+        return ToolArm.LEFT;
     }
 
-    /** Client: how the socket tool is drawn on this client. */
+    /** Runs `action` with "the socket" meaning `arm`'s (SuitSocket's tick, the tool arm's draw), then puts the context back. */
+    public void onArm(ToolArm arm, Runnable action) {
+        ToolArm before = this.contextArm;
+        this.contextArm = arm;
+        try {
+            action.run();
+        } finally {
+            this.contextArm = before;
+        }
+    }
+
+    /** The socket of the current ({@link #arm()}) arm and the tool in it. */
+    public SuitSocket socket() {
+        return this.sockets[this.arm().ordinal()];
+    }
+
+    public SuitSocket socket(ToolArm arm) {
+        return this.sockets[arm.ordinal()];
+    }
+
+    /** Client: how the current arm's socket tool is drawn on this client. */
     public SocketVisuals socketVisuals() {
-        return this.socketVisuals;
+        return this.socketVisuals[this.arm().ordinal()];
+    }
+
+    public SocketVisuals socketVisuals(ToolArm arm) {
+        return this.socketVisuals[arm.ordinal()];
+    }
+
+    /** The inventory slot of the current arm's socket. */
+    public int socketSlot() {
+        return this.arm().slot;
     }
 
     /** Client: how the suit moves and animates on this client. */
@@ -498,6 +570,7 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
             this.entityData.set(FUEL_ENERGY, SuitFuel.energyOf(SuitEngine.of(this.inventory.getItem(ENGINE_SLOT)),
                     this.inventory.getItem(FUEL_SLOT), this.level()));
             this.entityData.set(SOCKET_ITEM, this.inventory.getItem(SOCKET_SLOT).copy());
+            this.entityData.set(SOCKET_ITEM_R, this.inventory.getItem(RIGHT_SOCKET_SLOT).copy());
             this.entityData.set(HELMET, !this.inventory.getItem(HELMET_SLOT).isEmpty());
             this.entityData.set(HELMET_BROKEN, SuitHelmetItem.isBroken(this.inventory.getItem(HELMET_SLOT)));
             HelmetStyle style = SuitHelmetItem.style(this.inventory.getItem(HELMET_SLOT));
@@ -517,7 +590,8 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
      */
     private void checkSlotCopies() {
         if (!ItemStack.matches(this.entityData.get(FUEL_ITEM), this.inventory.getItem(FUEL_SLOT))
-                || !ItemStack.matches(this.entityData.get(SOCKET_ITEM), this.inventory.getItem(SOCKET_SLOT))) {
+                || !ItemStack.matches(this.entityData.get(SOCKET_ITEM), this.inventory.getItem(SOCKET_SLOT))
+                || !ItemStack.matches(this.entityData.get(SOCKET_ITEM_R), this.inventory.getItem(RIGHT_SOCKET_SLOT))) {
             this.syncSlots();
         }
     }
@@ -558,8 +632,13 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
         return this.entityData.get(FUEL_ITEM);
     }
 
+    /** Both sides: what is in the current arm's socket (the synced copy on clients). */
     public ItemStack getSocketStack() {
-        return this.entityData.get(SOCKET_ITEM);
+        return this.getSocketStack(this.arm());
+    }
+
+    public ItemStack getSocketStack(ToolArm arm) {
+        return this.entityData.get(arm == ToolArm.LEFT ? SOCKET_ITEM : SOCKET_ITEM_R);
     }
 
     /**
@@ -586,7 +665,8 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
     @Override
     public void remove(RemovalReason reason) {
         if (!this.level().isClientSide()) {
-            this.socket.onRemoved();
+            this.sockets[0].onRemoved();
+            this.sockets[1].onRemoved();
         }
         super.remove(reason);
     }
@@ -601,7 +681,7 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
         return new SuitLoadout(this.inventory.getItem(FUEL_SLOT).copy(), this.inventory.getItem(SOCKET_SLOT).copy(),
                 Mth.ceil(this.power.getBurnLeftExact()), this.power.getBurnTotal(), this.oldNuggets, this.inventory.getItem(HELMET_SLOT).copy(),
                 Optional.of(this.inventory.getItem(ENGINE_SLOT).copy()), this.inventory.getItem(OLD_AMMO_SLOT).copy(),
-                this.power.isSwitchedOn(), this.armourStacks());
+                this.power.isSwitchedOn(), this.armourStacks(), this.inventory.getItem(RIGHT_SOCKET_SLOT).copy());
     }
 
     /** The armour slots' contents, in SuitArmour.Part order (what a packed suit carries); none worn: an empty list. */
@@ -616,6 +696,7 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
     public void applyLoadout(SuitLoadout loadout) {
         this.inventory.setItem(FUEL_SLOT, loadout.fuel().copy());
         this.inventory.setItem(SOCKET_SLOT, loadout.socket().copy());
+        this.inventory.setItem(RIGHT_SOCKET_SLOT, loadout.rightSocket().copy());
         this.inventory.setItem(HELMET_SLOT, loadout.helmet().copy());
         this.inventory.setItem(OLD_AMMO_SLOT, loadout.ammo().copy()); // an item packed with ammo: handed back next tick
         SuitArmour.Part[] parts = SuitArmour.Part.values();
@@ -1073,6 +1154,7 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
             // Design sec. 8: a defeated rogue gives up its tool only, not a suit's worth of scrap (that's the lightning
             // reboot's reward: the whole suit).
             this.spawnAtLocation(level, this.inventory.getItem(SOCKET_SLOT).copy());
+            this.spawnAtLocation(level, this.inventory.getItem(RIGHT_SOCKET_SLOT).copy());
             this.inventory.clearContent();
             return;
         }
@@ -1127,7 +1209,9 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
             this.armour.applyProtection(); // follows config edits (only changed numbers touch the attribute)
             this.returnOldAmmo();
             this.power.tick();
-            this.socket.tick();
+            for (ToolArm arm : ToolArm.values()) {
+                this.onArm(arm, this.sockets[arm.ordinal()]::tick); // both arms' tools, each as "the socket"
+            }
             this.brain.tick();
             this.brain.updateToolGoals(); // the socket tool's own goals (PowerTool.mindGoals), after the goals ran this tick
             this.driving.tick(); // an EM field that stopped holding us lets go
@@ -1144,7 +1228,9 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
             this.putOutFire(); // the pilot's client moved us (and maybe into fire) during super.tick()
             this.lights.tick();
             ExhaustSmoke.tick(this);
-            this.socketVisuals.tick(); // the tool arm's raise, recoil, and the tool's own looks (ToolEffects)
+            for (ToolArm arm : ToolArm.values()) {
+                this.onArm(arm, this.socketVisuals[arm.ordinal()]::tick); // each tool arm's raise, recoil, the tool's looks (ToolEffects)
+            }
             this.animator.tick();      // speed, steps, jumps and landings, the aim blend: what the animations follow
         }
     }

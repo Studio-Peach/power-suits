@@ -2,6 +2,7 @@ package dev.ajaczero.powersuits.entity;
 
 import dev.ajaczero.powersuits.item.PowerTool;
 import java.util.function.Supplier;
+import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -12,7 +13,7 @@ import org.joml.Vector3f;
 import org.joml.Vector3fc;
 
 /**
- * The left-arm socket and the power tool in it, as the suit works it: the trigger (the pilot's right click, or the
+ * One arm's socket and the power tool in it (2026-11-15: either arm can carry one), as the suit works it: the trigger (the pilot's right click, or the
  * machine mind's), the cooldown between uses, continuous tools held and released, each tool's per-suit state, and the
  * synced values clients draw the tool from (raised, running, spin, heat, shots, the EM beam's catch, the rail beam's end).
  *
@@ -22,6 +23,13 @@ import org.joml.Vector3fc;
  */
 public final class SuitSocket {
     private final PowerSuitEntity suit;
+    /** Which arm this is, and its slot and synced state. */
+    private final ToolArm arm;
+    private final EntityDataAccessor<Integer> beamTarget;
+    private final EntityDataAccessor<Boolean> running, active;
+    private final EntityDataAccessor<Float> spin, heat;
+    private final EntityDataAccessor<Integer> shots;
+    private final EntityDataAccessor<Vector3fc> railEnd;
     /** Server: the pilot is holding the tool's button (right click, sent by the client, see ToolInput / ToolTriggerPayload). */
     private boolean triggerHeld;
     /** Server: the machine mind holds the tool's trigger (its goals aim the suit first). */
@@ -42,14 +50,27 @@ public final class SuitSocket {
     /** Server: the tool was in use last tick (for the raise sound). */
     private boolean wasActive;
 
-    SuitSocket(PowerSuitEntity suit) {
+    SuitSocket(PowerSuitEntity suit, ToolArm arm) {
         this.suit = suit;
+        this.arm = arm;
+        boolean left = arm == ToolArm.LEFT;
+        this.beamTarget = left ? PowerSuitEntity.BEAM_TARGET : PowerSuitEntity.BEAM_TARGET_R;
+        this.running = left ? PowerSuitEntity.TOOL_RUNNING : PowerSuitEntity.TOOL_RUNNING_R;
+        this.active = left ? PowerSuitEntity.TOOL_ACTIVE : PowerSuitEntity.TOOL_ACTIVE_R;
+        this.spin = left ? PowerSuitEntity.TOOL_SPIN : PowerSuitEntity.TOOL_SPIN_R;
+        this.heat = left ? PowerSuitEntity.TOOL_HEAT : PowerSuitEntity.TOOL_HEAT_R;
+        this.shots = left ? PowerSuitEntity.TOOL_SHOTS : PowerSuitEntity.TOOL_SHOTS_R;
+        this.railEnd = left ? PowerSuitEntity.RAIL_END : PowerSuitEntity.RAIL_END_R;
+    }
+
+    public ToolArm arm() {
+        return this.arm;
     }
 
     /** Both sides: the power tool in the socket, or null (empty, or something else). */
     @Nullable
     public PowerTool tool() {
-        return this.suit.getSocketStack().getItem() instanceof PowerTool tool ? tool : null;
+        return this.suit.getSocketStack(this.arm).getItem() instanceof PowerTool tool ? tool : null;
     }
 
     // ---- Server: the trigger and the tool's tick --------------------------------------------------------------------
@@ -82,7 +103,7 @@ public final class SuitSocket {
     /** Server: the tool in the real slot (the synced copy can lag a tick behind). */
     @Nullable
     private PowerTool serverTool() {
-        return this.suit.getInventory().getItem(PowerSuitEntity.SOCKET_SLOT).getItem() instanceof PowerTool tool ? tool : null;
+        return this.suit.getInventory().getItem(this.arm.slot).getItem() instanceof PowerTool tool ? tool : null;
     }
 
     /** Server: run the socket tool. Repeating tools fire each time they're ready while the trigger is held;
@@ -99,8 +120,8 @@ public final class SuitSocket {
             tool.serverTick(this.suit);
         }
         boolean active = operator != null && trigger && tool != null && this.suit.canOperate();
-        this.suit.getEntityData().set(PowerSuitEntity.TOOL_RUNNING, tool != null && tool.isContinuous() && (active || tool.keepsRunning(this.suit)));
-        this.suit.getEntityData().set(PowerSuitEntity.TOOL_ACTIVE, active);
+        this.suit.getEntityData().set(this.running, tool != null && tool.isContinuous() && (active || tool.keepsRunning(this.suit)));
+        this.suit.getEntityData().set(this.active, active);
         if (active && !this.wasActive) {
             // The arm swings up into the aiming pose (PowerSuitRenderer.raiseTool): a heavy mechanical clunk and a hiss.
             this.suit.playSound(SoundEvents.PISTON_CONTRACT, 0.5F, 0.7F);
@@ -123,7 +144,7 @@ public final class SuitSocket {
         if (!active) {
             return;
         }
-        var stack = this.suit.getInventory().getItem(PowerSuitEntity.SOCKET_SLOT);
+        var stack = this.suit.getInventory().getItem(this.arm.slot);
         if (tool.isContinuous()) {
             this.activeContinuousTool = tool;
             this.activeOperator = operator;
@@ -186,60 +207,60 @@ public final class SuitSocket {
 
     /** Both sides: someone is using the socket tool (synced): the tool arm raises. */
     public boolean isActive() {
-        return this.suit.getEntityData().get(PowerSuitEntity.TOOL_ACTIVE);
+        return this.suit.getEntityData().get(this.active);
     }
 
     /** Both sides: a continuous socket tool is running (synced): its loop sound and animation. */
     public boolean isRunning() {
-        return this.suit.getEntityData().get(PowerSuitEntity.TOOL_RUNNING);
+        return this.suit.getEntityData().get(this.running);
     }
 
     /** Server: the tool's spin (chaingun barrels; the rail cannon's charge) and heat, both 0..1, for every client. */
     public void setSpin(float spin, float heat) {
-        this.suit.getEntityData().set(PowerSuitEntity.TOOL_SPIN, spin);
-        this.suit.getEntityData().set(PowerSuitEntity.TOOL_HEAT, heat);
+        this.suit.getEntityData().set(this.spin, spin);
+        this.suit.getEntityData().set(this.heat, heat);
     }
 
     /** Both sides: the tool's spin, 0 (at rest) .. 1 (full speed); the rail cannon sends its charge in it. */
     public float getSpin() {
-        return this.suit.getEntityData().get(PowerSuitEntity.TOOL_SPIN);
+        return this.suit.getEntityData().get(this.spin);
     }
 
     /** Both sides: the chaingun's barrel heat, 0 (cold) .. 1 (overheated). */
     public float getHeat() {
-        return this.suit.getEntityData().get(PowerSuitEntity.TOOL_HEAT);
+        return this.suit.getEntityData().get(this.heat);
     }
 
     /** Server: a shot was fired (bumps the synced counter: recoil, muzzle burst, the rail beam). */
     public void countShot() {
-        this.suit.getEntityData().set(PowerSuitEntity.TOOL_SHOTS, this.getShots() + 1);
+        this.suit.getEntityData().set(this.shots, this.getShots() + 1);
     }
 
     /** Both sides: shots fired so far (synced; clients watch it change). */
     public int getShots() {
-        return this.suit.getEntityData().get(PowerSuitEntity.TOOL_SHOTS);
+        return this.suit.getEntityData().get(this.shots);
     }
 
     /** Server: where the rail cannon's beam ended (set before countShot, so clients get both in one update). */
     public void setRailBeamEnd(Vec3 end) {
-        this.suit.getEntityData().set(PowerSuitEntity.RAIL_END, new Vector3f((float) end.x, (float) end.y, (float) end.z));
+        this.suit.getEntityData().set(this.railEnd, new Vector3f((float) end.x, (float) end.y, (float) end.z));
     }
 
     /** Both sides: where the rail cannon's last beam ended. */
     public Vec3 getRailBeamEnd() {
-        Vector3fc end = this.suit.getEntityData().get(PowerSuitEntity.RAIL_END);
+        Vector3fc end = this.suit.getEntityData().get(this.railEnd);
         return new Vec3(end.x(), end.y(), end.z());
     }
 
     /** Server: what the EM beam holds (synced for the beam effect). */
     public void setBeamTarget(@Nullable Entity target) {
-        this.suit.getEntityData().set(PowerSuitEntity.BEAM_TARGET, target == null ? -1 : target.getId());
+        this.suit.getEntityData().set(this.beamTarget, target == null ? -1 : target.getId());
     }
 
     /** Both sides: the entity in the EM beam, if any. */
     @Nullable
     public Entity getBeamTarget() {
-        int id = this.suit.getEntityData().get(PowerSuitEntity.BEAM_TARGET);
+        int id = this.suit.getEntityData().get(this.beamTarget);
         return id < 0 ? null : this.suit.level().getEntity(id);
     }
 }
