@@ -1041,6 +1041,16 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
         return false; // a ton of steel doesn't get shoved around
     }
 
+    /** Client: the server's entity events; ours: the suit landed a blow (the robot helmet's visor looks angry). */
+    @Override
+    public void handleEntityEvent(byte id) {
+        if (id == SuitFace.STRUCK) {
+            this.lights.face().struck();
+            return;
+        }
+        super.handleEntityEvent(id);
+    }
+
     @Override
     public void die(DamageSource source) {
         super.die(source);

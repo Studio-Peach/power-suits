@@ -49,6 +49,8 @@ final class SuitRenderData {
     static final DataTicket<Consumer<Float>> HIP_SINK = DataTicket.create("power_suits_hip_sink", (Class<Consumer<Float>>) (Class<?>) Consumer.class);
     /** The lights (SuitGlowLayer): one packed ARGB tint per glowmask, 0 = off. */
     static final DataTicket<int[]> GLOW = DataTicket.create("power_suits_glow", int[].class);
+    /** The robot helmet's visor face (SuitFace.Face ordinal, -1 = none: dark). */
+    static final DataTicket<Integer> VISOR_FACE = DataTicket.create("power_suits_visor_face", Integer.class);
     /** The rail cannon's charge (0..1) and the time in ticks: the cannon shakes as it charges (ToolRotors.railShake). */
     static final DataTicket<float[]> RAIL_SHAKE = DataTicket.create("power_suits_rail_shake", float[].class);
 

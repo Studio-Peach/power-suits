@@ -26,6 +26,7 @@ import dev.ajaczero.powersuits.entity.ai.GunAttack;
 import dev.ajaczero.powersuits.entity.ai.SuitTargets;
 import dev.ajaczero.powersuits.item.ChaingunItem;
 import dev.ajaczero.powersuits.item.EmProjectorItem;
+import dev.ajaczero.powersuits.entity.SuitFace;
 import dev.ajaczero.powersuits.item.HelmetStyle;
 import dev.ajaczero.powersuits.item.HelmetTemplateItem;
 import dev.ajaczero.powersuits.item.PowerTool;
@@ -3236,7 +3237,7 @@ public final class PowerSuitTests {
                 HelmetStyle.PROTECTOR, new ItemStack(Items.TURTLE_HELMET),
                 HelmetStyle.SPARTAN, new ItemStack(Items.TOTEM_OF_UNDYING),
                 HelmetStyle.NOBLE, new ItemStack(Items.PHANTOM_MEMBRANE),
-                HelmetStyle.ROBOT, new ItemStack(Items.MUSIC_DISC_CAT),
+                HelmetStyle.ROBOT, new ItemStack(Items.GOLD_BLOCK), // its own gold (user, 2026-11-15)
                 HelmetStyle.HUNTER, new ItemStack(Items.SLIME_BALL));
         var templates = Map.of(
                 HelmetStyle.PROTECTOR, ModItems.PROTECTOR_TEMPLATE.get(),
@@ -3255,8 +3256,10 @@ public final class PowerSuitTests {
             helper.assertTrue(SuitHelmetItem.style(again) == style, style + ": restyling, got " + again);
             // the template copies like vanilla's trims: 7 diamonds round the template and the style object
             ItemStack d = new ItemStack(Items.DIAMOND);
+            // (the robot's copy still takes a music disc: gold is what makes the helmet, the disc is the nod)
+            ItemStack copyObject = style == HelmetStyle.ROBOT ? new ItemStack(Items.MUSIC_DISC_CAT) : objects.get(style);
             var grid = CraftingInput.of(3, 3, List.of(
-                    d, new ItemStack(templates.get(style)), d, d, objects.get(style), d, d, d, d));
+                    d, new ItemStack(templates.get(style)), d, d, copyObject, d, d, d, d));
             ItemStack copies = helper.getLevel().recipeAccess().getRecipeFor(RecipeType.CRAFTING, grid, helper.getLevel())
                     .map(r -> r.value().assemble(grid)).orElse(ItemStack.EMPTY);
             helper.assertTrue(copies.is(templates.get(style)) && copies.getCount() == 2, style + ": copying the template, got " + copies);
@@ -3267,11 +3270,83 @@ public final class PowerSuitTests {
                 && t.getKey().equals("item.power_suits.suit_helmet.spartan"), "a styled helmet is named after its style, got " + spartan.getHoverName());
         helper.assertTrue(smith(helper, new ItemStack(ModItems.SPARTAN_TEMPLATE.get()), new ItemStack(ModItems.SUIT_HELMET.get()),
                 new ItemStack(Items.TURTLE_HELMET)).isEmpty(), "a template only takes its own style object");
+        helper.assertTrue(smith(helper, new ItemStack(ModItems.ROBOT_TEMPLATE.get()), new ItemStack(ModItems.SUIT_HELMET.get()),
+                new ItemStack(Items.MUSIC_DISC_CAT)).isEmpty(), "the robot helmet takes a gold block now, not a music disc");
         helper.assertTrue(smith(helper, new ItemStack(ModItems.SPARTAN_TEMPLATE.get()), new ItemStack(Items.IRON_HELMET),
                 new ItemStack(Items.TOTEM_OF_UNDYING)).isEmpty(), "templates are for the suit's helmet only");
         ItemStack plain = smith(helper, ItemStack.EMPTY, spartan, new ItemStack(Items.IRON_BLOCK));
         helper.assertTrue(plain.is(ModItems.SUIT_HELMET.get()) && SuitHelmetItem.style(plain) == null,
                 "helmet + iron block (no template) gives the standard helmet back, got " + plain);
+        helper.succeed();
+    }
+
+    // ---- the robot helmet's visor faces (SuitFace, design sec. 4c, 2026-11-15) ------------------------------------
+
+    /** A powered suit with its helmet, nothing happening: the base the face tests change one thing at a time. */
+    private static SuitFace.Inputs faceInputs(boolean powered, boolean broken, boolean knockedOut, boolean fieldHeld, boolean piloted,
+                                              int hurtTime, int fuel, boolean toolActive, boolean rogue) {
+        return new SuitFace.Inputs(true, powered, broken, knockedOut, fieldHeld, piloted, hurtTime, fuel, toolActive, rogue);
+    }
+
+    private static final SuitFace.Inputs CALM = faceInputs(true, false, false, false, false, 0, 4, false, false);
+
+    /** The face reacts to what changed (a hit, a pilot climbing in, fuel, a repaired helmet, a blow landed), each for
+     *  its time, the latest winning; the first tick only learns the state. */
+    @SuitTest(timeoutTicks = 5)
+    public static void robotVisorReactsToEvents(GameTestHelper helper) {
+        SuitFace face = new SuitFace();
+        helper.assertTrue(face.tick(faceInputs(true, false, false, false, true, 10, 9, false, false)) == null,
+                "a suit coming into view doesn't react to how it already is");
+        helper.assertTrue(face.tick(CALM) == null, "nothing happening: dark");
+        helper.assertTrue(face.tick(faceInputs(true, false, false, false, false, 10, 4, false, false)) == SuitFace.Face.HIT, "a hit: > <");
+        for (int t = 9; t > 0; t--) {
+            face.tick(faceInputs(true, false, false, false, false, t, 4, false, false)); // the hurt flash counting down
+        }
+        SuitFace.Face held = null;
+        for (int t = 0; t < SuitFace.HIT_TICKS - 10; t++) { // (20 ticks in all with the 10 above)
+            held = face.tick(CALM);
+        }
+        helper.assertTrue(held == SuitFace.Face.HIT, "the hit face lasts " + SuitFace.HIT_TICKS + " ticks, got " + held);
+        helper.assertTrue(face.tick(CALM) == null, "then it's gone");
+        helper.assertTrue(face.tick(faceInputs(true, false, false, false, true, 0, 4, false, false)) == SuitFace.Face.HAPPY,
+                "a pilot climbs in: ^^");
+        helper.assertTrue(face.tick(faceInputs(true, false, false, false, true, 0, 5, false, false)) == SuitFace.Face.LOVE,
+                "refuelled: heart eyes (the latest reaction wins)");
+        face.struck();
+        helper.assertTrue(face.tick(faceInputs(true, false, false, false, true, 0, 5, false, false)) == SuitFace.Face.ANGRY,
+                "a blow landed: angry");
+        SuitFace repaired = new SuitFace();
+        repaired.tick(faceInputs(true, true, false, false, false, 0, 4, false, false));
+        helper.assertTrue(repaired.tick(CALM) == SuitFace.Face.LOVE, "the helmet repaired: heart eyes");
+        SuitFace burning = new SuitFace();
+        burning.tick(CALM);
+        helper.assertTrue(burning.tick(faceInputs(true, false, false, false, false, 0, 3, false, false)) == null,
+                "burning fuel isn't a reaction");
+        helper.succeed();
+    }
+
+    /** What shows when several things are true: no helmet or no power shows nothing (a knock-out still shows dizzy),
+     *  then broken, dizzy, a reaction, effort, a rogue's angry face. */
+    @SuitTest(timeoutTicks = 5)
+    public static void robotVisorFacesHaveAnOrder(GameTestHelper helper) {
+        SuitFace.Face hit = SuitFace.Face.HIT;
+        helper.assertTrue(SuitFace.pick(new SuitFace.Inputs(false, true, false, false, false, false, 0, 4, true, true), hit) == null,
+                "no helmet: nothing");
+        helper.assertTrue(SuitFace.pick(faceInputs(false, false, false, false, false, 0, 4, true, true), hit) == null,
+                "no power: dark");
+        helper.assertTrue(SuitFace.pick(faceInputs(false, false, true, false, false, 0, 4, false, false), null) == SuitFace.Face.DIZZY,
+                "knocked out by lightning: dizzy, though the power is off");
+        helper.assertTrue(SuitFace.pick(faceInputs(true, true, true, false, false, 0, 4, true, true), hit) == SuitFace.Face.BROKEN,
+                "a broken helmet beats everything");
+        helper.assertTrue(SuitFace.pick(faceInputs(true, false, false, true, false, 0, 4, true, true), hit) == SuitFace.Face.DIZZY,
+                "held in an EM field: dizzy, over a reaction");
+        helper.assertTrue(SuitFace.pick(faceInputs(true, false, false, false, false, 0, 4, true, true), hit) == hit,
+                "a reaction beats effort and the rogue's face");
+        helper.assertTrue(SuitFace.pick(faceInputs(true, false, false, false, false, 0, 4, true, true), null) == SuitFace.Face.EFFORT,
+                "a socket tool working: effort");
+        helper.assertTrue(SuitFace.pick(faceInputs(true, false, false, false, false, 0, 4, false, true), null) == SuitFace.Face.ANGRY,
+                "a rogue looks angry");
+        helper.assertTrue(SuitFace.pick(CALM, null) == null, "nothing happening: dark");
         helper.succeed();
     }
 

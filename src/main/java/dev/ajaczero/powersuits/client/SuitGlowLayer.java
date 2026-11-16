@@ -9,6 +9,8 @@ import com.geckolib.util.ClientUtil;
 import dev.ajaczero.powersuits.PowerSuits;
 import dev.ajaczero.powersuits.entity.PowerSuitEntity;
 import dev.ajaczero.powersuits.entity.SuitEngine;
+import dev.ajaczero.powersuits.entity.SuitFace;
+import dev.ajaczero.powersuits.item.HelmetStyle;
 import dev.ajaczero.powersuits.item.ToolLight;
 import java.util.Arrays;
 import net.minecraft.client.renderer.SubmitNodeCollector;
@@ -70,9 +72,15 @@ public class SuitGlowLayer extends GeoRenderLayer<PowerSuitEntity, Void, LivingE
         float fire = suit.lights().getFireGlow() * (0.86F + 0.08F * Mth.sin(time * 0.37F + suit.getId()) + 0.06F * Mth.sin(time * 1.31F));
         float[] visor = suit.lights().getVisorColor();
         float on = suit.lights().getVisorFlicker(time);
+        // The robot helmet's visor shows a face instead of its light: opaque, at the visor's full brightness and colour.
+        boolean robot = suit.getHelmetStyle() == HelmetStyle.ROBOT;
+        SuitFace.Face face = robot ? suit.lights().face().shown() : null;
+        state.addGeckolibData(SuitRenderData.VISOR_FACE, face == null ? -1 : face.ordinal());
+        // Knocked out by lightning the visor is off, but the dizzy face shows through it, stuttering.
+        float faceLevel = suit.isStunned() ? (Mth.sin(time * 1.7F) + Mth.sin(time * 4.1F) < -0.6F ? 0.25F : 0.85F) : on;
         int[] suitTints = {
                 tint(fire, 1F, 1F, 1F),
-                glass(on * VISOR_GLOW, visor[0], visor[1], visor[2]),
+                robot ? tint(faceLevel, visor[0], visor[1], visor[2]) : glass(on * VISOR_GLOW, visor[0], visor[1], visor[2]),
                 tint(suit.lights().getTidalGlow(time), TIDAL_TINT[0], TIDAL_TINT[1], TIDAL_TINT[2]),
                 tint(suit.lights().getReactorGlow(time), REACTOR_TINT[0], REACTOR_TINT[1], REACTOR_TINT[2])};
         int[] toolTints = toolTints(suit, time, partialTick);
@@ -84,6 +92,14 @@ public class SuitGlowLayer extends GeoRenderLayer<PowerSuitEntity, Void, LivingE
 
     /** The frame's visor glowmask per build (tools/export-frame.py: its glass texels). */
     private static final Identifier FRAME_VISOR = frameMask("visor"), FRAME_VISOR_SLIM = frameMask("visor_slim");
+    /** The robot helmet's faces per build (tools/export-frame.py, from frame_helmet_art.py ROBOT_FACES), by
+     *  SuitFace.Face ordinal: white texels on its visor's front, tinted in the visor's colour. */
+    private static final Identifier[] ROBOT_FACES = faceMasks(""), ROBOT_FACES_SLIM = faceMasks("_slim");
+
+    private static Identifier[] faceMasks(String build) {
+        return Arrays.stream(SuitFace.Face.values()).map(f -> frameMask("robot_" + f.id() + build)).toArray(Identifier[]::new);
+    }
+
     /** The frame's engine fire per build (tools/export-frame.py: its reserved coal colours). Anything painted in those
      *  colours lights with the engine: the radiator guard's slats, the protector helmet's cheek lamps (its lamps are
      *  "on when the suit is powered", so they borrow the fire's light). */
@@ -128,11 +144,22 @@ public class SuitGlowLayer extends GeoRenderLayer<PowerSuitEntity, Void, LivingE
         int[] all = new int[masks.length];
         masks[0] = fireMask;
         masks[1] = slim ? FRAME_VISOR_SLIM : FRAME_VISOR;
+        Identifier face = null;
+        if (info.getOrDefaultGeckolibData(SuitRenderData.HELMET_STYLE, -1) == HelmetStyle.ROBOT.ordinal()) {
+            int shown = info.getOrDefaultGeckolibData(SuitRenderData.VISOR_FACE, -1);   // its face, or nothing (dark)
+            face = shown < 0 ? null : (slim ? ROBOT_FACES_SLIM : ROBOT_FACES)[shown];
+            masks[1] = null;
+        }
         all[0] = fire;
         all[1] = visor;
         System.arraycopy(tools, 0, masks, 2, tools.length);
         System.arraycopy(tints, 4, all, 2, tools.length);
-        drawMasks(this.renderer, info, renderTasks, masks, all);
+        drawMasks(this.renderer, info, renderTasks, masks, all, 1);
+        if (face != null) {
+            // The robot's face: on top of the glass (HelmetGlassLayer, order 1). In the same order the passes' sort
+            // depended on the texture, so some faces showed through the smoked glass at a fifth of their light.
+            drawMasks(this.renderer, info, renderTasks, new Identifier[] {face}, new int[] {visor}, 2);
+        }
     }
 
     /** Draws the model again in the "eyes" render type for each mask whose tint isn't black. The tint, light
@@ -140,6 +167,12 @@ public class SuitGlowLayer extends GeoRenderLayer<PowerSuitEntity, Void, LivingE
      *  back afterwards. */
     static <R extends GeoRenderState> void drawMasks(GeoRenderer<?, ?, R> renderer, RenderPassInfo<R> info, SubmitNodeCollector renderTasks,
                                                      Identifier[] masks, int[] tints) {
+        drawMasks(renderer, info, renderTasks, masks, tints, 1);
+    }
+
+    /** The same in the given submit order (later orders draw over earlier ones). */
+    static <R extends GeoRenderState> void drawMasks(GeoRenderer<?, ?, R> renderer, RenderPassInfo<R> info, SubmitNodeCollector renderTasks,
+                                                     Identifier[] masks, int[] tints, int order) {
         R state = info.renderState();
         int colour = info.renderColor(), light = info.packedLight(), overlay = info.packedOverlay();
         for (int i = 0; i < masks.length; i++) {
@@ -149,7 +182,7 @@ public class SuitGlowLayer extends GeoRenderLayer<PowerSuitEntity, Void, LivingE
             state.addGeckolibData(DataTickets.RENDER_COLOR, tints[i]); // scaling the colour down dims the glow
             state.addGeckolibData(DataTickets.PACKED_LIGHT, LightCoordsUtil.FULL_BRIGHT);
             state.addGeckolibData(DataTickets.PACKED_OVERLAY, OverlayTexture.NO_OVERLAY);
-            renderer.submitRenderTasks(info, renderTasks.order(1), RenderTypes.eyes(masks[i]));
+            renderer.submitRenderTasks(info, renderTasks.order(order), RenderTypes.eyes(masks[i]));
         }
         state.addGeckolibData(DataTickets.RENDER_COLOR, colour);
         state.addGeckolibData(DataTickets.PACKED_LIGHT, light);

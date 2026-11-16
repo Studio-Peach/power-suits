@@ -240,13 +240,14 @@ the end and `docs/guide.md` Notes).
   drawn texel by texel, beat adding its parts; when the user paints, carry their texels exactly and offer changes as
   knobs beside them. Knobs kept for the record: `SPARTAN_LAYER`, `SPARTAN_BROW`, `SPARTAN_BROW_SHADOW` (glass
   `W`, `GLASS_SHADE`), `SPARTAN_TOP`.
-- The robot (Guy-Manuel, `.scratch/helm7/robot/ref.jpg`, 2026-11-15, shape picked round 5): gold in its own fixed
-  shades (`GOLD`, letters '0'-'7', outside the steel ramp: it never takes the paint; user: its own recipe with gold).
-  The visor is the reference's signature: it runs up the whole front and over most of the top (`ROBOT_CROWN`), a
-  thin gold strip down each front corner (`ROBOT_WRAP=frame`; wrapping the glass onto the sides read as a black
-  box), its bottom curving up into the corners over a deep chin (`ROBOT_MOUTH=curve`); an ear plate centred on each
-  side running down to the bottom edge (a drawn disc: a traced 6-texel ring read as an X; the LED panel under it); a
-  raised panel on the top and back; the slate neck guard. Lit like the others, its big glass in amber blended into the
+- The robot (Guy-Manuel, `.scratch/helm7/robot/ref.jpg`, 2026-11-15, picked round 8, in game): gold in its own
+  fixed shades (`GOLD`, letters '0'-'7', outside the steel ramp: it never takes the paint; made with a gold block).
+  The visor is the reference's signature: it runs up the whole front, over the top's front half (its back edge square)
+  and down the sides' front half (`ROBOT_OPEN=side`; round 5's `front`: glass on the front and over the top only, gold
+  strips down the front corners), its bottom curving up into the corners over a deep chin (`ROBOT_MOUTH=curve`), a
+  dark border all round it; an ear plate centred on each side from row 5 to the bottom edge, the glass stepping round
+  it (a drawn disc: a traced 6-texel ring read as an X; the LED panel under it; at half height it read too different
+  from round 5's); a raised panel on the top and back; no neck guard (it made the sides read square). Lit like the others, its big glass in amber blended into the
   gold, so its visor shows eyes-only faces as reactions to events instead (`ROBOT_FACES`, one colour: the visor's),
   dark when idle. Dropped: detailed icons and Minecraft's own sprites (out of place / too much), a scan bar.
 - Re-run the exporter after rebuilding the saved files, then `make-frame-paint.py`.

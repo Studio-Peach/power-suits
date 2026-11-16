@@ -10,7 +10,7 @@ import net.minecraft.util.Mth;
  * the visor (who is in control: amber = a pilot, green = the friendly machine mind, red = a rogue; dark = powered off;
  * it stutters while the engine starts or dies and drops out now and then when the fuel runs low), the tidal engine's
  * and the star reactor's glass; and the sparks that crawl over the suit when lightning knocks it out. The socket tool's
- * lights belong to the tool (item/ToolEffects).
+ * lights belong to the tool (item/ToolEffects). The robot helmet's visor shows faces instead of its light ({@link SuitFace}).
  *
  * One of the suit's parts (see PowerSuitEntity): {@code suit.lights()}, ticked on the client only.
  */
@@ -25,6 +25,8 @@ public final class SuitLights {
     private final float[] visorColor = {1F, 0.68F, 0.22F};
     /** Client: ticks since the lightning knock-out began (sparks fly for the first second). */
     private int sparkTicks = -1;
+    /** Client: the robot helmet's visor face (worked out for every suit: a helmet can be swapped any time). */
+    private final SuitFace face = new SuitFace();
 
     SuitLights(PowerSuitEntity suit) {
         this.suit = suit;
@@ -34,6 +36,12 @@ public final class SuitLights {
     void tick() {
         this.tickLights();
         this.tickSparks();
+        this.face.tick(this.suit);
+    }
+
+    /** Client: the robot helmet's visor face. */
+    public SuitFace face() {
+        return this.face;
     }
 
     /** Client, every tick: ease the lights toward what the suit is doing. The fire flares up quickly and dies down

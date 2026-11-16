@@ -100,7 +100,8 @@ public final class AutoPilot {
     private static final boolean GAIT_ONLY = "gait".equals(System.getProperty("power_suits.autopilot"));
     /** "paint" mode: only the paint scene (PaintScene: dyes and a wet sponge on a suit), ~20 s. */
     private static final boolean PAINT_ONLY = "paint".equals(System.getProperty("power_suits.autopilot"));
-    /** "styles" mode: only the helmet styles scene (StyleScene: five helmets, paint, the smithing table), ~30 s. */
+    /** "styles" mode: only the helmet styles scene (StyleScene: five helmets, paint, the smithing table), then the robot
+     *  helmet's visor faces (RobotFaceScene), ~60 s. */
     private static final boolean STYLES_ONLY = "styles".equals(System.getProperty("power_suits.autopilot"));
     /** "engine" mode: only the engine scene (EngineScene: flooded firebox, tidal engine, star reactor), ~35 s. */
     private static final boolean ENGINE_ONLY = "engine".equals(System.getProperty("power_suits.autopilot"));
@@ -135,6 +136,8 @@ public final class AutoPilot {
     private static final boolean CLEAN_ZAP = Files.exists(Path.of("cleanzap"));
 
     private static boolean worldRequested;
+    /** "styles" mode: StyleScene runs, then RobotFaceScene. */
+    private static boolean stylesRunning = true;
     private static boolean suitRequested;
     private static int tick = -1;          // script time, starts once we sit in the suit
     private static final Map<KeyMapping, Boolean> held = new HashMap<>();
@@ -196,7 +199,13 @@ public final class AutoPilot {
                 mc.stop();
             }
         } else if (STYLES_ONLY) {
-            if (!StyleScene.step(mc, tick++)) {
+            // the styles, then the robot helmet's visor faces (RobotFaceScene), each counting from its own 0
+            if (stylesRunning) {
+                if (!StyleScene.step(mc, tick++)) {
+                    stylesRunning = false;
+                    tick = 0;
+                }
+            } else if (!RobotFaceScene.step(mc, tick++)) {
                 mc.stop();
             }
         } else if (FLAME_ONLY) {

@@ -10,6 +10,7 @@ mod as GeckoLib files, without Blockbench (the frame is script-built: model/art/
       tools/make-glowmasks.py, painted dark in the texture (frame_model.py FIRE=dark), each lit to its glow colour)
   textures/entity/power_frame_glow_core(_slim).png (the same texels in white -> grey: the tidal engine's and the star
       reactor's light on the heart until they have frame art, tinted in their own colours)
+  textures/entity/power_frame_glow_robot_<face>(_slim).png: the robot helmet's visor faces (robot_faces below)
   textures/entity/power_frame_glow_<light>(_slim).png for the tools' lights (TOOL_GLOW below): the flamethrower's pilot
       light, the status lamp red (idle) and green (running), the chaingun's green muzzle lights
   geckolib/animations/entity/power_frame.animation.json
@@ -315,6 +316,27 @@ def textures(data):
     return png(w, h, opaque), png(w, h, panes), png(w, h, visor), png(w, h, fire), png(w, h, core), tools
 
 
+def robot_faces(model, data):
+    """The robot helmet's visor faces (model/art/frame_helmet_art.py ROBOT_FACES; client/SuitGlowLayer, entity/SuitFace):
+    one glowmask each, its texels white on the robot helmet's front face (the visor's colour tints them)."""
+    sys.path.insert(0, os.path.join(ROOT, 'model', 'art'))
+    import frame_helmet_art
+    w, h, _ = unpng(data)
+    helm = [e for e in model['elements'] if e['name'] == 'ar_helmet_robot']
+    assert len(helm) == 1, 'no robot helmet: build the saved files with it (HELMET_VARIANTS ...,robot)'
+    u0, v0 = (int(round(x)) for x in helm[0]['faces']['north']['uv'][:2])
+    out = {}
+    for name in frame_helmet_art.ROBOT_FACES:
+        grid = frame_helmet_art.robot_face(name)
+        mask = [[(0, 0, 0, 0)] * w for _ in range(h)]
+        for j, row in enumerate(grid):
+            for i, c in enumerate(row):
+                if c == '#':
+                    mask[v0 + j][u0 + i] = (255, 255, 255, 255)
+        out[name] = png(w, h, mask)
+    return out
+
+
 def write(rel, data):
     path = os.path.join(ASSETS, rel)
     os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -367,6 +389,8 @@ if __name__ == '__main__':
         write(f'textures/entity/power_frame_glow_core{slim}.png', core)
         for name, mask in tools.items():
             write(f'textures/entity/power_frame_glow_{name}{slim}.png', mask)
+        for name, mask in robot_faces(model, base64.b64decode(source.split(',', 1)[1])).items():
+            write(f'textures/entity/power_frame_glow_robot_{name}{slim}.png', mask)
     bones = {b['name'] for b in geo(json.load(open(os.path.join(ROOT, BUILDS['power_frame']))), 'x')['minecraft:geometry'][0]['bones']}
     anims = animations(bones)
     write('geckolib/animations/entity/power_frame.animation.json', json.dumps(anims, indent=1).encode())
