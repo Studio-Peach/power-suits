@@ -825,13 +825,14 @@ if ENGINE == 'firebox':
 # 'all' (the saved files' default since 2026-11-14, step 5: the game shows the installed one): every tool at once, each
 # on its own bones, named as the game's tools (GAME_BONES), in one texture.
 TOOL = os.environ.get('TOOL', 'all')
-assert TOOL in ('none', 'drill', 'saw', 'gun', 'flame', 'rail', 'all'), TOOL
-TOOLS = ('drill', 'saw', 'gun', 'flame', 'rail') if TOOL == 'all' else () if TOOL == 'none' else (TOOL,)
+assert TOOL in ('none', 'drill', 'saw', 'gun', 'flame', 'rail', 'tnt', 'em', 'all'), TOOL
+TOOLS = ('drill', 'saw', 'gun', 'flame', 'rail', 'tnt', 'em') if TOOL == 'all' else () if TOOL == 'none' else (TOOL,)
 # Each tool's bones: (the tool, its moving part) named as the game's (PowerTool.suitBone; the drill's bit and the chain
 # spin / run by animation, the chaingun's barrels in code: ToolRotors).
 GAME_BONES = {'drill': ('drill', 'drill_bit'), 'saw': ('chainsaw', 'chainsaw_chain'),
               'gun': ('chaingun', 'chaingun_barrels'), 'flame': ('flamethrower', 'flamethrower_bit'),
-              'rail': ('rail_cannon', 'rail_fork_out')}
+              'rail': ('rail_cannon', 'rail_fork_out'), 'tnt': ('tnt_launcher', 'tnt_launcher_drum'),
+              'em': ('em_projector', 'em_projector_poles')}
 EXTRA_BONES = {'rail': {'fork_in': 'rail_fork_in'}}   # a tool's other moving bones (the rail cannon's inner prong)
 SHELLS['arm_socket_shell'] = dict(SHELLS['arm_shell'], below=[], end='socket')
 if ARMOR != 'none': SHELLS['arm_socket_armor'] = dict(SHELLS['arm_armor'], below=[], end='socket')
@@ -874,6 +875,13 @@ def _tool_parts(TOOL):
     import frame_rail_art as rail_art
     TOOL_PARTS = rail_art.build(6.25 + ARM_OUT, SOCKET_Y, 'dark', os.environ.get('RAIL', 'A'),
                                 os.environ.get('RAIL_CORE', 'dark'), float(os.environ.get('RAIL_L', '6')))
+# The TNT launcher (frame_tnt_art.py) and the EM projector (frame_em_art.py): the big suit's designs (user, 2026-11-15).
+  if TOOL == 'tnt':
+    import frame_tnt_art as tnt_art
+    TOOL_PARTS = tnt_art.build(6.25 + ARM_OUT, SOCKET_Y)
+  if TOOL == 'em':
+    import frame_em_art as em_art
+    TOOL_PARTS = em_art.build(6.25 + ARM_OUT, SOCKET_Y)
   return TOOL_PARTS
 TOOL_PARTS = {t: _tool_parts(t) for t in TOOLS}
 for t, parts_ in TOOL_PARTS.items():

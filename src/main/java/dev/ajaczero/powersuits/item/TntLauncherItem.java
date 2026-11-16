@@ -126,10 +126,10 @@ public class TntLauncherItem extends Item implements PowerTool, ModTooltip {
         return "tnt_launcher";
     }
 
-    /** Its muzzle is 9 px below the socket base, 1 px short of the chaingun's. */
+    /** The frame's muzzle plate is 9 px under the socket, the chaingun's length (the big suit's: 1 px short of it). */
     @Override
     public float muzzleInsetPixels() {
-        return 1F;
+        return 0F;
     }
 
     /** The barrel sits in front of the drum's axis (the socket's): its centre is 1.25 px toward the suit's front. */

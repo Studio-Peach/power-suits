@@ -98,8 +98,8 @@ public class PowerSuitRenderer extends GeoEntityRenderer<PowerSuitEntity, Living
         boolean cockpit = info.getOrDefaultGeckolibData(SuitRenderData.COCKPIT, false);
         bones.ifPresent("marine", root -> root.skipRender(cockpit).skipChildrenRender(cockpit));
         // Socket (the left arm's end): show the installed tool's bone and hide the others; empty, the socket plate painted
-        // on the arm's underside shows. The frame has the drill, chainsaw, chaingun, flamethrower and rail cannon so far; a tool
-        // without frame art (the EM projector, TNT launcher) shows the drill's body until it gets its own
+        // on the arm's underside shows. The frame has the drill, chainsaw, chaingun, flamethrower, rail cannon, TNT launcher and EM
+        // projector: every tool; a tool added later without frame art shows the drill's body until it gets its own
         // (user, 2026-11-14: "reuse the drill model or something, whatever is easiest").
         String installed = info.getOrDefaultGeckolibData(SuitRenderData.TOOL_BONE, "");
         String shown = installed.isEmpty() || info.model().getBone(installed).isPresent() ? installed : STAND_IN_TOOL;

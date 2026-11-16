@@ -188,10 +188,10 @@ public class EmProjectorItem extends Item implements PowerTool, ModTooltip {
         return "em_projector";
     }
 
-    /** The prong tips end 13 px below the socket, the chaingun's barrels 15 (the projector is the shortest tool). */
+    /** The frame's pole tips end 10 px under the socket, 1 px past the chaingun's muzzle (the big suit's: 13 vs 15). */
     @Override
     public float muzzleInsetPixels() {
-        return 2F;
+        return -1F;
     }
 
     @Override
