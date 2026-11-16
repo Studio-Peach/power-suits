@@ -56,7 +56,7 @@ the end and `docs/guide.md` Notes).
   docstring (discs and cages "too far out", "grounded in technology, no wheels", then the Sandevistan: "mechanical,
   not boney", "slick black and purple", the chain A picked). Chest: the lens. The module screens + head + base are
   SEGMENTS, each its own glowmask (`export-frame.py star_masks`), lit in a climbing pulse by `SuitLights.getStarSegments`.
-  The texture grew to 320 rows for the three engines. Not built: the afterimage trail the real implant leaves.
+  The texture grew to 320 rows for the three engines. No afterimage trail (user: not wanted); the ender motes stay as they are.
 - Review the bare and armoured fronts from a `SEA_GLOW=lit` game build (hide `engine`, show `engine_sea`, toggle
   `sea_open` / `sea_armored`); `ARMOR=none` drafts show the open front only.
 
