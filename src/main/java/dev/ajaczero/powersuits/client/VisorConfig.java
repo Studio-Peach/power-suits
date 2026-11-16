@@ -73,6 +73,11 @@ public final class VisorConfig {
             .translation("power_suits.configuration.visor_vision_tint")
             .defineEnum("visor_vision_tint", VisionTint.VISOR);
 
+    public static final ModConfigSpec.BooleanValue MUTE_SOUL_CHAT = B
+            .comment("Hide the Robot Helmet soul's remarks from your chat (only on your screen; the server's own switch is soul_chat).")
+            .translation("power_suits.configuration.mute_soul_chat")
+            .define("mute_soul_chat", false);
+
     public static final ModConfigSpec SPEC = B.build();
 
     /** The configured colour as 0xRRGGBB: the preset's, or with CUSTOM the hex field's (the default if unreadable). */

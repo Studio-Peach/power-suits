@@ -235,6 +235,8 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
     private final SuitLights lights = new SuitLights(this);
     /** Server: the machine mind's state (owner, home, aim, which job its tool gives it, a rogue's lifetime): see SuitBrain. */
     private final SuitBrain brain = new SuitBrain(this);
+    /** The soul's chat (companion design, 2026-11-16): see SuitVoice. Server only. */
+    private final SuitVoice voice = new SuitVoice(this);
     /** The armour on the frame, one piece per part: protection and the seal's full set: see SuitArmour. */
     private final SuitArmour armour = new SuitArmour(this);
     /** The suit's own slots: fuel, the left-arm socket, the helmet and the engine (and the old ammo slot, emptied on
@@ -442,6 +444,7 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
         super.addPassenger(passenger);
         if (!this.level().isClientSide() && passenger instanceof Player player) {
             this.brain.pilotBoarded(player);
+            this.voice.on(SoulEvent.BOARD);
             this.sockets[0].setAiTrigger(false);
             this.sockets[1].setAiTrigger(false);
             this.getNavigation().stop();
@@ -454,6 +457,7 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
         super.removePassenger(passenger);
         if (!this.level().isClientSide() && passenger instanceof Player player && this.isAlive()) {
             this.brain.pilotLeft(player);
+            this.voice.on(SoulEvent.EXIT);
         }
     }
 
@@ -542,6 +546,10 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
     }
 
     /** The machine mind's state and jobs. */
+    public SuitVoice voice() {
+        return this.voice;
+    }
+
     public SuitBrain brain() {
         return this.brain;
     }
@@ -1058,6 +1066,9 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
             return false; // fire, frost & co. kept out by the seal, paid in fuel
         }
         boolean damaged = super.hurtServer(level, source, amount);
+        if (damaged && this.isAlive()) {
+            this.voice.on(SoulEvent.HURT);
+        }
         if (damaged && this.isAlive() && this.reactsToHits()) {
             this.triggerAnim("action", "hit"); // play the flinch on every client
         }
@@ -1181,6 +1192,13 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
         this.returnOldAmmo();
     }
 
+    /** What this suit just killed (a mind's bullets and grinding count as its own): the soul may crow. */
+    @Override
+    public boolean killedEntity(ServerLevel level, LivingEntity entity, DamageSource source) {
+        this.voice.on(SoulEvent.KILL);
+        return super.killedEntity(level, entity, source);
+    }
+
     // A placed suit stays forever (mobs normally despawn when far from players).
     @Override
     public boolean requiresCustomPersistence() {
@@ -1229,6 +1247,7 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
                 this.onArm(arm, this.sockets[arm.ordinal()]::tick); // both arms' tools, each as "the socket"
             }
             this.brain.tick();
+            this.voice.tick();
             this.brain.updateToolGoals(); // the socket tool's own goals (PowerTool.mindGoals), after the goals ran this tick
             this.driving.tick(); // an EM field that stopped holding us lets go
             this.putOutFire();

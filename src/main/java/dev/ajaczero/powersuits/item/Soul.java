@@ -1,6 +1,7 @@
 package dev.ajaczero.powersuits.item;
 
 import dev.ajaczero.powersuits.PowerSuits;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.Holder;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
@@ -15,24 +16,41 @@ import org.jetbrains.annotations.Nullable;
  */
 public enum Soul {
     /** Gruff and terse, has seen it all. */
-    VETERAN("veteran"),
+    VETERAN("veteran", ChatFormatting.GRAY),
     /** Cheerful, delighted by everything. */
-    OPTIMIST("optimist"),
+    OPTIMIST("optimist", ChatFormatting.YELLOW),
     /** Dry, formal, politely sarcastic. */
-    BUTLER("butler"),
+    BUTLER("butler", ChatFormatting.AQUA),
     /** Anxious, sees danger everywhere, brave anyway. */
-    NERVOUS("nervous");
+    NERVOUS("nervous", ChatFormatting.LIGHT_PURPLE);
 
     private final String name;
     private final Identifier id;
+    private final ChatFormatting colour;
 
-    Soul(String name) {
+    Soul(String name, ChatFormatting colour) {
+        this.colour = colour;
         this.name = name;
         this.id = Identifier.fromNamespaceAndPath(PowerSuits.MODID, name);
     }
 
     public String id() {
         return this.name;
+    }
+
+    /** The colour of its name in the chat. */
+    public ChatFormatting colour() {
+        return this.colour;
+    }
+
+    /** "soul.power_suits.veteran.name": what the chat calls it. */
+    public String nameKey() {
+        return "soul.power_suits." + this.name + ".name";
+    }
+
+    /** "soul.power_suits.veteran.kill.1": one of its lines for an event. */
+    public String lineKey(dev.ajaczero.powersuits.entity.SoulEvent event, int n) {
+        return "soul.power_suits." + this.name + "." + event.id() + "." + n;
     }
 
     /** The soul on this helmet, or null if it has none (or isn't a Robot Helmet). */

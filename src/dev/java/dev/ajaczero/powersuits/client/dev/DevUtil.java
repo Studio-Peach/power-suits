@@ -43,10 +43,14 @@ final class DevUtil {
 
     /** A Robot Helmet with a soul (companion design, 2026-11-16): what lets a friendly mind run on an empty suit. */
     static ItemStack soulHelmet(net.minecraft.world.level.Level level) {
+        return soulHelmet(level, "veteran");
+    }
+
+    static ItemStack soulHelmet(net.minecraft.world.level.Level level, String soul) {
         ItemStack helmet = new ItemStack(ModItems.ROBOT_HELMET.get());
         helmet.enchant(level.registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.ENCHANTMENT).getOrThrow(
                 net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.ENCHANTMENT,
-                        net.minecraft.resources.Identifier.fromNamespaceAndPath(dev.ajaczero.powersuits.PowerSuits.MODID, "veteran"))), 1);
+                        net.minecraft.resources.Identifier.fromNamespaceAndPath(dev.ajaczero.powersuits.PowerSuits.MODID, soul))), 1);
         return helmet;
     }
 

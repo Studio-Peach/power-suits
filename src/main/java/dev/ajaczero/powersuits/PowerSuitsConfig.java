@@ -259,6 +259,17 @@ public final class PowerSuitsConfig {
             .comment("How far from home a companion with a drill or a TNT launcher charges monsters, in blocks (the drill grinds",
                     "them, the launcher only punches).").translation(key("melee_guard_radius"))
             .defineInRange("melee_guard_radius", 12.0, 1, 64);
+    public static final ModConfigSpec.BooleanValue SOUL_CHAT = B
+            .comment("The Robot Helmet's soul comments on what happens, in the chat (to its owner and its pilot). Off: it stays silent.",
+                    "(A player can also mute it on their own computer: the client config.)").translation(key("soul_chat"))
+            .define("soul_chat", true);
+    public static final ModConfigSpec.DoubleValue SOUL_CHAT_FREQUENCY = B
+            .comment("How often a soul speaks when something happens: a multiplier on each event's own chance (1 = as designed, 0 = never,",
+                    "3 = three times as often, up to certain).").translation(key("soul_chat_frequency"))
+            .defineInRange("soul_chat_frequency", 1.0, 0, 20);
+    public static final ModConfigSpec.IntValue SOUL_CHAT_COOLDOWN = B
+            .comment("Seconds between two remarks of one soul (the helmet breaking and the owner dying always get through).").translation(key("soul_chat_cooldown"))
+            .defineInRange("soul_chat_cooldown_seconds", 30, 0, 3600);
     public static final ModConfigSpec.DoubleValue ROGUE_SPAWN_CHANCE = B
             .comment("Rogue suits: once per in-game day (like the wandering trader) this is the chance that one turns up 48-64",
                     "blocks from a random player in the overworld (only one at a time, not on peaceful). 0.02 = about once in",

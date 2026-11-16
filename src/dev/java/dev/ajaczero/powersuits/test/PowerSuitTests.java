@@ -4,7 +4,9 @@ import dev.ajaczero.powersuits.HudAlert;
 import dev.ajaczero.powersuits.PilotHands;
 import dev.ajaczero.powersuits.PowerSuits;
 import dev.ajaczero.powersuits.PowerSuitsConfig;
+import dev.ajaczero.powersuits.entity.SoulEvent;
 import dev.ajaczero.powersuits.entity.SuitArmour;
+import dev.ajaczero.powersuits.entity.SuitVoice;
 import dev.ajaczero.powersuits.item.ArmourPiece;
 import dev.ajaczero.powersuits.item.ArmourTier;
 import dev.ajaczero.powersuits.item.SuitArmourItem;
@@ -2704,6 +2706,67 @@ public final class PowerSuitTests {
         });
         helper.runAfterDelay(20, () -> {
             helper.assertTrue(suit.isAiDriven(), "mended, it wakes again");
+            helper.succeed();
+        });
+    }
+
+    // ---- the soul's voice (companion design, 2026-11-16, section 5) ----------------------------------------------------
+
+    /** Every soul has a name and every event has its lines, for every soul: nothing is left as a bare key in the chat. */
+    @SuitTest
+    public static void everySoulHasEveryLine(GameTestHelper helper) throws Exception {
+        try (var in = PowerSuitTests.class.getResourceAsStream("/assets/power_suits/lang/en_us.json")) {
+            var lang = com.google.gson.JsonParser.parseReader(new java.io.InputStreamReader(in, java.nio.charset.StandardCharsets.UTF_8)).getAsJsonObject();
+            for (Soul soul : Soul.values()) {
+                helper.assertTrue(lang.has(soul.nameKey()), soul + ": no name");
+                for (SoulEvent event : SoulEvent.values()) {
+                    for (int n = 0; n < SoulEvent.LINES; n++) {
+                        helper.assertTrue(lang.has(soul.lineKey(event, n)) && !lang.get(soul.lineKey(event, n)).getAsString().isBlank(),
+                                "missing line " + soul.lineKey(event, n));
+                    }
+                }
+            }
+        }
+        helper.succeed();
+    }
+
+    /** A soul speaks to its owner: the helmet breaking always does, and its line is the soul's; the global cooldown keeps an
+     *  ordinary remark right after it quiet, a priority event gets through, and a suit without a soul says nothing. */
+    @SuitTest(timeoutTicks = 40)
+    public static void aSoulSpeaksWithinItsCooldowns(GameTestHelper helper) {
+        PowerSuitEntity suit = companion(helper, suitAt(helper, SUIT_POS));
+        suit.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.BLAZE_ROD, 4));
+        PowerSuitEntity mute = suitAt(helper, new BlockPos(1, 2, 1));
+        ownerAt(helper, suit, new Vec3(2.5, 2, 2.5));
+        helper.runAfterDelay(4, () -> {
+            SuitVoice voice = suit.voice();
+            voice.on(SoulEvent.HELMET_BROKEN);
+            helper.assertTrue(voice.spoken == 1 && voice.lastKey.startsWith("soul.power_suits.veteran.helmet_broken."), "the helmet's last words, got " + voice.lastKey);
+            voice.on(SoulEvent.REPAIRED);
+            helper.assertTrue(voice.spoken == 1, "an ordinary remark right after is held back by the global cooldown");
+            voice.on(SoulEvent.FIRST_WORDS);
+            helper.assertTrue(voice.spoken == 2 && voice.lastKey.contains(".first_words."), "a priority event gets through, got " + voice.lastKey);
+            voice.on(SoulEvent.HELMET_BROKEN);
+            helper.assertTrue(voice.spoken == 2, "but not twice inside its own cooldown, got " + voice.spoken);
+            mute.voice().on(SoulEvent.HELMET_BROKEN);
+            helper.assertTrue(mute.voice().spoken == 0, "a suit with no soul says nothing");
+            helper.succeed();
+        });
+    }
+
+    /** The helmet really breaking (its durability gone, in the tick) is noticed: its last words reach the owner. */
+    @SuitTest(timeoutTicks = 40)
+    public static void aBreakingHelmetHasLastWords(GameTestHelper helper) {
+        PowerSuitEntity suit = companion(helper, suitAt(helper, SUIT_POS));
+        suit.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.BLAZE_ROD, 4));
+        ownerAt(helper, suit, new Vec3(2.5, 2, 2.5));
+        helper.runAfterDelay(4, () -> {
+            ItemStack helmet = suit.getInventory().getItem(PowerSuitEntity.HELMET_SLOT);
+            helmet.setDamageValue(helmet.getMaxDamage());
+            suit.getInventory().setChanged();
+        });
+        helper.runAfterDelay(12, () -> {
+            helper.assertTrue(suit.voice().lastKey.contains(".helmet_broken."), "it says something as it breaks, got '" + suit.voice().lastKey + "'");
             helper.succeed();
         });
     }

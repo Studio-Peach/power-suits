@@ -2,6 +2,7 @@ package dev.ajaczero.powersuits.client.dev;
 
 import dev.ajaczero.powersuits.PowerSuits;
 import dev.ajaczero.powersuits.entity.PowerSuitEntity;
+import dev.ajaczero.powersuits.entity.SoulEvent;
 import dev.ajaczero.powersuits.registry.ModEntities;
 import dev.ajaczero.powersuits.registry.ModItems;
 import java.io.BufferedWriter;
@@ -37,7 +38,7 @@ import net.minecraft.world.phys.Vec3;
  * Logs run/autopilot_companion.csv (husk health, the suit's goals, the tool's uses, fire blocks seen).
  */
 final class CompanionScene {
-    private static final String[] PHASES = {"saw", "drill", "flame", "tnt"};
+    private static final String[] PHASES = {"saw", "drill", "flame", "tnt", "voice"};
     private static final int PHASE_TICKS = 170;
     private static volatile BlockPos base;
     private static final List<PowerSuitEntity> suits = new CopyOnWriteArrayList<>();
@@ -51,6 +52,18 @@ final class CompanionScene {
         if (phase >= PHASES.length) {
             close();
             return false;
+        }
+        if (phase == 4) { // the souls' chat: four suits, one soul each, the GUI up so the chat shows
+            switch (at) {
+                case 0 -> voiceSetup(mc);
+                case 6 -> { mc.options.setCameraType(CameraType.THIRD_PERSON_BACK); DevUtil.hideGui(mc, false); }
+                case 20 -> AutoPilot.onServer(mc, p -> speak(SoulEvent.FIRST_WORDS));
+                case 60 -> { AutoPilot.shot(mc, "companion_voice_first"); AutoPilot.onServer(mc, p -> speak(SoulEvent.HELMET_BROKEN)); }
+                case 100 -> { AutoPilot.shot(mc, "companion_voice_broken"); AutoPilot.onServer(mc, p -> speak(SoulEvent.OWNER_DIED)); }
+                case 140 -> AutoPilot.shot(mc, "companion_voice_died");
+                default -> {}
+            }
+            return true;
         }
         switch (at) {
             case 0 -> { setup(mc, phase); if (phase == 0) { open(mc); } }
@@ -109,6 +122,44 @@ final class CompanionScene {
             player.teleportTo(x - 4.5, y, z - 2.5); // the owner, out of the picture
             fire = false;
         });
+    }
+
+    /** Server: four suits in a row east of the scene, each wearing a different soul, the player their owner beside them. */
+    private static void voiceSetup(Minecraft mc) {
+        AutoPilot.onServer(mc, player -> {
+            ServerLevel level = player.level();
+            DevUtil.setTime(level, 6000);
+            player.setGameMode(GameType.CREATIVE);
+            for (PowerSuitEntity old : suits) {
+                old.discard();
+            }
+            for (LivingEntity old : husks) {
+                old.discard();
+            }
+            suits.clear();
+            husks.clear();
+            int x = player.getBlockX() + 60, z = player.getBlockZ() + 100;
+            int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING, x, z);
+            String[] souls = {"veteran", "optimist", "butler", "nervous"};
+            for (int i = 0; i < souls.length; i++) {
+                PowerSuitEntity s = ModEntities.POWER_SUIT.get().create(level, EntitySpawnReason.COMMAND);
+                DevUtil.firebox(s);
+                s.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.BLAZE_ROD, 16));
+                s.getInventory().setItem(PowerSuitEntity.HELMET_SLOT, DevUtil.soulHelmet(level, souls[i]));
+                DevUtil.ironArmour(s);
+                s.snapTo(x + 0.5 + 3 * i, y, z + 0.5, 180, 0);
+                s.brain().setOwnerId(player.getUUID());
+                level.addFreshEntity(s);
+                suits.add(s);
+            }
+            player.teleportTo(x + 5, y, z - 4);
+        });
+    }
+
+    private static void speak(SoulEvent event) {
+        for (PowerSuitEntity s : suits) {
+            s.voice().on(event);
+        }
     }
 
     private static void camera(Minecraft mc, Vec3 from, Vec3 at) {
