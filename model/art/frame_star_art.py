@@ -178,7 +178,7 @@ def dome(f, w, h):
     return g
 
 
-BONE_ORIGIN = {'star_core': (0, 21.5, 6.0)}   # raw; the star's spin pivot (the window's middle). The game draws the fuel slot's
+BONE_ORIGIN = {'star_core': (0, 21.5, 7.0)}   # raw; the star's spin pivot (the window's middle). The game draws the fuel slot's
                                                 # nether star there and turns the bone fast.
 
 
@@ -253,9 +253,9 @@ def jetpack():
     7 px wide against the back, a wing standing on each edge of it, reaching back in two steps with the tip rising level
     with the top (nothing spreads sideways over the arms, nothing at the foot), the star spinning between them in front of
     a vertical power channel, lit lines branching from it across the floor and in along the wings."""
-    return [part('floor', ((-3.5, 17.5, 3), (3.5, 25.5, 5)), floor_art),
-            part('fin', ((2.5, 17.5, 5), (3.5, 25.5, 8)), fin_art, mirror=True),
-            part('fin2', ((2.5, 19.5, 8), (3.5, 23.5, 10)), lambda f, w, h: fin_art(f, w, h, False), mirror=True),
+    return [part('floor', ((-3, 17.5, 3), (3, 25.5, 6)), floor_art),
+            part('fin', ((3, 17.5, 3), (4, 25.5, 8)), fin_art, mirror=True),
+            part('fin2', ((3, 19.5, 8), (4, 23.5, 10)), lambda f, w, h: fin_art(f, w, h, False), mirror=True),
             _star_hub()]
 
 
