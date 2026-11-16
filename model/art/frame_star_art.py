@@ -178,7 +178,7 @@ def dome(f, w, h):
     return g
 
 
-BONE_ORIGIN = {'star_core': (0, 21.5, 5.5)}   # raw; the star's spin pivot (the window's middle). The game draws the fuel slot's
+BONE_ORIGIN = {'star_core': (0, 21.5, 6.0)}   # raw; the star's spin pivot (the window's middle). The game draws the fuel slot's
                                                 # nether star there and turns the bone fast.
 
 
@@ -203,63 +203,59 @@ def top(w, h): return [['g'] * w] + [['h'] * w for _ in range(h - 1)]
 def bottom(w, h): return grid(w, h, 'X')
 
 
-def mid_art(f, w, h):
+LINE_ROWS = (3, 12)          # the power lines' rows on the floor and the walls (texel rows from the top, 16 tall)
+
+
+def floor_art(f, w, h):
+    """The floor of the cradle (7 x 8 px): a steel plate with a vertical power channel up the middle (where the star hangs
+    in front of its node) and lit lines branching out to the walls at LINE_ROWS."""
     if f == 'up': return top(w, h)
     if f == 'down': return bottom(w, h)
     g = plate(w, h)
-    if f == 'south':
-        for j0 in (4, h - 6):                                        # two straps across, as the tanks'
-            g[j0], g[j0 + 1] = ['h'] * w, ['e'] * w
-        cx, cy, R = w / 2, h / 2, 4.5                                # the window: an ink rim, a deep well, a lit heart
-        for j in range(h):
-            for i in range(w):
-                d = math.hypot(i + 0.5 - cx, j + 0.5 - cy)
-                if d <= R: g[j][i] = 'X' if d > R - 1 else '*' if d > R - 2.5 else '='
-                if d <= 1.6: g[j][i] = '%'
-                if d <= 0.8: g[j][i] = '&'
-    elif f in ('east', 'west'):                                      # the lit slit down the side, ink above and below
+    if f != 'south': return g
+    cx = w // 2
+    for j in range(2, h - 2):                                        # the channel: ink, deep violet, a bright core line
+        g[j][cx - 2], g[j][cx + 1] = 'X', 'X'
+        g[j][cx - 1], g[j][cx] = '=', '='
+    for j in range(2, h - 2): g[j][cx - 1] = g[j][cx] = '*' if j % 4 in (0, 1) else '='   # the current: dashes along it
+    for j0 in LINE_ROWS:                                             # branch lines: ink, lit, ink, out to each wall
         for i in range(1, w - 1):
-            g[h // 2 - 2][i] = 'X'; g[h // 2 - 1][i] = '*'; g[h // 2][i] = '%'; g[h // 2 + 1][i] = 'X'
+            if cx - 2 <= i <= cx + 1: continue
+            g[j0 - 1][i], g[j0][i], g[j0 + 1][i] = 'X', '%', 'X'
+    for j in range(h // 2 - 3, h // 2 + 3):                          # the node the star hangs in front of
+        for i in range(cx - 3, cx + 3):
+            g[j][i] = 'X' if j in (h // 2 - 3, h // 2 + 2) or i in (cx - 3, cx + 2) else '&' if j in (h // 2 - 1, h // 2) and i in (cx - 1, cx) else '%' if abs(j - h // 2 + .5) < 1.6 and abs(i - cx + .5) < 1.6 else '*'
     return g
 
 
-def step_art(f, w, h):
-    """A narrower step (crown, lower body, foot)."""
+def wall_art(f, w, h):
+    """A wall (the wing): the plate's steel, the branch lines running in across its inner face, a lit stripe sweeping its outer."""
     if f == 'up': return top(w, h)
     if f == 'down': return bottom(w, h)
     g = plate(w, h)
-    if f == 'south' and h >= 4 and w >= 8:
-        for i in range(3, w - 3): g[h // 2][i] = 'X' if i % 2 else 'N'   # vent slots
-    return g
-
-
-def fin_art(f, w, h):
-    """A rear fin: the big face (east / west, along the back-to-front axis) a plate with a lit stripe along its swept edge."""
-    if f == 'up': return top(w, h)
-    if f == 'down': return bottom(w, h)
-    g = plate(w, h)
-    if f in ('east', 'west'):
+    if f == 'west':                                                  # the inner face (a mirrored part's west)
+        for j0 in LINE_ROWS:
+            for i in range(0, w - 1):
+                g[j0 - 1][i], g[j0][i], g[j0 + 1][i] = 'X', '%', 'X'
+    elif f == 'east':                                                # the outer face: a violet stripe sweeping back and down
+        for i in range(1, w - 1): g[h - 5][i], g[h - 4][i] = 'h', 'e'    # a strap along the foot
+        for j in range(2, h - 2): g[j][w - 4], g[j][w - 3] = 'h', 'e'    # and a spar down the trailing edge
         for j in range(h):
             for i in range(w):
-                if abs((j - (h - 3)) + (i - 2) * 1.6) < 1.1 and 1 < i < w - 1 and 1 < j < h - 2:
-                    g[j][i] = '%' if abs((j - (h - 3)) + (i - 2) * 1.6) < 0.5 else '*'   # a diagonal violet stripe
+                t = abs((j - 4) - (i - 2) * 1.1)
+                if 1 < i < w - 2 and 2 < j < h - 2 and t < 1.3: g[j][i] = '%' if t < 0.6 else '*'
     return g
 
 
 def jetpack():
-    """After the Fortnite Alien Jetpack, kept Minecraft-simple: stepped boxes make a gem (a 6 px crown over a 10 px body
-    over an 8 px and a 4 px step, 2 px deep), a round violet window in the body (the star spins in front of it) and a fin
-    on each side of the top, plates standing straight and sweeping back (never out sideways: the arms swing there, and
-    not at the foot: user, 2026-11-16)."""
-    P = [part('body', ((-5, 17.5, 3), (5, 24.5, 5)), mid_art),
-         part('crown', ((-3, 24.5, 3), (3, 25.5, 5)), step_art),
-         part('lower', ((-4, 16.5, 3), (4, 17.5, 5)), step_art),
-         part('foot', ((-2, 15.5, 3), (2, 16.5, 5)), step_art),
-         # the fins: a plate flush against the body's side, standing, reaching back; a shorter one behind its tip
-         part('fin', ((4.5, 19.5, 5), (5.5, 25, 8)), fin_art, mirror=True),
-         part('fin2', ((4.5, 22.5, 8), (5.5, 25, 10)), fin_art, mirror=True)]
-    P.append(_star_hub())
-    return P
+    """After the Fortnite Alien Jetpack, as simple as it goes (user, 2026-11-16: "narrow the body and let each wing be the
+    side of the box ... reduce the stack of boxes ... make the core different from the one in front, it could be power
+    lines"): a cradle, three boxes. A floor plate 7 px wide against the back, a wall each side standing 4 px proud and
+    reaching back (the wings: nothing spreads sideways over the arms), the star spinning between them in front of a vertical
+    power channel, lit lines branching from it across the floor and in along the walls."""
+    return [part('floor', ((-3.5, 17.5, 3), (3.5, 25.5, 5)), floor_art),
+            part('wall', ((3.5, 17.5, 3), (4.5, 25.5, 8)), wall_art, mirror=True),
+            _star_hub()]
 
 
 def _star_hub():
