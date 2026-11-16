@@ -68,6 +68,12 @@ public class TntLauncherItem extends Item implements PowerTool, ModTooltip {
     public static final int DRUM = 4;
 
     /** Ticks between shots while the trigger is held (and between dry clicks on an empty drum). */
+    /** The guard route, fists only: a mind never blows things up (companion design, 2026-11-16). */
+    @Override
+    public dev.ajaczero.powersuits.entity.ai.ToolUse mindUse() {
+        return dev.ajaczero.powersuits.entity.ai.ToolUse.TNT;
+    }
+
     @Override
     public int cooldownTicks() {
         return PowerSuitsConfig.TNT_LAUNCHER_SHOT_INTERVAL.get();

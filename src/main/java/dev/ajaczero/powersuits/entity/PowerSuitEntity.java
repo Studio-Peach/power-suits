@@ -409,13 +409,6 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
         return this.getMind() == SuitMind.ROGUE;
     }
 
-    /** Paths may drop this far. The drilling mind never steps down at all ("never where it would fall"): its hall is
-     *  flat, and a step down there is a hole in the floor. */
-    @Override
-    public int getMaxFallDistance() {
-        return this.brain.digsHall() && this.getControllingPassenger() == null ? 0 : super.getMaxFallDistance();
-    }
-
     /** Vanilla's look control resets the pitch and eases the head back toward the body every tick unless something
      *  asks it to look somewhere. This runs after the goals (which may have asked for something else) and before the
      *  look control, so an aim set by the mind wins; the tool fires later in the same tick (tickTool). */

@@ -3,8 +3,6 @@ package dev.ajaczero.powersuits.item;
 import com.geckolib.animation.RawAnimation;
 import dev.ajaczero.powersuits.PowerSuitsConfig;
 import dev.ajaczero.powersuits.entity.PowerSuitEntity;
-import dev.ajaczero.powersuits.entity.ai.DrillWorker;
-import dev.ajaczero.powersuits.entity.ai.SuitWork;
 import dev.ajaczero.powersuits.entity.ai.ToolUse;
 import dev.ajaczero.powersuits.registry.ModSounds;
 import java.util.ArrayList;
@@ -88,11 +86,6 @@ public class DrillItem extends Item implements PowerTool, ModTooltip {
     }
 
     @Override
-    public List<Goal> mindGoals(PowerSuitEntity suit) {
-        return List.of(new DrillWorker(suit));
-    }
-
-    @Override
     public boolean isContinuous() {
         return true;
     }
@@ -159,9 +152,10 @@ public class DrillItem extends Item implements PowerTool, ModTooltip {
         }
         BlockPos center = hit.getBlockPos();
         state.retarget(level, center, hit.getDirection());
-        // The machine mind only digs its hall (home level, 3 high, no liquids next door, floor below): SuitWork.mayDig.
-        Predicate<BlockPos> allowed = operator instanceof Player ? p -> canDrill(level.getBlockState(p), level, p)
-                : p -> SuitWork.mayDig(suit, p);
+        if (!(operator instanceof Player)) {
+            return; // a mind only grinds its target (above): it never digs (companion design, 2026-11-16)
+        }
+        Predicate<BlockPos> allowed = p -> canDrill(level.getBlockState(p), level, p);
         if (!allowed.test(center)) {
             if (state.ticks % 10 == 0) { // wood, bedrock...: the bit just skids
                 suit.playSound(SoundEvents.ANVIL_LAND, 0.25F, 1.8F);

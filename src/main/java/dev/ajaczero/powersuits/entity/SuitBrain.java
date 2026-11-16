@@ -171,14 +171,28 @@ public final class SuitBrain {
         return tool == null ? ToolUse.NONE : tool.mindUse();
     }
 
-    /** Both sides: a weapon the mind fights with by aiming and holding the trigger (chaingun, flamethrower). */
+    /** Both sides: a weapon the mind fights with by aiming and holding the trigger: the chaingun, and a rogue's flamethrower
+     *  (a friendly mind never fires the flame: it only punches with it). */
     public boolean hasGun() {
-        return this.toolUse() == ToolUse.GUN;
+        return this.toolUse() == ToolUse.GUN || this.suit.isRogue() && this.toolUse() == ToolUse.FLAME;
     }
 
-    /** Both sides: the gunner's job (design sec. 8): a friendly mind with a gun follows its owner and defends them. */
+    /** Both sides: the follow route (design sec. 8, 2026-11-16): a companion with a chaingun, a chainsaw, a flamethrower or
+     *  no tool follows its owner and defends them. */
     public boolean followsOwner() {
-        return !this.suit.isRogue() && this.hasGun();
+        if (this.suit.isRogue()) {
+            return false;
+        }
+        return switch (this.toolUse()) {
+            case NONE, GUN, SAW, FLAME -> true;
+            default -> false;
+        };
+    }
+
+    /** Both sides: the melee guard route: a companion with a drill or a TNT launcher keeps to home and charges what comes
+     *  near (the drill grinds it, the launcher only punches: HomeGuard). */
+    public boolean guardsByMelee() {
+        return !this.suit.isRogue() && (this.toolUse() == ToolUse.DRILL || this.toolUse() == ToolUse.TNT);
     }
 
     /** Both sides: the EM guard job (design sec. 8): a friendly mind with an EM projector guards the area round home. */
@@ -189,16 +203,6 @@ public final class SuitBrain {
     /** Both sides: the rail guard job (Phase 11): a friendly mind with a rail cannon shoots from home at what comes near. */
     public boolean snipesFromHome() {
         return !this.suit.isRogue() && this.toolUse() == ToolUse.RAIL;
-    }
-
-    /** Both sides: the drill job: a friendly mind with the drill clears an open hall round home (SuitWork). */
-    public boolean digsHall() {
-        return !this.suit.isRogue() && this.toolUse() == ToolUse.DRILL;
-    }
-
-    /** Both sides: the chainsaw job: a friendly mind with the chainsaw fells the natural trees round home. */
-    public boolean fellsTrees() {
-        return !this.suit.isRogue() && this.toolUse() == ToolUse.SAW;
     }
 
     /** Server: the mind's bare-handed blow (no bullets left): a pilot's punch, 1 + the melee bonus, with a shove. */

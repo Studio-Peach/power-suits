@@ -255,10 +255,10 @@ public final class PowerSuitsConfig {
     public static final ModConfigSpec.DoubleValue GUARD_RANGE = B.pop().translation(key("mind")).push("mind")
             .comment("A friendly suit with a chaingun shoots monsters within this many blocks of its owner (or of itself).").translation(key("guard_range"))
             .defineInRange("guard_range", 16.0, 0, 64);
-    public static final ModConfigSpec.DoubleValue WORK_RADIUS = B
-            .comment("How far from home a friendly suit's drill (an open hall at home level, 3 blocks high) and chainsaw",
-                    "(natural trees) work, in blocks. Keep it under 32: allays only see dropped items within 32 blocks.").translation(key("work_radius"))
-            .defineInRange("work_radius", 12.0, 1, 32);
+    public static final ModConfigSpec.DoubleValue MELEE_GUARD_RADIUS = B
+            .comment("How far from home a companion with a drill or a TNT launcher charges monsters, in blocks (the drill grinds",
+                    "them, the launcher only punches).").translation(key("melee_guard_radius"))
+            .defineInRange("melee_guard_radius", 12.0, 1, 64);
     public static final ModConfigSpec.DoubleValue ROGUE_SPAWN_CHANCE = B
             .comment("Rogue suits: once per in-game day (like the wandering trader) this is the chance that one turns up 48-64",
                     "blocks from a random player in the overworld (only one at a time, not on peaceful). 0.02 = about once in",

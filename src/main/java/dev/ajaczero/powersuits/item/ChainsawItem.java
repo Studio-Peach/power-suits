@@ -3,8 +3,6 @@ package dev.ajaczero.powersuits.item;
 import com.geckolib.animation.RawAnimation;
 import dev.ajaczero.powersuits.PowerSuitsConfig;
 import dev.ajaczero.powersuits.entity.PowerSuitEntity;
-import dev.ajaczero.powersuits.entity.ai.SawWorker;
-import dev.ajaczero.powersuits.entity.ai.SuitWork;
 import dev.ajaczero.powersuits.entity.ai.ToolUse;
 import dev.ajaczero.powersuits.registry.ModSounds;
 import java.util.ArrayDeque;
@@ -126,11 +124,6 @@ public class ChainsawItem extends Item implements PowerTool, ModTooltip {
     }
 
     @Override
-    public List<Goal> mindGoals(PowerSuitEntity suit) {
-        return List.of(new SawWorker(suit));
-    }
-
-    @Override
     public boolean isContinuous() {
         return true;
     }
@@ -195,6 +188,9 @@ public class ChainsawItem extends Item implements PowerTool, ModTooltip {
             state.clear(level);
             return;
         }
+        if (!(operator instanceof Player)) {
+            return; // a mind only shreds its target (above): it never fells trees (companion design, 2026-11-16)
+        }
         BlockHitResult hit = ToolMining.target(suit, operator);
         if (hit == null || !suit.socket().isReady()) {
             state.clear(level);
@@ -203,8 +199,7 @@ public class ChainsawItem extends Item implements PowerTool, ModTooltip {
         BlockPos pos = hit.getBlockPos();
         BlockState block = level.getBlockState(pos);
         state.retarget(level, pos, hit.getDirection());
-        // The machine mind only saws natural trees (never a log cabin wall the aim happens to cross); a pilot cuts anything.
-        if (!canCut(block, level, pos) || !(operator instanceof Player) && !SuitWork.mayCut(level, pos, block)) {
+        if (!canCut(block, level, pos)) {
             if (state.ticks % 10 == 0) { // stone, metal: the chain skids off
                 suit.playSound(SoundEvents.GRINDSTONE_USE, 0.4F, 1.6F);
             }

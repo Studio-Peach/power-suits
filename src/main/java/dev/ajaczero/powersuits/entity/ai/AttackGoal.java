@@ -1,6 +1,7 @@
 package dev.ajaczero.powersuits.entity.ai;
 
 import dev.ajaczero.powersuits.entity.PowerSuitEntity;
+import dev.ajaczero.powersuits.item.ToolMelee;
 import java.util.EnumSet;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.goal.Goal;
@@ -61,6 +62,27 @@ public abstract class AttackGoal extends Goal {
         if (this.punchCooldown == 0) {
             this.suit.brain().punch(target);
             this.punchCooldown = 20;
+        }
+    }
+
+    /**
+     * One tick of fighting hand to hand (MeleeAttack, HomeGuard): aim at the target and walk up to it; then either grind it
+     * with the socket tool (the chainsaw's or drill's ToolMelee, trigger held while it is in reach) or punch.
+     */
+    protected void melee(LivingEntity target, boolean withTool) {
+        this.tickCooldowns();
+        this.suit.brain().setAim(target.getBoundingBox().getCenter());
+        boolean sees = this.suit.getSensing().hasLineOfSight(target);
+        if (!withTool) {
+            this.fists(target, sees, 1.6);
+            return;
+        }
+        if (sees && ToolMelee.inReach(this.suit, target)) {
+            this.suit.getNavigation().stop();
+            this.suit.socket().setAiTrigger(true);
+        } else {
+            this.suit.socket().setAiTrigger(false);
+            this.approach(target, 1.6);
         }
     }
 

@@ -22,7 +22,6 @@ import dev.ajaczero.powersuits.entity.SuitMind;
 import dev.ajaczero.powersuits.entity.SuitSmash;
 import dev.ajaczero.powersuits.entity.TntShell;
 import dev.ajaczero.powersuits.entity.Trajectory;
-import dev.ajaczero.powersuits.entity.ai.DrillWorker;
 import dev.ajaczero.powersuits.entity.ai.GunAttack;
 import dev.ajaczero.powersuits.entity.ai.SuitTargets;
 import dev.ajaczero.powersuits.item.ChaingunItem;
@@ -1838,6 +1837,7 @@ public final class PowerSuitTests {
     public static void idleSuitWalksBackHome(GameTestHelper helper) {
         PowerSuitEntity suit = companion(helper, suitAt(helper, new BlockPos(7, 2, 4)));
         suit.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.COAL, 2));
+        suit.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, new ItemStack(ModItems.TNT_LAUNCHER.get())); // the guard route: a post to keep (no tool follows its owner)
         BlockPos home = helper.absolutePos(new BlockPos(1, 2, 4));
         suit.brain().setHome(home);
         double[] fastest = {0};
@@ -1869,6 +1869,7 @@ public final class PowerSuitTests {
     public static void boardingStopsTheMind(GameTestHelper helper) {
         PowerSuitEntity suit = companion(helper, suitAt(helper, new BlockPos(2, 2, 2)));
         suit.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.COAL, 2));
+        suit.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, new ItemStack(ModItems.TNT_LAUNCHER.get())); // the guard route: a post to keep (no tool follows its owner)
         suit.brain().setHome(helper.absolutePos(new BlockPos(6, 2, 6)));
         helper.runAfterDelay(8, () -> {
             helper.assertTrue(!suit.getNavigation().isDone(), "on its way home");
@@ -1919,33 +1920,6 @@ public final class PowerSuitTests {
         }
     }
 
-    /** The tool operator refactor: with nobody inside, the mind aims the head and pulls the trigger; the drill digs the
-     *  3x3 face and every block is broken as the owner (a FakePlayer with their UUID, so claim mods see the owner). */
-    @SuitTest(timeoutTicks = 60)
-    public static void mindDrillsAsItsOwner(GameTestHelper helper) {
-        wall(helper, Blocks.STONE);
-        BlockPos center = helper.absolutePos(new BlockPos(4, 3, 5));
-        BreakWatch.BREAKERS.put(center, BreakWatch.NOBODY);
-        PowerSuitEntity suit = toolSuit(helper);
-        suit.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.BLAZE_ROD, 4));
-        suit.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, new ItemStack(ModItems.DRILL.get()));
-        UUID owner = UUID.randomUUID();
-        suit.brain().setOwnerId(owner);
-        suit.brain().setHome(suit.blockPosition()); // the mind only drills its hall round home (the wall is in it)
-        helper.runAfterDelay(2, () -> { // once the engine runs (an unpowered mind forgets its aim and trigger)
-            suit.brain().setAim(Vec3.atCenterOf(center));
-            suit.socket().setAiTrigger(true);
-        });
-        helper.runAfterDelay(5, () -> helper.assertTrue(suit.socket().isActive(), "the mind's trigger runs the tool"));
-        helper.runAfterDelay(30, () -> {
-            suit.socket().setAiTrigger(false);
-            UUID breaker = BreakWatch.BREAKERS.remove(center);
-            helper.assertTrue(wallLeft(helper) == 0, "the face should be gone, left " + wallLeft(helper));
-            helper.assertTrue(dropped(helper, Items.COBBLESTONE) == 9, "9 cobblestone should drop, got " + dropped(helper, Items.COBBLESTONE));
-            helper.assertTrue(owner.equals(breaker), "broken as the owner, got " + breaker);
-            helper.succeed();
-        });
-    }
 
     /** Either arm carries a power tool (2026-11-15): a tool in the right socket alone is the primary one and works, and with
      *  tools in both sockets each has its own trigger, running state and stack: the left's drill spins while the right's
@@ -2266,10 +2240,10 @@ public final class PowerSuitTests {
     }
 
     // =========================================================================================
-    // Phase 8 step 4: the drill and chainsaw workers
+    // Companion design (2026-11-16): the follow route (chainsaw, flamethrower, no tool) and the guard route (drill, TNT)
     // =========================================================================================
 
-    private static PowerSuitEntity worker(GameTestHelper helper, BlockPos at, ItemStack tool) {
+    private static PowerSuitEntity companionWith(GameTestHelper helper, BlockPos at, ItemStack tool) {
         PowerSuitEntity suit = suitAt(helper, at);
         companion(helper, suit);
         suit.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.BLAZE_ROD, 8));
@@ -2278,61 +2252,82 @@ public final class PowerSuitTests {
         return suit;
     }
 
-    /**
-     * A stone mass (z 3..8, 4 high) in front of home: the mind clears the hall (home level, 3 high) and leaves the floor,
-     * the ceiling, the blocks touching a lava pocket, and a column over a hole in the floor.
-     */
-    @SuitTest(timeoutTicks = 1500)
-    public static void mindDrillsAnOpenHallAtHomeLevel(GameTestHelper helper) {
-        for (BlockPos p : BlockPos.betweenClosed(new BlockPos(0, 2, 3), new BlockPos(8, 5, 8))) {
-            helper.setBlock(p, Blocks.STONE);
-        }
-        helper.setBlock(new BlockPos(8, 3, 8), Blocks.LAVA);
-        helper.setBlock(new BlockPos(2, 1, 6), Blocks.AIR); // a hole in the floor under the column x=2, z=6
-        PowerSuitEntity suit = worker(helper, new BlockPos(4, 2, 1), new ItemStack(ModItems.DRILL.get()));
-        List<BlockPos> kept = List.of(new BlockPos(7, 3, 8), new BlockPos(8, 3, 7), new BlockPos(8, 2, 8), new BlockPos(8, 4, 8),
-                new BlockPos(2, 2, 6), new BlockPos(2, 3, 6), new BlockPos(2, 4, 6));
-        helper.succeedWhen(() -> {
-            for (BlockPos p : kept) {
-                helper.assertBlockPresent(Blocks.STONE, p);
-            }
-            for (int x = 0; x <= 8; x++) {
-                for (int z = 3; z <= 8; z++) {
-                    helper.assertBlockPresent(Blocks.STONE, new BlockPos(x, 5, z)); // the ceiling stays
-                    if (!(x == 2 && z == 6)) {
-                        helper.assertTrue(!helper.getBlockState(new BlockPos(x, 1, z)).isAir(), "the floor stays at " + x + ",1," + z);
-                    }
-                }
-            }
-            int left = 0;
-            for (BlockPos p : BlockPos.betweenClosed(new BlockPos(0, 2, 3), new BlockPos(8, 4, 8))) {
-                left += helper.getBlockState(p).is(Blocks.STONE) && !kept.contains(p) ? 1 : 0;
-            }
-            helper.assertTrue(left == 0, "the hall should be clear, " + left + " stone left; suit at "
-                    + suit.position().subtract(helper.absoluteVec(Vec3.ZERO)) + " goals " + suit.brain().runningGoalNames());
+    /** Follow route: a companion with the chainsaw runs at a monster near its owner and shreds it (ToolMelee): it
+     *  credits the kill to itself and takes no fuel for ammo. */
+    @SuitTest(timeoutTicks = 200)
+    public static void chainsawCompanionShredsMonstersNearItsOwner(GameTestHelper helper) {
+        PowerSuitEntity suit = companionWith(helper, new BlockPos(4, 2, 1), new ItemStack(ModItems.CHAINSAW.get()));
+        var owner = ownerAt(helper, suit, new Vec3(1.5, 2, 1.5));
+        var husk = statueHusk(helper, new Vec3(4.5, 2, 6.5));
+        helper.runAfterDelay(160, () -> {
+            dismiss(helper, owner);
+            helper.assertTrue(suit.brain().followsOwner() && !suit.brain().guardsByMelee(), "the chainsaw is on the follow route");
+            helper.assertTrue(!husk.isAlive() || husk.getHealth() < husk.getMaxHealth(), "the husk is shredded, health " + husk.getHealth());
+            helper.assertTrue(!husk.isAlive() ? husk.getLastHurtByMob() == suit : true, "killed by the suit itself");
+            helper.succeed();
         });
     }
 
-    @SuitTest(timeoutTicks = 300)
-    public static void mindFellsNaturalTreesButNotCabins(GameTestHelper helper) {
-        for (int y = 2; y <= 6; y++) {
-            helper.setBlock(new BlockPos(5, y, 6), Blocks.OAK_LOG);
-        }
-        for (BlockPos p : BlockPos.betweenClosed(new BlockPos(4, 5, 5), new BlockPos(6, 7, 7))) {
-            if (helper.getBlockState(p).isAir()) {
-                helper.setBlock(p, Blocks.OAK_LEAVES); // natural (not persistent)
+    /** Guard route: a companion with the drill keeps to home and grinds a monster that comes within the guard radius. */
+    @SuitTest(timeoutTicks = 200)
+    public static void drillCompanionGuardsHomeByGrinding(GameTestHelper helper) {
+        PowerSuitEntity suit = companionWith(helper, new BlockPos(4, 2, 1), new ItemStack(ModItems.DRILL.get()));
+        var husk = statueHusk(helper, new Vec3(4.5, 2, 6.5));
+        helper.runAfterDelay(160, () -> {
+            helper.assertTrue(suit.brain().guardsByMelee() && !suit.brain().followsOwner(), "the drill is on the guard route");
+            helper.assertTrue(!husk.isAlive() || husk.getHealth() < husk.getMaxHealth(), "the husk is ground down, health " + husk.getHealth());
+            helper.succeed();
+        });
+    }
+
+    /** The flamethrower (follow route) and the TNT launcher (guard route) only punch in a mind's hands: nothing fired, no
+     *  fire, no TNT, but the monster is still dealt with. */
+    @SuitTest(timeoutTicks = 200)
+    public static void flamethrowerAndTntCompanionsOnlyPunch(GameTestHelper helper) {
+        PowerSuitEntity flame = companionWith(helper, new BlockPos(2, 2, 1), new ItemStack(ModItems.FLAMETHROWER.get()));
+        PowerSuitEntity tnt = companionWith(helper, new BlockPos(6, 2, 1), new ItemStack(ModItems.TNT_LAUNCHER.get()));
+        var owner = ownerAt(helper, flame, new Vec3(1.5, 2, 3.5));
+        var huskA = statueHusk(helper, new Vec3(2.5, 2, 5.5));
+        var huskB = statueHusk(helper, new Vec3(6.5, 2, 5.5));
+        boolean[] fire = {false};
+        helper.onEachTick(() -> {
+            for (BlockPos p : BlockPos.betweenClosed(helper.absolutePos(new BlockPos(0, 2, 0)), helper.absolutePos(new BlockPos(8, 4, 8)))) {
+                fire[0] |= helper.getLevel().getBlockState(p).is(BlockTags.FIRE);
             }
-        }
-        helper.setBlock(new BlockPos(1, 2, 6), Blocks.OAK_LOG); // a cabin wall: logs with no leaves
-        helper.setBlock(new BlockPos(1, 3, 6), Blocks.OAK_LOG);
-        PowerSuitEntity suit = worker(helper, new BlockPos(3, 2, 1), new ItemStack(ModItems.CHAINSAW.get()));
-        helper.succeedWhen(() -> {
-            for (int y = 2; y <= 6; y++) {
-                helper.assertBlockNotPresent(Blocks.OAK_LOG, new BlockPos(5, y, 6));
-            }
-            helper.assertBlockPresent(Blocks.OAK_LOG, new BlockPos(1, 2, 6));
-            helper.assertBlockPresent(Blocks.OAK_LOG, new BlockPos(1, 3, 6));
-            helper.assertTrue(dropped(helper, Items.OAK_LOG) == 5, "the tree's 5 logs drop");
+        });
+        helper.runAfterDelay(180, () -> {
+            dismiss(helper, owner);
+            helper.assertTrue(flame.brain().followsOwner() && tnt.brain().guardsByMelee(), "follow route / guard route");
+            helper.assertTrue(flame.socket().getUses() == 0 && tnt.socket().getUses() == 0, "neither tool fired");
+            helper.assertTrue(!fire[0], "no fire");
+            helper.assertTrue(huskA.getHealth() < huskA.getMaxHealth() || !huskA.isAlive(), "the flamethrower suit punched its husk");
+            helper.assertTrue(huskB.getHealth() < huskB.getMaxHealth() || !huskB.isAlive(), "the TNT suit punched its husk");
+            helper.succeed();
+        });
+    }
+
+    /** A mind never mines or fells (companion design, 2026-11-16): with the trigger held and the aim on stone / a log,
+     *  the drill and the chainsaw leave the blocks alone. */
+    @SuitTest(timeoutTicks = 100)
+    public static void companionDrillAndChainsawNeverMineOrFell(GameTestHelper helper) {
+        helper.setBlock(new BlockPos(4, 3, 4), Blocks.STONE);
+        helper.setBlock(new BlockPos(3, 3, 4), Blocks.OAK_LOG);
+        PowerSuitEntity suit = companionWith(helper, new BlockPos(4, 2, 1), new ItemStack(ModItems.DRILL.get()));
+        helper.runAfterDelay(2, () -> {
+            suit.brain().setAim(helper.absoluteVec(new Vec3(4.5, 3.5, 4.5)));
+            suit.socket().setAiTrigger(true);
+        });
+        helper.runAfterDelay(40, () -> {
+            helper.assertBlockPresent(Blocks.STONE, new BlockPos(4, 3, 4));
+            suit.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, new ItemStack(ModItems.CHAINSAW.get()));
+        });
+        helper.runAfterDelay(44, () -> {
+            suit.brain().setAim(helper.absoluteVec(new Vec3(3.5, 3.5, 4.5)));
+            suit.socket().setAiTrigger(true);
+        });
+        helper.runAfterDelay(90, () -> {
+            helper.assertBlockPresent(Blocks.OAK_LOG, new BlockPos(3, 3, 4));
+            helper.succeed();
         });
     }
 
@@ -3829,15 +3824,12 @@ public final class PowerSuitTests {
         PowerSuitEntity suit = spawnSuit(helper);
         suit.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, new ItemStack(ModItems.DRILL.get()));
         helper.runAfterDelay(2, () -> {
-            helper.assertTrue(suit.brain().toolGoals().size() == 1 && suit.brain().toolGoals().get(0) instanceof DrillWorker,
-                    "the drill brings its worker, got " + suit.brain().toolGoals());
+            helper.assertTrue(suit.brain().toolGoals().isEmpty(), "the drill brings no goals of its own (HomeGuard is every mind's), got " + suit.brain().toolGoals());
             suit.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, new ItemStack(ModItems.CHAINGUN.get()));
         });
         helper.runAfterDelay(4, () -> {
             helper.assertTrue(suit.brain().toolGoals().size() == 1 && suit.brain().toolGoals().get(0) instanceof GunAttack,
-                    "the chaingun's attack replaced it, got " + suit.brain().toolGoals());
-            helper.assertTrue(suit.goals().getAvailableGoals().stream().noneMatch(g -> g.getGoal() instanceof DrillWorker),
-                    "and the drill's worker is gone from the mind");
+                    "the chaingun brings its attack, got " + suit.brain().toolGoals());
             suit.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, ItemStack.EMPTY);
         });
         helper.runAfterDelay(6, () -> {
@@ -3863,30 +3855,6 @@ public final class PowerSuitTests {
         });
     }
 
-    /** The machine mind fights with it like with the chaingun, from close up: a friendly suit burns a husk near its owner,
-     *  and never sets blocks on fire (it guards you, not your house). */
-    @SuitTest(timeoutTicks = 160)
-    public static void flamethrowerMindBurnsMonstersNearItsOwner(GameTestHelper helper) {
-        PowerSuitEntity suit = companion(helper, suitAt(helper, new BlockPos(4, 2, 1)));
-        suit.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.BLAZE_ROD, 4));
-        suit.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, new ItemStack(ModItems.FLAMETHROWER.get()));
-        var owner = ownerAt(helper, suit, new Vec3(1.5, 2, 1.5));
-        var husk = statueHusk(helper, new Vec3(4.5, 2, 7.5));
-        boolean[] fire = {false};
-        helper.onEachTick(() -> {
-            for (BlockPos p : BlockPos.betweenClosed(helper.absolutePos(new BlockPos(0, 2, 0)), helper.absolutePos(new BlockPos(8, 4, 8)))) {
-                fire[0] |= helper.getLevel().getBlockState(p).is(BlockTags.FIRE);
-            }
-        });
-        helper.runAfterDelay(140, () -> {
-            dismiss(helper, owner);
-            helper.assertTrue(suit.brain().followsOwner(), "a flamethrower suit takes the chaingun's job");
-            helper.assertTrue(suit.socket().getUses() > 0, "it sprayed");
-            helper.assertTrue(husk.getHealth() < husk.getMaxHealth() || !husk.isAlive(), "the husk should be burnt, health " + husk.getHealth());
-            helper.assertTrue(!fire[0], "a friendly mind sets no blocks on fire");
-            helper.succeed();
-        });
-    }
 
     // =========================================================================================
     // TNT launcher (Phase 11, 2026-10-25; its TNT from the pilot's inventory since 2026-10-27)

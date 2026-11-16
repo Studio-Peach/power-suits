@@ -1383,8 +1383,8 @@ public final class AutoPilot {
             case 940 -> closeMindLog();
             default -> {}
         }
-        // the drill and chainsaw workers (step 4), then the rogue suits (step 5): their own scene classes; then the run ends
-        if (m >= 945 && workRunning && !WorkScene.step(mc, m - 945)) {
+        // the companion's routes (2026-11-16), then the rogue suits (step 5): their own scene classes; then the run ends
+        if (m >= 945 && workRunning && !CompanionScene.step(mc, m - 945)) {
             workRunning = false;
             rogueStart = m + 1;
         }

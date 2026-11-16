@@ -29,10 +29,10 @@ import org.jetbrains.annotations.Nullable;
  * tool, the tool grinds it instead of mining. Steady damage like the chaingun's spin (no hit immunity: their damage types
  * are in {@code bypasses_cooldown}), no knockback (the {@code no_knockback} tag: you stay locked on it) and a slowness
  * that is renewed every tick. The two differ in numbers only: the saw hurts more, the drill wears the target's armour
- * ({@link #wearArmour}). Pilots only: the machine mind's saw and drill stay work tools (a hit on its owner or a pet would
- * be a bug, not a feature).
+ * ({@link #wearArmour}). A pilot grinds what is under their crosshair; the companion mind (2026-11-16) only its own chosen
+ * target, so a hit on its owner or a pet can't happen.
  */
-final class ToolMelee {
+public final class ToolMelee {
     /** "power_suits:saw" / "power_suits:drill" (data/power_suits/damage_type): sawn apart, drilled through. */
     static final ResourceKey<DamageType> SAW = key("saw");
     static final ResourceKey<DamageType> DRILL = key("drill");
@@ -48,9 +48,23 @@ final class ToolMelee {
         return ResourceKey.create(Registries.DAMAGE_TYPE, Identifier.fromNamespaceAndPath(PowerSuits.MODID, name));
     }
 
-    /** The nearest living thing under the pilot's crosshair within reach and not behind a block, or null. */
+    /** The mind's target is in reach: from the eye to its box, within the melee reach. */
+    public static boolean inReach(PowerSuitEntity suit, LivingEntity target) {
+        Vec3 eye = suit.getEyePosition();
+        AABB box = target.getBoundingBox();
+        double dx = Math.max(Math.max(box.minX - eye.x, 0), eye.x - box.maxX), dy = Math.max(Math.max(box.minY - eye.y, 0), eye.y - box.maxY),
+                dz = Math.max(Math.max(box.minZ - eye.z, 0), eye.z - box.maxZ);
+        return dx * dx + dy * dy + dz * dz <= (REACH - 0.5) * (REACH - 0.5);
+    }
+
+    /** What the tool grinds: a pilot's is the nearest living thing under the crosshair within reach and not behind a block;
+     *  a mind's is only the target it picked (it must never hit its owner or a pet that stands in front of it). */
     @Nullable
     static LivingEntity target(PowerSuitEntity suit, LivingEntity operator) {
+        if (!(operator instanceof Player)) {
+            LivingEntity chosen = suit.getTarget();
+            return chosen != null && chosen.isAlive() && inReach(suit, chosen) && suit.getSensing().hasLineOfSight(chosen) ? chosen : null;
+        }
         Vec3 eye = operator.getEyePosition();
         Vec3 end = eye.add(operator.getViewVector(1F).scale(REACH));
         List<Entity> near = suit.level().getEntities(suit, new AABB(eye, end).inflate(1.0),
@@ -73,7 +87,7 @@ final class ToolMelee {
      */
     static boolean grind(PowerSuitEntity suit, LivingEntity operator, ResourceKey<DamageType> type, float damage, int interval,
                          int energy, int slowLevel, int armourWear) {
-        if (!(operator instanceof Player pilot) || !(suit.level() instanceof ServerLevel level)) {
+        if (!(suit.level() instanceof ServerLevel level)) {
             return false;
         }
         LivingEntity target = target(suit, operator);
@@ -93,7 +107,7 @@ final class ToolMelee {
         }
         DamageSource source = level.damageSources().source(type, operator);
         if (target.hurtServer(level, source, damage)) {
-            pilot.setLastHurtMob(target);
+            operator.setLastHurtMob(target);
             wearArmour(level, source, target, armourWear);
             level.sendParticles(ParticleTypes.CRIT, at.x, at.y, at.z, 2, 0.2, 0.3, 0.2, 0.2);
             level.sendParticles(ParticleTypes.CRIT, at.x, at.y, at.z, 1, 0.1, 0.1, 0.1, 0.1);

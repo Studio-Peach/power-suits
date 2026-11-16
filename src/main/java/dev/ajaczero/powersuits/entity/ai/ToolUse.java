@@ -1,22 +1,29 @@
 package dev.ajaczero.powersuits.entity.ai;
 
 /**
- * How the machine mind uses the tool in its socket (design sec. 8): each tool says which (PowerTool.mindUse). The kind
- * decides what the shared goals do (SuitGoals: a GUN mind follows its owner, the others keep to home; SuitBrain's job
- * questions); the tool's own goals do the job itself (PowerTool.mindGoals). A friendly mind does its job round its owner or its home; a rogue
- * only fights, and only with the weapons rogues carry (GUN, EM).
+ * How the companion mind uses the tool in its socket (design sec. 8, rewritten 2026-11-16): each tool says which
+ * (PowerTool.mindUse). The kind picks the route: the follow route (a gunner: it follows its owner like a tamed wolf and
+ * defends them) or the guard route (it keeps to its home, the block where the pilot got out, and deals with what comes
+ * near); the tool's own goals do the fighting (PowerTool.mindGoals). A rogue only fights, with the weapons rogues carry.
+ *
+ * Nothing destructive ever runs in a mind's hands: the flamethrower and the TNT launcher are carried but the mind only
+ * punches with them, and the drill and the chainsaw only ever grind a target (they never mine or fell for a mind).
  */
 public enum ToolUse {
-    /** Nothing the mind can do with it (the TNT launcher, an empty socket): it walks home and looks around. */
+    /** No tool: follow route, fists. */
     NONE,
-    /** Aim and hold the trigger (chaingun, flamethrower): a friendly mind follows its owner and defends them. */
+    /** Aim and hold the trigger (chaingun): follow route. */
     GUN,
-    /** Grab and throw with the EM projector: a friendly mind guards the area round home. */
+    /** Chainsaw: follow route, runs at the target and shreds it (ToolMelee). */
+    SAW,
+    /** Flamethrower: follow route, fists only (fire is griefing). */
+    FLAME,
+    /** Grab and throw with the EM projector: guard route (EmGuard). */
     EM,
-    /** Snipe with the rail cannon: a friendly mind shoots from home at what comes near. */
+    /** Snipe with the rail cannon: guard route (RailGuard). */
     RAIL,
-    /** Dig with the drill: a friendly mind clears an open hall round home. */
+    /** Drill: guard route, charges what comes near home and grinds it (ToolMelee). */
     DRILL,
-    /** Cut with the chainsaw: a friendly mind fells the natural trees round home. */
-    SAW
+    /** TNT launcher: guard route, fists only (blowing things up is griefing). */
+    TNT
 }

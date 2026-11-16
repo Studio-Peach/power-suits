@@ -29,7 +29,7 @@ import net.minecraft.world.level.levelgen.Heightmap;
  *  - the tool's own job: each power tool lists its goals (PowerTool.mindGoals), which the mind learns when the tool goes
  *    into the socket and forgets when it comes out (SuitBrain.updateToolGoals). Chaingun and flamethrower: GunAttack (aim,
  *    fire, punch when dry); EM projector: EmGuard (guard home) and RogueEmAttack; rail cannon: RailGuard (a sentry at
- *    home); drill: DrillWorker (dig a hall); chainsaw: SawWorker (fell trees). A tool with none (the TNT launcher) leaves
+ *    home); every mind has MeleeAttack (the follow route's hands: chainsaw, punches) and HomeGuard (the guard route's: drill, punches). A tool with none leaves
  *    the mind standing guard at home. Adding a tool's job never touches this class.
  * A rogue mind has no owner and no home: it wanders and attacks anything it sees with its chaingun or EM projector.
  * A mob has two goal lists: {@code targetSelector} decides who to fight (setTarget), {@code goalSelector} what to do.
@@ -54,6 +54,8 @@ public final class SuitGoals {
         targets.addGoal(1, new DefendOwner(suit));
         targets.addGoal(1, new RogueTarget(suit));
         // (priority TOOL_JOB: the socket tool's goals, added and removed by SuitBrain.updateToolGoals)
+        goals.addGoal(SuitGoals.TOOL_JOB, new MeleeAttack(suit));  // the follow route's hands (chainsaw, flamethrower, no tool)
+        goals.addGoal(SuitGoals.TOOL_JOB, new HomeGuard(suit));    // the guard route's hands (drill, TNT launcher)
         goals.addGoal(4, new FollowOwner(suit));
         goals.addGoal(5, new ReturnHome(suit));
         goals.addGoal(7, new RogueWander(suit));

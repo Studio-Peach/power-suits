@@ -100,7 +100,7 @@ public class FlamethrowerItem extends Item implements PowerTool, ModTooltip {
 
     @Override
     public ToolUse mindUse() {
-        return ToolUse.GUN;
+        return ToolUse.FLAME;
     }
 
     @Override
