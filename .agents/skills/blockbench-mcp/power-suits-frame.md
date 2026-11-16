@@ -47,7 +47,7 @@ the end and `docs/guide.md` Notes).
   `sea_open` / `sea_armored`; the renderer shows it for the tidal engine and `engine` for the others). User: the
   engines' light and particles are good but shouldn't follow the firebox's shape; 3D on the back, 2D (flat) on the
   front and sides. Drafted three (A diver, B prismarine conduit housing, C drum with a window of water), A picked
-  ("it looks great"); B and C are in git ("Sea engine drafts"). It reuses the heart's harness routing (over the
+  ("it looks great"); B and C were not kept. It reuses the heart's harness routing (over the
   shoulders, down the waist, into the back body's sides) with its own paint.
 - Light: letters T S y q are reserved dark teals in the texture (`SEA_DARK`, `SEA_GLOW=lit` paints them lit for a
   review); `export-frame.py` writes `power_frame_glow_sea`, `SuitGlowLayer` scales it by the tidal shimmer.

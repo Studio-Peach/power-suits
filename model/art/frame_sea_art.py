@@ -2,8 +2,8 @@
 heart's. 2026-11-16, user: the tidal engine's and the star reactor's light and particles are good, but they shouldn't
 follow the firebox's shape. The frame can have both a 3D component on the back and a 2D one on the front and sides.
 Sea first; three directions were drafted (A diver, B conduit housing with thin circuit traces and gill slits, C
-horizontal drum with a window of moving water; B and C are in git history, commit "Sea engine drafts") and the user
-picked A ("it looks great"):
+horizontal drum with a window of moving water) and the user
+picked A ("it looks great"); B and C were not kept:
   back   two dark iron diving tanks with steel straps and teal level windows, a manifold between them with the Heart
          of the Sea in a porthole, link pipes, a valve on each tank (the bubbles come out of them);
   front  a dive gauge in the chest slot (open: on the chest; under the breastplate: in a steel ring, as the heart's
