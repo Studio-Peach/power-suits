@@ -178,54 +178,66 @@ def dome(f, w, h):
     return g
 
 
-BONE_ORIGIN = {'star_core': (0, 21.5, 5.5)}   # raw; the star's spin pivot (the window's middle). The game draws the fuel slot's
+BONE_ORIGIN = {'star_core': (0, 21, 5.5)}   # raw; the star's spin pivot (the window's middle). The game draws the fuel slot's
                                                 # nether star there and turns the bone fast.
 
 
-def lit_band(f, w, h):
-    """A body band: black, its side faces carrying the violet slit (the reference's lit slits)."""
-    g = blk(f, w, h)
-    if f == 'south':                                     # two facets, lit left / mid right, no seam between the bands
-        g = [['9' if i < w // 2 else '8' for i in range(w)] for j in range(h)]
+def px(paint):
+    """Paint at one pixel per block-pixel, the way vanilla textures are: paint(face, w_px, h_px) -> grid, each cell drawn
+    as 2 x 2 texels (the frame's texture is 2 texels to the px). User, 2026-11-16: "too high in its dimensionality,
+    out of place in minecraft": few boxes, big flat pixels."""
+    def up(f, w, h):
+        small = paint(f, w // 2, h // 2)
+        return [[small[j // 2][i // 2] for i in range(w)] for j in range(h)]
+    return up
+
+
+def body_px(f, w, h):
+    g = [['8'] * w for _ in range(h)]
+    for i in range(w): g[0][i] = '9'                                  # lit top edge
+    for i in range(w): g[h - 1][i] = '$'                              # dark underside
+    if f == 'south':
+        for j in range(h): g[j][0] = '9'
+        # the window: a 4 x 4 px violet ring round a dark well, in the middle
+        cx, cy = w // 2, h // 2
+        ring = ((1, 0), (2, 0), (0, 1), (3, 1), (0, 2), (3, 2), (1, 3), (2, 3))
+        for dy in range(4):
+            for dx in range(4):
+                g[cy - 2 + dy][cx - 2 + dx] = '*' if (dx, dy) in ring else '$'
+    elif f in ('east', 'west'):                                       # the lit slit down the side
+        for i in range(w): g[h // 2][i] = '%'
+    return g
+
+
+def cap_px(f, w, h):
+    g = [['8'] * w for _ in range(h)]
+    if f in ('south', 'north'):
+        for j in range(h): g[j][0] = '9'
+    g[0] = ['9'] * w
+    return g
+
+
+def fin_px(f, w, h):
+    g = [['8'] * w for _ in range(h)]
     if f in ('east', 'west'):
-        for j in range(1, h - 1):
-            for i in range(1, w - 1): g[j][i] = '%' if j == h // 2 else ('*' if j == h // 2 - 1 else g[j][i])
-    return g
-
-
-def faceted(f, w, h):
-    g = blk(f, w, h)
-    if f == 'south': g = [['9' if i < w // 2 else '8' for i in range(w)] for j in range(h)]
-    return g
-
-
-def window(f, w, h):
-    """The raised panel: a violet ring round a dark well (the star spins in front of it)."""
-    g = blk(f, w, h)
-    if f != 'south': return g
-    cx, cy, R = w / 2, h / 2, min(w, h) / 2 - 0.2
-    for j in range(h):
-        for i in range(w):
-            d = math.hypot(i + 0.5 - cx, j + 0.5 - cy)
-            if d <= R: g[j][i] = '$'
-            if R - 1 <= d <= R: g[j][i] = '*'
+        for j in range(1, h - 1): g[j][w // 2] = '%'                 # a lit stripe down the spike's side
     return g
 
 
 def jetpack():
-    """After the Fortnite Alien Jetpack: slim and gem-like. Stepped bands (a hexagon seen from behind: narrow crown, widest
-    at the shoulders, tapering to the foot), only 2 px deep, a raised round window on its face, a dome on top, two long
-    swept-back fins at the foot."""
-    P = []
-    for k, (y0, y1, hw) in enumerate(((24, 25, 2.5), (23, 24, 3.5), (21, 23, 4.5), (19, 21, 4), (18, 19, 3.5), (17, 18, 2.5), (16, 17, 1.5))):
-        P.append(part(f'band{k}', ((-hw, y0, 3), (hw, y1, 5)), lit_band if hw >= 4 else faceted))
-    P.append(part('dome', ((-1, 25, 3.5), (1, 25.5, 4.5)), dome))
-    P.append(part('panel', ((-2.5, 19.5, 5), (2.5, 23.5, 5.5)), window))
-    hub_ = part('hub', ((-0.5, 21, 5), (0.5, 22, 6)), hub)
-    hub_['bone'] = 'star_core'
-    P.append(hub_)
-    P.append(part('fin', ((2, 12.5, 3), (2.5, 18, 4.5)), fin, mirror=True, rot=[0, 0, 22], origin=(2.25, 18, 3.75)))
-    return P
+    """After the Fortnite Alien Jetpack, kept Minecraft-simple: a 8 x 6 x 2 px body with a 4 px crown and foot (a hexagon
+    from behind), a violet ring window on its face for the star, two plain spikes at the foot. Five boxes and a hub."""
+    return [part('body', ((-4, 18, 3), (4, 24, 5)), px(body_px)),
+            part('crown', ((-2, 24, 3), (2, 25, 5)), px(cap_px)),
+            part('foot', ((-2, 17, 3), (2, 18, 5)), px(cap_px)),
+            part('fin', ((2, 13, 3), (3, 17, 4)), px(fin_px), mirror=True),
+            _star_hub()]
+
+
+def _star_hub():
+    h = part('hub', ((-0.5, 20.5, 5), (0.5, 21.5, 5.5)), hub)
+    h['bone'] = 'star_core'
+    return h
 
 
 BACKS = {'A': chain, 'B': jetpack}
