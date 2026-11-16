@@ -128,10 +128,77 @@ def chain():
     return P
 
 
-BACKS = {'A': chain}
+# ---------------------------------------------------------------- B: the jetpack (2026-11-16: the star grants flight)
+# User: the star engine gives flight, new reference the Fortnite "Alien Jetpack" (.scratch/star/ref_jet.png): a faceted
+# grey-black shell, a big round glyph plate on its face, a dome on top, violet slits down the sides, two fins at the
+# foot with a lit stripe. The front stays the lens. Raw coordinates as above; the shell is stepped boxes for the facets.
+def shell(f, w, h):
+    return blk(f, w, h)
 
 
-def build(design='A', chest_x=6.0):
+def glyph_face(f, w, h):
+    """The big plate on the back: a dark bezel, a violet ring, a pentagon star of thin lines, a dot at its hub."""
+    g = blk(f, w, h)
+    if f != 'south': return g
+    cx, cy, R = w / 2, h / 2, min(w, h) / 2 - 0.5
+    for j in range(h):
+        for i in range(w):
+            d = math.hypot(i + 0.5 - cx, j + 0.5 - cy)
+            if d <= R + 0.9: g[j][i] = '$'
+            if R - 0.6 <= d <= R + 0.4: g[j][i] = '*'
+    pts = [(cx + (R - 1) * math.sin(math.radians(72 * k)), cy - (R - 1) * math.cos(math.radians(72 * k))) for k in range(5)]
+    for k in range(5):                                   # the star: each point to the one two on
+        (x0, y0), (x1, y1) = pts[k], pts[(k + 2) % 5]
+        for t in range(41):
+            x, y = x0 + (x1 - x0) * t / 40, y0 + (y1 - y0) * t / 40
+            i, j = int(x), int(y)
+            if 0 <= i < w and 0 <= j < h and g[j][i] in '$*=': g[j][i] = '%'
+    for (x, y) in pts: g[int(y)][int(x)] = '&'
+    g[int(cy)][int(cx)] = g[int(cy - 0.5)][int(cx - 0.5)] = '&'
+    return g
+
+
+def slit(f, w, h):
+    """The side face of the main shell: black with one slanted violet slit."""
+    g = blk(f, w, h)
+    if f in ('east', 'west'):
+        for i in range(2, w - 1):
+            j = h // 2 + (1 if (i < w // 2) == (f == 'east') else 0)
+            if 0 < j < h - 1: g[j][i] = '%'; g[j - 1][i] = '*' if g[j - 1][i] != '9' else g[j - 1][i]
+    return g
+
+
+def fin(f, w, h):
+    """A foot fin: black, a lit stripe down its outer face."""
+    g = blk(f, w, h)
+    if f in ('east', 'west', 'south', 'north'):
+        for j in range(1, h - 1):
+            for i in range(w // 2 - 1, w // 2 + 1): g[j][i] = '%'
+    return g
+
+
+def dome(f, w, h):
+    g = [['=' if f != 'down' else '$'] * w for _ in range(h)]
+    if f != 'down': g[0] = ['*'] * w
+    return g
+
+
+def jetpack():
+    P = [part('foot', ((-3, 16, 3), (3, 17, 6)), shell),
+         part('belly', ((-4, 17, 3), (4, 24, 7)), shell),
+         part('plate', ((-3.5, 17.5, 7), (3.5, 23.5, 7.5)), glyph_face),
+         part('crown', ((-2.5, 24, 3), (2.5, 25, 6)), shell),
+         part('dome', ((-0.5, 25, 4), (0.5, 25.5, 5)), dome)]
+    for k, (y0, y1) in enumerate(((18.5, 22.5),)):
+        P.append(part(f'slit{k}', ((4, y0, 3.5), (4.5, y1, 6.5)), slit, mirror=True))
+    P.append(part('fin', ((3, 12.5, 3.5), (3.5, 16.5, 5.5)), fin, mirror=True, rot=[0, 0, 20], origin=(3.25, 16.5, 4.5)))
+    return P
+
+
+BACKS = {'A': chain, 'B': jetpack}
+
+
+def build(design='B', chest_x=6.0):
     """(back parts, open front, armoured front); frame_model.py prefixes them (rb_ / ro_ / ra_)."""
     glyph = sea.element(lens_glyph())
     return BACKS[design](), [glyph_plate(glyph)], [sea.bezel(glyph)]

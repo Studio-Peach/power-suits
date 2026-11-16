@@ -763,7 +763,7 @@ if ENGINE == 'heart' and SEA != 'none':
 # Knob STAR ('A' / 'none'; 2026-11-16, user: the star reactor too, after the tidal engine's diver; the Sandevistan chain,
 # A, picked from eight rounds of drafts): its own back and fronts (frame_star_art.py), group engine_star. STAR_GLOW as SEA_GLOW.
 STAR = os.environ.get('STAR', 'A')
-assert STAR in ('none', 'A'), STAR
+assert STAR in ('none', 'A', 'B'), STAR
 if os.environ.get('STAR_GLOW', 'dark') == 'dark': PAL.update(star_art.STAR_DARK)
 if ENGINE == 'heart' and STAR != 'none':
     _back, _open, _armoured = star_art.build(STAR, CHEST_X)
