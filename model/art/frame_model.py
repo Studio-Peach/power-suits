@@ -792,8 +792,8 @@ if ENGINE == 'heart':
     GUARD = os.environ.get('GUARD', 'hot')
     # ('game': both fronts, ht_ the open one, ha_ the armoured; one name per part, so their strips are their own)
     for armored, prefix in ((False, 'ht_'), (True, 'ha_')) if ARMOR == 'game' else ((ARMOR != 'none', 'ht_'),):
-        for p in heart_art.build(CHEST_X, PX, UP_Y, LOW_Y, PACK_TOP, armored=armored, guard=GUARD,
-                                 side_x=(WAIST_STEPS[0][1][0] + CHEST_X) / 2, flat=ARMOR_FORM == 'flat'):
+        for p in ([] if os.environ.get('STAR_ALONE') else heart_art.build(CHEST_X, PX, UP_Y, LOW_Y, PACK_TOP, armored=armored, guard=GUARD,
+                                 side_x=(WAIST_STEPS[0][1][0] + CHEST_X) / 2, flat=ARMOR_FORM == 'flat')):
             k = prefix + p['name']
             ENGINE_BOX[k] = p['box']
             ENGINE_META[k] = p
