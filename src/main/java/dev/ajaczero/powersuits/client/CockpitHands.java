@@ -55,12 +55,14 @@ public final class CockpitHands {
     // pose, turned toward REST_AIM (a point low and left of the crosshair) by REST_TURN of the way.
     // Not final: the dev view tuner (autopilot "view" mode) reloads them from run/view/tuning.json.
     static float toolAimDistance = 10F;
-    static Vector3f restAim = new Vector3f(-2.5F, -3.5F, -10F);
-    static float restTurn = 0.6F;
+    static Vector3f restAim = new Vector3f(-1.5F, -3.5F, -10F);
+    static float restTurn = 0.45F;
     /** Both arms are drawn at this scale about their shoulder pivot (user, 2026-11-15: in first person they were too big and
      *  too extended: the frame's arm shell is 5 px wide and 16 long round the skin's 4 x 12 arm, vanilla's hand places
      *  it close to the camera). Scaling about the pivot shortens the reach as it shrinks the arm. */
     static float armScale = 0.75F;
+    /** The tool arm's own scale (it turns toward the aim, so the same scale hides more of it than the plain right arm). */
+    static float toolArmScale = 0.85F;
     /** The chaingun's muzzle about the pilot's left arm pivot, in vanilla's arm space (y down the arm, x mirrored; px):
      *  the socket is 10 px down the arm and 1.25 px off its pivot's axis (tools/export-frame.py), the muzzle block's
      *  bottom 8.5 px under the socket. */
@@ -165,7 +167,7 @@ public final class CockpitHands {
         Quaternionf aimed = new Quaternionf().rotationTo(axis, target.sub(pivot).normalize());
         Quaternionf turn = rest.slerp(aimed, raise);
         pose.last().pose().set(new Matrix4f(base).translate(pivot).rotate(turn).translate(-pivot.x, -pivot.y, -pivot.z).mul(local)
-                .scale(armScale));
+                .scale(toolArmScale));
         Matrix3f localNormal = new Matrix3f(baseNormal).invert().mul(pose.last().normal());
         pose.last().normal().set(new Matrix3f(baseNormal).rotate(turn).mul(localNormal));
     }
@@ -261,6 +263,7 @@ public final class CockpitHands {
             if (j.has("restAim")) restAim = v.apply("restAim");
             restTurn = f.apply("restTurn", restTurn);
             armScale = f.apply("armScale", armScale);
+            toolArmScale = f.apply("toolArmScale", toolArmScale);
         } catch (Exception e) {
             PowerSuits.LOGGER.warn("[view] can't read {}: {}", file, e.toString());
         }
