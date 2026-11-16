@@ -33,6 +33,12 @@ under the helmet to the waist, in the iron's chrome:
   A bare     five vertebrae, each with a spinous process pointing back, the rod glowing in the gaps;
   B plated   the spine under a slim plated housing: a ridge of segments over a base plate, the seams glowing as slits;
   C braced   A's spine with exoskeleton bracing: ribs out of every vertebra and two struts up to the shoulders.
+Round 7 (user: "make them look more mechanical and less boney, this isn't a horror mod"): no spinous processes, no
+white chrome, no ribs. Machined parts in gunmetal and steel, bolts, clamps, hydraulics, the light in slits and a rod:
+  A stack    five machined modules, each a bezel round a lit slit, a lit rod in the gaps, two steel guide rods either side
+             through collars;
+  B rail     a base plate with a raised rail down it, a continuous lit channel in the rail and steel clamps across it;
+  C rams     A's stack with two hydraulic rams either side (barrel, lit strip, rod) and brackets, the exoskeleton.
 The glass letters & % * = are the star's light (see above).
 """
 import math
@@ -123,34 +129,49 @@ BONE_ORIGIN = {}
 VERT = [(16, 2.0), (18, 2.0), (20, 1.5), (22, 1.5), (24, 2.0)]        # (bottom y, half width): the lumbar wider, the neck narrow
 
 
-def vertebra(f, w, h):
-    """A chrome vertebra: lit top edge, a centre groove down the back, a shaded base."""
-    g = [['h'] * w for _ in range(h)]
-    g[0] = ['w'] * w
-    g[-1] = ['e'] * w
+def module(f, w, h):
+    """A machined module: a steel bezel round a lit slit, gunmetal sides."""
     if f in ('south', 'north'):
-        for j in range(1, h - 1):
-            g[j][0], g[j][-1] = 'g', 'l'
-            if w >= 5: g[j][w // 2] = 'x'
-    return g
+        g = [['h'] * w] + [['X'] + ['%'] * (w - 2) + ['X']] + [['e'] * w] if h == 3 else [['h'] * w for _ in range(h)]
+        if f == 'south' and h == 3:
+            for i in range(2, w - 2, 2): g[1][i] = '&'
+        return g
+    if f in ('up', 'down'): return grid(w, h, 'g' if f == 'up' else 'X')
+    return [['O'] * w] + [['N'] * w for _ in range(h - 2)] + [['X'] * w]
 
 
-def rod(f, w, h):
+def rodfill(f, w, h):
     g = [['*'] * w for _ in range(h)]
     if f in ('south', 'north'):
         for j in range(h):
-            g[j][w // 2 - 1], g[j][w // 2] = '%', '%'
-            if w >= 4 and w // 2 + 1 < w: g[j][w // 2 - 1] = g[j][w // 2] = '&'
+            g[j][w // 2 - 1] = g[j][w // 2] = '%'
     return g
 
 
-def spine_a():
-    P = [part('rod', ((-1, 16, 3), (1, 25.5, 4.5)), rod)]
+def steel(f, w, h):
+    g = [['h'] * w for _ in range(h)]
+    for j in range(h): g[j][0] = 'g'; g[j][-1] = 'e'
+    g[0] = ['g'] * w
+    return g
+
+
+def stack():
+    P = [part('rod', ((-1, 16, 3), (1, 25.5, 4.5)), rodfill)]
     for k, (y, hw) in enumerate(VERT):
-        P.append(part(f'v{k}', ((-hw, y, 3), (hw, y + 1.5, 5.5)), vertebra))
-        P.append(part(f'p{k}', ((-0.5, y + 0.25, 5.5), (0.5, y + 1.25, 6.5)),
-                      lambda f, w, h: [['g'] * w for _ in range(h)] if f != 'up' else grid(w, h, 'w')))
+        P.append(part(f'm{k}', ((-hw, y, 3), (hw, y + 1.5, 5)), module))
     return P
+
+
+def guides():
+    """Two steel guide rods either side of the stack, through collars (the stack slides on them)."""
+    P = [part('guide', ((2.5, 16, 3), (3, 25.5, 3.5)), steel, mirror=True)]
+    for k, y in enumerate((17, 21, 24.5 - 0.5)):
+        P.append(part(f'collar{k}', ((2.25, y, 3), (3.25, y + 1, 4)), module, mirror=True))
+    return P
+
+
+def spine_a():
+    return stack() + guides()
 
 
 def spine_b():
@@ -158,47 +179,37 @@ def spine_b():
     def base(f, w, h):
         g = housing(f, w, h)
         if f == 'south':
-            for k in range(4):                                              # the seams: lit slits either side of the ridge
-                j = round((25.5 - (17.5 + 2 * k + 0.25)) * 2)
-                for i in list(range(2, w // 2 - 2)) + list(range(w // 2 + 2, w - 2)): g[j][i] = '%'; g[j + 1][i] = '*' if j + 1 < h else g[j + 1][i]
-            for i in (0, w - 1):
-                for j in range(h): g[j][i] = 'X'
+            for j in (2, h - 3):
+                for i in (1, w - 2): g[j][i] = 'h'                           # bolts
         return g
     P.append(part('base', ((-2.5, 16, 3), (2.5, 25.5, 4.5)), base))
-    def ridge(f, w, h):
-        g = [['h'] * w for _ in range(h)]
-        if f in ('south', 'east', 'west'):
-            for k in range(5):                                              # segments with a lit gap between
-                j = round((25.5 - (16 + 2 * k)) * 2)                          # the segment's bottom row (from the top)
-                for jj in range(max(0, j - 1), j):                            # (a 1-texel gap above each)
-                    pass
-            for k in range(4):
-                j = round((25.5 - (17.5 + 2 * k)) * 2)
-                if 0 <= j - 1 < h:
-                    for i in range(w): g[j - 1][i] = '&'
-            for j in range(h): g[j][0] = 'g' if f == 'south' else g[j][0]
-        g[0] = ['w'] * w
+    def rail(f, w, h):
+        g = [['O'] + ['N'] * (w - 2) + ['X'] for _ in range(h)]
+        if f == 'south':
+            for j in range(h):
+                g[j][1] = g[j][w - 2] = '*'
+                g[j][w // 2 - 1] = g[j][w // 2] = '&'
+                g[j][2] = g[j][w - 3] = '%'
         return g
-    P.append(part('ridge', ((-1, 16, 4.5), (1, 25.5, 5.5)), ridge))
+    P.append(part('rail', ((-1.5, 16, 4.5), (1.5, 25.5, 5.5)), rail))
+    for k, y in enumerate((17, 19.5, 22, 24.5 - 0.5)):                       # clamps across the rail
+        P.append(part(f'clamp{k}', ((-2, y, 5), (2, y + 1, 6)), steel))
     return P
 
 
 def spine_c():
-    P = spine_a()
-    def rib(f, w, h):
+    P = stack()
+    def barrel(f, w, h):
         g = [['h'] * w for _ in range(h)]
-        for j in range(h): g[j][-1] = '%' if f in ('south', 'north', 'up') else g[j][-1]
-        g[0] = ['w'] * w
+        for j in range(h): g[j][0] = 'g'; g[j][-1] = 'e'
+        if f in ('south', 'east'):
+            for j in range(2, h - 2): g[j][w // 2] = '%'                      # the lit strip
+        g[0] = ['g'] * w; g[-1] = ['X'] * w
         return g
-    for k, y in enumerate((16.5, 18.5, 20.5, 22.5)):                        # a rib off every gap, 0.5 tall, out to x 4.5
-        P.append(part(f'rib{k}', ((VERT[k][1] if k < 2 else 1.5, y + 1, 3), (4.5, y + 1.5, 4)), rib, mirror=True))
-    def strut(f, w, h):
-        g = [['g'] * w for _ in range(h)]
-        for j in range(h): g[j][0], g[j][-1] = 'w', 'e'
-        if f in ('south', 'north'):
-            for j in range(1, h - 1, 3): g[j][w // 2] = '%'
-        return g
-    P.append(part('strut', ((1.5, 22.5, 4.5), (2.0, 26.5, 5.5)), strut, mirror=True, rot=[0, 0, -35], origin=(1.75, 22.5, 5)))
+    P.append(part('barrel', ((2.5, 16, 3.5), (4, 21, 5)), barrel, mirror=True))
+    P.append(part('ram', ((3, 21, 4), (3.5, 25.5, 4.5)), steel, mirror=True))
+    for k, y in enumerate((16.5, 24.5)):
+        P.append(part(f'bracket{k}', ((2, y, 3), (4.5, y + 1, 3.5)), module, mirror=True))
     return P
 
 
