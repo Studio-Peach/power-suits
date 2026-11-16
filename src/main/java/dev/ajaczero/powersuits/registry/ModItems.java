@@ -86,6 +86,7 @@ public final class ModItems {
     public static final DeferredItem<RobotHelmetItem> ROBOT_HELMET = ITEMS.registerItem("robot_helmet", RobotHelmetItem::new, props -> props
                     .durability(SuitHelmetItem.DURABILITY)
                     .repairable(Items.GOLD_INGOT)
+                    .enchantable(25) // gold's: the enchanting table gives it a soul (Soul; vanilla's enchantments don't fit it)
                     .rarity(Rarity.RARE));
 
     // The helmet styles' smithing templates (design sec. 4c, 2026-10-22): Easter eggs found in structure chests.

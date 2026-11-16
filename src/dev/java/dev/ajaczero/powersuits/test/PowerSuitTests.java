@@ -33,6 +33,7 @@ import dev.ajaczero.powersuits.item.HelmetTemplateItem;
 import dev.ajaczero.powersuits.item.PowerTool;
 import dev.ajaczero.powersuits.item.RailCannonItem;
 import dev.ajaczero.powersuits.item.SocketAim;
+import dev.ajaczero.powersuits.item.Soul;
 import dev.ajaczero.powersuits.item.SuitHelmetItem;
 import dev.ajaczero.powersuits.item.SuitAmmo;
 import dev.ajaczero.powersuits.item.SuitLoadout;
@@ -3527,6 +3528,37 @@ public final class PowerSuitTests {
         PowerSuitEntity suit = suitAt(helper, SUIT_POS);
         suit.getInventory().setItem(PowerSuitEntity.HELMET_SLOT, robot);
         helper.assertTrue(suit.hasHelmet() && suit.getHelmetStyle() == HelmetStyle.ROBOT, "a suit shows it");
+        helper.succeed();
+    }
+
+    /** The enchanting table gives the Robot Helmet a soul (and only a soul): each soul is an enchantment, one at a time;
+     *  the standard helmet can't be enchanted at all. */
+    @SuitTest
+    public static void robotHelmetTakesASoulAtTheEnchantingTable(GameTestHelper helper) {
+        var registry = helper.getLevel().registryAccess().lookupOrThrow(Registries.ENCHANTMENT);
+        ItemStack robot = new ItemStack(ModItems.ROBOT_HELMET.get());
+        helper.assertTrue(robot.isEnchantable() && !new ItemStack(ModItems.SUIT_HELMET.get()).isEnchantable(), "only the Robot Helmet is enchantable");
+        var table = registry.get(net.minecraft.tags.EnchantmentTags.IN_ENCHANTING_TABLE).orElseThrow().stream();
+        for (int level : new int[]{1, 10, 30}) {
+            var offered = net.minecraft.world.item.enchantment.EnchantmentHelper.getAvailableEnchantmentResults(level, robot,
+                    registry.get(net.minecraft.tags.EnchantmentTags.IN_ENCHANTING_TABLE).orElseThrow().stream());
+            helper.assertTrue(offered.size() == Soul.values().length, "level " + level + " offers every soul and nothing else, got " + offered.size());
+        }
+        helper.assertTrue(net.minecraft.world.item.enchantment.EnchantmentHelper.getAvailableEnchantmentResults(30, new ItemStack(Items.DIAMOND_HELMET),
+                table).stream().noneMatch(e -> e.enchantment().unwrapKey().map(k -> k.identifier().getNamespace().equals("power_suits")).orElse(false)),
+                "a diamond helmet is offered no soul");
+        helper.assertTrue(Soul.of(robot) == null, "no soul to begin with");
+        for (Soul soul : Soul.values()) {
+            ItemStack souled = new ItemStack(ModItems.ROBOT_HELMET.get());
+            souled.enchant(registry.getOrThrow(net.minecraft.resources.ResourceKey.create(Registries.ENCHANTMENT,
+                    net.minecraft.resources.Identifier.fromNamespaceAndPath(PowerSuits.MODID, soul.id()))), 1);
+            helper.assertTrue(Soul.of(souled) == soul, soul + ": read back, got " + Soul.of(souled));
+        }
+        var veteran = registry.getOrThrow(net.minecraft.resources.ResourceKey.create(Registries.ENCHANTMENT,
+                net.minecraft.resources.Identifier.fromNamespaceAndPath(PowerSuits.MODID, "veteran")));
+        var butler = registry.getOrThrow(net.minecraft.resources.ResourceKey.create(Registries.ENCHANTMENT,
+                net.minecraft.resources.Identifier.fromNamespaceAndPath(PowerSuits.MODID, "butler")));
+        helper.assertTrue(!net.minecraft.world.item.enchantment.Enchantment.areCompatible(veteran, butler), "one soul at a time");
         helper.succeed();
     }
 

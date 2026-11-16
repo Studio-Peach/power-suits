@@ -1,0 +1,22 @@
+{
+  "anvil_cost": 4,
+  "description": {
+    "translate": "enchantment.power_suits.veteran"
+  },
+  "effects": {},
+  "exclusive_set": "#power_suits:exclusive_set/souls",
+  "max_cost": {
+    "base": 100,
+    "per_level_above_first": 0
+  },
+  "max_level": 1,
+  "min_cost": {
+    "base": 1,
+    "per_level_above_first": 0
+  },
+  "slots": [
+    "head"
+  ],
+  "supported_items": "power_suits:robot_helmet",
+  "weight": 1
+}
