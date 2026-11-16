@@ -780,6 +780,7 @@ if ENGINE == 'heart':
         PX, PACK_TOP = PW_ / 2, 26
     else:
         MOTOR, PX, UP_Y, LOW_Y, PACK_TOP = motor_art.build(BACK, suit_faces, CHEST_X)
+        if os.environ.get('STAR_ALONE'): MOTOR = []   # a review of the star reactor's back without the firebox's motor (draft knob)
         for p in MOTOR:
             k = 'mt_' + p['name']
             ENGINE_BOX[k] = p['box']
