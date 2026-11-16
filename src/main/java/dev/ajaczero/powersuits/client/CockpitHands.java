@@ -62,11 +62,11 @@ public final class CockpitHands {
      *  it close to the camera). Scaling about the pivot shortens the reach as it shrinks the arm. */
     static float armScale = 0.75F;
     /** The tool arm's own scale (it turns toward the aim, so the same scale hides more of it than the plain right arm). */
-    static float toolArmScale = 0.85F;
+    static float toolArmScale = 1.4F;
     /** Where the tool sits in the view (blocks, vanilla's hand space: x right, y up, -z forward), added to the arm's place:
      *  the tool is the subject (user, 2026-11-15): the arm drops toward the corner, mostly below the screen, so what shows is
      *  the tool and a stub of sleeve. (Drawing the tool alone, showArm=false, left a floating block: its back cap showed.) */
-    static Vector3f toolShift = new Vector3f(-0.1F, -0.12F, 0F);
+    static Vector3f toolShift = new Vector3f(-0.14F, -0.32F, 0.12F);
     /** Draw the tool arm's sleeve (and skin) under the tool, or the tool alone. */
     static boolean showArm = true;
     /** The chaingun's muzzle about the pilot's left arm pivot, in vanilla's arm space (y down the arm, x mirrored; px):
