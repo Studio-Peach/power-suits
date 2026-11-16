@@ -228,13 +228,13 @@ def floor_art(f, w, h):
     return g
 
 
-def fin_art(f, w, h):
+def fin_art(f, w, h, lines=True):
     """A wing plate, as round 14's (the shape the user liked): steel, a lit stripe sweeping down its outer face; on its inner
     face the power lines run in from the floor (rows from the top, as the wings' tops sit level with the floor's)."""
     if f == 'up': return top(w, h)
     if f == 'down': return bottom(w, h)
     g = plate(w, h)
-    if f == 'west':                                                  # the inner face (a mirrored part's west)
+    if f == 'west' and lines:                                        # the inner face (a mirrored part's west)
         for j0 in LINE_ROWS:
             if j0 + 1 < h - 2:
                 for i in range(0, w - 1): g[j0 - 1][i], g[j0][i], g[j0 + 1][i] = 'X', '%', 'X'
@@ -254,8 +254,8 @@ def jetpack():
     with the top (nothing spreads sideways over the arms, nothing at the foot), the star spinning between them in front of
     a vertical power channel, lit lines branching from it across the floor and in along the wings."""
     return [part('floor', ((-3.5, 17.5, 3), (3.5, 25.5, 5)), floor_art),
-            part('fin', ((2.5, 19.5, 5), (3.5, 25.5, 8)), fin_art, mirror=True),
-            part('fin2', ((2.5, 22.5, 8), (3.5, 25.5, 10)), fin_art, mirror=True),
+            part('fin', ((2.5, 17.5, 5), (3.5, 25.5, 8)), fin_art, mirror=True),
+            part('fin2', ((2.5, 19.5, 8), (3.5, 23.5, 10)), lambda f, w, h: fin_art(f, w, h, False), mirror=True),
             _star_hub()]
 
 
