@@ -436,7 +436,9 @@ def beacon(st):
     P.append(part('rim', ((-(CX - 0.5), 24, 3.5), (CX - 0.5, 25, 5.5)), rim))
     # round 22 (user: "make the pylons more forward and painted on the back and outer side as well"): the pylons 1 px
     # deeper (z 3 .. 6.5, 0.5 px proud of the case's back), their cells on the outer side too
-    if PYLONS: return P + pylons(st, 17.5, 25.5, z1=6.5, side_cells=True), 5.5, 22.25, 18.75, 25.5
+    # round 23 (user: "you extend the pylons instead of detaching them from the back"): back to 2.5 px deep, moved 1 px
+    # off the back instead (z 4 .. 6.5), on the links; the lines on the back run on under them to their inlets (no clip)
+    if PYLONS: return P + pylons(st, 17.5, 25.5, z0=4, z1=6.5, side_cells=True), 5.5, 22.25, 18.75, 17.5
     return P, 4, 22, 18.75, 24
 
 
@@ -447,20 +449,23 @@ def beacon(st):
 PYLONS = os.environ.get('STAR_PYLONS') == '1'
 
 
-def pylons(st, y0, y1, links=(18.5, 22), centres=(22.25, 18.75), inner=3, z1=5.5, side_cells=False):
-    """side_cells: the bar of cells painted on the outer side too (round 22, user), behind the lines' inlets."""
-    D = round((z1 - TZ0) * K)
+def pylons(st, y0, y1, links=(18.5, 22), centres=(22.25, 18.75), inner=3, z1=5.5, side_cells=False, z0=None):
+    """side_cells: the bar of cells painted on the outer side too (round 22, user), behind the lines' inlets.
+    z0: the pylon's front; past the back's plane (TZ0) it stands off the back, held by the glass links (round 23)."""
+    z0 = TZ0 if z0 is None else z0
+    D = round((z1 - z0) * K)
     def charge(f, w, h):
         g = housing(f, w, h)
         if f == 'south': cells(g, 1, w - 1, 3, 4)
-        if f == 'east' and side_cells: cells(g, 1, 4, 3, 4)          # east columns back -> front: the cells at the back
+        if f == 'east' and side_cells: cells(g, 1, D - 2, 3, 4)      # east columns back -> front: the cells at the back
         return g
-    c = part('pylon', ((inner, y0, TZ0), (inner + 2.5, y1, z1)), charge, mirror=True)
+    c = part('pylon', ((inner, y0, z0), (inner + 2.5, y1, z1)), charge, mirror=True)
     sea.inlets(st, c['faces'], D, round((y1 - y0) * K), y1, centres)
     # the 0.5 px gap between the pylon and the middle: a dark web at its back, so the frame's teal doesn't show through
     P = [c, part('web', ((2.5, y0, TZ0), (inner, y1 - 1, 3.5)), lambda f, w, h: grid(w, h, 'X'), mirror=True)]
     for k, y in enumerate(links):
-        P.append(part(f'link{k}', ((2.5, y, 3.5), (inner, y + 1, 4.5)),
+        lz = max(3.5, z0 + 0.5)
+        P.append(part(f'link{k}', ((2.5, y, lz), (inner, y + 1, lz + 1)),
                       lambda f, w, h: [['%'] * w for _ in range(h)] if f in ('north', 'south') else [['*'] * w for _ in range(h)], mirror=True))
     return P
 
