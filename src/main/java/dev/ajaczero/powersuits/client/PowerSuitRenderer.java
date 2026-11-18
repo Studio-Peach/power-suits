@@ -132,7 +132,7 @@ public class PowerSuitRenderer extends GeoEntityRenderer<PowerSuitEntity, Living
         // Engine slot (design sec. 4b): the frame's engine (the heart: core and hoses on the front, the blower on the back)
         // only with one installed; none without (the glowmasks follow: a hidden bone isn't drawn again). The tidal engine
         // has its own (engine_sea: tanks on the back, the gauge and glass lines on the front, 2026-11-16), and so has the
-        // star reactor (engine_star: the Sandevistan chain down the back, the lens on the chest).
+        // star reactor (engine_star: the netherite beacon case between two pylons on the back, the lens on the chest).
         int engineId = info.getOrDefaultGeckolibData(SuitRenderData.ENGINE, -1);
         boolean sea = engineId == SuitEngine.TIDAL.ordinal();
         boolean star = engineId == SuitEngine.REACTOR.ordinal();

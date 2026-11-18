@@ -108,7 +108,7 @@ public class SuitGlowLayer extends GeoRenderLayer<PowerSuitEntity, Void, LivingE
         state.addGeckolibData(SuitRenderData.GLOW, tints);
         float[] chain = suit.lights().getStarSegments(time);
         int[] star = new int[1 + chain.length];
-        star[0] = tint(suit.lights().getReactorGlow(time), 1F, 1F, 1F);   // the rod, the pods' rims, the lens: steady
+        star[0] = tint(suit.lights().getReactorGlow(time), 1F, 1F, 1F);   // the lines, the links, the lens: steady
         for (int i = 0; i < chain.length; i++) {
             star[1 + i] = tint(chain[i], 1F, 1F, 1F);
         }
@@ -138,7 +138,7 @@ public class SuitGlowLayer extends GeoRenderLayer<PowerSuitEntity, Void, LivingE
      *  scaled by the tidal glow's shimmer. */
     private static final Identifier FRAME_SEA = frameMask("sea"), FRAME_SEA_SLIM = frameMask("sea_slim");
     private static final float[] TIDAL_TINT = {1F, 1F, 1F}, REACTOR_TINT = {0.85F, 0.45F, 1F};
-    /** The star reactor's glowmasks per build (tools/export-frame.py star_masks): the steady one, then the chain's segments
+    /** The star reactor's glowmasks per build (tools/export-frame.py star_masks): the steady one, then the pulse's segments
      *  from the hip up (the violet is painted in them: white tint, scaled by the level). */
     private static final Identifier[] STAR = starMasks(""), STAR_SLIM = starMasks("_slim");
 
@@ -201,7 +201,7 @@ public class SuitGlowLayer extends GeoRenderLayer<PowerSuitEntity, Void, LivingE
         drawMasks(this.renderer, info, renderTasks, masks, all, 1);
         int[] chain = info.getGeckolibData(SuitRenderData.STAR);
         if (star && chain != null) {
-            drawMasks(this.renderer, info, renderTasks, slim ? STAR_SLIM : STAR, chain, 1);   // the star reactor's chain
+            drawMasks(this.renderer, info, renderTasks, slim ? STAR_SLIM : STAR, chain, 1);   // the star reactor's pulse
         }
         if (face != null) {
             // The robot's face: on top of the glass (HelmetGlassLayer, order 1). In the same order the passes' sort

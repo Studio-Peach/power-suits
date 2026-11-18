@@ -101,12 +101,13 @@ public final class SuitLights {
         float pulse = Mth.sin(time * 0.12F + this.suit.getId());
         return this.engineGlow * (0.78F + 0.22F * pulse * pulse);
     }
-    /** How many segments the star reactor's chain lights one after another (hip unit, four modules, neck unit). */
+    /** How many segments the star reactor lights one after another (frame_star_art.segment_of: the pylons' four cells from
+     *  the bottom up, the star's pane, the rim's hole on top). */
     public static final int STAR_SEGMENTS = 6;
     /**
-     * Client: the star reactor's chain, one level per segment from the hip up: a pulse of light climbing the spine (each
+     * Client: the star reactor's segments, one level each from the bottom up: a pulse of light climbing the pylons into the star (each
      * segment a beat behind the one below it), faster the harder the engine works (a walk, a sprint, a tool running). Each is
-     * the reactor's glow scaled between a dim floor and the full light, so the chain never goes dark while it runs.
+     * the reactor's glow scaled between a dim floor and the full light, so the reactor never goes dark while it runs.
      */
     public float[] getStarSegments(float time) {
         float glow = getReactorGlow(time);

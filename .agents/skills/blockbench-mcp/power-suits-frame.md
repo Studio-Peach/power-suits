@@ -57,6 +57,17 @@ the end and `docs/guide.md` Notes).
   not boney", "slick black and purple", the chain A picked). Chest: the lens. The module screens + head + base are
   SEGMENTS, each its own glowmask (`export-frame.py star_masks`), lit in a climbing pulse by `SuitLights.getStarSegments`.
   The texture grew to 320 rows for the three engines. No afterimage trail (user: not wanted); the ender motes stay as they are.
+- Star reactor, the restart (2026-11-16, rounds 20-26, `STAR=E` with `STAR_PYLONS=1`, in game): the chain was dropped
+  ("start from scratch, do something more similar to the firebox and tidal engines"). Built their way: the lens with
+  four glass lines (the tidal engine's harness code, `frame_sea_art`, in violet) into a back body painted in their
+  housings' vocabulary. Picked E (a beacon case) over C (the blower-like block) and D (a column), then given D's pylons
+  (charge cells), the case narrowed to 5 px to fit them inside the chest's width. User corrections worth keeping:
+  "more forward" meant detached (standing 1 px off the back on the links), not deeper; the lines go into the BODY's
+  sides, not the pylons; every visible face is painted, bottoms and the pylons' inner sides included (a plain face
+  reads "unpainted"); a lone bright texel (a line's spark) reads as a rogue pixel; a 6 x 7 pane round a 6-row star left
+  an odd corner. Metal: netherite (own letters `{ } [ ] ( ) < >`, not the iron ramp's, which the paint swaps;
+  `STAR_METAL=iron` for comparison): the reactor is the late-game engine (netherite ingots and a Nether Star in its
+  recipe). The pulse: `segment_of()` assigns lit texels by part and row (pylon cells bottom-up, the pane, the rim's hole).
 - Review the bare and armoured fronts from a `SEA_GLOW=lit` game build (hide `engine`, show `engine_sea`, toggle
   `sea_open` / `sea_armored`); `ARMOR=none` drafts show the open front only.
 

@@ -762,7 +762,9 @@ if ENGINE == 'heart' and SEA != 'none':
             if p['faces']: SHELLS[f'en_{k}'] = dict(faces=p['faces'])
 # Knob STAR ('A' / 'none'; 2026-11-16, user: the star reactor too, after the tidal engine's diver; the Sandevistan chain,
 # A, picked from eight rounds of drafts): its own back and fronts (frame_star_art.py), group engine_star. STAR_GLOW as SEA_GLOW.
-STAR = os.environ.get('STAR', 'A')
+# Then (user, 2026-11-16: "start from scratch, do something more similar to the firebox and tidal engines") E, picked
+# from rounds 20-26: the beacon case between two detached pylons, in netherite, the lens with four lines into the case.
+STAR = os.environ.get('STAR', 'E')
 assert STAR in ('none', 'A', 'B', 'C', 'D', 'E'), STAR
 if os.environ.get('STAR_GLOW', 'dark') == 'dark': PAL.update(star_art.STAR_DARK)
 if ENGINE == 'heart' and STAR != 'none':

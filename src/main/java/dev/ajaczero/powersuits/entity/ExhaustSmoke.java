@@ -10,7 +10,7 @@ import net.minecraft.world.phys.Vec3;
 
 /**
  * Client-side smoke from the two exhaust pipes on the suit's back (the firebox), bubbles from the tidal engine's tank
- * valves and a faint aura round the star reactor's canisters. Particles are purely visual, so they are spawned on each client from what it already knows (powered, speed,
+ * valves and a faint aura round the star reactor's pylons. Particles are purely visual, so they are spawned on each client from what it already knows (powered, speed,
  * fuel left, engine under water); the server never hears about them.
  */
 final class ExhaustSmoke {
@@ -21,9 +21,9 @@ final class ExhaustSmoke {
     /** The tidal engine's tank valves (model/power_frame.bbmodel, en_sb_valve_*, 2026-11-16): their tops 1.78 up (28.5 px),
      *  0.31 behind the centre (5 px), 0.27 to each side (4.25 px). The bubbles come out of their tops. */
     private static final double VALVE_UP = 28.5 / 16, VALVE_BACK = 5.0 / 16, VALVE_SIDE = 4.25 / 16;
-    /** The star reactor's motes: drawn into its chain (model/power_frame.bbmodel, en_rb_*, 2026-11-16): the middle of the
-     *  spine 1.42 up (22.75 px), the pods 0.19 to each side (3 px), 0.25 behind the centre (4 px). */
-    private static final double GLASS_UP = 22.75 / 16, GLASS_SIDE = 3.0 / 16, GLASS_BACK = 4.0 / 16;
+    /** The star reactor's motes: drawn into its pylons (model/power_frame.bbmodel, en_rb_pylon_*, 2026-11-16): their
+     *  middle 1.47 up (23.5 px), their outer sides 0.34 to each side (5.5 px), 0.33 behind the centre (5.25 px). */
+    private static final double GLASS_UP = 23.5 / 16, GLASS_SIDE = 5.5 / 16, GLASS_BACK = 5.25 / 16;
 
     /** Called every client tick. Smoke only while someone is driving: a parked suit's engine is off. */
     static void tick(PowerSuitEntity suit) {
@@ -93,11 +93,11 @@ final class ExhaustSmoke {
 
     /**
      * The star reactor's aura: ender particles (vanilla's portal particle, the purple specks round endermen, ender chests
-     * and end portal frames) drawn into a canister's glass (user, 2026-10-23; it was a faint violet potion swirl).
+     * and end portal frames) drawn into a pylon's cells (user, 2026-10-23; it was a faint violet potion swirl).
      * A portal particle flies from (its spawn point + its "velocity" + 1 block up) back to its spawn point over ~2 s,
      * so the spawn point is the glass, the velocity a short way out and half a block down: each speck starts at most
-     * half a block off the canister and sinks into it (with the default 1 block up they fell in from overhead).
-     * A little livelier under load. Not in the pilot's own cockpit view: the canisters sit about a block behind and
+     * half a block off the pylon and sinks into it (with the default 1 block up they fell in from overhead).
+     * A little livelier under load. Not in the pilot's own cockpit view: the pylons sit about a block behind and
      * below the eye.
      */
     private static void reactorMotes(PowerSuitEntity suit) {
@@ -116,7 +116,7 @@ final class ExhaustSmoke {
         Vec3 forward = new Vec3(-Mth.sin(yaw), 0, Mth.cos(yaw));
         Vec3 side = new Vec3(forward.z, 0, -forward.x);
         int which = random.nextBoolean() ? 1 : -1;
-        // a point on a canister's glass (its outer side or its back), somewhere up its height
+        // a point on a pylon (its outer side or its back), somewhere up its height
         Vec3 glass = suit.position().add(0, GLASS_UP + suit.animator().getStepOffset(1F) + (random.nextDouble() - 0.5) * 0.55, 0)
                 .subtract(forward.scale(GLASS_BACK + random.nextDouble() * 0.12)).add(side.scale(which * (GLASS_SIDE - random.nextDouble() * 0.12)));
         // where the speck starts, relative to the glass: out to the side or back, and up (cancelling most of the 1 block)

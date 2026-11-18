@@ -114,7 +114,7 @@ def lit_bar(narrow):
 MODS = (18, 19.5, 21, 22.5)                                              # four wedge modules, 1 px tall, 0.5 gaps
 # The parts that carry a light of their own, from the hip up: the game lights them in this order, one after another
 # (tools/export-frame.py SEGMENTS reads this); the rod, the pods and the lens keep the engine's steady light.
-SEGMENTS = ['base', 'ridge0', 'ridge1', 'ridge2', 'ridge3', 'head']
+CHAIN_SEGMENTS = ['base', 'ridge0', 'ridge1', 'ridge2', 'ridge3', 'head']   # (A, the chain's: one part each)
 
 
 def chain():
@@ -474,7 +474,7 @@ def beacon(st):
 # cells (the pylons: 2.5 px wide, a bar of four lit cells, glass links in to the middle) either side of C's block and E's
 # case, which narrow to 5 px (x +-2.5) to make room inside the chest's width; the lines go into the pylons' sides as
 # they went into D's.
-PYLONS = os.environ.get('STAR_PYLONS') == '1'
+PYLONS = os.environ.get('STAR_PYLONS', '1') == '1'   # (the default since E went into the game, 2026-11-16)
 
 
 def port(w, h):
@@ -512,6 +512,26 @@ def pylons(st, y0, y1, links=(18.5, 22), centres=(22.25, 18.75), inner=3, z1=5.5
         P.append(part(f'link{k}', ((2.5, y, lz), (inner, y + 1, lz + 1)),
                       lambda f, w, h: [['%'] * w for _ in range(h)] if f in ('north', 'south') else [['*'] * w for _ in range(h)], mirror=True))
     return P
+
+
+# In game (2026-11-16, E with the pylons, in netherite): the light climbs the pylons from the bottom, a cell at a time,
+# into the star's pane and out of the rim's hole (where the motes are drawn in). tools/export-frame.py star_masks asks
+# segment_of() for every lit texel of the back's parts: a segment's glowmask each, the rest (the lines, the lens, the
+# links) the steady one. SuitLights.getStarSegments paces them (STAR_SEGMENTS there).
+STAR_SEGMENTS = 6
+
+
+def segment_of(name, face, j):
+    """The pulse's segment (0 the bottom .. 5 the top) of a lit texel on back part `name` (its key without the en_rb_
+    prefix, the mirrored side's _r / _l kept), face `face`, row j from the top; None: the steady light."""
+    if name.startswith('pylon'):
+        if face == 'down': return 0                                      # the ports under them start it
+        if face in ('south', 'east', 'west') and 3 <= j < 15 and (j - 3) % 3 < 2:
+            return 3 - (j - 3) // 3                                      # cells from the top (cells(): j0 3, step 2)
+        return None
+    if name == 'case': return 0 if face == 'down' else 4                # the bottom slot with the bottom cells; the pane
+    if name == 'rim': return 5
+    return None
 
 
 TZ0 = 3

@@ -361,25 +361,28 @@ def robot_faces(model, data):
 
 
 def star_masks(model, data):
-    """The star reactor's glowmasks (frame_star_art): its reserved dark violets lit. 'star' holds every lit texel but the
-    segments' (the rod, the pods' rims, the chest lens), 'star_<i>' the texels of SEGMENTS[i] (base, the four module
-    screens, head: from the hip up), which the game lights one after another up the spine."""
+    """The star reactor's glowmasks (frame_star_art): its reserved dark violets lit. 'star_<i>' the texels of the pulse's
+    segment i (frame_star_art.segment_of: the pylons' cells from the bottom up, the star's pane, the rim's hole), which
+    the game lights one after another up the back; 'star' every other lit texel (the lines, the lens, the links)."""
     sys.path.insert(0, os.path.join(ROOT, 'model', 'art'))
     import frame_star_art
     w, h, rows = unpng(data)
     lit = {frame_star_art.STAR_DARK[k]: frame_star_art.EXTRA[k] for k in frame_star_art.STAR_DARK}
-    seg_texels = []
-    for name in frame_star_art.SEGMENTS:
-        els = [e for e in model['elements'] if e['name'] == 'en_rb_' + name]
-        assert len(els) == 1, f'no star segment {name}: build the saved files with the star reactor (STAR=A, STAR_GLOW=dark)'
-        seen = set()
-        for face in els[0]['faces'].values():
-            u0, v0, u1, v1 = (int(round(c)) for c in face['uv'])
+    seg_texels = [set() for _ in range(frame_star_art.STAR_SEGMENTS)]
+    for el in model['elements']:
+        if not el['name'].startswith('en_rb_'): continue
+        name = el['name'][len('en_rb_'):]
+        for face, f in el['faces'].items():
+            if f.get('texture') is None: continue
+            u0, v0, u1, v1 = (int(round(c)) for c in f['uv'])
             for y in range(min(v0, v1), max(v0, v1)):
+                j = y - v0 if v1 >= v0 else v0 - 1 - y                   # the face's row from its top
+                seg = frame_star_art.segment_of(name, face, j)
+                if seg is None: continue
                 for x in range(min(u0, u1), max(u0, u1)):
-                    if 0 <= x < w and 0 <= y < h and rows[y][x][3] == 255 and rows[y][x][:3] in lit: seen.add((x, y))
-        assert seen, f'star segment {name} has no lit texels'
-        seg_texels.append(seen)
+                    if 0 <= x < w and 0 <= y < h and rows[y][x][3] == 255 and rows[y][x][:3] in lit: seg_texels[seg].add((x, y))
+    for i, seen in enumerate(seg_texels):
+        assert seen, f'star segment {i} has no lit texels: build the saved files with the star reactor (STAR=E, STAR_GLOW=dark)'
     clear = (0, 0, 0, 0)
     taken = set().union(*seg_texels)
     out = {'star': png(w, h, [[lit[p[:3]] + (255,) if p[3] == 255 and p[:3] in lit and (x, y) not in taken else clear

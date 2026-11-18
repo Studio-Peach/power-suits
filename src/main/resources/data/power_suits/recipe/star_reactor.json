@@ -2,14 +2,14 @@
   "type": "minecraft:crafting_shaped",
   "category": "equipment",
   "pattern": [
-    "BDB",
-    "DED",
-    "BDB"
+    "NDN",
+    "DSD",
+    "NDN"
   ],
   "key": {
-    "B": "minecraft:iron_block",
+    "N": "minecraft:netherite_ingot",
     "D": "minecraft:diamond",
-    "E": "minecraft:end_crystal"
+    "S": "minecraft:nether_star"
   },
   "result": {
     "id": "power_suits:star_reactor",
