@@ -24,7 +24,7 @@ the sea engine's); STAR_GLOW=lit paints it lit for a review.
 
 Coordinates raw (frame_model.py adds FY), right side +x, front -z, back +z; 2 texels per px. Faces as frame_sea_art.py.
 """
-import math
+import math, os
 from frame_radial_art import part, grid, disc, K
 import frame_sea_art as sea
 from frame_motor_art import chrome
@@ -321,12 +321,18 @@ def core_block(st):
     """C: the blower's block (10 x 8 x 2.5, flat on the back), its back the star in a porthole between two charge bars,
     an emitter bar on its top (vent slots: the motes rise out of it), the lines into its sides as the hoses go into the
     blower's."""
-    X, Y0, Y1, Z1 = 5, 16, 24, 5.5
-    W, H, D = 20, 16, 5
+    X, Y0, Y1, Z1 = (2.5 if PYLONS else 5), 16, 24, 5.5
+    W, H, D = round(2 * X * K), 16, 5
 
     def block(f, w, h):
         g = housing(f, w, h)
         if f != 'south': return g
+        if PYLONS:                                                   # the porthole fills the narrow block
+            disc(g, w / 2, 8, 5, 'X')
+            disc(g, w / 2, 8, 4.6, '=', ring='h', rw=1)
+            disc(g, w / 2, 8, 3.6, '=', ring='*', rw=0.8)
+            star4(g, w / 2, 8, 3)
+            return g
         disc(g, 10, 8, 6, 'X')
         disc(g, 10, 8, 5.4, '=', ring='h', rw=1)                     # the porthole: a steel ring, deep glass
         disc(g, 10, 8, 4.4, '=', ring='*', rw=0.8)
@@ -335,8 +341,14 @@ def core_block(st):
         cells(g, w - 3, w - 1, 4, 3)
         return g
     b = part('block', ((-X, Y0, TZ0), (X, Y1, Z1)), block)
+    if PYLONS:
+        return [b, part('emitter', ((-2, Y1, 3.5), (2, Y1 + 1.5, Z1)), emitter_art)] + pylons(st, 17, 25), 5.5, 22.25, 18.75, 25
     sea.inlets(st, b['faces'], D, H, Y1, (22, 18.25))
-    def emitter(f, w, h):
+    return [b, part('emitter', ((-3, Y1, 3.5), (3, Y1 + 1.5, Z1)), emitter_art)], X, 22, 18.25, Y1
+
+
+def emitter_art(f, w, h):
+    if True:
         if f == 'up':
             g = grid(w, h, 'N'); g[0] = ['O'] * w
             for i in range(2, w - 2, 3): g[h // 2][i] = g[h // 2][i + 1] = '='   # the vent slots on top
@@ -346,7 +358,6 @@ def core_block(st):
         if f == 'south':
             for i in range(2, w - 2, 3): g[1][i] = g[1][i + 1] = '*'
         return g
-    return [b, part('emitter', ((-3, Y1, 3.5), (3, Y1 + 1.5, Z1)), emitter)], X, 22, 18.25, Y1
 
 
 def column(st):
@@ -395,22 +406,24 @@ def beacon(st):
         if f != 'down': g[0] = ['9'] * w
         if f in ('north', 'south', 'east', 'west'): g[-1] = ['$'] * w
         return g
-    P.append(part('base', ((-4, 16, TZ0), (4, 17.5, 6)), base))
+    CX = 2.5 if PYLONS else 4
+    P.append(part('base', ((-5.5 if PYLONS else -4, 16, TZ0), (5.5 if PYLONS else 4, 17.5, 6)), base))
+    b = 1 if PYLONS else 2                                                 # the steel round the pane
     def case(f, w, h):
         g = housing(f, w, h)
         if f != 'south': return g
         for j in range(2, h - 2):
-            for i in range(2, w - 2):
-                g[j][i] = 'X' if i in (2, w - 3) or j in (2, h - 3) else '='
+            for i in range(b, w - b):
+                g[j][i] = 'X' if i in (b, w - 1 - b) or j in (2, h - 3) else '='
         for j in range(3, h - 3):
-            for i in range(3, w - 3):
+            for i in range(b + 1, w - b - 1):
                 if (i + j) % 5 == 0: g[j][i] = '*'                         # the glass's glints
             g[j][w // 2 - 1] = g[j][w // 2] = '%'                            # the beam
         star4(g, w / 2, h / 2 - 0.5, 3)
-        bolts(g, 0, 'h')
+        if not PYLONS: bolts(g, 0, 'h')
         return g
-    c = part('case', ((-4, 17.5, TZ0), (4, 24, 6)), case)
-    sea.inlets(st, c['faces'], 6, 13, 24, (22, 18.75))
+    c = part('case', ((-CX, 17.5, TZ0), (CX, 24, 6)), case)
+    if not PYLONS: sea.inlets(st, c['faces'], 6, 13, 24, (22, 18.75))
     P.append(c)
     def rim(f, w, h):
         g = [['8'] * w for _ in range(h)]
@@ -419,8 +432,31 @@ def beacon(st):
             for j in range(h // 2 - 1, h // 2 + 1): g[j][w // 2 - 1] = g[j][w // 2] = '&'
         elif f != 'down': g[0] = ['9'] * w; g[-1] = ['$'] * w
         return g
-    P.append(part('rim', ((-3, 24, 3.5), (3, 25, 5.5)), rim))
+    P.append(part('rim', ((-(CX - 0.5), 24, 3.5), (CX - 0.5, 25, 5.5)), rim))
+    if PYLONS: return P + pylons(st, 17.5, 25.5), 5.5, 22.25, 18.75, 25.5
     return P, 4, 22, 18.75, 24
+
+
+# Round 21 (user, 2026-11-16: "discard D, but try giving its pylons to C and E"): knob STAR_PYLONS=1 stands D's charge
+# cells (the pylons: 2.5 px wide, a bar of four lit cells, glass links in to the middle) either side of C's block and E's
+# case, which narrow to 5 px (x +-2.5) to make room inside the chest's width; the lines go into the pylons' sides as
+# they went into D's.
+PYLONS = os.environ.get('STAR_PYLONS') == '1'
+
+
+def pylons(st, y0, y1, links=(18.5, 22), centres=(22.25, 18.75), inner=3):
+    def charge(f, w, h):
+        g = housing(f, w, h)
+        if f == 'south': cells(g, 1, w - 1, 3, 4)
+        return g
+    c = part('pylon', ((inner, y0, TZ0), (inner + 2.5, y1, 5.5)), charge, mirror=True)
+    sea.inlets(st, c['faces'], 5, round((y1 - y0) * K), y1, centres)
+    # the 0.5 px gap between the pylon and the middle: a dark web at its back, so the frame's teal doesn't show through
+    P = [c, part('web', ((2.5, y0, TZ0), (inner, y1 - 1, 3.5)), lambda f, w, h: grid(w, h, 'X'), mirror=True)]
+    for k, y in enumerate(links):
+        P.append(part(f'link{k}', ((2.5, y, 3.5), (inner, y + 1, 4.5)),
+                      lambda f, w, h: [['%'] * w for _ in range(h)] if f in ('north', 'south') else [['*'] * w for _ in range(h)], mirror=True))
+    return P
 
 
 TZ0 = 3
