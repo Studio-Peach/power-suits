@@ -27,6 +27,7 @@ Coordinates raw (frame_model.py adds FY), right side +x, front -z, back +z; 2 te
 import math
 from frame_radial_art import part, grid, disc, K
 import frame_sea_art as sea
+from frame_motor_art import chrome
 
 EXTRA = {'&': (0xe6, 0xb4, 0xff),   # the core: light violet (not white: user, round 8)
          '%': (0xc0, 0x7c, 0xff),   # glass, bright
@@ -266,10 +267,184 @@ def _star_hub():
     return h
 
 
+# ---------------------------------------------------------------- round 20: a fresh start, built as the other engines are
+# User, 2026-11-16: "I don't like what we have currently. Let's start from scratch, do something more similar to the
+# firebox and tidal engines." So the reactor is built the way they are: the chest's element (the lens, picked in round 3)
+# with four glass lines out of it, two over the shoulders and two round the waist (the heart's harness routing, drawn
+# by frame_sea_art's code in violet), into a steel back body painted in their housings' vocabulary (a lit shoulder,
+# ink foot, steel left column, ink right column, straps, bolts), the light only the star's violet.
+# Three backs (knob STAR): C a core block (the firebox's blower: one flat block, the star in a porthole), D a containment
+# column (the tidal engine turned inside out: one tall cell in the middle, two charge cells beside it), E a beacon case
+# (an obsidian base, a steel case round a pane of beacon glass, the beam up it).
+STYLE20 = dict(HR=0.75, tube=('%', '*', '='), band=('g', 'e'), bubbles=True, spark='&')
+
+
+def housing(f, w, h):
+    """Any face of a steel housing: the side faces as the tidal tanks', the top lit at its front, the bottom ink."""
+    if f == 'up': return top(w, h)
+    if f == 'down': return bottom(w, h)
+    return plate(w, h)
+
+
+def star4(g, cx, cy, r):
+    """The nether star as it reads at this size: a bright centre, four arms (lit, then mid), the diagonals mid."""
+    for j in range(len(g)):
+        for i in range(len(g[0])):
+            dx, dy = abs(i + 0.5 - cx), abs(j + 0.5 - cy)
+            if dx < 1 and dy < 1: g[j][i] = '&'
+            elif (dx < 1 and dy < r) or (dy < 1 and dx < r): g[j][i] = '%' if max(dx, dy) < r - 1 else '*'
+            elif dx < 2 and dy < 2: g[j][i] = '*'
+
+
+def bolts(g, inset=1, c='h'):
+    w, h = len(g[0]), len(g)
+    for i, j in ((inset, inset + 1), (w - 1 - inset, inset + 1), (inset, h - 2 - inset), (w - 1 - inset, h - 2 - inset)):
+        g[j][i] = c
+
+
+def cells(g, i0, i1, j0, n, step=2):
+    """A charge bar: n cells from j0 down (a lit row over a mid row each), ink between them and round them."""
+    for k in range(n):
+        j = j0 + k * (step + 1)
+        for i in range(i0, i1):
+            g[j][i] = '%'
+            for jj in range(j + 1, j + step): g[jj][i] = '*'
+            g[j + step][i] = 'X'
+        if k == 0:
+            for i in range(i0, i1): g[j - 1][i] = 'X'
+    for j in range(j0 - 1, j0 + n * (step + 1)):
+        if i0 - 1 >= 0: g[j][i0 - 1] = 'X'
+        if i1 < len(g[0]): g[j][i1] = 'X'
+
+
+def core_block(st):
+    """C: the blower's block (10 x 8 x 2.5, flat on the back), its back the star in a porthole between two charge bars,
+    an emitter bar on its top (vent slots: the motes rise out of it), the lines into its sides as the hoses go into the
+    blower's."""
+    X, Y0, Y1, Z1 = 5, 16, 24, 5.5
+    W, H, D = 20, 16, 5
+
+    def block(f, w, h):
+        g = housing(f, w, h)
+        if f != 'south': return g
+        disc(g, 10, 8, 6, 'X')
+        disc(g, 10, 8, 5.4, '=', ring='h', rw=1)                     # the porthole: a steel ring, deep glass
+        disc(g, 10, 8, 4.4, '=', ring='*', rw=0.8)
+        star4(g, 10, 8, 3.5)
+        cells(g, 1, 3, 4, 3)
+        cells(g, w - 3, w - 1, 4, 3)
+        return g
+    b = part('block', ((-X, Y0, TZ0), (X, Y1, Z1)), block)
+    sea.inlets(st, b['faces'], D, H, Y1, (22, 18.25))
+    def emitter(f, w, h):
+        if f == 'up':
+            g = grid(w, h, 'N'); g[0] = ['O'] * w
+            for i in range(2, w - 2, 3): g[h // 2][i] = g[h // 2][i + 1] = '='   # the vent slots on top
+            return g
+        if f == 'down': return bottom(w, h)
+        g = [['g'] * w] + [['N'] * w for _ in range(h - 2)] + [['X'] * w]
+        if f == 'south':
+            for i in range(2, w - 2, 3): g[1][i] = g[1][i + 1] = '*'
+        return g
+    return [b, part('emitter', ((-3, Y1, 3.5), (3, Y1 + 1.5, Z1)), emitter)], X, 22, 18.25, Y1
+
+
+def column(st):
+    """D: one tall containment cell in the middle (4 x 9 x 3, steel straps, a window of violet light with the star near
+    its top, an emitter valve on its top), a charge cell either side (2.5 x 8 x 2.5, a bar of four cells), glass links
+    between them; the lines into the charge cells' sides, as the tidal engine's into its tanks."""
+    P = []
+    def cell(f, w, h):
+        g = housing(f, w, h)
+        if f in ('north', 'south', 'east', 'west'):
+            for j0 in (3, h - 5): g[j0], g[j0 + 1] = ['h'] * w, ['e'] * w      # two steel straps
+        if f == 'south':
+            for j in range(6, h - 6):
+                for i in range(2, w - 2):
+                    t = (j - 6) / max(1, h - 13)
+                    g[j][i] = '%' if t < 0.3 else '*' if t < 0.7 else '='
+                g[j][1], g[j][w - 2] = 'X', 'X'
+            g[5] = ['O'] + ['X'] * (w - 2) + ['X']; g[h - 6] = ['O'] + ['X'] * (w - 2) + ['X']
+            star4(g, w / 2, 9, 2.5)
+        return g
+    P.append(part('cell', ((-2, 16, TZ0), (2, 25, 6)), cell))
+    def valve(f, w, h):
+        if f == 'up':
+            g = grid(w, h, 'X'); g[h // 2][w // 2 - 1] = g[h // 2][w // 2] = '&'; return g
+        return chrome(w, h)
+    P.append(part('valve', ((-0.5, 25, 4.5), (0.5, 26.5, 5.5)), valve))
+    def charge(f, w, h):
+        g = housing(f, w, h)
+        if f == 'south': cells(g, 1, w - 1, 3, 4)
+        return g
+    c = part('charge', ((3, 17, TZ0), (5.5, 25, 5.5)), charge, mirror=True)
+    sea.inlets(st, c['faces'], 5, 16, 25, (22.25, 18.75))
+    P.append(c)
+    for k, y in enumerate((18.5, 22)):
+        P.append(part(f'link{k}', ((2, y, 3.5), (3, y + 1, 4.5)),
+                      lambda f, w, h: [['%'] * w for _ in range(h)] if f in ('north', 'south') else [['*'] * w for _ in range(h)], mirror=True))
+    return P, 5.5, 22.25, 18.75, 25
+
+
+def beacon(st):
+    """E: Minecraft's beacon on a back: an obsidian base slab, a steel case (8 x 6.5 x 3) round a pane of beacon glass,
+    the beam a lit column up its middle through the star, an obsidian rim on top with the beam's hole (the motes)."""
+    P = []
+    def base(f, w, h):
+        g = [['8'] * w for _ in range(h)]
+        if f != 'down': g[0] = ['9'] * w
+        if f in ('north', 'south', 'east', 'west'): g[-1] = ['$'] * w
+        return g
+    P.append(part('base', ((-4, 16, TZ0), (4, 17.5, 6)), base))
+    def case(f, w, h):
+        g = housing(f, w, h)
+        if f != 'south': return g
+        for j in range(2, h - 2):
+            for i in range(2, w - 2):
+                g[j][i] = 'X' if i in (2, w - 3) or j in (2, h - 3) else '='
+        for j in range(3, h - 3):
+            for i in range(3, w - 3):
+                if (i + j) % 5 == 0: g[j][i] = '*'                         # the glass's glints
+            g[j][w // 2 - 1] = g[j][w // 2] = '%'                            # the beam
+        star4(g, w / 2, h / 2 - 0.5, 3)
+        bolts(g, 0, 'h')
+        return g
+    c = part('case', ((-4, 17.5, TZ0), (4, 24, 6)), case)
+    sea.inlets(st, c['faces'], 6, 13, 24, (22, 18.75))
+    P.append(c)
+    def rim(f, w, h):
+        g = [['8'] * w for _ in range(h)]
+        if f == 'up':
+            g[0] = ['9'] * w
+            for j in range(h // 2 - 1, h // 2 + 1): g[j][w // 2 - 1] = g[j][w // 2] = '&'
+        elif f != 'down': g[0] = ['9'] * w; g[-1] = ['$'] * w
+        return g
+    P.append(part('rim', ((-3, 24, 3.5), (3, 25, 5.5)), rim))
+    return P, 4, 22, 18.75, 24
+
+
+TZ0 = 3
+BACKS20 = {'C': core_block, 'D': column, 'E': beacon}
+
+
+def build20(design, chest_x=6.0):
+    st = STYLE20
+    back, pack_x, up_c, low_c, pack_top = BACKS20[design](st)
+    cx = min(6, chest_x)
+    sx = sea.side(cx)[0]
+    lens = sea.element(lens_glyph())
+    open_ = [sea.harness(st, cx, lens, 2.0, 2.5, low_c), sea.strip_top(st, cx), sea.strip_side(st, cx, low_c),
+             sea.harness_back(st, cx, pack_x, up_c, low_c, pack_top)]
+    armoured = [sea.bezel(lens), sea.harness_low(st, low_c, sx), sea.strip_side(st, cx, low_c),
+                sea.harness_back(st, cx, pack_x, up_c, low_c, pack_top, low_only=True)]
+    return back, open_, armoured
+
+
 BACKS = {'A': chain, 'B': jetpack}
 
 
 def build(design='B', chest_x=6.0):
     """(back parts, open front, armoured front); frame_model.py prefixes them (rb_ / ro_ / ra_)."""
+    if design in BACKS20: return build20(design, chest_x)
     glyph = sea.element(lens_glyph())
     return BACKS[design](), [glyph_plate(glyph)], [sea.bezel(glyph)]
