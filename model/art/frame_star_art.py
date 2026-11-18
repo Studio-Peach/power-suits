@@ -413,6 +413,19 @@ def beacon(st):
     b = 1 if PYLONS else 2                                                 # the steel round the pane
     def case(f, w, h):
         g = housing(f, w, h)
+        if PYLONS and f in ('east', 'west'):
+            # round 26 (user: "one of the sides is unpainted"): the pane wraps round onto the sides as a slit of the same
+            # glass in their back half (rows 3-8 as the pane's), behind the lines' inlets (east columns back -> front)
+            c0 = 1 if f == 'east' else w - 3
+            for j in range(2, 10):
+                for i in range(c0 - 1, c0 + 3):
+                    g[j][i] = 'X' if i in (c0 - 1, c0 + 2) or j in (2, 9) else ('*' if j in (3, 8) else '%' if j in (5, 6) else '=')
+            return g
+        if PYLONS and f == 'down':
+            # round 26 (user: paint the case's bottom): an ink rim, plate, a glass slot of two rows across the middle
+            g = [['X'] * w] + [['X'] + ['N'] * (w - 2) + ['X'] for _ in range(h - 2)] + [['X'] * w]
+            for i in range(2, w - 2): g[h // 2 - 1][i], g[h // 2][i] = '*', '='
+            return g
         if f != 'south': return g
         if PYLONS:
             # round 25 (user: "one of the bottom corners is different"): the pane was 6 x 7, the star centred on its top
@@ -464,6 +477,16 @@ def beacon(st):
 PYLONS = os.environ.get('STAR_PYLONS') == '1'
 
 
+def port(w, h):
+    """Round 26 (user: paint the pylons' bottoms): a bottom face as an emitter port: an ink rim, netherite plate, the
+    star's cross in the middle (a lit centre, mid arms)."""
+    g = [['X'] * w] + [['X'] + ['N'] * (w - 2) + ['X'] for _ in range(h - 2)] + [['X'] * w]
+    cx, cy = w // 2, h // 2
+    for i, j in ((cx - 1, cy), (cx + 1, cy), (cx, cy - 1), (cx, cy + 1)): g[j][i] = '*'
+    g[cy][cx] = '%'
+    return g
+
+
 def pylons(st, y0, y1, links=(18.5, 22), centres=(22.25, 18.75), inner=3, z1=5.5, side_cells=False, z0=None, inlets=True):
     """side_cells: the bar of cells painted on the outer side too (round 22, user), behind the lines' inlets.
     inlets: the lines go into the pylons' sides (D's way); False: into the middle body's (round 24).
@@ -475,6 +498,8 @@ def pylons(st, y0, y1, links=(18.5, 22), centres=(22.25, 18.75), inner=3, z1=5.5
         if f == 'south': cells(g, 1, w - 1, 3, 4)
         if f == 'east' and side_cells:                                  # east columns back -> front: the cells at the back
             cells(g, 1, D - 2 if inlets else D - 1, 3, 4)
+        if f == 'west' and side_cells and not inlets: cells(g, 1, D - 1, 3, 4)   # round 26: the inner side too
+        if f == 'down' and side_cells: g = port(w, h)
         return g
     c = part('pylon', ((inner, y0, z0), (inner + 2.5, y1, z1)), charge, mirror=True)
     if inlets: sea.inlets(st, c['faces'], D, round((y1 - y0) * K), y1, centres)
