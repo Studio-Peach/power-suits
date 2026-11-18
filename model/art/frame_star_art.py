@@ -276,7 +276,8 @@ def _star_hub():
 # Three backs (knob STAR): C a core block (the firebox's blower: one flat block, the star in a porthole), D a containment
 # column (the tidal engine turned inside out: one tall cell in the middle, two charge cells beside it), E a beacon case
 # (an obsidian base, a steel case round a pane of beacon glass, the beam up it).
-STYLE20 = dict(HR=0.75, tube=('%', '*', '='), band=('g', 'e'), bubbles=True, spark='&')
+# (no sparks: round 25, user: a single bright texel in the back's line read as a rogue pixel)
+STYLE20 = dict(HR=0.75, tube=('%', '*', '='), band=('g', 'e'), bubbles=False, spark='&')
 
 
 def housing(f, w, h):
@@ -413,6 +414,17 @@ def beacon(st):
     def case(f, w, h):
         g = housing(f, w, h)
         if f != 'south': return g
+        if PYLONS:
+            # round 25 (user: "one of the bottom corners is different"): the pane was 6 x 7, the star centred on its top
+            # 6 rows, its last row odd; now 6 x 6 round the star (ink rows 2 and 9), the glints only in its 4 corners
+            for j in range(2, 10):
+                for i in range(b, w - b):
+                    g[j][i] = 'X' if i in (b, w - 1 - b) or j in (2, 9) else '='
+            for j in (3, 8):
+                for i in (b + 1, w - b - 2): g[j][i] = '*'
+            for j in range(3, 9): g[j][w // 2 - 1] = g[j][w // 2] = '%'
+            star4(g, w / 2, 6, 3)
+            return g
         for j in range(2, h - 2):
             for i in range(b, w - b):
                 g[j][i] = 'X' if i in (b, w - 1 - b) or j in (2, h - 3) else '='
@@ -481,6 +493,31 @@ TZ0 = 3
 BACKS20 = {'C': core_block, 'D': column, 'E': beacon}
 
 
+# Round 25 (user, 2026-11-16: "you know all the iron accents? Make them netherite-like instead. This is meant to be a super
+# late game item, so netherite will be part of the recipe"): the reactor's steel (its housings, the lines' bands, the
+# chest's bezel) in netherite's dark, faintly warm greys, in letters of their own (not the iron ramp's: those are the
+# armour's paint shades). The ink (X), the obsidian and the violet stay. Knob STAR_METAL=iron keeps the steel (review).
+NETHERITE = {'{': (0x74, 0x6a, 0x6b),   # lit edge
+             '}': (0x62, 0x59, 0x5b),   # bolts, top
+             '[': (0x52, 0x4a, 0x4c),   # shoulder shade
+             ']': (0x46, 0x3f, 0x42),   # left column
+             '(': (0x34, 0x2f, 0x32),   # the plate
+             ')': (0x27, 0x23, 0x26),   # foot
+             '<': (0x3c, 0x36, 0x39),   # bezel shade
+             '>': (0x21, 0x1e, 0x20)}   # bezel corner
+EXTRA.update(NETHERITE)
+TO_NETHERITE = {'g': '{', 'h': '}', 'e': '[', 'O': ']', 'N': '(', 'G': ')', 's': '<', 'z': '>'}
+METAL = os.environ.get('STAR_METAL', 'netherite')
+
+
+def netherite(parts):
+    for p in parts:
+        for f, g in (p['faces'] or {}).items():
+            for row in g:
+                for i, c in enumerate(row): row[i] = TO_NETHERITE.get(c, c)
+    return parts
+
+
 def webbed(p, x0=2.5, x1=3, y0=17.5, y1=24.5):
     """The pylons' gap web painted dark into a back line decal (harness_back) wherever no line crosses it."""
     (bx0, _, _), (_, by1, _) = p['box']
@@ -505,6 +542,7 @@ def build20(design, chest_x=6.0):
     if PYLONS and design == 'E':
         for p in open_ + armoured:
             if p['name'] == 'harness_back': webbed(p)
+    if design == 'E' and METAL == 'netherite': netherite(back + open_ + armoured)
     return back, open_, armoured
 
 
