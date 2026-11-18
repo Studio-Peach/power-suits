@@ -424,7 +424,7 @@ def beacon(st):
         if not PYLONS: bolts(g, 0, 'h')
         return g
     c = part('case', ((-CX, 17.5, TZ0), (CX, 24, 6)), case)
-    if not PYLONS: sea.inlets(st, c['faces'], 6, 13, 24, (22, 18.75))
+    sea.inlets(st, c['faces'], 6, 13, 24, (22.25, 18.75) if PYLONS else (22, 18.75))
     P.append(c)
     def rim(f, w, h):
         g = [['8'] * w for _ in range(h)]
@@ -438,7 +438,10 @@ def beacon(st):
     # deeper (z 3 .. 6.5, 0.5 px proud of the case's back), their cells on the outer side too
     # round 23 (user: "you extend the pylons instead of detaching them from the back"): back to 2.5 px deep, moved 1 px
     # off the back instead (z 4 .. 6.5), on the links; the lines on the back run on under them to their inlets (no clip)
-    if PYLONS: return P + pylons(st, 17.5, 25.5, z0=4, z1=6.5, side_cells=True), 5.5, 22.25, 18.75, 17.5
+    # round 24 (user: "the cables should connect to the body and not the pylons, and currently they don't connect to
+    # anything"): the lines run on the back under the pylons and across the gap into the case's sides (inlets in its
+    # front 1 px, as the blower's); the pylons' outer sides carry their full bar of cells
+    if PYLONS: return P + pylons(st, 17.5, 25.5, z0=4, z1=6.5, side_cells=True, inlets=False), 2.5, 22.25, 18.75, 24
     return P, 4, 22, 18.75, 24
 
 
@@ -449,20 +452,24 @@ def beacon(st):
 PYLONS = os.environ.get('STAR_PYLONS') == '1'
 
 
-def pylons(st, y0, y1, links=(18.5, 22), centres=(22.25, 18.75), inner=3, z1=5.5, side_cells=False, z0=None):
+def pylons(st, y0, y1, links=(18.5, 22), centres=(22.25, 18.75), inner=3, z1=5.5, side_cells=False, z0=None, inlets=True):
     """side_cells: the bar of cells painted on the outer side too (round 22, user), behind the lines' inlets.
+    inlets: the lines go into the pylons' sides (D's way); False: into the middle body's (round 24).
     z0: the pylon's front; past the back's plane (TZ0) it stands off the back, held by the glass links (round 23)."""
     z0 = TZ0 if z0 is None else z0
     D = round((z1 - z0) * K)
     def charge(f, w, h):
         g = housing(f, w, h)
         if f == 'south': cells(g, 1, w - 1, 3, 4)
-        if f == 'east' and side_cells: cells(g, 1, D - 2, 3, 4)      # east columns back -> front: the cells at the back
+        if f == 'east' and side_cells:                                  # east columns back -> front: the cells at the back
+            cells(g, 1, D - 2 if inlets else D - 1, 3, 4)
         return g
     c = part('pylon', ((inner, y0, z0), (inner + 2.5, y1, z1)), charge, mirror=True)
-    sea.inlets(st, c['faces'], D, round((y1 - y0) * K), y1, centres)
+    if inlets: sea.inlets(st, c['faces'], D, round((y1 - y0) * K), y1, centres)
     # the 0.5 px gap between the pylon and the middle: a dark web at its back, so the frame's teal doesn't show through
-    P = [c, part('web', ((2.5, y0, TZ0), (inner, y1 - 1, 3.5)), lambda f, w, h: grid(w, h, 'X'), mirror=True)]
+    # (with inlets=False the lines cross the gap into the middle body: the web is painted into the back's line decal
+    # instead, under them; see webbed())
+    P = [c] + ([part('web', ((2.5, y0, TZ0), (inner, y1 - 1, 3.5)), lambda f, w, h: grid(w, h, 'X'), mirror=True)] if inlets else [])
     for k, y in enumerate(links):
         lz = max(3.5, z0 + 0.5)
         P.append(part(f'link{k}', ((2.5, y, lz), (inner, y + 1, lz + 1)),
@@ -472,6 +479,17 @@ def pylons(st, y0, y1, links=(18.5, 22), centres=(22.25, 18.75), inner=3, z1=5.5
 
 TZ0 = 3
 BACKS20 = {'C': core_block, 'D': column, 'E': beacon}
+
+
+def webbed(p, x0=2.5, x1=3, y0=17.5, y1=24.5):
+    """The pylons' gap web painted dark into a back line decal (harness_back) wherever no line crosses it."""
+    (bx0, _, _), (_, by1, _) = p['box']
+    g = p['faces']['south']
+    for j, row in enumerate(g):
+        for i, c in enumerate(row):
+            x, y = abs(bx0 + (i + 0.5) / K), by1 - (j + 0.5) / K
+            if c == '.' and x0 <= x < x1 and y0 <= y < y1: row[i] = 'X'
+    return p
 
 
 def build20(design, chest_x=6.0):
@@ -484,6 +502,9 @@ def build20(design, chest_x=6.0):
              sea.harness_back(st, cx, pack_x, up_c, low_c, pack_top)]
     armoured = [sea.bezel(lens), sea.harness_low(st, low_c, sx), sea.strip_side(st, cx, low_c),
                 sea.harness_back(st, cx, pack_x, up_c, low_c, pack_top, low_only=True)]
+    if PYLONS and design == 'E':
+        for p in open_ + armoured:
+            if p['name'] == 'harness_back': webbed(p)
     return back, open_, armoured
 
 
