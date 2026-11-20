@@ -211,28 +211,38 @@ def arm_view(model, ident):
 TOOL_BONES = ('drill', 'chainsaw', 'chaingun', 'flamethrower', 'rail_cannon', 'tnt_launcher', 'em_projector')
 
 
-def tool_view(model, ident):
-    """The left arm and its tools about the pilot's left arm pivot (see the docstring)."""
+def tool_view(model, ident, side='l'):
+    """One arm and its tools about the pilot's arm pivot (see the docstring). The right arm's view model keeps its own
+    outward-facing cubes (mirroring the left arm's with a negative scale in CockpitHands reversed triangle winding and
+    back-face-culled the front faces, making the right-arm tool dark and inside-out) and drops the `_r` suffix from its
+    tool bones so CockpitView's animations and ToolRotors drive both arms with the same bone names."""
     built = geo(model, ident)['minecraft:geometry'][0]
-    keep, bones = set(TOOL_BONES), []
+    arm = 'left_arm' if side == 'l' else 'right_arm'
+    sfx = '' if side == 'l' else '_r'
+    roots = {b + sfx for b in TOOL_BONES}
+    keep, bones = set(roots), []
     by_name = {b['name']: b for b in built['bones']}
     for b in built['bones']:
         if b['name'] in keep or b.get('parent') in keep:
             keep.add(b['name'])
             bones.append(json.loads(json.dumps(b)))
-    sx, sy, sz = by_name['pilot_left_arm']['pivot']
+    sx, sy, sz = by_name[f'pilot_{arm}']['pivot']
     shift = lambda v: [r(v[0] - sx), r(v[1] - sy), r(v[2] - sz)]
+    strip = lambda n: n[:-2] if sfx and n.endswith(sfx) else n
     for b in bones:
         b['pivot'] = shift(b['pivot'])
-        if b['name'] in TOOL_BONES:
+        if b['name'] in roots:
             b['parent'] = 'view_tool'
+        elif 'parent' in b:
+            b['parent'] = strip(b['parent'])
+        b['name'] = strip(b['name'])
         for c in b.get('cubes', []):
             c['origin'] = shift(c['origin'])
             if 'pivot' in c:
                 c['pivot'] = shift(c['pivot'])
     built['description'] = dict(built['description'], identifier='geometry.' + ident,
                                 visible_bounds_width=2, visible_bounds_height=2, visible_bounds_offset=[0, 0, 0])
-    built['bones'] = arm_parts(by_name, 'left_arm', 'view_tool', shift) + bones
+    built['bones'] = arm_parts(by_name, arm, 'view_tool', shift) + bones
     return {'format_version': '1.12.0', 'minecraft:geometry': [built]}
 
 
@@ -459,7 +469,9 @@ if __name__ == '__main__':
         arm = ident.replace('power_frame', 'frame_arm')
         write(f'geckolib/models/view/{arm}.geo.json', json.dumps(arm_view(model, arm), indent=1).encode())
         tool = ident.replace('power_frame', 'frame_tool')
-        write(f'geckolib/models/view/{tool}.geo.json', json.dumps(tool_view(model, tool), indent=1).encode())
+        write(f'geckolib/models/view/{tool}.geo.json', json.dumps(tool_view(model, tool, 'l'), indent=1).encode())
+        tool_r = ident.replace('power_frame', 'frame_tool_r')
+        write(f'geckolib/models/view/{tool_r}.geo.json', json.dumps(tool_view(model, tool_r, 'r'), indent=1).encode())
         source = model['textures'][0]['source']
         opaque, glass, visor, fire, core, sea, tools = textures(base64.b64decode(source.split(',', 1)[1]))
         slim = ident[len('power_frame'):]

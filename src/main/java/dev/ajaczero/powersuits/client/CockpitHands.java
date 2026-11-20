@@ -94,11 +94,13 @@ public final class CockpitHands {
         view.hideArm = !showArm; // the tool alone: no skin arm, no shell (CockpitViewRenderer hides the shell)
         PlayerSkin skin = Minecraft.getInstance().player != null ? Minecraft.getInstance().player.getSkin() : null;
         if (showArm && skin != null) {
-            event.getSubmitNodeCollector().submitModelPart(arm(view.slim, true), pose, RenderTypes.entityTranslucent(skin.body().texturePath()),
+            event.getSubmitNodeCollector().submitModelPart(arm(view.slim, arm == ToolArm.LEFT), pose, RenderTypes.entityTranslucent(skin.body().texturePath()),
                     event.getPackedLight(), OverlayTexture.NO_OVERLAY, null);
         }
-        // into the frame's axes (see renderArm); the view model is the left arm's, the right arm's is its mirror image
-        pose.scale(arm == ToolArm.LEFT ? -1F : 1F, -1F, 1F);
+        // into the frame's axes (see renderArm): each arm uses its own view model (frame_tool / frame_tool_r), so both
+        // take the same det=+1 180-deg Z turn instead of a mirror scale (which flipped triangle winding and culled the
+        // right arm's front faces, leaving only its dark inner walls).
+        pose.scale(-1F, -1F, 1F);
         drawPart(pose, event, CockpitViewRenderer.Part.TOOL);
         pose.popPose();
     }

@@ -328,4 +328,5 @@ the end and `docs/guide.md` Notes).
 - Right arm = the main hand (its tool the attack button), left arm = the off hand (its tool the use button).
 - Known limits: a tool on the right arm swallows the main hand's turn, so with the left a plain hand its off-hand item can't be
   used with right click; both arms' HUD readouts share their corners (two chaingun-style corners would overlap); the machine
-  mind uses the primary tool only; the cockpit's right tool is the left's view model mirrored.
+  mind uses the primary tool only; the cockpit's right tool has its own exported view model (`frame_tool_r`,
+  `frame_tool_r_slim`) so it uses the same det=+1 transform as the left arm without flipping triangle winding.

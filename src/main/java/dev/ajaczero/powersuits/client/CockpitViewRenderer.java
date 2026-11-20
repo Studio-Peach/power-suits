@@ -9,6 +9,7 @@ import com.geckolib.renderer.base.RenderPassInfo;
 import com.geckolib.renderer.layer.GeoRenderLayer;
 import com.geckolib.util.ClientUtil;
 import dev.ajaczero.powersuits.PowerSuits;
+import dev.ajaczero.powersuits.entity.ToolArm;
 import dev.ajaczero.powersuits.item.PowerTool;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.rendertype.RenderType;
@@ -24,6 +25,8 @@ final class CockpitViewRenderer extends GeoObjectRenderer<CockpitView, Void, Geo
 
     // Copied from CockpitView / its suit when the frame is extracted (the model is posed and drawn later).
     private static final DataTicket<Part> PART = DataTicket.create("power_suits_view_part", Part.class);
+    /** Which arm's tool view model is drawn (LEFT: frame_tool, RIGHT: frame_tool_r). */
+    private static final DataTicket<ToolArm> ARM = DataTicket.create("power_suits_view_arm", ToolArm.class);
     /** The pilot's skin is Alex's: the frame's slim arm (the same cubes about his arm, the slim build's texture). */
     private static final DataTicket<Boolean> SLIM = DataTicket.create("power_suits_view_slim", Boolean.class);
     private static final DataTicket<Boolean> HIDE_ARM = DataTicket.create("power_suits_view_hide_arm", Boolean.class);
@@ -46,6 +49,7 @@ final class CockpitViewRenderer extends GeoObjectRenderer<CockpitView, Void, Geo
     @Override
     public void addRenderData(CockpitView view, @Nullable Void ignored, GeoRenderState state, float partialTick) {
         state.addGeckolibData(PART, view.part);
+        state.addGeckolibData(ARM, view.arm);
         state.addGeckolibData(SLIM, view.slim);
         state.addGeckolibData(HIDE_ARM, view.hideArm);
         var suit = view.suit;
@@ -74,12 +78,16 @@ final class CockpitViewRenderer extends GeoObjectRenderer<CockpitView, Void, Geo
             boolean show = name.equals(shown);
             bones.ifPresent(name, b -> b.skipRender(!show).skipChildrenRender(!show));
         }
-        ArmourBones.show(bones, info.getOrDefaultGeckolibData(ARMOUR, 0), info.getOrDefaultGeckolibData(PART, Part.TOOL) == Part.TOOL ? 1 : 0); // the arm's piece, or its bare frame
+        ToolArm toolArm = info.getOrDefaultGeckolibData(ARM, ToolArm.LEFT);
+        int toolMask = info.getOrDefaultGeckolibData(PART, Part.TOOL) == Part.TOOL ? (toolArm == ToolArm.RIGHT ? 2 : 1) : 0;
+        ArmourBones.show(bones, info.getOrDefaultGeckolibData(ARMOUR, 0), toolMask); // this arm's piece, or its bare frame
         if (info.getOrDefaultGeckolibData(PART, Part.TOOL) == Part.TOOL && info.getOrDefaultGeckolibData(HIDE_ARM, false)) {
             // The tool is the subject, drawn like a held item (user, 2026-11-15): its arm's cubes stay out of the view
             // (their own bones only: the tool bones are children of view_tool).
             for (String arm : new String[] {"view_tool", "frame_left_arm", "armor_left_arm", "copper_left_arm",
-                    "frame_left_arm_socket", "armor_left_arm_socket", "copper_left_arm_socket"}) {
+                    "frame_left_arm_socket", "armor_left_arm_socket", "copper_left_arm_socket",
+                    "frame_right_arm", "armor_right_arm", "copper_right_arm",
+                    "frame_right_arm_socket", "armor_right_arm_socket", "copper_right_arm_socket"}) {
                 bones.ifPresent(arm, b -> b.skipRender(true));
             }
         }
@@ -101,9 +109,11 @@ final class CockpitViewRenderer extends GeoObjectRenderer<CockpitView, Void, Geo
         // The frame's tools about the socket (tools/export-frame.py), per build; the frame's animations (the tools' run loops).
         private static final Identifier TOOL = Identifier.fromNamespaceAndPath(PowerSuits.MODID, "view/frame_tool");
         private static final Identifier TOOL_SLIM = Identifier.fromNamespaceAndPath(PowerSuits.MODID, "view/frame_tool_slim");
+        private static final Identifier TOOL_R = Identifier.fromNamespaceAndPath(PowerSuits.MODID, "view/frame_tool_r");
+        private static final Identifier TOOL_R_SLIM = Identifier.fromNamespaceAndPath(PowerSuits.MODID, "view/frame_tool_r_slim");
         private static final Identifier ANIMATIONS = Identifier.fromNamespaceAndPath(PowerSuits.MODID, "entity/power_frame");
         // The frame's arm (tools/export-frame.py), per build.
-        private static final Identifier ARM = Identifier.fromNamespaceAndPath(PowerSuits.MODID, "view/frame_arm");
+        private static final Identifier ARM_MODEL = Identifier.fromNamespaceAndPath(PowerSuits.MODID, "view/frame_arm");
         private static final Identifier ARM_SLIM = Identifier.fromNamespaceAndPath(PowerSuits.MODID, "view/frame_arm_slim");
 
         private static boolean arm(GeoRenderState state) {
@@ -116,7 +126,12 @@ final class CockpitViewRenderer extends GeoObjectRenderer<CockpitView, Void, Geo
 
         @Override
         public Identifier getModelResource(GeoRenderState state) {
-            return arm(state) ? (slim(state) ? ARM_SLIM : ARM) : slim(state) ? TOOL_SLIM : TOOL;
+            boolean slim = slim(state);
+            if (arm(state)) {
+                return slim ? ARM_SLIM : ARM_MODEL;
+            }
+            boolean right = state.getOrDefaultGeckolibData(ARM, ToolArm.LEFT) == ToolArm.RIGHT;
+            return right ? (slim ? TOOL_R_SLIM : TOOL_R) : (slim ? TOOL_SLIM : TOOL);
         }
 
         @Override

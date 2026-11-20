@@ -27,7 +27,7 @@ final class CockpitView implements GeoAnimatable {
     PowerSuitEntity suit;
     /** Which half the next render pass draws (copied into its render state: the model is drawn later). */
     CockpitViewRenderer.Part part = CockpitViewRenderer.Part.TOOL;
-    /** The arm whose tool the next tool pass draws (the view model is the left arm's; the right arm's is mirrored). */
+    /** The arm whose tool the next tool pass draws (LEFT: frame_tool, RIGHT: frame_tool_r). */
     dev.ajaczero.powersuits.entity.ToolArm arm = dev.ajaczero.powersuits.entity.ToolArm.LEFT;
     /** The pilot's skin is Alex's (the frame's slim arm), set before each render. */
     boolean slim;
