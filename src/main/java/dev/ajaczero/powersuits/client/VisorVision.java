@@ -117,7 +117,7 @@ public final class VisorVision {
     /** The suit whose visor the player looks through: they pilot it and it wears a helmet (null otherwise). */
     private static PowerSuitEntity visorOf(Minecraft mc) {
         if (mc.player == null || mc.player.isSpectator() || !(mc.player.getVehicle() instanceof PowerSuitEntity suit)
-                || suit.getControllingPassenger() != mc.player || !suit.hasHelmet()) {
+                || suit.getControllingPassenger() != mc.player || !suit.hasHud()) {
             return null;
         }
         return suit;

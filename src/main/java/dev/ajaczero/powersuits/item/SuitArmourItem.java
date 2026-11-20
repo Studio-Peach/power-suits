@@ -42,7 +42,9 @@ public class SuitArmourItem extends Item implements ModTooltip {
         tooltip.accept(Component.translatable("item.power_suits.suit_armour." + this.piece.getName() + ".tooltip").withStyle(ChatFormatting.GRAY));
         tooltip.accept(Component.translatable("item.power_suits.suit_armour.protection",
                 number(this.tier.protection(this.piece))).withStyle(ChatFormatting.BLUE));
-        tooltip.accept(Component.translatable("item.power_suits.suit_armour.seal").withStyle(ChatFormatting.GRAY));
+        tooltip.accept(Component.translatable(this.tier.seals()
+                ? "item.power_suits.suit_armour.seal"
+                : "item.power_suits.suit_armour.no_seal").withStyle(ChatFormatting.GRAY));
     }
 
     /** 6 -> "6", 2.5 -> "2.5" (vanilla's armour lines drop a whole number's ".0" too). */

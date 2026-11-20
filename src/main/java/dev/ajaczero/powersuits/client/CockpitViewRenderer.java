@@ -51,7 +51,7 @@ final class CockpitViewRenderer extends GeoObjectRenderer<CockpitView, Void, Geo
         var suit = view.suit;
         state.addGeckolibData(TOOL_BONE, suit != null && suit.getSocketStack(view.arm).getItem() instanceof PowerTool tool ? tool.suitBone() : "");
         state.addGeckolibData(BARREL_ANGLE, suit == null ? 0F : suit.socketVisuals(view.arm).rotorAngle(partialTick));
-        state.addGeckolibData(ARMOUR, suit == null ? 0 : suit.armour().wornMask());
+        state.addGeckolibData(ARMOUR, suit == null ? 0 : suit.armour().wornCode());
         state.addGeckolibData(PAINT, suit == null || suit.getPaint() == null ? -1 : suit.getPaint().getId());
         if (suit != null && view.part == Part.TOOL) {
             float time = (float) ClientUtil.getCurrentTick(partialTick);
@@ -78,7 +78,8 @@ final class CockpitViewRenderer extends GeoObjectRenderer<CockpitView, Void, Geo
         if (info.getOrDefaultGeckolibData(PART, Part.TOOL) == Part.TOOL && info.getOrDefaultGeckolibData(HIDE_ARM, false)) {
             // The tool is the subject, drawn like a held item (user, 2026-11-15): its arm's cubes stay out of the view
             // (their own bones only: the tool bones are children of view_tool).
-            for (String arm : new String[] {"view_tool", "frame_left_arm", "armor_left_arm", "frame_left_arm_socket", "armor_left_arm_socket"}) {
+            for (String arm : new String[] {"view_tool", "frame_left_arm", "armor_left_arm", "copper_left_arm",
+                    "frame_left_arm_socket", "armor_left_arm_socket", "copper_left_arm_socket"}) {
                 bones.ifPresent(arm, b -> b.skipRender(true));
             }
         }

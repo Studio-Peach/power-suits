@@ -27,7 +27,9 @@ public class HelmetGlassLayer extends GeoRenderLayer<PowerSuitEntity, Void, Livi
 
     @Override
     public void submitRenderTask(RenderPassInfo<LivingEntityRenderState> info, SubmitNodeCollector renderTasks) {
-        if (!info.willRender() || !info.getOrDefaultGeckolibData(SuitRenderData.HELMET, false)
+        if (!info.willRender()
+                || (!info.getOrDefaultGeckolibData(SuitRenderData.HELMET, false)
+                        && !info.getOrDefaultGeckolibData(SuitRenderData.GLASSES, false))
                 || info.getOrDefaultGeckolibData(SuitRenderData.COCKPIT, false)) {
             return;
         }

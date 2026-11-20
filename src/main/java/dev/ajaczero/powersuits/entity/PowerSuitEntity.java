@@ -11,6 +11,7 @@ import dev.ajaczero.powersuits.entity.ai.SuitGoals;
 import dev.ajaczero.powersuits.item.HelmetStyle;
 import dev.ajaczero.powersuits.item.PowerSuitItem;
 import dev.ajaczero.powersuits.item.Soul;
+import dev.ajaczero.powersuits.item.ArGlassesItem;
 import dev.ajaczero.powersuits.item.SuitHelmetItem;
 import dev.ajaczero.powersuits.item.PowerTool;
 import dev.ajaczero.powersuits.item.SuitLoadout;
@@ -189,6 +190,9 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
     /** Is a helmet in its slot: clients draw it (or not) and know whether the suit is sealed. */
     private static final EntityDataAccessor<Boolean> HELMET =
             SynchedEntityData.defineId(PowerSuitEntity.class, EntityDataSerializers.BOOLEAN);
+    /** AR Glasses sit in the helmet slot (2026-11-20, user): HUD + night vision + indicator LED, no armour/seal/mind. */
+    private static final EntityDataAccessor<Boolean> GLASSES =
+            SynchedEntityData.defineId(PowerSuitEntity.class, EntityDataSerializers.BOOLEAN);
     /** The helmet is worn out (SuitHelmetItem.isBroken): no seal (clients show the seal), it still carries the mind. */
     private static final EntityDataAccessor<Boolean> HELMET_BROKEN =
             SynchedEntityData.defineId(PowerSuitEntity.class, EntityDataSerializers.BOOLEAN);
@@ -298,6 +302,7 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
         builder.define(TOOL_SHOTS_R, 0);
         builder.define(RAIL_END_R, new Vector3f());
         builder.define(HELMET, false);
+        builder.define(GLASSES, false);
         builder.define(HELMET_BROKEN, false);
         builder.define(HELMET_STYLE, (byte) -1);
         builder.define(HELMET_SOUL, (byte) -1);
@@ -582,8 +587,10 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
                     this.inventory.getItem(FUEL_SLOT), this.level()));
             this.entityData.set(SOCKET_ITEM, this.inventory.getItem(SOCKET_SLOT).copy());
             this.entityData.set(SOCKET_ITEM_R, this.inventory.getItem(RIGHT_SOCKET_SLOT).copy());
-            this.entityData.set(HELMET, !this.inventory.getItem(HELMET_SLOT).isEmpty());
-            this.entityData.set(HELMET_BROKEN, SuitHelmetItem.isBroken(this.inventory.getItem(HELMET_SLOT)));
+            ItemStack head = this.inventory.getItem(HELMET_SLOT);
+            this.entityData.set(HELMET, head.getItem() instanceof SuitHelmetItem);
+            this.entityData.set(GLASSES, ArGlassesItem.isGlasses(head));
+            this.entityData.set(HELMET_BROKEN, SuitHelmetItem.isBroken(head));
             HelmetStyle style = SuitHelmetItem.style(this.inventory.getItem(HELMET_SLOT));
             this.entityData.set(HELMET_STYLE, (byte) (style == null ? -1 : style.ordinal()));
             Soul soul = Soul.of(this.inventory.getItem(HELMET_SLOT));
@@ -615,9 +622,24 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
         return this.entityData.get(POWERED);
     }
 
-    /** Both sides: a helmet sits in the helmet slot. */
+    /** Both sides: a helmet sits in the helmet slot (seals with full iron armour, adds helmet protection, draws visor frame). */
     public boolean hasHelmet() {
         return this.entityData.get(HELMET);
+    }
+
+    /** Both sides: AR Glasses sit in the helmet slot (HUD + night vision + indicator LED; no armour, seal, wear or mind). */
+    public boolean hasGlasses() {
+        return this.entityData.get(GLASSES);
+    }
+
+    /** Both sides: anything worn on the head (a helmet or AR Glasses). */
+    public boolean hasHeadgear() {
+        return this.hasHelmet() || this.hasGlasses();
+    }
+
+    /** Both sides: the pilot gets the suit HUD and night vision (a helmet or AR Glasses). */
+    public boolean hasHud() {
+        return this.hasHelmet() || this.hasGlasses();
     }
 
     /** Both sides: the helmet in its slot is worn out (no armour points, no seal; the mind still runs). */
@@ -645,10 +667,10 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
         return HelmetStyle.byId(this.entityData.get(HELMET_STYLE));
     }
 
-    /** Both sides: running with its helmet (not broken) and all five armour pieces on (design sec. 10, 2026-11-14; the
-     *  helmet alone until then), so fire, frost, harmful effects and water are kept out (SuitSeal). */
+    /** Both sides: running with its helmet (not broken) and all five sealing armour pieces on (iron or higher; copper
+     *  never seals), so fire, frost, harmful effects and water are kept out (SuitSeal). */
     public boolean isSealed() {
-        return this.isPowered() && this.hasHelmet() && !this.isHelmetBroken() && this.armour.fullSet();
+        return this.isPowered() && this.hasHelmet() && !this.isHelmetBroken() && this.armour.fullSealedSet();
     }
 
     /** Powered and finished standing up: allowed to move, jump and use tools. */
@@ -846,8 +868,9 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
         if (held.is(Items.WET_SPONGE) && !player.isSecondaryUseActive()) {
             return this.washPaint(player);
         }
-        if (held.is(ModItems.SUIT_HELMET.get()) && !player.isSecondaryUseActive() && !this.hasHelmet()) {
-            return this.putOnHelmet(player, held); // like saddling a horse: right-click it with the helmet
+        if ((held.getItem() instanceof SuitHelmetItem || ArGlassesItem.isGlasses(held))
+                && !player.isSecondaryUseActive() && !this.hasHeadgear()) {
+            return this.putOnHelmet(player, held); // like saddling a horse: right-click it with a helmet or AR glasses
         }
         if (!this.level().isClientSide()) {
             if (player.isSecondaryUseActive()) {

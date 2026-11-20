@@ -234,11 +234,41 @@ final class FrameScene {
                           for (PowerSuitEntity r : rogues) { mix.append(r == null ? "_-" : "_" + r.armour().pieces()); }
                           phase = mix.toString(); }
             case 966 -> AutoPilot.shot(mc, "frame_rogue_mixes");
-            case 968 -> { AutoPilot.onServer(mc, p -> {
+            // Copper armour + AR Glasses (2026-11-20, user): lighter silhouette (no pauldrons, no knee pads, pinched slim
+            // abdomen), AR Glasses with left-temple power indicator LED, mixed copper+iron, and cockpit with copper arms
+            // and HUD readouts only (no steel visor corner overlay).
+            case 968 -> { phase = "copper_glasses"; AutoPilot.onServer(mc, p -> {
                               for (int i = 0; i < 4; i++) {
                                   if (rogues[i] != null) { rogues[i].discard(); rogues[i] = null; }
-                              } });
-                          close(); return false; }
+                              }
+                              if (p.getVehicle() instanceof PowerSuitEntity suit) {
+                                  for (SuitArmour.Part part : SuitArmour.Part.values()) {
+                                      suit.getInventory().setItem(part.slot, new ItemStack(ModItems.armour(
+                                              dev.ajaczero.powersuits.item.ArmourTier.COPPER, part.piece)));
+                                  }
+                                  suit.getInventory().setItem(PowerSuitEntity.HELMET_SLOT, new ItemStack(ModItems.AR_GLASSES.get()));
+                              } }); }
+            case 972 -> around(mc, mc.player.getVehicle(), 3.0);
+            case 982 -> AutoPilot.shot(mc, "frame_copper_front");
+            case 984 -> around(mc, mc.player.getVehicle(), -3.0);
+            case 994 -> AutoPilot.shot(mc, "frame_copper_back");
+            case 996 -> { phase = "copper_glasses_night"; AutoPilot.onServer(mc, p -> DevUtil.setTime(p.level(), 18000));
+                          Vec3 at = mc.player.getVehicle().position();
+                          camera(mc, at.add(1.4, 2.0, 0.8), at.add(0, 1.95, 0)); } // left side (+x when facing +z): tiny amber LED on left temple
+            case 1010 -> AutoPilot.shot(mc, "frame_copper_glasses_night");
+            case 1012 -> { phase = "copper_cockpit"; AutoPilot.onServer(mc, p -> DevUtil.setTime(p.level(), 6000));
+                           mc.setCameraEntity(mc.player); DevUtil.hideGui(mc, false);
+                           o.setCameraType(CameraType.FIRST_PERSON); AutoPilot.setView(0, 0); }
+            case 1030 -> AutoPilot.shot(mc, "frame_copper_cockpit"); // copper right arm + floating HUD without steel visor corners
+            case 1032 -> { phase = "copper_mixed"; AutoPilot.onServer(mc, p -> {
+                              if (p.getVehicle() instanceof PowerSuitEntity suit) {
+                                  suit.getInventory().setItem(PowerSuitEntity.LEFT_LEG_SLOT, new ItemStack(ModItems.IRON_LEG_ARMOUR.get()));
+                                  suit.getInventory().setItem(PowerSuitEntity.RIGHT_LEG_SLOT, new ItemStack(ModItems.IRON_LEG_ARMOUR.get()));
+                                  suit.getInventory().setItem(PowerSuitEntity.HELMET_SLOT, new ItemStack(ModItems.SUIT_HELMET.get()));
+                              } }); }
+            case 1036 -> around(mc, mc.player.getVehicle(), 3.0);
+            case 1046 -> AutoPilot.shot(mc, "frame_copper_mixed");
+            case 1048 -> { close(); return false; }
             default -> {}
         }
         if (s >= 1) {

@@ -25,8 +25,8 @@ import org.jspecify.annotations.Nullable;
 public class PowerSuitRenderer extends GeoEntityRenderer<PowerSuitEntity, LivingEntityRenderState> {
     /** What a tool without frame art shows in the socket (see adjustModelBonesForRender). */
     private static final String STAND_IN_TOOL = "drill";
-    /** The standard helmet's bone, under armor_head beside the styles' (helm_<style>). */
-    private static final String STANDARD_HELMET = "helm_standard";
+    /** The standard helmet's and AR glasses' bones, under armor_head beside the styles' (helm_<style>). */
+    private static final String STANDARD_HELMET = "helm_standard", GLASSES_BONE = "helm_glasses";
 
     public PowerSuitRenderer(EntityRendererProvider.Context context) {
         super(context, new PowerSuitModel());
@@ -52,9 +52,10 @@ public class PowerSuitRenderer extends GeoEntityRenderer<PowerSuitEntity, Living
         state.addGeckolibData(SuitRenderData.TOOL_BONE, suit.getSocketStack(ToolArm.LEFT).getItem() instanceof PowerTool tool ? tool.suitBone() : "");
         state.addGeckolibData(SuitRenderData.TOOL_BONE_R, suit.getSocketStack(ToolArm.RIGHT).getItem() instanceof PowerTool tool ? tool.suitBone() : "");
         state.addGeckolibData(SuitRenderData.HELMET, suit.hasHelmet());
+        state.addGeckolibData(SuitRenderData.GLASSES, suit.hasGlasses());
         state.addGeckolibData(SuitRenderData.HELMET_STYLE, suit.getHelmetStyle() == null ? -1 : suit.getHelmetStyle().ordinal());
         state.addGeckolibData(SuitRenderData.ENGINE, suit.getEngine() == null ? -1 : suit.getEngine().ordinal());
-        state.addGeckolibData(SuitRenderData.ARMOUR, suit.armour().wornMask());
+        state.addGeckolibData(SuitRenderData.ARMOUR, suit.armour().wornCode());
         state.addGeckolibData(SuitRenderData.PAINT, suit.getPaint() == null ? -1 : suit.getPaint().getId());
         state.addGeckolibData(SuitRenderData.STEP_OFFSET, (float) suit.animator().getStepOffset(partialTick));
         state.addGeckolibData(SuitRenderData.AIMING, suit.isDriven() && !suit.isDeadOrDying());
@@ -120,11 +121,15 @@ public class PowerSuitRenderer extends GeoEntityRenderer<PowerSuitEntity, Living
         // (PilotLayer). Inside it one helmet at a time (frame step 7b, design sec. 4c): the worn style's (helm_<style>,
         // HelmetStyle.bone) or the standard one (helm_standard: the box, its glass, the outer layer with the radio and
         // camera), which also stands in for a style without frame art yet.
-        boolean helmet = info.getOrDefaultGeckolibData(SuitRenderData.HELMET, true);
-        bones.ifPresent("armor_head", bone -> bone.skipRender(!helmet).skipChildrenRender(!helmet));
+        boolean helmet = info.getOrDefaultGeckolibData(SuitRenderData.HELMET, false);
+        boolean glasses = info.getOrDefaultGeckolibData(SuitRenderData.GLASSES, false);
+        boolean headgear = helmet || glasses;
+        bones.ifPresent("armor_head", bone -> bone.skipRender(!headgear).skipChildrenRender(!headgear));
         HelmetStyle style = HelmetStyle.byId(info.getOrDefaultGeckolibData(SuitRenderData.HELMET_STYLE, -1));
-        String helm = style != null && info.model().getBone(style.bone()).isPresent() ? style.bone() : STANDARD_HELMET;
+        String helm = glasses ? GLASSES_BONE
+                : style != null && info.model().getBone(style.bone()).isPresent() ? style.bone() : STANDARD_HELMET;
         bones.ifPresent(STANDARD_HELMET, bone -> bone.skipRender(!helm.equals(STANDARD_HELMET)).skipChildrenRender(!helm.equals(STANDARD_HELMET)));
+        bones.ifPresent(GLASSES_BONE, bone -> bone.skipRender(!helm.equals(GLASSES_BONE)).skipChildrenRender(!helm.equals(GLASSES_BONE)));
         for (HelmetStyle each : HelmetStyle.values()) {
             boolean hide = !each.bone().equals(helm);
             bones.ifPresent(each.bone(), bone -> bone.skipRender(hide).skipChildrenRender(hide));

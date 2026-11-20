@@ -39,7 +39,8 @@ public final class SuitVisor {
     public static void render(GuiGraphicsExtractor g, DeltaTracker delta) {
         Minecraft mc = Minecraft.getInstance();
         PowerSuitEntity suit = SuitHud.shownFor(mc);
-        if (suit == null || !PowerSuitRenderer.isCockpitView(suit)) {
+        // AR Glasses project the floating HUD readouts only, without the heavy steel helmet corner overlay.
+        if (suit == null || !suit.hasHelmet() || !PowerSuitRenderer.isCockpitView(suit)) {
             lastSweep = Float.NaN;
             return;
         }

@@ -4,8 +4,10 @@ import dev.ajaczero.powersuits.PowerSuits;
 import dev.ajaczero.powersuits.entity.PowerSuitEntity;
 import dev.ajaczero.powersuits.entity.SuitArmour;
 import dev.ajaczero.powersuits.entity.SuitFuel;
+import dev.ajaczero.powersuits.item.ArGlassesItem;
 import dev.ajaczero.powersuits.item.EngineItem;
 import dev.ajaczero.powersuits.item.PowerTool;
+import dev.ajaczero.powersuits.item.SuitHelmetItem;
 import dev.ajaczero.powersuits.registry.ModItems;
 import dev.ajaczero.powersuits.registry.ModMenus;
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -100,7 +102,7 @@ public class PowerSuitMenu extends AbstractContainerMenu {
         this.addSlot(new Slot(suitInventory, PowerSuitEntity.HELMET_SLOT, LEFT_X, ROW_Y) {
             @Override
             public boolean mayPlace(ItemStack stack) {
-                return stack.is(ModItems.SUIT_HELMET.get());
+                return stack.getItem() instanceof SuitHelmetItem || ArGlassesItem.isGlasses(stack);
             }
 
             @Override

@@ -58,7 +58,7 @@ public final class SuitKeys {
         }
         while (NIGHT_VISION.consumeClick()) {
             if (mc.player != null && mc.player.getVehicle() instanceof PowerSuitEntity suit && suit.getControllingPassenger() == mc.player
-                    && suit.hasHelmet()) {
+                    && suit.hasHud()) {
                 VisorVision.toggle();
             }
         }

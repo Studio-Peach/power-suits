@@ -29,11 +29,13 @@ final class SuitRenderData {
     static final DataTicket<Float> RECOIL_R = DataTicket.create("power_suits_recoil_r", Float.class);
     static final DataTicket<Float> BARREL_ANGLE_R = DataTicket.create("power_suits_barrel_angle_r", Float.class);
     static final DataTicket<float[]> RAIL_SHAKE_R = DataTicket.create("power_suits_rail_shake_r", float[].class);
-    /** The helmet is on (else its bone isn't drawn). */
+    /** A helmet is on (seals, visor glow). */
     static final DataTicket<Boolean> HELMET = DataTicket.create("power_suits_helmet", Boolean.class);
+    /** AR Glasses are on (helm_glasses bone, left-temple indicator LED glow). */
+    static final DataTicket<Boolean> GLASSES = DataTicket.create("power_suits_glasses", Boolean.class);
     /** The worn helmet's style (HelmetStyle ordinal, -1 = standard): which helmet bone is drawn. */
     static final DataTicket<Integer> HELMET_STYLE = DataTicket.create("power_suits_helmet_style", Integer.class);
-    /** The armour worn (SuitArmour.wornMask: a bit per part): each part's frame or its piece (ArmourBones). */
+    /** The armour worn (SuitArmour.wornCode: 3 bits per part, tier ordinal + 1): each part's frame or tier piece (ArmourBones). */
     static final DataTicket<Integer> ARMOUR = DataTicket.create("power_suits_armour", Integer.class);
     /** The installed engine (SuitEngine ordinal, -1 = none): which backpack bone is drawn. */
     static final DataTicket<Integer> ENGINE = DataTicket.create("power_suits_engine", Integer.class);

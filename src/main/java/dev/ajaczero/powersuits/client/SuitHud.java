@@ -176,7 +176,7 @@ public final class SuitHud {
         for (int i = 0; i < FIGURE.length; i++) {
             Identifier piece = FIGURE[i];
             int tint = faint;
-            if (i == 0 || armour.worn(PART_OF_FIGURE[i]) != null) {
+            if ((i == 0 && suit.hasHelmet()) || (i > 0 && armour.worn(PART_OF_FIGURE[i]) != null)) {
                 HudAlert wear = i == 0 ? armour.helmetCondition() : armour.condition(PART_OF_FIGURE[i]);
                 piece = wear == HudAlert.NONE ? FIGURE[i] : wear == HudAlert.WARNING ? FIGURE_WORN[i] : FIGURE_CRACKED[i];
                 tint = wear == HudAlert.CRITICAL && !blink ? dim : main;
@@ -317,7 +317,7 @@ public final class SuitHud {
                 || !(mc.player.getVehicle() instanceof PowerSuitEntity suit) || suit.getControllingPassenger() != mc.player) {
             return null;
         }
-        return suit.hasHelmet() ? suit : null;
+        return suit.hasHud() ? suit : null;
     }
 
     /** With our HUD up, the hull is on it: vanilla's three rows of vehicle hearts go. Vanilla's boss bars (top centre)

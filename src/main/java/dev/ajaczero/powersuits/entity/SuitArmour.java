@@ -145,13 +145,23 @@ public final class SuitArmour {
         return HudAlert.values()[Math.min(bits & 3, HudAlert.values().length - 1)];
     }
 
-    /** Both sides: the tier of the piece on this part, or null for a bare part. */
-    public @Nullable ArmourTier worn(Part part) {
-        int id = (this.suit.getEntityData().get(PowerSuitEntity.ARMOUR) >> (part.ordinal() * BITS)) & ((1 << BITS) - 1);
+    /** Both sides: packed worn tiers (3 bits per Part: tier ordinal + 1, 0 = bare) for the renderer. */
+    public int wornCode() {
+        return this.suit.getEntityData().get(PowerSuitEntity.ARMOUR);
+    }
+
+    /** Decode one part's worn tier from a packed {@link #wornCode} int, or null when bare. */
+    public static @Nullable ArmourTier tierAt(int wornCode, Part part) {
+        int id = (wornCode >> (part.ordinal() * BITS)) & ((1 << BITS) - 1);
         return ArmourTier.byId(id - 1);
     }
 
-    /** Both sides: which parts are armoured, one bit per Part (1 << ordinal): what the renderer shows. */
+    /** Both sides: the tier of the piece on this part, or null for a bare part. */
+    public @Nullable ArmourTier worn(Part part) {
+        return tierAt(this.wornCode(), part);
+    }
+
+    /** Both sides: which parts are armoured (any tier), one bit per Part (1 << ordinal). */
     public int wornMask() {
         int mask = 0;
         for (Part part : Part.values()) {
@@ -173,9 +183,20 @@ public final class SuitArmour {
         return count;
     }
 
-    /** Both sides: every part armoured (any tiers, mixed too): with the helmet, what the seal needs. */
+    /** Both sides: every part armoured (any tiers, mixed too). */
     public boolean fullSet() {
         return this.pieces() == Part.values().length;
+    }
+
+    /** Both sides: every part armoured in a sealing tier (iron or higher; copper never seals). */
+    public boolean fullSealedSet() {
+        for (Part part : Part.values()) {
+            ArmourTier tier = this.worn(part);
+            if (tier == null || !tier.seals()) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
@@ -193,7 +214,8 @@ public final class SuitArmour {
             set(armour, part.modifier, piece != null && piece.piece() == part.piece ? piece.tier().protection(part.piece) : 0);
         }
         ItemStack helmet = slots.getItem(PowerSuitEntity.HELMET_SLOT);
-        set(armour, HELMET_MODIFIER, helmet.isEmpty() || SuitHelmetItem.isBroken(helmet) ? 0 : PowerSuitsConfig.HELMET_ARMOUR.get());
+        set(armour, HELMET_MODIFIER, !(helmet.getItem() instanceof SuitHelmetItem) || SuitHelmetItem.isBroken(helmet)
+                ? 0 : PowerSuitsConfig.HELMET_ARMOUR.get());
     }
 
     /**

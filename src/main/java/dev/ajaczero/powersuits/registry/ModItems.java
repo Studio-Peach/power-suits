@@ -3,6 +3,7 @@ package dev.ajaczero.powersuits.registry;
 import dev.ajaczero.powersuits.PowerSuits;
 import dev.ajaczero.powersuits.entity.PowerSuitEntity;
 import dev.ajaczero.powersuits.entity.SuitEngine;
+import dev.ajaczero.powersuits.item.ArGlassesItem;
 import dev.ajaczero.powersuits.item.ArmourPiece;
 import dev.ajaczero.powersuits.item.ArmourTier;
 import dev.ajaczero.powersuits.item.ChaingunItem;
@@ -82,6 +83,10 @@ public final class ModItems {
                     .durability(SuitHelmetItem.DURABILITY)
                     .repairable(Items.IRON_INGOT));
 
+    /** Early-game AR Glasses (2026-11-20, user): HUD + night vision without armour, seal, machine mind or wear. */
+    public static final DeferredItem<ArGlassesItem> AR_GLASSES = ITEMS.registerItem("ar_glasses", ArGlassesItem::new,
+            props -> props.stacksTo(1));
+
     /** The Robot Helmet (companion design, 2026-11-16): gold, found broken in bastions, mended with gold ingots. */
     public static final DeferredItem<RobotHelmetItem> ROBOT_HELMET = ITEMS.registerItem("robot_helmet", RobotHelmetItem::new, props -> props
                     .durability(SuitHelmetItem.DURABILITY)
@@ -109,6 +114,9 @@ public final class ModItems {
     public static final DeferredItem<SuitArmourItem> IRON_TORSO_ARMOUR = armour(ArmourPiece.TORSO, ArmourTier.IRON);
     public static final DeferredItem<SuitArmourItem> IRON_ARM_ARMOUR = armour(ArmourPiece.ARM, ArmourTier.IRON);
     public static final DeferredItem<SuitArmourItem> IRON_LEG_ARMOUR = armour(ArmourPiece.LEG, ArmourTier.IRON);
+    public static final DeferredItem<SuitArmourItem> COPPER_TORSO_ARMOUR = armour(ArmourPiece.TORSO, ArmourTier.COPPER);
+    public static final DeferredItem<SuitArmourItem> COPPER_ARM_ARMOUR = armour(ArmourPiece.ARM, ArmourTier.COPPER);
+    public static final DeferredItem<SuitArmourItem> COPPER_LEG_ARMOUR = armour(ArmourPiece.LEG, ArmourTier.COPPER);
 
     /** The item of a tier's piece (rogues' armour, tests). */
     public static SuitArmourItem armour(ArmourTier tier, ArmourPiece piece) {
@@ -117,6 +125,11 @@ public final class ModItems {
                 case TORSO -> IRON_TORSO_ARMOUR.get();
                 case ARM -> IRON_ARM_ARMOUR.get();
                 case LEG -> IRON_LEG_ARMOUR.get();
+            };
+            case COPPER -> switch (piece) {
+                case TORSO -> COPPER_TORSO_ARMOUR.get();
+                case ARM -> COPPER_ARM_ARMOUR.get();
+                case LEG -> COPPER_LEG_ARMOUR.get();
             };
         };
     }

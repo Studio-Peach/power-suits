@@ -97,9 +97,12 @@ public class SuitGlowLayer extends GeoRenderLayer<PowerSuitEntity, Void, LivingE
         state.addGeckolibData(SuitRenderData.VISOR_FACE, face == null ? -1 : face.ordinal());
         // Knocked out by lightning the visor is off, but the dizzy face shows through it, stuttering.
         float faceLevel = suit.isStunned() ? (Mth.sin(time * 1.7F) + Mth.sin(time * 4.1F) < -0.6F ? 0.25F : 0.85F) : on;
+        boolean glasses = suit.hasGlasses();
         int[] suitTints = {
                 tint(fire, 1F, 1F, 1F),
-                robot ? tint(faceLevel, visor[0], visor[1], visor[2]) : glass(on * VISOR_GLOW, visor[0], visor[1], visor[2]),
+                robot ? tint(faceLevel, visor[0], visor[1], visor[2])
+                        : glasses ? tint(on, visor[0], visor[1], visor[2])
+                        : glass(on * VISOR_GLOW, visor[0], visor[1], visor[2]),
                 tint(suit.lights().getTidalGlow(time), TIDAL_TINT[0], TIDAL_TINT[1], TIDAL_TINT[2]),
                 tint(suit.lights().getReactorGlow(time), REACTOR_TINT[0], REACTOR_TINT[1], REACTOR_TINT[2])};
         int[] toolTints = toolTints(suit, time, partialTick);
@@ -119,6 +122,8 @@ public class SuitGlowLayer extends GeoRenderLayer<PowerSuitEntity, Void, LivingE
 
     /** The frame's visor glowmask per build (tools/export-frame.py: its glass texels). */
     private static final Identifier FRAME_VISOR = frameMask("visor"), FRAME_VISOR_SLIM = frameMask("visor_slim");
+    /** The AR glasses' left-temple power indicator LED glowmask per build (lenses stay dark). */
+    private static final Identifier FRAME_GLASSES_LED = frameMask("glasses_led"), FRAME_GLASSES_LED_SLIM = frameMask("glasses_led_slim");
     /** The robot helmet's faces per build (tools/export-frame.py, from frame_helmet_art.py ROBOT_FACES), by
      *  SuitFace.Face ordinal: white texels on its visor's front, tinted in the visor's colour. */
     private static final Identifier[] ROBOT_FACES = faceMasks(""), ROBOT_FACES_SLIM = faceMasks("_slim");
@@ -180,14 +185,16 @@ public class SuitGlowLayer extends GeoRenderLayer<PowerSuitEntity, Void, LivingE
         int fire = engine == SuitEngine.TIDAL.ordinal() ? tints[2] : engine == SuitEngine.REACTOR.ordinal() ? tints[3] : tints[0];
         Identifier fireMask = firebox ? (slim ? FRAME_FIRE_SLIM : FRAME_FIRE)
                 : sea ? (slim ? FRAME_SEA_SLIM : FRAME_SEA) : null;   // (the reactor's own masks: below)
-        // No helmet, no visor (its tint stays on with the power).
-        int visor = info.getOrDefaultGeckolibData(SuitRenderData.HELMET, false) ? tints[1] : 0xFF000000;
+        // No helmet or AR glasses, no visor / LED glow (its tint stays on with the power).
+        boolean hasHelmet = info.getOrDefaultGeckolibData(SuitRenderData.HELMET, false);
+        boolean hasGlasses = info.getOrDefaultGeckolibData(SuitRenderData.GLASSES, false);
+        int visor = (hasHelmet || hasGlasses) ? tints[1] : 0xFF000000;
         // then the tool's lights (after the suit's four tints)
         Identifier[] tools = slim ? FRAME_TOOL_MASKS_SLIM : FRAME_TOOL_MASKS;
         Identifier[] masks = new Identifier[2 + tools.length];
         int[] all = new int[masks.length];
         masks[0] = fireMask;
-        masks[1] = slim ? FRAME_VISOR_SLIM : FRAME_VISOR;
+        masks[1] = hasGlasses ? (slim ? FRAME_GLASSES_LED_SLIM : FRAME_GLASSES_LED) : (slim ? FRAME_VISOR_SLIM : FRAME_VISOR);
         Identifier face = null;
         if (info.getOrDefaultGeckolibData(SuitRenderData.HELMET_STYLE, -1) == HelmetStyle.ROBOT.ordinal()) {
             int shown = info.getOrDefaultGeckolibData(SuitRenderData.VISOR_FACE, -1);   // its face, or nothing (dark)

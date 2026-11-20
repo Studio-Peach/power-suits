@@ -121,7 +121,13 @@ assert (TX * 2) % 1 == 0 and (CHEST_X * 2) % 1 == 0, (TX, CHEST_X)   # fronts ar
 # chest, `engine_armored` under the breastplate). The checks skip pairs that are never drawn together (ALT: a part's
 # frame and its piece, the engine's two fronts); every mix of worn and bare parts is checked.
 ARMOR = os.environ.get('ARMOR', 'game')
-assert ARMOR in ('none', 'iron', 'game'), ARMOR
+assert ARMOR in ('none', 'iron', 'copper', 'game'), ARMOR
+COPPER_TORSO = os.environ.get('COPPER_TORSO', 'slim')
+assert COPPER_TORSO in ('slim', 'cropped', 'belted', 'long'), COPPER_TORSO
+GLASSES = os.environ.get('GLASSES', 'shield' if ARMOR == 'game' else 'none')
+assert GLASSES in ('none', 'shield', 'sleek'), GLASSES
+GLASSES_LED = os.environ.get('GLASSES_LED', 'dark')
+assert GLASSES_LED in ('dark', 'lit'), GLASSES_LED
 # Draft knob ARMOR_FORM (2026-11-12, user: no mix of 3D and 2D armour; the engine went 2D, the armour should too):
 # 'solid' (the pieces as built 11-04/05: the waist 0.5 px shallower than the chest, a step band between them, the
 # pauldron a box 1 px proud) or 'flat' (nothing proud of the frame's boxes: the waist as deep as the chest, the step
@@ -407,7 +413,7 @@ ARMOR_BOX = {'helmet': ((-4.5, 25.5, -4.5), (4.5, 34.5, 4.5)),
              'pauldron': ((4.75 + ARM_OUT, PAULDRON - FY, -2.5 - PLATE_FB), (8.75 + ARM_OUT + PLATE_OUT, 27, 2.5 + PLATE_FB)),
              'arm': ((3.75 + ARM_OUT, 10, -2.5), (8.75 + ARM_OUT, 26.1, 2.5)),
              'leg': ((-0.25 + LEG_OUT, 0, -2.5), (4.75 + LEG_OUT, 17, 2.5)),   # raw (legs)
-             'hip': ((-4.75, 13.9, -2.25), (4.75, 15.1, 2.25))}
+             'hip': ((-4.4, 13.9, -2.25), (4.4, 15.1, 2.25))}
 ARMOR_BOX['arm_socket'] = ((3.75 + ARM_OUT, SOCKET_Y, -2.5), (8.75 + ARM_OUT, 26.1, 2.5))   # the left arm's
 # The waist steps in (2026-11-05, user: more steps from the chest down to the waist): a band halfway between the chest
 # and the waist at the sides (wide: 12 -> 11 -> 10 px across; slim 11 -> 10.5 -> 10) and 0.25 px shallower than the
@@ -576,17 +582,45 @@ SHELLS = {'arm_shell': dict(cage=dict(ARM_ART), below=['fist'], rows=1, up=_rim(
 SHELLS['chest_shell'], SHELLS['abdomen_shell'] = (dict(faces=f) for f in _torso())
 if ARMOR != 'none':
     _cw, _tw, _d, _wd = round(CHEST_X * 2), round(TX * 2), round(TZ * 2), round(TZ * 2) - 1
-    SHELLS.update({
-        'helmet_armor': dict(faces=_helmet(HELMET)),
-        'chest_armor': dict(faces=iron.chest(_cw, _d, round((CHEST_X - 4) * 2))),
-        'waist_armor': dict(faces=(iron.waist if ARMOR_FORM == 'solid' else iron.waist_flat)(
-            *_dims(ARMOR_BOX['waist'])[::2], _dims(ARMOR_BOX['waist'])[1])),
-        **{f'waist{i}_armor': dict(faces=iron.waist_step(*_dims(b))) for i, b in enumerate(WAIST_STEPS)},
-        'pauldron_armor': dict(faces=iron.pauldron(*_dims(ARMOR_BOX['pauldron'])) if ARMOR_FORM == 'solid' else
-                               iron.pauldron_decal(*[round((PAULDRON_DECAL[1][k] - PAULDRON_DECAL[0][k]) * 2) for k in range(3)])),
-        'hip_armor': dict(faces=iron.hip(_dims(ARMOR_BOX['hip'])[0], 5)),
-        'arm_armor': dict(cage=iron.arm(), below=['fist'], rows=1, up=iron.arm()['up']),
-        'leg_armor': dict(cage=iron.leg(), below=['boot'], rows=1, up=iron.leg()['up'])})
+    if ARMOR == 'copper':
+        import frame_copper_art as cu
+        _cu_torso = dict(cu.torso_boxes(CHEST_X, TZ, COPPER_TORSO))
+        ARMOR_BOX['chest'] = _cu_torso['chest']
+        ARMOR_BOX['waist'] = _cu_torso['waist']
+        ARMOR_BOX['hip'] = ((-4.4, 13.9, -2.25), (4.4, 15.1, 2.25))
+        if 'belt' in _cu_torso:
+            ARMOR_BOX['cu_belt'] = _cu_torso['belt']
+        SHELLS.update({
+            **({'helmet_armor': dict(faces=_helmet(HELMET))} if HELMET != 'none' else {}),
+            'chest_armor': dict(faces=cu.chest(_cw, _d, round((CHEST_X - 4) * 2), _dims(ARMOR_BOX['chest'])[1], COPPER_TORSO)),
+            'waist_armor': dict(faces=cu.waist(*_dims(ARMOR_BOX['waist'])[::2], _dims(ARMOR_BOX['waist'])[1], COPPER_TORSO)),
+            **({'cu_belt_armor': dict(faces=cu.belt(*_dims(ARMOR_BOX['cu_belt'])[::2], _dims(ARMOR_BOX['cu_belt'])[1]))} if 'belt' in _cu_torso else {}),
+            'hip_armor': dict(faces=cu.hip(_dims(ARMOR_BOX['hip'])[0], 5)),
+            'arm_armor': dict(cage=cu.arm(), below=['fist'], rows=1, up=cu.arm()['up']),
+            'leg_armor': dict(cage=cu.leg(), below=['boot'], rows=1, up=cu.leg()['up'])})
+    else:
+        SHELLS.update({
+            **({'helmet_armor': dict(faces=_helmet(HELMET))} if HELMET != 'none' else {}),
+            'chest_armor': dict(faces=iron.chest(_cw, _d, round((CHEST_X - 4) * 2))),
+            'waist_armor': dict(faces=(iron.waist if ARMOR_FORM == 'solid' else iron.waist_flat)(
+                *_dims(ARMOR_BOX['waist'])[::2], _dims(ARMOR_BOX['waist'])[1])),
+            **{f'waist{i}_armor': dict(faces=iron.waist_step(*_dims(b))) for i, b in enumerate(WAIST_STEPS)},
+            'pauldron_armor': dict(faces=iron.pauldron(*_dims(ARMOR_BOX['pauldron'])) if ARMOR_FORM == 'solid' else
+                                   iron.pauldron_decal(*[round((PAULDRON_DECAL[1][k] - PAULDRON_DECAL[0][k]) * 2) for k in range(3)])),
+            'hip_armor': dict(faces=iron.hip(_dims(ARMOR_BOX['hip'])[0], 5)),
+            'arm_armor': dict(cage=iron.arm(), below=['fist'], rows=1, up=iron.arm()['up']),
+            'leg_armor': dict(cage=iron.leg(), below=['boot'], rows=1, up=iron.leg()['up'])})
+        if ARMOR == 'game':
+            import frame_copper_art as cu
+            _cu_torso = dict(cu.torso_boxes(CHEST_X, TZ, COPPER_TORSO))
+            ARMOR_BOX['cu_chest'] = _cu_torso['chest']
+            ARMOR_BOX['cu_waist'] = _cu_torso['waist']
+            SHELLS.update({
+                'cu_chest_armor': dict(faces=cu.chest(_cw, _d, round((CHEST_X - 4) * 2), _dims(ARMOR_BOX['cu_chest'])[1], COPPER_TORSO)),
+                'cu_waist_armor': dict(faces=cu.waist(*_dims(ARMOR_BOX['cu_waist'])[::2], _dims(ARMOR_BOX['cu_waist'])[1], COPPER_TORSO)),
+                'cu_arm_armor': dict(cage=cu.arm(), below=['fist'], rows=1, up=cu.arm()['up']),
+                'cu_leg_armor': dict(cage=cu.leg(), below=['boot'], rows=1, up=cu.leg()['up']),
+            })
 elif HELMET != 'none': SHELLS['helmet_armor'] = dict(faces=_helmet(HELMET))
 # Draft knob HELMET_EXTRA ('none' / 'cap' / 'radio' / 'both' / 'all' / 'gear' / 'layer'; 2026-11-12, user): the
 # helmet's outer layer, decals on the head bone (frame_helmet_art.extras), placed in the texture's free room. 'layer'
@@ -601,6 +635,12 @@ HELMET_EXTRAS = helmet_art.extras(os.environ.get('HELMET_EXTRA', 'layer'), HELME
 # (a layer's glass, the diver's camera lens, is the helmet's glass: V / T resolved as on the helmet)
 _glassy = lambda faces: {f: [[{'V': GLASS, 'T': GLINT, 'W': GLASS_SHADE}.get(c, c) for c in r] for r in rows] for f, rows in faces.items()}
 for _p in HELMET_EXTRAS: SHELLS[f"hx_{_p['name']}"] = dict(faces=_glassy(_p['faces']), compact=_p.get('hollow', False))
+GLASSES_PARTS = []
+if GLASSES != 'none':
+    import frame_glasses_art as glasses_art
+    GLASSES_PARTS = glasses_art.build(GLASSES, led_lit=GLASSES_LED == 'lit')
+    for _p in GLASSES_PARTS:
+        SHELLS[f"gl_{_p['name']}"] = dict(faces=_glassy(_p['faces']), compact=_p.get('compact', False))
 # The helmet styles (frame step 7b, design sec. 4c): each picked style's helmet built beside the standard one, in its
 # own group under armor_head (helm_<style>; the standard helmet and its layer in helm_standard), the game showing the
 # worn style's (PowerSuitRenderer; a style without art shows the standard). The saved files (ARMOR=game) carry the
@@ -873,6 +913,7 @@ GAME_BONES = {'drill': ('drill', 'drill_bit'), 'saw': ('chainsaw', 'chainsaw_cha
 EXTRA_BONES = {'rail': {'fork_in': 'rail_fork_in'}}   # a tool's other moving bones (the rail cannon's inner prong)
 SHELLS['arm_socket_shell'] = dict(SHELLS['arm_shell'], below=[], end='socket')
 if ARMOR != 'none': SHELLS['arm_socket_armor'] = dict(SHELLS['arm_armor'], below=[], end='socket')
+if ARMOR == 'game': SHELLS['cu_arm_socket_armor'] = dict(SHELLS['cu_arm_armor'], below=[], end='socket')
 def _tool_parts(TOOL):
   TOOL_PARTS = []
   if TOOL == 'drill':
@@ -966,9 +1007,13 @@ SHELL_UV, _used = {}, set()
 # flat pauldron, 2026-11-12, outgrew the solid one's place).
 if ARMOR_FORM == 'flat': SHELL_AT['pauldron_armor'] = None
 for _k in SHELLS:
-    if _k.startswith('tl_') or _k in ('arm_socket_shell', 'arm_socket_armor'): SHELL_AT[_k] = None
+    if _k.startswith(('tl_', 'cu_')) or _k in ('arm_socket_shell', 'arm_socket_armor'): SHELL_AT[_k] = None
+if ARMOR == 'copper':
+    SHELL_AT['chest_armor'] = None
+    SHELL_AT['waist_armor'] = None
 if HELMET_STYLE != 'suit': SHELL_AT['helmet_armor'] = None
 for _p in HELMET_EXTRAS: SHELL_AT[f"hx_{_p['name']}"] = None
+for _p in GLASSES_PARTS: SHELL_AT[f"gl_{_p['name']}"] = None
 for _v in HELMET_VARIANTS:
     SHELL_AT[f'helmet_{_v}_armor'] = None
     for _p in HELMET_VARIANT_EXTRAS[_v]: SHELL_AT[f"hx_{_v}_{_p['name']}"] = None
@@ -1204,7 +1249,7 @@ for side in ('r', 'l'):
     # An arm ends in its hand (the fist) or, with a power tool fitted (2026-11-15: hands are detachable, either arm can
     # carry one), in the socket the tool hangs from (SOCKET). The saved files (ARMOR=game) hold both looks of both arms,
     # the game shows the one that fits what is fitted; the draft builds keep the old way: the left arm the tool arm.
-    SOCKET_ARMS = ('l', 'r') if ARMOR == 'game' else ('l',)
+    SOCKET_ARMS = ('l', 'r') if ARMOR == 'game' else (('l',) if TOOLS else ())
     hand_arm = side not in SOCKET_ARMS or ARMOR == 'game'
     if hand_arm:
         hollow(arm, side, 'arm_shell', f'fr_arm_shell_{side}', (3.75 + ARM_OUT, 10, -2.5), (8.75 + ARM_OUT, 26, 2.5))
@@ -1416,11 +1461,11 @@ def check():
                 if st['name'].startswith(('fr_', 'ar_')) or encloses(sh, st, W): continue
             if limb(a) == limb(b) and {a['name'][:3], b['name'][:3]} & {'tl_'}:   # a tool (TOOL) on its own arm:
                 o = b if a['name'].startswith('tl_') else a
-                if o['name'].startswith(('fr_', 'ar_', 'tl_')): continue          # built on it (a collar wraps it)
+                if o['name'].startswith(('fr_', 'ar_', 'cu_', 'tl_')): continue          # built on it (a collar wraps it)
                 t_ = a if o is b else b                                          # his arm: inside it with room, or clear
                 if encloses(t_, o, W) or not overlap(W[a['uuid']], W[b['uuid']]): continue
                 bad.append((a['name'], b['name'])); continue
-            fa, fb = a['name'].startswith(('fr_', 'ar_')), b['name'].startswith(('fr_', 'ar_'))
+            fa, fb = a['name'].startswith(('fr_', 'ar_', 'cu_')), b['name'].startswith(('fr_', 'ar_', 'cu_'))
             if not (fa or fb): continue                                   # Steve against himself: vanilla's business
             if fa and fb and limb(a) == limb(b): continue                 # one limb's frame is built touching itself
             if overlap(W[a['uuid']], W[b['uuid']]): bad.append((a['name'], b['name']))
@@ -1429,10 +1474,10 @@ def check():
 # ---------------------------------------------------------------- armour (draft)
 # One piece per bone, each in its own group (so a piece can be shown / hidden as one): helmet, torso, arms, legs. A
 # piece replaces the frame cubes it covers (unlink drops them).
-def _armor(bone, side, piece, name, raw=False, box=None, addon=False, variant=''):
+def _armor(bone, side, piece, name, raw=False, box=None, addon=False, variant='', prefix='armor'):
     g = next(x for x in groups if x['name'] == bone)
-    ga = next((x for x in groups if x['name'] == f'armor_{bone}{variant}'), None) or \
-        group(f'armor_{bone}{variant}', [g['origin'][0], g['origin'][1] - FY, g['origin'][2]], g)
+    ga = next((x for x in groups if x['name'] == f'{prefix}_{bone}{variant}'), None) or \
+        group(f'{prefix}_{bone}{variant}', [g['origin'][0], g['origin'][1] - FY, g['origin'][2]], g)
     open_ = any('.' in r for rows in SHELLS[f'{piece}_armor']['faces'].values() for r in rows) \
         if 'faces' in SHELLS[f'{piece}_armor'] else False
     e = (hollow if open_ else painted)(ga, side, f'{piece}_armor', name, *(box or ARMOR_BOX[piece]), raw=raw)
@@ -1464,14 +1509,14 @@ def regroup(e, name):
 ALT_SLOT = {'torso': 'torso', 'body': 'hip', 'right_arm': 'arm_r', 'left_arm': 'arm_l', 'right_leg': 'leg_r', 'left_leg': 'leg_l'}
 def alt(e):
     g = e['_g']
-    if g['name'].startswith('helm_'):   # the helmet styles: one drawn at a time
+    if g['name'].startswith('helm_'):   # the helmet styles & AR glasses: one drawn at a time
         return 'head', g['name']
     if e['name'].startswith('tl_'):     # a power tool: drawn with the arm's socket looks, never with its hand looks
         return ('arm_r' if e['name'].endswith('_r') else 'arm_l'), 'tool'
-    if g['name'].startswith(('frame_', 'armor_')) and g['_parent']['name'] in ALT_SLOT:
+    if g['name'].startswith(('frame_', 'armor_', 'copper_')) and g['_parent']['name'] in ALT_SLOT:
         return ALT_SLOT[g['_parent']['name']], g['name'].split('_')[0] + ('_socket' if g['name'].endswith('_socket') else '')
     if g['name'] in ('engine_open', 'engine_armored', 'sea_open', 'sea_armored', 'star_open', 'star_armored'):
-        return 'torso', 'frame' if g['name'].endswith('_open') else 'armor'
+        return 'torso', 'open' if g['name'].endswith('_open') else 'armored'
     return None
 def engine_root(e):
     """'engine' / 'engine_sea': the engine group a cube is in (None: not an engine part)."""
@@ -1485,10 +1530,15 @@ def apart(a, b):
     x, y = alt(a), alt(b)
     if engine_root(a) != engine_root(b) and None not in (engine_root(a), engine_root(b)):
         return True   # the heart's engine and the sea engine: one is drawn (the installed engine's)
-    if x is not None and y is not None and {x, y} & {('hip', 'frame')} and {x, y} & {('leg_r', 'armor'), ('leg_l', 'armor')}:
-        return True   # the belt goes when a leg piece goes on
+    if x is not None and y is not None and {x, y} & {('hip', 'frame')} and {x, y} & {
+            ('leg_r', 'armor'), ('leg_l', 'armor'), ('leg_r', 'copper'), ('leg_l', 'copper')}:
+        return True   # the belt goes when a leg piece (iron or copper) goes on
     if x is not None and y is not None and x[0] == y[0] and 'tool' in (x[1], y[1]):
-        return (y[1] if x[1] == 'tool' else x[1]) in ('frame', 'armor')   # (not the socket looks: they hold the tool)
+        return (y[1] if x[1] == 'tool' else x[1]) in ('frame', 'armor', 'copper')   # (not the socket looks: they hold the tool)
+    if x is not None and y is not None and x[0] == y[0] == 'torso' and {'open', 'armored'} & {x[1], y[1]}:
+        # engine_open pairs with frame torso; engine_armored pairs with any armoured torso (iron or copper)
+        s = {x[1], y[1]}
+        return s in ({'open', 'armor'}, {'open', 'copper'}, {'open', 'armored'}, {'armored', 'frame'})
     return x is not None and y is not None and x[0] == y[0] and x[1] != y[1]
 if 'helmet_armor' in SHELLS:
     _armor('head', 'r', 'helmet', 'ar_helmet')
@@ -1505,11 +1555,21 @@ if 'helmet_armor' in SHELLS:
             for _p in HELMET_VARIANT_EXTRAS[_v]:
                 e = (hollow if _p.get('hollow') else painted)(_gv, 'r', f"hx_{_v}_{_p['name']}", f"ar_hx_{_v}_{_p['name']}", *_p['box'])
                 e['_armor'] = 'addon'
+if GLASSES_PARTS:
+    _hd = next(x for x in groups if x['name'] == 'head')
+    _gh = next((x for x in groups if x['name'] == 'armor_head'), None) or \
+        group('armor_head', [_hd['origin'][0], _hd['origin'][1] - FY, _hd['origin'][2]], _hd)
+    _gg = group('helm_glasses', [_gh['origin'][0], _gh['origin'][1] - FY, _gh['origin'][2]], _gh)
+    for _p in GLASSES_PARTS:
+        e = (hollow if _p.get('hollow') else painted)(_gg, 'r', f"gl_{_p['name']}", f"gl_{_p['name']}", *_p['box'])
+        e['_armor'] = 'addon'
 if ARMOR != 'none':
     for piece, frame in (('chest', 'fr_chest_shell'), ('waist', 'fr_abdomen_shell')):
         unlink(frame)
         _armor('torso', 'r', piece, f'ar_{piece}')
-    for i, b in enumerate(WAIST_STEPS if ARMOR_FORM == 'solid' else []):
+    if 'cu_belt' in ARMOR_BOX:
+        _armor('torso', 'r', 'cu_belt', 'ar_cu_belt')
+    for i, b in enumerate(WAIST_STEPS if ARMOR_FORM == 'solid' and ARMOR != 'copper' else []):
         _armor('torso', 'r', f'waist{i}', f'ar_waist{i}', box=b)
     unlink('fr_belt_shell')
     _armor('body', 'r', 'hip', 'ar_hip')
@@ -1519,18 +1579,30 @@ if ARMOR != 'none':
         for variant in (('', '_socket') if ARMOR == 'game' else ('',)):
             sock = variant == '_socket'
             shell = f'fr_arm_socket_shell_{side}' if sock else f'fr_arm_shell_{side}'
-            if ARMOR != 'game' and side == 'l': shell, sock = f'fr_arm_shell_{side}', True
+            if ARMOR != 'game' and side == 'l' and TOOLS: shell, sock = f'fr_arm_shell_{side}', True
             for frame in (shell, f'fr_shoulder_plate{variant}_{side}'): unlink(frame, variant)
             _armor(f'{nm}_arm', side, 'arm_socket' if sock else 'arm', f'ar_arm{variant}_{side}', variant=variant)
-            if ARMOR_FORM == 'solid': _armor(f'{nm}_arm', side, 'pauldron', f'ar_pauldron{variant}_{side}', addon=True, variant=variant)
-            else:   # the decal: 0.5 px off the arm piece's top, outer side, front and back, its inner edge where the solid
-                # pauldron's was (1 px off the arm's inner wall: clear of the helmet's corners turned 50 deg)
-                g = next(x for x in groups if x['name'] == f'armor_{nm}_arm{variant}')
-                # checked as its box, like the solid one (texel by texel, the check's pairs ran to minutes)
-                e = painted(g, side, 'pauldron_armor', f'ar_pauldron{variant}_{side}', *PAULDRON_DECAL)
-                e['_armor'] = 'addon'
+            if ARMOR != 'copper':
+                if ARMOR_FORM == 'solid': _armor(f'{nm}_arm', side, 'pauldron', f'ar_pauldron{variant}_{side}', addon=True, variant=variant)
+                else:   # the decal: 0.5 px off the arm piece's top, outer side, front and back, its inner edge where the solid
+                    # pauldron's was (1 px off the arm's inner wall: clear of the helmet's corners turned 50 deg)
+                    g = next(x for x in groups if x['name'] == f'armor_{nm}_arm{variant}')
+                    # checked as its box, like the solid one (texel by texel, the check's pairs ran to minutes)
+                    e = painted(g, side, 'pauldron_armor', f'ar_pauldron{variant}_{side}', *PAULDRON_DECAL)
+                    e['_armor'] = 'addon'
         unlink(f'fr_leg_shell_{side}')
         _armor(f'{nm}_leg', side, 'leg', f'ar_leg_{side}', raw=True)
+    if ARMOR == 'game':
+        # Copper armour tier (2026-11-20): lighter silhouette (no pauldrons, no knee pads, pinched slim abdomen),
+        # in its own copper_<bone> groups beside frame_<bone> and armor_<bone> (iron), so tiers mix freely per part.
+        _armor('torso', 'r', 'cu_chest', 'cu_chest', prefix='copper')
+        _armor('torso', 'r', 'cu_waist', 'cu_waist', prefix='copper')
+        for side, nm in (('r', 'right'), ('l', 'left')):
+            for variant in ('', '_socket'):
+                sock = variant == '_socket'
+                _armor(f'{nm}_arm', side, 'cu_arm_socket' if sock else 'cu_arm', f'cu_arm{variant}_{side}',
+                       box=ARMOR_BOX['arm_socket' if sock else 'arm'], variant=variant, prefix='copper')
+            _armor(f'{nm}_leg', side, 'cu_leg', f'cu_leg_{side}', box=ARMOR_BOX['leg'], raw=True, prefix='copper')
 
 # ---------------------------------------------------------------- engine (draft, ENGINE)
 if ENGINE_BOX:

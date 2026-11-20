@@ -71,7 +71,8 @@ public class PilotLayer extends GeoRenderLayer<PowerSuitEntity, Void, LivingEnti
             return;
         }
         Map<String, ModelPart> parts = info.getOrDefaultGeckolibData(SuitRenderData.PILOT_SLIM, false) ? this.slim : this.wide;
-        boolean helmet = info.getOrDefaultGeckolibData(SuitRenderData.HELMET, false);
+        boolean helmet = info.getOrDefaultGeckolibData(SuitRenderData.HELMET, false)
+                || info.getOrDefaultGeckolibData(SuitRenderData.GLASSES, false);
         parts.forEach((boneName, built) -> {
             ModelPart part = helmet && boneName.equals("pilot_head") ? this.bareHead : built;
             info.model().getBone(boneName).ifPresent(bone -> consumer.accept(bone, (pass, b, tasks) -> {

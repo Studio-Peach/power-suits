@@ -3248,6 +3248,92 @@ public final class PowerSuitTests {
         helper.succeed();
     }
 
+    /** Copper armour (2026-11-20, user): early-game tier below iron, repaired with copper ingots, wears and breaks like
+     *  iron, mixes freely with iron pieces, and never seals the suit (even a single copper piece breaks the seal). */
+    @SuitTest
+    public static void copperArmourProtectsWearsAndNeverSeals(GameTestHelper helper) {
+        PowerSuitEntity suit = suitAt(helper, new BlockPos(4, 2, 4));
+        suit.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.COAL, 4));
+        for (SuitArmour.Part part : SuitArmour.Part.values()) {
+            ItemStack piece = new ItemStack(ModItems.armour(ArmourTier.COPPER, part.piece));
+            helper.assertTrue(piece.isValidRepairItem(new ItemStack(Items.COPPER_INGOT)),
+                    "copper " + part.piece + " repairs with copper ingots");
+            helper.assertTrue(piece.getMaxDamage() == ArmourTier.COPPER.durability(part.piece),
+                    "copper " + part.piece + " durability");
+            suit.getInventory().setItem(part.slot, piece);
+        }
+        double expectedCopper = PowerSuitsConfig.COPPER_TORSO_ARMOUR.get()
+                + 2 * PowerSuitsConfig.COPPER_ARM_ARMOUR.get()
+                + 2 * PowerSuitsConfig.COPPER_LEG_ARMOUR.get()
+                + PowerSuitsConfig.HELMET_ARMOUR.get();
+        helper.runAfterDelay(2, () -> {
+            assertArmour(helper, suit, expectedCopper, "full copper + helmet");
+            helper.assertTrue(suit.armour().fullSet() && !suit.armour().fullSealedSet() && !suit.isSealed(),
+                    "full copper never seals");
+            // Mixed set: 4 iron + 1 copper leg still sums protection cleanly, still unsealed
+            for (SuitArmour.Part part : SuitArmour.Part.values()) {
+                ArmourTier tier = part == SuitArmour.Part.LEFT_LEG ? ArmourTier.COPPER : ArmourTier.IRON;
+                suit.getInventory().setItem(part.slot, new ItemStack(ModItems.armour(tier, part.piece)));
+            }
+            double expectedMixed = fullIronArmour() - PowerSuitsConfig.IRON_LEG_ARMOUR.get()
+                    + PowerSuitsConfig.COPPER_LEG_ARMOUR.get();
+            assertArmour(helper, suit, expectedMixed, "mixed 4 iron + 1 copper");
+            helper.assertTrue(!suit.isSealed(), "one copper piece keeps the suit unsealed");
+            // Wear breaks a nearly-spent copper piece off (mobAttack goes through armour, unlike generic)
+            ItemStack leg = suit.getInventory().getItem(PowerSuitEntity.LEFT_LEG_SLOT);
+            leg.setDamageValue(leg.getMaxDamage() - 1);
+            suit.hurtServer(helper.getLevel(), helper.getLevel().damageSources().mobAttack(suit), 8.0F);
+            helper.assertTrue(suit.getInventory().getItem(PowerSuitEntity.LEFT_LEG_SLOT).isEmpty(),
+                    "worn-out copper piece breaks off");
+            helper.succeed();
+        });
+    }
+
+    /** Copper armour and AR Glasses crafting recipes (vanilla copper armour stays distinct). */
+    @SuitTest
+    public static void copperArmourAndArGlassesAreCrafted(GameTestHelper helper) {
+        ItemStack c = new ItemStack(Items.COPPER_INGOT), b = new ItemStack(Items.COPPER_BLOCK.weathering().unaffected()),
+                r = new ItemStack(Items.REDSTONE), g = new ItemStack(Items.GLASS_PANE), e = ItemStack.EMPTY;
+        checkCraft(helper, 3, 3, List.of(c, e, c, c, b, c, c, c, c), ModItems.COPPER_TORSO_ARMOUR.get());
+        checkCraft(helper, 3, 2, List.of(c, b, c, c, e, c), ModItems.COPPER_ARM_ARMOUR.get());
+        checkCraft(helper, 3, 3, List.of(c, b, c, c, e, c, c, e, c), ModItems.COPPER_LEG_ARMOUR.get());
+        checkCraft(helper, 3, 2, List.of(c, r, c, g, g, g), ModItems.AR_GLASSES.get());
+        helper.succeed();
+    }
+
+    /** AR Glasses (2026-11-20, user): fit the helmet slot, project the HUD (hasHud), add zero protection, never seal
+     *  even with full iron armour, run no machine mind when empty, take no durability wear, and survive packing. */
+    @SuitTest
+    public static void arGlassesGiveHudWithoutProtectionSealWearOrMind(GameTestHelper helper) {
+        PowerSuitEntity suit = suitAt(helper, new BlockPos(4, 2, 4));
+        armoured(suit);
+        suit.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.COAL, 4));
+        suit.getInventory().setItem(PowerSuitEntity.HELMET_SLOT, ItemStack.EMPTY);
+        ServerPlayer player = mockServerPlayer(helper);
+        PowerSuitMenu menu = new PowerSuitMenu(1, player.getInventory(), suit.getInventory(), suit);
+        ItemStack glasses = new ItemStack(ModItems.AR_GLASSES.get());
+        helper.assertTrue(menu.getSlot(PowerSuitMenu.MENU_HELMET).mayPlace(glasses), "helmet slot accepts AR Glasses");
+        helper.assertTrue(!glasses.isDamageableItem(), "AR Glasses have no durability");
+        player.getInventory().setItem(9, glasses);
+        menu.quickMoveStack(player, PowerSuitMenu.INV_START);
+        helper.assertTrue(suit.getInventory().getItem(PowerSuitEntity.HELMET_SLOT).is(ModItems.AR_GLASSES.get()),
+                "shift-click puts AR Glasses in the helmet slot");
+        helper.runAfterDelay(3, () -> {
+            helper.assertTrue(suit.hasGlasses() && suit.hasHud() && suit.hasHeadgear() && !suit.hasHelmet(),
+                    "glasses synced: hasGlasses/hasHud/hasHeadgear without hasHelmet");
+            assertArmour(helper, suit, fullIronArmour() - PowerSuitsConfig.HELMET_ARMOUR.get(),
+                    "AR Glasses add zero armour");
+            helper.assertTrue(!suit.isSealed(), "AR Glasses never seal the suit");
+            helper.assertTrue(!suit.isPowered() && !suit.isAiDriven(),
+                    "empty suit with AR Glasses does not stay powered or run machine mind");
+            suit.hurtServer(helper.getLevel(), helper.getLevel().damageSources().mobAttack(suit), 8.0F);
+            ItemStack afterHit = suit.getInventory().getItem(PowerSuitEntity.HELMET_SLOT);
+            helper.assertTrue(afterHit.is(ModItems.AR_GLASSES.get()) && afterHit.getDamageValue() == 0,
+                    "AR Glasses take no wear on hits");
+            helper.succeed();
+        });
+    }
+
     private static ItemStack craft(GameTestHelper helper, int w, int h, List<ItemStack> grid) {
         CraftingInput input = CraftingInput.of(w, h, grid);
         return helper.getLevel().recipeAccess().getRecipeFor(RecipeType.CRAFTING, input, helper.getLevel())

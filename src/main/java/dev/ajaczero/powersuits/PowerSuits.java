@@ -77,6 +77,7 @@ public class PowerSuits {
             event.accept(ModItems.FLAMETHROWER);
             event.accept(ModItems.TNT_LAUNCHER);
             event.accept(ModItems.RAIL_CANNON);
+            event.accept(ModItems.AR_GLASSES);
             event.accept(ModItems.SUIT_HELMET);
             // the styled helmets and their templates (design sec. 4c): in survival these come from structure chests
             event.accept(ModItems.ROBOT_HELMET); // (the robot look is its own item, not a style)
@@ -95,6 +96,9 @@ public class PowerSuits {
             event.accept(ModItems.SUIT_TORSO);
             event.accept(ModItems.SUIT_ARM);
             event.accept(ModItems.SUIT_LEG);
+            event.accept(ModItems.COPPER_TORSO_ARMOUR);
+            event.accept(ModItems.COPPER_ARM_ARMOUR);
+            event.accept(ModItems.COPPER_LEG_ARMOUR);
             event.accept(ModItems.IRON_TORSO_ARMOUR);
             event.accept(ModItems.IRON_ARM_ARMOUR);
             event.accept(ModItems.IRON_LEG_ARMOUR);

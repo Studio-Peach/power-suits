@@ -310,6 +310,58 @@ def iron_leg_armour(ic):
     ic.set(5, 2, r[5]); ic.set(10, 2, r[5]); ic.set(5, 14, r[5]); ic.set(10, 14, r[5])
 
 
+# ---- copper armour (2026-11-20): lighter silhouette (no pauldrons, no knee pads, slim pinched abdomen) ----------------
+def copper_torso_armour(ic):
+    r = COPPER
+    ic.box(1, 1, 14, 8, r, 3, cut=1)             # clean copper breastplate
+    ic.rect(6, 1, 9, 2, SLATE[1])                # neck opening
+    ic.rect(2, 7, 13, 7, r[4])                   # rolled bottom rim
+    ic.box(4, 9, 11, 14, SLATE, 2)               # slim pinched dark-slate waist
+    ic.box(5, 9, 10, 13, r, 3, edge=False)       # small 6-wide copper abdomen plate connected straight to chest
+    ic.rect(5, 9, 10, 9, r[1])                   # tuck shadow under chest
+    ic.rect(5, 12, 10, 12, r[4])                 # rolled rim
+    ic.rect(5, 13, 10, 13, r[1])
+
+
+def copper_arm_armour(ic):
+    r = COPPER
+    ic.box(4, 1, 11, 6, r, 3, cut=1)             # clean shoulder cap (no pauldron)
+    ic.rect(5, 1, 10, 1, r[5])
+    ic.rect(4, 5, 11, 5, r[4])
+    ic.box(4, 7, 11, 9, SLATE, 2)                # dark slate elbow joint
+    ic.box(4, 10, 11, 14, r, 3)                  # copper vambrace
+    ic.rect(4, 13, 11, 13, r[4])
+
+
+def copper_leg_armour(ic):
+    r = COPPER
+    ic.box(4, 0, 11, 6, r, 3)                    # copper thigh
+    ic.rect(4, 5, 11, 5, r[4])                   # rolled bottom rim
+    ic.box(4, 7, 11, 9, SLATE, 2)                # clean dark slate knee joint (no knee pad)
+    ic.box(4, 10, 11, 15, r, 3)                  # copper shin
+    ic.rect(4, 10, 11, 10, r[5])
+
+
+def ar_glasses(ic):
+    # Sleek Meta VR wraparound shield sunglasses: dark glossy front lens with curved nose-bridge cutout,
+    # thin matte charcoal frame, angled temple arms behind, tiny amber power LED on the left temple.
+    # Temple arms angling back in upper corners
+    ic.rect(1, 5, 3, 6, SLATE[2]); ic.set(2, 5, SLATE[4])
+    ic.rect(12, 5, 14, 6, SLATE[2]); ic.set(13, 5, SLATE[4])
+    ic.set(14, 6, AMBER[3])                      # tiny power indicator LED on the left arm
+    # Continuous dark wraparound shield lens + slim matte frame
+    ic.rect(2, 6, 13, 6, SLATE[4])               # top matte brow rim
+    ic.rect(1, 7, 14, 9, SLATE[2])               # outer frame body
+    ic.rect(2, 7, 13, 9, GLASS[1])               # dark smoked visor glass
+    ic.rect(2, 10, 6, 11, GLASS[1]); ic.rect(9, 10, 13, 11, GLASS[1])   # cheek dips either side of nose
+    ic.rect(2, 11, 6, 11, SLATE[1]); ic.rect(9, 11, 13, 11, SLATE[1])   # slim bottom rim
+    ic.set(7, 9, SLATE[1]); ic.set(8, 9, SLATE[1])                      # arched nose bridge
+    ic.px[10][7] = ic.px[10][8] = ic.px[11][7] = ic.px[11][8] = None    # open nose cutout
+    ic.px[11][2] = ic.px[11][13] = None                                 # rounded bottom corners
+    ic.set(4, 7, GLASS[5]); ic.set(3, 8, GLASS[4])                      # crisp top-left glossy glint
+    ic.set(5, 7, GLASS[3])
+
+
 # ---- engines --------------------------------------------------------------------------------------------------------
 def firebox(ic):
     ic.cyl_v(2, 0, 4, 5, STEEL, 4)               # exhausts
@@ -551,6 +603,10 @@ ICONS = {
     'iron_torso_armour': iron_torso_armour,
     'iron_arm_armour': iron_arm_armour,
     'iron_leg_armour': iron_leg_armour,
+    'copper_torso_armour': copper_torso_armour,
+    'copper_arm_armour': copper_arm_armour,
+    'copper_leg_armour': copper_leg_armour,
+    'ar_glasses': ar_glasses,
     'firebox': firebox,
     'tidal_engine': tidal_engine,
     'star_reactor': star_reactor,

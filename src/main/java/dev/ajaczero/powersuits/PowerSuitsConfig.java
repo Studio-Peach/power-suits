@@ -246,6 +246,15 @@ public final class PowerSuitsConfig {
     public static final ModConfigSpec.DoubleValue IRON_LEG_ARMOUR = B
             .comment("Armour points each Iron Leg Armour adds (one per leg).").translation(key("iron_leg_armour"))
             .defineInRange("iron_leg", 3.0, 0, 30);
+    public static final ModConfigSpec.DoubleValue COPPER_TORSO_ARMOUR = B
+            .comment("Armour points a Copper Torso Armour adds to the suit (early-game tier; copper does not seal).").translation(key("copper_torso_armour"))
+            .defineInRange("copper_torso", 4.0, 0, 30);
+    public static final ModConfigSpec.DoubleValue COPPER_ARM_ARMOUR = B
+            .comment("Armour points each Copper Arm Armour adds (one per arm).").translation(key("copper_arm_armour"))
+            .defineInRange("copper_arm", 1.5, 0, 30);
+    public static final ModConfigSpec.DoubleValue COPPER_LEG_ARMOUR = B
+            .comment("Armour points each Copper Leg Armour adds (one per leg).").translation(key("copper_leg_armour"))
+            .defineInRange("copper_leg", 2.0, 0, 30);
     public static final ModConfigSpec.DoubleValue HELMET_ARMOUR = B
             .comment("Armour points the helmet adds.").translation(key("helmet_armour"))
             .defineInRange("helmet", 2.0, 0, 30);

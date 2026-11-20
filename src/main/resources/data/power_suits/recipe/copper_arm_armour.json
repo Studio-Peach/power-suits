@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "CBC",
+    "C C"
+  ],
+  "key": {
+    "C": "minecraft:copper_ingot",
+    "B": "minecraft:copper_block"
+  },
+  "result": {
+    "id": "power_suits:copper_arm_armour",
+    "count": 1
+  }
+}

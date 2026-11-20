@@ -189,7 +189,8 @@ def arm_parts(bones, arm, root, shift):
             out.append(c)
         return out
     parts = [{'name': root, 'pivot': [0, 0, 0], 'cubes': moved(bones[arm].get('cubes', []))}]
-    for name in (f'frame_{arm}', f'armor_{arm}', f'frame_{arm}_socket', f'armor_{arm}_socket'):   # the hand looks and the socket looks
+    for name in (f'frame_{arm}', f'armor_{arm}', f'copper_{arm}',
+                 f'frame_{arm}_socket', f'armor_{arm}_socket', f'copper_{arm}_socket'):   # hand and socket looks per tier
         if name in bones:
             parts.append({'name': name, 'parent': root, 'pivot': [0, 0, 0], 'cubes': moved(bones[name].get('cubes', []))})
     return parts
@@ -339,6 +340,30 @@ def textures(data):
     return png(w, h, opaque), png(w, h, panes), png(w, h, visor), png(w, h, fire), png(w, h, core), png(w, h, sea), tools
 
 
+def glasses_led_mask(model, data):
+    """The AR glasses' power indicator LED glowmask (frame_glasses_art.LED_DARK on gl_glasses): white texels on the
+    left temple arm, tinted by SuitGlowLayer in the visor colour when the suit is powered (lenses stay dark)."""
+    sys.path.insert(0, os.path.join(ROOT, 'model', 'art'))
+    import frame_glasses_art
+    w, h, rows = unpng(data)
+    led = frame_glasses_art.LED_DARK[:3]
+    glasses = [e for e in model['elements'] if e['name'] == 'gl_glasses']
+    assert len(glasses) == 1, 'no AR glasses: build the saved files with GLASSES=shield'
+    mask = [[(0, 0, 0, 0)] * w for _ in range(h)]
+    lit = 0
+    for f in glasses[0]['faces'].values():
+        if f.get('texture') is None:
+            continue
+        u0, v0, u1, v1 = (int(round(c)) for c in f['uv'])
+        for y in range(min(v0, v1), max(v0, v1)):
+            for x in range(min(u0, u1), max(u0, u1)):
+                if 0 <= x < w and 0 <= y < h and rows[y][x][3] == 255 and rows[y][x][:3] == led:
+                    mask[y][x] = (255, 255, 255, 255)
+                    lit += 1
+    assert lit, 'no AR glasses LED texels: build with GLASSES=shield GLASSES_LED=dark'
+    return png(w, h, mask)
+
+
 def robot_faces(model, data):
     """The robot helmet's visor faces (model/art/frame_helmet_art.py ROBOT_FACES; client/SuitGlowLayer, entity/SuitFace):
     one glowmask each, its texels white on the robot helmet's front face (the visor's colour tints them)."""
@@ -450,6 +475,8 @@ if __name__ == '__main__':
             write(f'textures/entity/power_frame_glow_{name}{slim}.png', mask)
         for name, mask in robot_faces(model, base64.b64decode(source.split(',', 1)[1])).items():
             write(f'textures/entity/power_frame_glow_robot_{name}{slim}.png', mask)
+        write(f'textures/entity/power_frame_glow_glasses_led{slim}.png',
+              glasses_led_mask(model, base64.b64decode(source.split(',', 1)[1])))
     bones = {b['name'] for b in geo(json.load(open(os.path.join(ROOT, BUILDS['power_frame']))), 'x')['minecraft:geometry'][0]['bones']}
     anims = animations(bones)
     write('geckolib/animations/entity/power_frame.animation.json', json.dumps(anims, indent=1).encode())
