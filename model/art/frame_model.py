@@ -954,9 +954,11 @@ def _tool_parts(TOOL):
     TOOL_PARTS = rail_art.build(6.25 + ARM_OUT, SOCKET_Y, 'dark', os.environ.get('RAIL', 'A'),
                                 os.environ.get('RAIL_CORE', 'dark'), float(os.environ.get('RAIL_L', '6')))
 # The TNT launcher (frame_tnt_art.py) and the EM projector (frame_em_art.py): the big suit's designs (user, 2026-11-15).
+# TNT knob (2026-11-20 rework, picked 'wide' with ch_out=2.5 so no red peeks over the barrel):
+# 'wide' (default) | 'flush' | 'chunky' | 'legacy'.
   if TOOL == 'tnt':
     import frame_tnt_art as tnt_art
-    TOOL_PARTS = tnt_art.build(6.25 + ARM_OUT, SOCKET_Y)
+    TOOL_PARTS = tnt_art.build(6.25 + ARM_OUT, SOCKET_Y, kind=os.environ.get('TNT', 'wide'))
   if TOOL == 'em':
     import frame_em_art as em_art
     TOOL_PARTS = em_art.build(6.25 + ARM_OUT, SOCKET_Y)

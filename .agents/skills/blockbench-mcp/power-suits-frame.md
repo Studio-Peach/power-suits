@@ -301,14 +301,19 @@ the end and `docs/guide.md` Notes).
   runs toward the tips). The big suit's emitter light (`RAIL_EMIT`) has no frame texels yet. `muzzleInsetPixels` -1 (tips 10 px
   under the socket, 1 px past the chaingun's muzzle). `runAutopilotRail` shows it.
 
-## TNT launcher and EM projector (2026-11-15)
-- The big suit's designs (user: "use the old designs"): `frame_tnt_art.py` (TOOL=tnt: housing, the drum as two crossing
-  3 px slabs on bone `tnt_launcher_drum`, which `ToolRotors` turns, red TNT ends, a barrel and muzzle plate, 9 px under the
-  socket, `muzzleInsetPixels` 0) and `frame_em_art.py` (TOOL=em: housing with red vent slits, bezel + lens under it, four
-  2x2 poles: copper winding, steel, a redstone tip; 10 px, inset -1). Both are in TOOL=all: every tool now has frame art.
+## TNT launcher and EM projector (2026-11-15; TNT launcher reworked 2026-11-20)
+- The big suit's designs (user: "use the old designs"): `frame_tnt_art.py` (TOOL=tnt, knob `TNT=wide` default | `flush` |
+  `chunky` | `legacy`; reworked 2026-11-20 to match the big suit's round 5 launcher: a 5 x 1 x 5 dark-slate socket collar,
+  a 6 x 3 x 6 fluted dark-slate octagonal drum built from three flush non-overlapping cubes on bone `tnt_launcher_drum`
+  with four red TNT chamber ends recessed inside a 1-texel dark-slate rim on its down face (`ch_in=1.0, ch_out=2.5,
+  ch_span=1.0`, keeping the top chamber hidden behind the barrel so no red peeks over it, 90 deg symmetric for
+  `ToolRotors`), a 3.5 x 4 x 3.5 light-steel barrel, a 4 x 1 x 4 dark-slate muzzle ring flush with the drum front, and
+  two 0.5 px fork-sight prongs with a 1 px gap; 9 px under the socket, `muzzleInsetPixels` 0) and `frame_em_art.py`
+  (TOOL=em: housing with red vent slits, bezel + lens under it, four 2x2 poles: copper winding, steel, a redstone tip;
+  10 px, inset -1). Both are in TOOL=all: every tool now has frame art.
 - The lens / vents and the tips are reserved dark reds (`frame_em_art.RES`), lit by `TOOL_GLOW` em_core / em_arc
-  (`ToolLight.EM_CORE` / `EM_ARC`). Seen in `runAutopilotFrame` (`ap_frame_tool_<tool>`); the lit states and the drum's turn
-  are not filmed yet (`runAutopilotTnt` and the EM scenes still to be looked at).
+  (`ToolLight.EM_CORE` / `EM_ARC`). Seen in `runAutopilotFrame` (`ap_frame_tool_<tool>`) and `runAutopilotTnt`
+  (`ap_tnt_drum_*`, `ap_tnt_husks_fp_*`).
 
 ## Two sockets, hands detachable (2026-11-15, user)
 - Either arm ends in its hand or, with a power tool fitted, the socket the tool hangs from; both arms can carry one.
