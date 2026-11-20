@@ -480,8 +480,7 @@ from the big suit's file: the frame names those bones the same), the chaingun's 
 until the tool points along the view (pitch and head yaw; a player's one-armed aiming pose), and the muzzle
 (SocketAim) is the shoulder plus 20.5 px along the view; in the cockpit his left arm in the frame's, the tool at its
 end, where vanilla draws a left hand, turned about the shoulder toward a point low left of the crosshair at rest and
-at the crosshair 10 blocks out when raised (CockpitHands.toolArmTransform; the hand pass's pose isn't identity in
-26.3, so the turn is worked out under it). No exhaust smoke in the pilot's own first-person view (it drifted past the
+at the crosshair 10 blocks out when raised, with vanilla's bare-arm sideways roll removed so every tool stays top-side up (CockpitHands.toolArmTransform / levelRoll; the hand pass's pose isn't identity in 26.3, so the turn is worked out under it). No exhaust smoke in the pilot's own first-person view (it drifted past the
 camera). Step 5c: the tools' lights: a status lamp on the drill's and chainsaw's base (red ready, green running,
 dark without power: ToolLight.LAMP_IDLE / LAMP_RUN, painted in reserved dark colours, LAMP=dark), the chaingun's green
 muzzle lights (on with the power) and the flamethrower's blue pilot light, on the suit and the cockpit viewmodel. Not

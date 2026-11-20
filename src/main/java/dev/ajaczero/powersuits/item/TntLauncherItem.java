@@ -138,10 +138,10 @@ public class TntLauncherItem extends Item implements PowerTool, ModTooltip {
         return 0F;
     }
 
-    /** The barrel sits in front of the drum's axis (the socket's): its centre is 1.25 px toward the suit's front. */
+    /** The barrel sits in front of the drum's axis (the socket's): its centre is 1.0 px toward the suit's front. */
     @Override
     public float barrelForwardPixels() {
-        return 1.25F;
+        return 1.0F;
     }
 
     /** Does this go in the launcher? TNT, from the pilot's inventory. */

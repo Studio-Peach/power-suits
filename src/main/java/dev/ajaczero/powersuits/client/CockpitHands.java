@@ -173,14 +173,35 @@ public final class CockpitHands {
         Matrix4f local = new Matrix4f(base).invert().mul(pose.last().pose());
         Vector3f pivot = local.transformPosition(new Vector3f());
         Vector3f axis = local.transformDirection(new Vector3f(0F, 1F, 0F)).normalize(); // down vanilla's arm, to the tool
+        Vector3f top = local.transformDirection(new Vector3f(0F, 0F, -1F)).normalize(); // the tool's front (-z): top when raised
         Quaternionf rest = new Quaternionf().slerp(new Quaternionf().rotationTo(axis, new Vector3f(restAim.x * -side, restAim.y, restAim.z).sub(pivot).normalize()), restTurn);
+        levelRoll(rest, axis, top);
         Vector3f target = new Vector3f(0F, kick * 0.8F, -toolAimDistance);
         Quaternionf aimed = new Quaternionf().rotationTo(axis, target.sub(pivot).normalize());
+        levelRoll(aimed, axis, top);
         Quaternionf turn = rest.slerp(aimed, raise);
         pose.last().pose().set(new Matrix4f(base).translate(toolShift.x * -side, toolShift.y, toolShift.z).translate(pivot).rotate(turn).translate(-pivot.x, -pivot.y, -pivot.z).mul(local)
                 .scale(toolArmScale));
         Matrix3f localNormal = new Matrix3f(baseNormal).invert().mul(pose.last().normal());
         pose.last().normal().set(new Matrix3f(baseNormal).rotate(turn).mul(localNormal));
+    }
+
+    /**
+     * Unrolls vanilla's bare-arm twist (~62 deg sideways) around the barrel axis so every socket tool sits top-side up
+     * in the cockpit view (both at rest and while raised to fire): the barrel direction stays on aim, while the tool's
+     * front face (-z) points upright in view space.
+     */
+    private static void levelRoll(Quaternionf q, Vector3f axis, Vector3f top) {
+        Vector3f dir = q.transform(new Vector3f(axis)).normalize();
+        Vector3f curTop = q.transform(new Vector3f(top)).normalize();
+        Vector3f wantTop = new Vector3f(0F, 1F, 0F).fma(-dir.y, dir);
+        if (wantTop.lengthSquared() < 1e-6F) {
+            return;
+        }
+        wantTop.normalize();
+        float cos = Mth.clamp(curTop.dot(wantTop), -1F, 1F);
+        float sin = dir.dot(new Vector3f(curTop).cross(wantTop));
+        q.premul(new Quaternionf().fromAxisAngleRad(dir, (float) Math.atan2(sin, cos)));
     }
 
     /** Gait bob (the suit's hip drop, model pixels) plus a slow breathing drift; both off with vanilla's View Bobbing
