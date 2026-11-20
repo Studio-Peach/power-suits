@@ -29,10 +29,6 @@ FRAME = {
     '3': (0x3f, 0x46, 0x4e, 255),
     '4': (0x56, 0x5f, 0x69, 255),
     'c': (0x3a, 0x4b, 0x5c, 255),   # tiny camera lens dot
-    # Opaque glossy dark shield lens + crisp corner glimmer (uniform 100% opacity: no skin/eye bleed-through)
-    'L': (0x14, 0x18, 0x1d, 255),
-    's': (0x3c, 0x47, 0x54, 255),
-    'S': (0x7a, 0x8b, 0x9e, 255),
 }
 
 N = 18
@@ -51,11 +47,11 @@ def _resolve(faces, led_lit=False):
 SHIELD_NORTH = (
     ['.' * N] * 6 + [
         '..33333333333333..',  # row 6  (y 31.0..31.5) sleek rounded matte brow rim
-        '.2SsLLLLLLLLLLLL2.',  # row 7  (y 30.5..31.0) top of dark glossy visor + corner glimmer
-        '32sLLLLLLLLLLLLL23',  # row 8  (y 30.0..30.5) full-width shield + temple anchor
-        '21LLLLLLLLLLLLLL12',  # row 9  (y 29.5..30.0) uniform opaque glossy dark lens
-        '11LLLLLL11LLLLLL11',  # row 10 (y 29.0..29.5) curved nose-bridge arch starts
-        '.1LLLL1....1LLLL1.',  # row 11 (y 28.5..29.0) cheeks dip down round nose cutout
+        '.2VTVVVVVVVVVVVV2.',  # row 7  (y 30.5..31.0) uniform 80% smoked glass ('V') + top-left diagonal glint ('T')
+        '32TVVVVVVVVVVVVV23',  # row 8  (y 30.0..30.5) full-width shield + temple anchor
+        '21VVVVVVVVVVVVVV12',  # row 9  (y 29.5..30.0) uniform 80% smoked glass across eyes
+        '11VVVVVV11VVVVVV11',  # row 10 (y 29.0..29.5) curved nose-bridge arch starts
+        '.1VVVV1....1VVVV1.',  # row 11 (y 28.5..29.0) cheeks dip down round nose cutout
         '..1111......1111..',  # row 12 (y 28.0..28.5) slim matte bottom rim
     ] + ['.' * N] * 5
 )
