@@ -13,15 +13,20 @@ import net.minecraft.util.Mth;
  * so both share the angle.
  */
 final class ToolRotors {
-    static void pose(BoneSnapshots bones, float angle) {
-        pose(bones, angle, "");
-    }
-
-    /** The turning parts of the arm whose bones carry `suffix` ("" the left arm's, "_r" the right's). */
-    static void pose(BoneSnapshots bones, float angle, String suffix) {
-        bones.ifPresent("chaingun_barrels" + suffix, barrels -> barrels.setRotY(angle * Mth.DEG_TO_RAD));
-        bones.ifPresent("tnt_launcher_drum" + suffix, drum -> drum.setRotY(angle * Mth.DEG_TO_RAD));
-        bones.ifPresent("em_projector_poles" + suffix, poles -> poles.setRotY(angle * Mth.DEG_TO_RAD));
+    /** Poses a standalone tool model's moving bones from its rotor angle and running state. */
+    static void pose(BoneSnapshots bones, float angle, boolean running, float time) {
+        bones.ifPresent("chaingun_barrels", barrels -> barrels.setRotY(angle * Mth.DEG_TO_RAD));
+        bones.ifPresent("tnt_launcher_drum", drum -> drum.setRotY(angle * Mth.DEG_TO_RAD));
+        bones.ifPresent("em_projector_poles", poles -> poles.setRotY(angle * Mth.DEG_TO_RAD));
+        if (running) {
+            // Matches the former drill_run (4 rev/s = 72 deg/tick) and chainsaw_run (1 px chain step + subtle buzz).
+            bones.ifPresent("drill_bit", bit -> bit.setRotY(((time * 72F) % 360F) * Mth.DEG_TO_RAD));
+            float step = (((int) time) & 1) == 0 ? 0F : -1F;
+            bones.ifPresent("chainsaw_chain", chain -> chain.setTranslateY(step));
+            float buzz = 0.85F * Mth.DEG_TO_RAD;
+            bones.ifPresent("chainsaw", saw -> saw.setRotX(saw.getRotX() + buzz * jitter(time, 0.5F))
+                    .setRotZ(saw.getRotZ() + buzz * jitter(time, 2.3F)));
+        }
     }
 
     /**

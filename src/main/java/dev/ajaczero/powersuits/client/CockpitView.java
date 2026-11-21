@@ -3,12 +3,8 @@ package dev.ajaczero.powersuits.client;
 import com.geckolib.animatable.GeoAnimatable;
 import com.geckolib.animatable.instance.AnimatableInstanceCache;
 import com.geckolib.animatable.manager.AnimatableManager;
-import com.geckolib.animation.AnimationController;
-import com.geckolib.animation.object.PlayState;
-import com.geckolib.animation.state.AnimationTest;
 import com.geckolib.util.GeckoLibUtil;
 import dev.ajaczero.powersuits.entity.PowerSuitEntity;
-import dev.ajaczero.powersuits.item.PowerTool;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -38,15 +34,6 @@ final class CockpitView implements GeoAnimatable {
 
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-        controllers.add(new AnimationController<>("tool", 3, this::toolAnimation));
-    }
-
-    private PlayState toolAnimation(AnimationTest<CockpitView> state) {
-        if (this.suit != null && this.suit.socket(this.arm).isRunning() && this.suit.getSocketStack(this.arm).getItem() instanceof PowerTool tool
-                && tool.runAnimation() != null) {
-            return state.setAndContinue(tool.runAnimation());
-        }
-        return PlayState.STOP;
     }
 
     @Override

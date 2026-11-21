@@ -23,8 +23,6 @@ import org.jspecify.annotations.Nullable;
  * posed and drawn from that snapshot alone (adjustModelBonesForRender, the layers).
  */
 public class PowerSuitRenderer extends GeoEntityRenderer<PowerSuitEntity, LivingEntityRenderState> {
-    /** What a tool without frame art shows in the socket (see adjustModelBonesForRender). */
-    private static final String STAND_IN_TOOL = "drill";
     /** The standard helmet's and AR glasses' bones, under armor_head beside the styles' (helm_<style>). */
     private static final String STANDARD_HELMET = "helm_standard", GLASSES_BONE = "helm_glasses";
 
@@ -33,8 +31,9 @@ public class PowerSuitRenderer extends GeoEntityRenderer<PowerSuitEntity, Living
         this.shadowRadius = 0.6F;
         this.withRenderLayer(new HeldItemLayer(context, this)); // the pilot's selected item in the right hand
         this.withRenderLayer(new PilotLayer(context, this));    // the pilot himself, in his own skin
+        this.withRenderLayer(new ToolLayer(this));              // standalone power tools on left_socket / right_socket
         this.withRenderLayer(new HelmetGlassLayer(this));       // the visor's glass, over his face
-        this.withRenderLayer(new SuitGlowLayer(this));          // the lights: so far the visor
+        this.withRenderLayer(new SuitGlowLayer(this));          // the suit's lights (engine, visor, robot face)
     }
 
     // ---- extract: entity -> render state ------------------------------------------------------------------------
@@ -62,10 +61,8 @@ public class PowerSuitRenderer extends GeoEntityRenderer<PowerSuitEntity, Living
         state.addGeckolibData(SuitRenderData.AIM_BLEND, suit.animator().getAimBlend());
         state.addGeckolibData(SuitRenderData.TOOL_RAISE, suit.socketVisuals(ToolArm.LEFT).raise(partialTick));
         state.addGeckolibData(SuitRenderData.RECOIL, suit.socketVisuals(ToolArm.LEFT).recoil(partialTick));
-        state.addGeckolibData(SuitRenderData.BARREL_ANGLE, suit.socketVisuals(ToolArm.LEFT).rotorAngle(partialTick));
         state.addGeckolibData(SuitRenderData.TOOL_RAISE_R, suit.socketVisuals(ToolArm.RIGHT).raise(partialTick));
         state.addGeckolibData(SuitRenderData.RECOIL_R, suit.socketVisuals(ToolArm.RIGHT).recoil(partialTick));
-        state.addGeckolibData(SuitRenderData.BARREL_ANGLE_R, suit.socketVisuals(ToolArm.RIGHT).rotorAngle(partialTick));
         state.addGeckolibData(SuitRenderData.HIP_SINK, suit.animator()::setHipHeight);
     }
 
@@ -104,19 +101,10 @@ public class PowerSuitRenderer extends GeoEntityRenderer<PowerSuitEntity, Living
         // his eyes, filled the view like a table top.)
         boolean cockpit = info.getOrDefaultGeckolibData(SuitRenderData.COCKPIT, false);
         bones.ifPresent("marine", root -> root.skipRender(cockpit).skipChildrenRender(cockpit));
-        // Socket (the left arm's end): show the installed tool's bone and hide the others; empty, the socket plate painted
-        // on the arm's underside shows. The frame has the drill, chainsaw, chaingun, flamethrower, rail cannon, TNT launcher and EM
-        // projector: every tool; a tool added later without frame art shows the drill's body until it gets its own
-        // (user, 2026-11-14: "reuse the drill model or something, whatever is easiest").
+        // Standalone tools are drawn on left_socket / right_socket by ToolLayer; here we only check whether each arm
+        // carries a tool so ArmourBones shows the hand or socket sleeve look.
         String installed = info.getOrDefaultGeckolibData(SuitRenderData.TOOL_BONE, "");
         String installedRight = info.getOrDefaultGeckolibData(SuitRenderData.TOOL_BONE_R, "");
-        String shown = installed.isEmpty() || info.model().getBone(installed).isPresent() ? installed : STAND_IN_TOOL;
-        String shownRight = installedRight.isEmpty() || info.model().getBone(installedRight + "_r").isPresent() ? installedRight : STAND_IN_TOOL;
-        for (String toolBone : ToolBones.all()) { // each arm shows its own tool's bones (the right arm's carry an _r)
-            boolean hide = !toolBone.equals(shown), hideRight = !toolBone.equals(shownRight);
-            bones.ifPresent(toolBone, bone -> bone.skipRender(hide).skipChildrenRender(hide));
-            bones.ifPresent(toolBone + "_r", bone -> bone.skipRender(hideRight).skipChildrenRender(hideRight));
-        }
         // Helmet slot: the frame's helmet (armor_head) only when one is worn; without it the pilot's own head shows
         // (PilotLayer). Inside it one helmet at a time (frame step 7b, design sec. 4c): the worn style's (helm_<style>,
         // HelmetStyle.bone) or the standard one (helm_standard: the box, its glass, the outer layer with the radio and
@@ -148,16 +136,6 @@ public class PowerSuitRenderer extends GeoEntityRenderer<PowerSuitEntity, Living
         // Armour slots (frame step 6c): each part shows its piece while worn, its bare frame otherwise (ArmourBones);
         // the breastplate also swaps the engine's front for its armoured one.
         ArmourBones.show(bones, info.getOrDefaultGeckolibData(SuitRenderData.ARMOUR, 0), (installed.isEmpty() ? 0 : 1) | (installedRight.isEmpty() ? 0 : 2));
-        ToolRotors.pose(bones, info.getOrDefaultGeckolibData(SuitRenderData.BARREL_ANGLE, 0F)); // turn (and coast) always
-        ToolRotors.pose(bones, info.getOrDefaultGeckolibData(SuitRenderData.BARREL_ANGLE_R, 0F), "_r");
-        float[] shake = info.getGeckolibData(SuitRenderData.RAIL_SHAKE);
-        if (shake != null) {
-            ToolRotors.railShake(bones, shake[0], shake[1]);
-        }
-        float[] shakeRight = info.getGeckolibData(SuitRenderData.RAIL_SHAKE_R);
-        if (shakeRight != null) {
-            ToolRotors.railShake(bones, shakeRight[0], shakeRight[1], "_r");
-        }
         aim(info, bones);
     }
 

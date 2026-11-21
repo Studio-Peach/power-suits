@@ -1,0 +1,482 @@
+{
+ "meta": {
+  "format_version": "5.0",
+  "model_format": "bedrock",
+  "box_uv": false
+ },
+ "name": "drill",
+ "model_identifier": "tool_drill",
+ "visible_box": [
+  1,
+  1,
+  0
+ ],
+ "variable_placeholders": "",
+ "variable_placeholder_buttons": [],
+ "timeline_setups": [],
+ "unhandled_root_fields": {},
+ "resolution": {
+  "width": 128,
+  "height": 64
+ },
+ "elements": [
+  {
+   "name": "tl_drill_body",
+   "box_uv": false,
+   "render_order": "default",
+   "locked": false,
+   "export": true,
+   "scope": 0,
+   "allow_mirror_modeling": true,
+   "from": [
+    -3,
+    -4,
+    -3
+   ],
+   "to": [
+    3,
+    0,
+    3
+   ],
+   "autouv": 0,
+   "color": 1,
+   "origin": [
+    0,
+    0,
+    0
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      12,
+      0,
+      0,
+      8
+     ],
+     "texture": 0
+    },
+    "east": {
+     "uv": [
+      48,
+      0,
+      36,
+      8
+     ],
+     "texture": 0
+    },
+    "south": {
+     "uv": [
+      36,
+      0,
+      24,
+      8
+     ],
+     "texture": 0
+    },
+    "west": {
+     "uv": [
+      24,
+      0,
+      12,
+      8
+     ],
+     "texture": 0
+    },
+    "up": {
+     "uv": [
+      60,
+      0,
+      48,
+      12
+     ],
+     "texture": 0
+    },
+    "down": {
+     "uv": [
+      72,
+      0,
+      60,
+      12
+     ],
+     "texture": 0
+    }
+   },
+   "type": "cube",
+   "uuid": "87dc74b6-18ea-4b27-8f1b-ea3d10cb7cd4"
+  },
+  {
+   "name": "tl_drill_s2",
+   "box_uv": false,
+   "render_order": "default",
+   "locked": false,
+   "export": true,
+   "scope": 0,
+   "allow_mirror_modeling": true,
+   "from": [
+    -2.25,
+    -6,
+    -2.25
+   ],
+   "to": [
+    2.25,
+    -4,
+    2.25
+   ],
+   "autouv": 0,
+   "color": 1,
+   "origin": [
+    0,
+    0,
+    0
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      81,
+      0,
+      72,
+      4
+     ],
+     "texture": 0
+    },
+    "east": {
+     "uv": [
+      108,
+      0,
+      99,
+      4
+     ],
+     "texture": 0
+    },
+    "south": {
+     "uv": [
+      99,
+      0,
+      90,
+      4
+     ],
+     "texture": 0
+    },
+    "west": {
+     "uv": [
+      90,
+      0,
+      81,
+      4
+     ],
+     "texture": 0
+    },
+    "up": {
+     "uv": [
+      117,
+      0,
+      108,
+      9
+     ],
+     "texture": 0
+    },
+    "down": {
+     "uv": [
+      126,
+      0,
+      117,
+      9
+     ],
+     "texture": 0
+    }
+   },
+   "type": "cube",
+   "uuid": "4994db28-f95c-4d09-8d0a-e66167483cf0",
+   "rotation": [
+    0,
+    22.5,
+    0
+   ]
+  },
+  {
+   "name": "tl_drill_s3",
+   "box_uv": false,
+   "render_order": "default",
+   "locked": false,
+   "export": true,
+   "scope": 0,
+   "allow_mirror_modeling": true,
+   "from": [
+    -1.5,
+    -8,
+    -1.5
+   ],
+   "to": [
+    1.5,
+    -6,
+    1.5
+   ],
+   "autouv": 0,
+   "color": 1,
+   "origin": [
+    0,
+    0,
+    0
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      6,
+      12,
+      0,
+      16
+     ],
+     "texture": 0
+    },
+    "east": {
+     "uv": [
+      24,
+      12,
+      18,
+      16
+     ],
+     "texture": 0
+    },
+    "south": {
+     "uv": [
+      18,
+      12,
+      12,
+      16
+     ],
+     "texture": 0
+    },
+    "west": {
+     "uv": [
+      12,
+      12,
+      6,
+      16
+     ],
+     "texture": 0
+    },
+    "up": {
+     "uv": [
+      30,
+      12,
+      24,
+      18
+     ],
+     "texture": 0
+    },
+    "down": {
+     "uv": [
+      36,
+      12,
+      30,
+      18
+     ],
+     "texture": 0
+    }
+   },
+   "type": "cube",
+   "uuid": "39ece057-b61b-4753-b881-d42c885f1c04",
+   "rotation": [
+    0,
+    -22.5,
+    0
+   ]
+  },
+  {
+   "name": "tl_drill_tip",
+   "box_uv": false,
+   "render_order": "default",
+   "locked": false,
+   "export": true,
+   "scope": 0,
+   "allow_mirror_modeling": true,
+   "from": [
+    -0.75,
+    -9,
+    -0.75
+   ],
+   "to": [
+    0.75,
+    -8,
+    0.75
+   ],
+   "autouv": 0,
+   "color": 1,
+   "origin": [
+    0,
+    0,
+    0
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      39,
+      12,
+      36,
+      14
+     ],
+     "texture": 0
+    },
+    "east": {
+     "uv": [
+      48,
+      12,
+      45,
+      14
+     ],
+     "texture": 0
+    },
+    "south": {
+     "uv": [
+      45,
+      12,
+      42,
+      14
+     ],
+     "texture": 0
+    },
+    "west": {
+     "uv": [
+      42,
+      12,
+      39,
+      14
+     ],
+     "texture": 0
+    },
+    "up": {
+     "uv": [
+      51,
+      12,
+      48,
+      15
+     ],
+     "texture": 0
+    },
+    "down": {
+     "uv": [
+      54,
+      12,
+      51,
+      15
+     ],
+     "texture": 0
+    }
+   },
+   "type": "cube",
+   "uuid": "13e7c5c0-e73d-4a13-ae49-532c66d1108e",
+   "rotation": [
+    0,
+    -45,
+    0
+   ]
+  }
+ ],
+ "groups": [
+  {
+   "name": "drill",
+   "uuid": "c53c0afe-3f02-49e2-8980-95b97f5350b5",
+   "export": true,
+   "locked": false,
+   "scope": 0,
+   "selected": false,
+   "visibility": true,
+   "origin": [
+    0,
+    0,
+    0
+   ],
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "bedrock_binding": "",
+   "color": 0,
+   "children": [],
+   "reset": false,
+   "shade": true,
+   "mirror_uv": false,
+   "autouv": 0,
+   "isOpen": true,
+   "primary_selected": false
+  },
+  {
+   "name": "drill_bit",
+   "uuid": "2732bb5d-9d26-42c9-aac7-2805b55290a7",
+   "export": true,
+   "locked": false,
+   "scope": 0,
+   "selected": false,
+   "visibility": true,
+   "origin": [
+    0,
+    0,
+    0
+   ],
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "bedrock_binding": "",
+   "color": 0,
+   "children": [],
+   "reset": false,
+   "shade": true,
+   "mirror_uv": false,
+   "autouv": 0,
+   "isOpen": true,
+   "primary_selected": false
+  }
+ ],
+ "outliner": [
+  {
+   "uuid": "c53c0afe-3f02-49e2-8980-95b97f5350b5",
+   "isOpen": true,
+   "children": [
+    {
+     "uuid": "2732bb5d-9d26-42c9-aac7-2805b55290a7",
+     "isOpen": true,
+     "children": [
+      "4994db28-f95c-4d09-8d0a-e66167483cf0",
+      "39ece057-b61b-4753-b881-d42c885f1c04",
+      "13e7c5c0-e73d-4a13-ae49-532c66d1108e"
+     ]
+    },
+    "87dc74b6-18ea-4b27-8f1b-ea3d10cb7cd4"
+   ]
+  }
+ ],
+ "textures": [
+  {
+   "path": "",
+   "name": "drill.png",
+   "folder": "",
+   "namespace": "",
+   "id": "0",
+   "group": "",
+   "width": 128,
+   "height": 64,
+   "uv_width": 128,
+   "uv_height": 64,
+   "particle": false,
+   "use_as_default": false,
+   "layers_enabled": false,
+   "sync_to_project": "",
+   "render_mode": "default",
+   "render_sides": "auto",
+   "pbr_channel": "color",
+   "frame_time": 1,
+   "frame_order_type": "loop",
+   "frame_order": "",
+   "frame_interpolate": false,
+   "visible": true,
+   "internal": true,
+   "saved": true,
+   "uuid": "06693873-1650-4c7a-9570-1f029e6e7277",
+   "relative_path": "drill.png",
+   "source": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAABACAYAAADS1n9/AAABk0lEQVR42u3YsUvDQBTH8fwFDkIHBSl0yCR1ERysIEWcugq6OYqzLrVDFxcnN7up4OJ/4T8gnd0E/StcTp7woKK55Jq7cNd+P/BIaV7T8O6XEJINjk5M1drtH5qU+6WOT8+d6nU6NfdPz9Ztkz2bH2/W85X9VXoyJUPcyzumu9b6GaittrZ3Snua7pdFlW2V0gDIMC9H19aSHu29ub0rLO1tqkfOyXbeushlPb8CICV/XjRo3Te7QLH0zxMAGcL6RttaOqiFD0DZIGKv0AHQW2ZMn70GQFJXtSSFsfWHDkAWGe8B0FtLJ++a98nZvyX79Iex9RMAjwF4udg344P8z7ZogWLoJwA1A9DrD0zKRQBqBiB1yxYA7+8BCEBaAYCHALi8CGLCCQQg5KvghR/gp/kyIWv18cGpfB2fS8MhAPrgoKUL4eN7KZfvV66GTqXHmT0mAUg4AK7nzx2gJtcrbt4rNFQAEDkCQACcHgKZGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIDl8A3Z9WE2Gpu6mwAAAABJRU5ErkJggg=="
+  }
+ ]
+}

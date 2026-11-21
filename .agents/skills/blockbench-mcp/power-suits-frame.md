@@ -144,6 +144,14 @@ the end and `docs/guide.md` Notes).
   4.5 collar / 5.5 muzzle, flamethrower 4x4 barrel / 4x1.5 tank, rail prongs +-3->+-2.5 x 4 deep, EM 4x4 spinning core
   + flush r=2..3 prongs (2.5 coil / 2.0 shaft+tip). User: right move; revisit individual tool art later to make full use
   of the wider 6x6 area.
+- **Standalone tool models (2026-11-21, `tools/export-tools.py`):** each tool now ships as its own `.bbmodel`
+  (`model/tools/<tool>.bbmodel`), `.geo.json` (`geckolib/models/tool/<tool>(_r).geo.json`, with `_r` only for handed
+  tools `drill`, `chainsaw`, `flamethrower`), compact 64x64 texture (`textures/tool/<tool>.png`), and only its own
+  glowmasks (`textures/tool/<tool>_glow_<mask>.png`), centered at the socket `(0, 0, 0)`. `power_frame(_slim).bbmodel`
+  defaults to `TOOL=none` and emits empty `left_socket` / `right_socket` locator bones (`ToolLayer` + `CockpitViewRenderer`
+  attach standalone tools via `ToolModelRenderer`, fixing dual-wield shared-glowmask bleed and dropping all 22 suit-sized
+  tool glowmasks + 4 `view/frame_tool*.geo.json` files). `frame_drafts.py` still accepts `TOOL=<name>|all` for full-suit
+  review sheets and clearance checks.
 - Simple blocks, elements painted (as the engine, shoulders, helmet): a 3D housing and an L-shaped guard cuff with a
   lamp (4dad9e4) didn't feel right; the user replaced them with one block. The drill's paint: a slate base band (lit
   top row, two bolts a face, a 2 x 1 status lamp at the front's outer end: highlight + lit, LAMP red idle / green

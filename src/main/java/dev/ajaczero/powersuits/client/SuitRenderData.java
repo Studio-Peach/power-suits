@@ -1,6 +1,7 @@
 package dev.ajaczero.powersuits.client;
 
 import com.geckolib.constant.dataticket.DataTicket;
+import com.geckolib.renderer.base.GeoRenderState;
 import java.util.function.Consumer;
 import net.minecraft.resources.Identifier;
 
@@ -20,15 +21,14 @@ final class SuitRenderData {
     static final DataTicket<Boolean> PILOT_SLIM = DataTicket.create("power_suits_pilot_slim", Boolean.class);
     /** 0..1: how far an unpowered suit has slumped (the head bowed, the torso tipped forward). */
     static final DataTicket<Float> SLUMP = DataTicket.create("power_suits_slump", Float.class);
-    /** The installed tool's bone (PowerTool.suitBone), or "" for the bare socket. */
+    /** The installed tool's bone id (PowerTool.suitBone), or "" for an empty arm (toggles hand vs socket sleeve). */
     static final DataTicket<String> TOOL_BONE = DataTicket.create("power_suits_tool_bone", String.class);
-    /** The right arm's tool bone (its bones carry an _r), and that arm's raise / recoil / turning part / rail shake: the same as
-     *  the left's above (2026-11-15: either arm can carry a tool). */
     static final DataTicket<String> TOOL_BONE_R = DataTicket.create("power_suits_tool_bone_r", String.class);
+    /** Extracted standalone render state for each arm's installed tool (ToolLayer / ToolModelRenderer). */
+    static final DataTicket<GeoRenderState> TOOL_STATE_L = DataTicket.create("power_suits_tool_state_l", GeoRenderState.class);
+    static final DataTicket<GeoRenderState> TOOL_STATE_R = DataTicket.create("power_suits_tool_state_r", GeoRenderState.class);
     static final DataTicket<Float> TOOL_RAISE_R = DataTicket.create("power_suits_tool_raise_r", Float.class);
     static final DataTicket<Float> RECOIL_R = DataTicket.create("power_suits_recoil_r", Float.class);
-    static final DataTicket<Float> BARREL_ANGLE_R = DataTicket.create("power_suits_barrel_angle_r", Float.class);
-    static final DataTicket<float[]> RAIL_SHAKE_R = DataTicket.create("power_suits_rail_shake_r", float[].class);
     /** A helmet is on (seals, visor glow). */
     static final DataTicket<Boolean> HELMET = DataTicket.create("power_suits_helmet", Boolean.class);
     /** AR Glasses are on (helm_glasses bone, left-temple indicator LED glow). */
@@ -50,8 +50,7 @@ final class SuitRenderData {
     /** Tool arm raise 0 (hip carry) .. 1 (aiming), and the recoil kick 0..1, both for this frame. */
     static final DataTicket<Float> TOOL_RAISE = DataTicket.create("power_suits_tool_raise", Float.class);
     static final DataTicket<Float> RECOIL = DataTicket.create("power_suits_recoil", Float.class);
-    /** The chaingun barrels' angle, degrees. */
-    static final DataTicket<Float> BARREL_ANGLE = DataTicket.create("power_suits_barrel_angle", Float.class);
+
     /** Hands the gait's hip height (model pixels) back to the suit when the model is posed, for the cockpit viewmodel's
      *  bob. The only write-back from drawing into the entity (see PowerSuitEntity.setHipHeight); keep it the only one. */
     @SuppressWarnings("unchecked")
@@ -62,8 +61,7 @@ final class SuitRenderData {
     static final DataTicket<int[]> GLOW = DataTicket.create("power_suits_glow", int[].class);
     /** The robot helmet's visor face (SuitFace.Face ordinal, -1 = none: dark). */
     static final DataTicket<Integer> VISOR_FACE = DataTicket.create("power_suits_visor_face", Integer.class);
-    /** The rail cannon's charge (0..1) and the time in ticks: the cannon shakes as it charges (ToolRotors.railShake). */
-    static final DataTicket<float[]> RAIL_SHAKE = DataTicket.create("power_suits_rail_shake", float[].class);
+
 
     private SuitRenderData() {}
 }

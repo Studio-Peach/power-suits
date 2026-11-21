@@ -196,53 +196,21 @@ def arm_parts(bones, arm, root, shift):
     return parts
 
 
-def arm_view(model, ident):
-    """The right arm's cubes about the pilot's arm pivot (see the docstring)."""
+def arm_view(model, ident, side='r'):
+    """One arm's cubes + its empty socket bone about the pilot's arm pivot (CockpitHands / CockpitViewRenderer).
+    Standalone tool models (tools/export-tools.py) attach onto left_socket / right_socket at render time."""
     built = geo(model, ident)['minecraft:geometry'][0]
     bones = {b['name']: b for b in built['bones']}
-    px, py, pz = bones['pilot_right_arm']['pivot']   # geo axes (x negated), like the cubes' origins
+    arm = 'right_arm' if side == 'r' else 'left_arm'
+    sock = 'right_socket' if side == 'r' else 'left_socket'
+    px, py, pz = bones[f'pilot_{arm}']['pivot']   # geo axes (x negated), like the cubes' origins
     shift = lambda v: [r(v[0] - px), r(v[1] - py), r(v[2] - pz)]
     built['description'] = dict(built['description'], identifier='geometry.' + ident,
                                 visible_bounds_width=2, visible_bounds_height=2, visible_bounds_offset=[0, 0, 0])
-    built['bones'] = arm_parts(bones, 'right_arm', 'view_arm', shift)
-    return {'format_version': '1.12.0', 'minecraft:geometry': [built]}
-
-
-TOOL_BONES = ('drill', 'chainsaw', 'chaingun', 'flamethrower', 'rail_cannon', 'tnt_launcher', 'em_projector')
-
-
-def tool_view(model, ident, side='l'):
-    """One arm and its tools about the pilot's arm pivot (see the docstring). The right arm's view model keeps its own
-    outward-facing cubes (mirroring the left arm's with a negative scale in CockpitHands reversed triangle winding and
-    back-face-culled the front faces, making the right-arm tool dark and inside-out) and drops the `_r` suffix from its
-    tool bones so CockpitView's animations and ToolRotors drive both arms with the same bone names."""
-    built = geo(model, ident)['minecraft:geometry'][0]
-    arm = 'left_arm' if side == 'l' else 'right_arm'
-    sfx = '' if side == 'l' else '_r'
-    roots = {b + sfx for b in TOOL_BONES}
-    keep, bones = set(roots), []
-    by_name = {b['name']: b for b in built['bones']}
-    for b in built['bones']:
-        if b['name'] in keep or b.get('parent') in keep:
-            keep.add(b['name'])
-            bones.append(json.loads(json.dumps(b)))
-    sx, sy, sz = by_name[f'pilot_{arm}']['pivot']
-    shift = lambda v: [r(v[0] - sx), r(v[1] - sy), r(v[2] - sz)]
-    strip = lambda n: n[:-2] if sfx and n.endswith(sfx) else n
-    for b in bones:
-        b['pivot'] = shift(b['pivot'])
-        if b['name'] in roots:
-            b['parent'] = 'view_tool'
-        elif 'parent' in b:
-            b['parent'] = strip(b['parent'])
-        b['name'] = strip(b['name'])
-        for c in b.get('cubes', []):
-            c['origin'] = shift(c['origin'])
-            if 'pivot' in c:
-                c['pivot'] = shift(c['pivot'])
-    built['description'] = dict(built['description'], identifier='geometry.' + ident,
-                                visible_bounds_width=2, visible_bounds_height=2, visible_bounds_offset=[0, 0, 0])
-    built['bones'] = arm_parts(by_name, arm, 'view_tool', shift) + bones
+    out = arm_parts(bones, arm, 'view_arm', shift)
+    if sock in bones:
+        out.append({'name': sock, 'parent': 'view_arm', 'pivot': shift(bones[sock]['pivot'])})
+    built['bones'] = out
     return {'format_version': '1.12.0', 'minecraft:geometry': [built]}
 
 
@@ -349,13 +317,7 @@ def textures(data):
     seaglow = sea_glow()
     sea = [[seaglow[p[:3]] + (255,) if p[3] == 255 and p[:3] in seaglow else clear for p in row] for row in rows]
     assert any(p != clear for row in sea for p in row), 'no sea texels: build the saved files with the sea engine (SEA=A, SEA_GLOW=dark)'
-    tools = {}
-    rgba = lambda c: c if len(c) == 4 else c + (255,)
-    for name, colours in (TOOL_GLOW | gun_heat_glow()).items():
-        mask = [[rgba(colours[p[:3]]) if p[3] == 255 and p[:3] in colours else clear for p in row] for row in rows]
-        assert any(p != clear for row in mask for p in row), f'no {name} texels: build the saved files with every tool (TOOL=all, LAMP=dark)'
-        tools[name] = png(w, h, mask)
-    return png(w, h, opaque), png(w, h, panes), png(w, h, visor), png(w, h, fire), png(w, h, core), png(w, h, sea), tools
+    return png(w, h, opaque), png(w, h, panes), png(w, h, visor), png(w, h, fire), png(w, h, core), png(w, h, sea)
 
 
 def glasses_led_mask(model, data):
@@ -475,13 +437,11 @@ if __name__ == '__main__':
         model = json.load(open(os.path.join(ROOT, rel)))
         write(f'geckolib/models/entity/{ident}.geo.json', json.dumps(geo(model, ident), indent=1).encode())
         arm = ident.replace('power_frame', 'frame_arm')
-        write(f'geckolib/models/view/{arm}.geo.json', json.dumps(arm_view(model, arm), indent=1).encode())
-        tool = ident.replace('power_frame', 'frame_tool')
-        write(f'geckolib/models/view/{tool}.geo.json', json.dumps(tool_view(model, tool, 'l'), indent=1).encode())
-        tool_r = ident.replace('power_frame', 'frame_tool_r')
-        write(f'geckolib/models/view/{tool_r}.geo.json', json.dumps(tool_view(model, tool_r, 'r'), indent=1).encode())
+        write(f'geckolib/models/view/{arm}.geo.json', json.dumps(arm_view(model, arm, 'r'), indent=1).encode())
+        arm_l = ident.replace('power_frame', 'frame_arm_l')
+        write(f'geckolib/models/view/{arm_l}.geo.json', json.dumps(arm_view(model, arm_l, 'l'), indent=1).encode())
         source = model['textures'][0]['source']
-        opaque, glass, visor, fire, core, sea, tools = textures(base64.b64decode(source.split(',', 1)[1]))
+        opaque, glass, visor, fire, core, sea = textures(base64.b64decode(source.split(',', 1)[1]))
         slim = ident[len('power_frame'):]
         write(f'textures/entity/{ident}.png', opaque)
         write(f'textures/entity/power_frame_glass{slim}.png', glass)
@@ -489,8 +449,6 @@ if __name__ == '__main__':
         write(f'textures/entity/power_frame_glow_fire{slim}.png', fire)
         write(f'textures/entity/power_frame_glow_core{slim}.png', core)
         write(f'textures/entity/power_frame_glow_sea{slim}.png', sea)
-        for name, mask in tools.items():
-            write(f'textures/entity/power_frame_glow_{name}{slim}.png', mask)
         for name, mask in star_masks(model, base64.b64decode(source.split(',', 1)[1])).items():
             write(f'textures/entity/power_frame_glow_{name}{slim}.png', mask)
         for name, mask in robot_faces(model, base64.b64decode(source.split(',', 1)[1])).items():

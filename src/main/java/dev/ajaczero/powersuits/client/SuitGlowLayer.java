@@ -36,37 +36,7 @@ import org.jspecify.annotations.Nullable;
  * socket tool's lights ({@link ToolLight}) are worked out by the installed tool's ToolEffects.
  */
 public class SuitGlowLayer extends GeoRenderLayer<PowerSuitEntity, Void, LivingEntityRenderState> {
-    /** The frame's tool lights' glowmasks (tools/export-frame.py), per build, indexed by ToolLight.ordinal(). Also drawn on the cockpit viewmodel. */
-    static final Identifier[] FRAME_TOOL_MASKS = toolMasks(""), FRAME_TOOL_MASKS_SLIM = toolMasks("_slim");
-
-    private static Identifier[] toolMasks(String build) {
-        return Arrays.stream(ToolLight.values()).map(light -> switch (light) {
-            case HEAT -> frameMask("heat" + build);               // the chaingun's hot barrel tips and muzzle front
-            case HEAT_BARREL -> frameMask("heat_barrel" + build); // heat creeping back along the collar and barrels
-            case PILOT -> frameMask("pilot" + build);           // the flamethrower's pilot light (the matchstick's head)
-            case LAMP_IDLE -> frameMask("lamp_idle" + build);   // the status lamp, red
-            case LAMP_RUN -> frameMask("lamp_run" + build);     // and green
-            case GUN_LIGHT -> frameMask("gun_light" + build);   // the chaingun's emerald base vents
-            case EM_CORE -> frameMask("em_core" + build);       // the EM projector's lens and vents
-            case EM_ARC -> frameMask("em_arc" + build);         // and its pole tips
-            case RAIL_FLOW_0 -> frameMask("rail_flow_0" + build);   // the rail cannon's core, three bands along its prongs
-            case RAIL_FLOW_1 -> frameMask("rail_flow_1" + build);
-            case RAIL_FLOW_2 -> frameMask("rail_flow_2" + build);
-            default -> null;
-        }).toArray(Identifier[]::new);
-    }
-
-    /** This frame's tints of the socket tool's lights (ToolLight order), from the installed tool's effects. */
-    static int[] toolTints(PowerSuitEntity suit, float time, float partial) {
-        float[] lights = suit.socketVisuals(ToolArm.LEFT).lights(time, partial);
-        float[] right = suit.socketVisuals(ToolArm.RIGHT).lights(time, partial);
-        for (int i = 0; i < lights.length; i++) {
-            lights[i] = Math.max(lights[i], right[i]); // both arms' tools: a light is one mask, the brighter wins
-        }
-        return tints(lights);
-    }
-
-    /** The cockpit view's: one arm's tool only. */
+    /** This frame's tints of one arm's socket tool lights (ToolLight order), used by ToolModelRenderer. */
     static int[] toolTints(PowerSuitEntity suit, ToolArm arm, float time, float partial) {
         return tints(suit.socketVisuals(arm).lights(time, partial));
     }
@@ -106,10 +76,7 @@ public class SuitGlowLayer extends GeoRenderLayer<PowerSuitEntity, Void, LivingE
                         : glass(on * VISOR_GLOW, visor[0], visor[1], visor[2]),
                 tint(suit.lights().getTidalGlow(time), TIDAL_TINT[0], TIDAL_TINT[1], TIDAL_TINT[2]),
                 tint(suit.lights().getReactorGlow(time), REACTOR_TINT[0], REACTOR_TINT[1], REACTOR_TINT[2])};
-        int[] toolTints = toolTints(suit, time, partialTick);
-        int[] tints = Arrays.copyOf(suitTints, suitTints.length + toolTints.length);
-        System.arraycopy(toolTints, 0, tints, suitTints.length, toolTints.length);
-        state.addGeckolibData(SuitRenderData.GLOW, tints);
+        state.addGeckolibData(SuitRenderData.GLOW, suitTints);
         float[] chain = suit.lights().getStarSegments(time);
         int[] star = new int[1 + chain.length];
         star[0] = tint(suit.lights().getReactorGlow(time), 1F, 1F, 1F);   // the lines, the links, the lens: steady
@@ -117,8 +84,6 @@ public class SuitGlowLayer extends GeoRenderLayer<PowerSuitEntity, Void, LivingE
             star[1 + i] = tint(chain[i], 1F, 1F, 1F);
         }
         state.addGeckolibData(SuitRenderData.STAR, star);
-        state.addGeckolibData(SuitRenderData.RAIL_SHAKE, new float[] {suit.socketVisuals(ToolArm.LEFT).shake(), time});
-        state.addGeckolibData(SuitRenderData.RAIL_SHAKE_R, new float[] {suit.socketVisuals(ToolArm.RIGHT).shake(), time});
     }
 
     /** The frame's visor glowmask per build (tools/export-frame.py: its glass texels). */
@@ -190,10 +155,9 @@ public class SuitGlowLayer extends GeoRenderLayer<PowerSuitEntity, Void, LivingE
         boolean hasHelmet = info.getOrDefaultGeckolibData(SuitRenderData.HELMET, false);
         boolean hasGlasses = info.getOrDefaultGeckolibData(SuitRenderData.GLASSES, false);
         int visor = (hasHelmet || hasGlasses) ? tints[1] : 0xFF000000;
-        // then the tool's lights (after the suit's four tints)
-        Identifier[] tools = slim ? FRAME_TOOL_MASKS_SLIM : FRAME_TOOL_MASKS;
-        Identifier[] masks = new Identifier[2 + tools.length];
-        int[] all = new int[masks.length];
+        // Suit lights only (tools draw their own independent glowmasks via ToolModelRenderer).
+        Identifier[] masks = new Identifier[2];
+        int[] all = {fire, visor};
         masks[0] = fireMask;
         masks[1] = hasGlasses ? (slim ? FRAME_GLASSES_LED_SLIM : FRAME_GLASSES_LED) : (slim ? FRAME_VISOR_SLIM : FRAME_VISOR);
         Identifier face = null;
@@ -202,10 +166,6 @@ public class SuitGlowLayer extends GeoRenderLayer<PowerSuitEntity, Void, LivingE
             face = shown < 0 ? null : (slim ? ROBOT_FACES_SLIM : ROBOT_FACES)[shown];
             masks[1] = null;
         }
-        all[0] = fire;
-        all[1] = visor;
-        System.arraycopy(tools, 0, masks, 2, tools.length);
-        System.arraycopy(tints, 4, all, 2, tools.length);
         drawMasks(this.renderer, info, renderTasks, masks, all, 1);
         int[] chain = info.getGeckolibData(SuitRenderData.STAR);
         if (star && chain != null) {

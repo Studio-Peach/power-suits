@@ -907,9 +907,11 @@ if ENGINE == 'firebox':
 # frame_saw_art.py (its drafts SAW=A|B|C); the chaingun ('gun'): frame_gun_art.py; the flamethrower ('flame'):
 # frame_flame_art.py.
 # The tools' status lamp (LAMP: red | green for a review, dark: the reserved colours the game lights, frame_drill_art).
-# 'all' (the saved files' default since 2026-11-14, step 5: the game shows the installed one): every tool at once, each
-# on its own bones, named as the game's tools (GAME_BONES), in one texture.
-TOOL = os.environ.get('TOOL', 'all')
+# Since 2026-11-21 (modular tool split, tools/export-tools.py), each tool ships as its own standalone .bbmodel /
+# .geo.json + texture rendered at left_socket / right_socket by ToolLayer & CockpitViewRenderer. Saved frame files
+# default to TOOL='none' (no tool cubes baked into power_frame); draft builds still accept TOOL=<name>|all for review
+# sheets and clearance checks.
+TOOL = os.environ.get('TOOL', 'none')
 assert TOOL in ('none', 'drill', 'saw', 'gun', 'flame', 'rail', 'tnt', 'em', 'all'), TOOL
 TOOLS = ('drill', 'saw', 'gun', 'flame', 'rail', 'tnt', 'em') if TOOL == 'all' else () if TOOL == 'none' else (TOOL,)
 # Each tool's bones: (the tool, its moving part) named as the game's (PowerTool.suitBone; the drill's bit and the chain
@@ -1284,6 +1286,8 @@ for side in ('r', 'l'):
     if side in SOCKET_ARMS:
         hollow(arm, side, 'arm_socket_shell', f'fr_arm_socket_shell_{side}' if ARMOR == 'game' else f'fr_arm_shell_{side}',
                (3.75 + ARM_OUT, ARM_SOCKET_Y, -2.5), (8.75 + ARM_OUT, 26, 2.5))
+        # Empty socket locator bone (ToolLayer + CockpitViewRenderer attach standalone tool/*.geo.json models here).
+        group(f'{nm}_socket', ((6.25 + ARM_OUT) * s, SOCKET_Y, 0), arm)
     for t, parts_ in (TOOL_PARTS.items() if side in SOCKET_ARMS else ()):   # each tool, its pivot on the arm's axis at the
         # socket (a drill's bit spins about y); the right arm's bones and cubes carry an _r (the left's keep the game's names)
         sfx = '_r' if side == 'r' else ''

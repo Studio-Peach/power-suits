@@ -6,7 +6,6 @@ import com.geckolib.animation.RawAnimation;
 import com.geckolib.animation.object.LoopType;
 import com.geckolib.animation.object.PlayState;
 import com.geckolib.animation.state.AnimationTest;
-import dev.ajaczero.powersuits.item.PowerTool;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
@@ -182,11 +181,7 @@ public final class SuitAnimator {
         controllers.add(new AnimationController<PowerSuitEntity>("action", 2, state -> PlayState.STOP)
                 .triggerableAnim("hit", HIT)
                 .triggerableAnim("tool_recoil", TOOL_RECOIL)); // the EM projector's push
-        // Controller 3: the socket tool's own loop (drill spin, chainsaw chain) while it runs. It keys only
-        // the tool's bones, so the arm keeps following walk/run and the aim.
-        controllers.add(new AnimationController<>("tool", 3, this::toolAnimation));
-        controllers.add(new AnimationController<>("tool_right", 3, this::toolAnimationRight)); // the right arm's tool
-        // Controller 4: the right hand. Added last, so while it plays it owns the right arm (the gait's arm
+        // Controller 3: the right hand. Added last, so while it plays it owns the right arm (the gait's arm
         // swing pauses, like a person carrying a torch). Stops when there's nothing to hold or no power.
         controllers.add(new AnimationController<>("right_hand", 4, this::handAnimation)
                 .triggerableAnim("use_item", USE_ITEM));
@@ -227,18 +222,7 @@ public final class SuitAnimator {
         }
         return state.setAndContinue(IDLE);
     }
-    private PlayState toolAnimation(AnimationTest<PowerSuitEntity> state) {
-        return this.toolAnimationOf(state, ToolArm.LEFT);
-    }
-    private PlayState toolAnimationRight(AnimationTest<PowerSuitEntity> state) {
-        return this.toolAnimationOf(state, ToolArm.RIGHT);
-    }
-    private PlayState toolAnimationOf(AnimationTest<PowerSuitEntity> state, ToolArm arm) {
-        if (this.suit.socket(arm).isRunning() && this.suit.getSocketStack(arm).getItem() instanceof PowerTool tool && tool.runAnimation(arm) != null) {
-            return state.setAndContinue(tool.runAnimation(arm));
-        }
-        return PlayState.STOP;
-    }
+
     private PlayState handAnimation(AnimationTest<PowerSuitEntity> state) {
         if (this.suit.isDeadOrDying() || !this.suit.canOperate() || !(this.suit.getControllingPassenger() instanceof Player pilot)
                 || pilot.getMainHandItem().isEmpty()) {

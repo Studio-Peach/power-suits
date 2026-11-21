@@ -829,6 +829,15 @@
        }
       }
      ]
+    },
+    {
+     "name": "right_socket",
+     "parent": "view_arm",
+     "pivot": [
+      -1.25,
+      -7,
+      0
+     ]
     }
    ]
   }
