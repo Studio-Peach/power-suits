@@ -217,10 +217,10 @@ the end and `docs/guide.md` Notes).
   the screen's corner (the big suit's way) had to sit 0.1 blocks from the camera at twice its size to hide its cut end.
 - Step 5c, the tools' lights: the status lamp is painted in reserved dark colours (`LAMP=dark`, the saved files';
   red / green for reviews) and lit as two masks, red ready / green running; the chaingun's emerald base vents (`GUN_ACCENT=vents`,
-  2026-11-20: moved from the muzzle to two horizontal slits in the base's grooves, leaving a recessed dark cooling vent on the
-  muzzle), its two-stage overheat glow (`HEAT_SPEC` / `HEAT_GLOW` in `frame_gun_art.py`, exported with per-texel alpha to
-  `power_frame_glow_heat` and `power_frame_glow_heat_barrel` so barrel tips + muzzle vents light from 30% and heat creeps back
-  along the collar, muzzle top and exposed barrels from 55%), and the flamethrower's pilot light (its reserved colours) have
+  2026-11-20: moved from the muzzle to two horizontal slits in the base's grooves; muzzle sides left solid with no front vents),
+  its two-stage uniform overheat glow (`HEAT_SPEC` / `HEAT_GLOW` in `frame_gun_art.py`, exported with per-texel alpha to
+  `power_frame_glow_heat` and `power_frame_glow_heat_barrel` so barrel tips + muzzle bottom rim light from 30% and heat creeps
+  uniformly back across the solid muzzle, collar and exposed barrels from 55%), and the flamethrower's pilot light (its reserved colours) have
   masks of their own (`TOOL_GLOW` in the exporter).
 - Step 6 (decided 2026-11-14, Notion spec sec. 10): the frame is made on its own (golem-style blocks maybe later; the
   recipe stands), armour goes on the spawned frame one piece per part from its menu, pieces carry a tier (iron now,

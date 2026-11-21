@@ -4,7 +4,7 @@ PICKED (2026-11-14, user: "this is the one"; updated 2026-11-20, user: `GUN_ACCE
 (after the Doom 2016 chaingun, .scratch/gun/ref_doom.png), GUN_BARRELS=4, GUN_TOP=stack, GUN_ACCENT=vents, GUN_HEAT=dark:
 a warm-black 5 x 4 x 5 body, a lit top edge and two bolts a side over the band / groove pair three times with emerald vent
 slits in the two upper grooves (`gun_light`); four 1 x 1 px barrels on the spinning bone, no ring halfway; the stepped
-muzzle (collar, 4.5 x 2 block, chamfer, bolts, a recessed cooling vent in each side's middle) painted with reserved cold
+muzzle (collar, 4.5 x 2 block, chamfer, bolts, solid sides with no front vents so the barrel assembly heats uniformly) painted with reserved cold
 shades (`HEAT_SPEC`) that `tools/export-frame.py` turns into `power_frame_glow_heat` and `power_frame_glow_heat_barrel`.
 Built by doom_build() below; the sections before it are the earlier rounds (GUN, GUN_BODY), kept as knobs.
 
@@ -364,12 +364,9 @@ def collar(w, h):        # the collar's side: lit top row, dark under
 # the body's height, the stack's band / groove pair repeated to fill it (3 px: twice); GUN_BARREL_L the barrels'
 # length (5: the gun 1 px higher | 6: the muzzle where it was).
 #
-# Round 9 (2026-11-20, user: emerald hints on the base + restore the old suit's overheating glow on the barrels/muzzle):
-# GUN_ACCENT: 'muzzle' (old: green lights on muzzle) | 'strip' (centred 2x5 emerald light on base) |
-#             'vents' (emerald slits tucked into the base's horizontal grooves) |
-#             'twins' (twin 1x5 emerald cells flanking each side of the base).
-# For the base accents, the muzzle's old green slot becomes a recessed dark cooling vent that glows orange -> yellow
-# during overheating.
+# Round 9 (2026-11-20, user: emerald hints on the base + restore the old suit's overheating glow on the barrels/muzzle;
+# follow-up: no front vents on the muzzle so the whole barrel assembly heats up uniformly):
+# GUN_ACCENT: 'vents' (default: emerald slits tucked into the base's horizontal grooves) | 'strip' | 'twins' | 'muzzle'.
 # GUN_HEAT: 'dark' (game default: reserved shades 1 step off cold metal so cold barrels look identical, lit by
 #           export-frame.py into power_frame_glow_heat + power_frame_glow_heat_barrel) |
 #           'hot' (review preview: blends the full overheat glow directly onto the texture).
@@ -382,24 +379,25 @@ BASE_ACCENTS = {
               'DEWECCEWED', 'DELEDDELED', 'DELECCELED', 'DELEDDELED', 'DElECCElED', 'EDDDDDDDDE'],
 }
 
-# Reserved heat colours (all 1 step off K / x / C / D / E and unused elsewhere in power_frame.png):
+# Reserved heat colours (all 1 step off K / x / B / C / D / E and unused elsewhere in power_frame.png):
 # letter -> (cold hex, mask name, glow hex, glow alpha)
 HEAT_SPEC = {
-    # Stage 1 ('heat', starts at 30%): barrel tips, bores, muzzle cooling vents, muzzle recessed underside
+    # Stage 1 ('heat', starts at 30%): barrel tips, bores, muzzle bottom rim & underside (uniform around the front)
     '1': ('55585b', 'heat',        'ffc860', 255),  # barrel tip (row 9, 0.5 px past muzzle): yellow-hot
     '2': ('050506', 'heat',        'ff9a30', 255),  # barrel bore (down face): orange-yellow
-    '3': ('1f1e1d', 'heat',        'ff6a1a', 235),  # muzzle vent top: orange
-    '4': ('1f1e1b', 'heat',        'ff9a30', 255),  # muzzle vent mid: bright orange
-    '5': ('0f0e0e', 'heat',        'ffc860', 240),  # muzzle vent bottom + muzzle recessed underside: yellow-hot
-    # Stage 2 ('heat_barrel', creeps back from 55%): exposed barrels (rows 3->0), muzzle collar, muzzle casing
+    '3': ('0f0e0e', 'heat',        'ff6a1a', 225),  # muzzle recessed underside + bottom corners: hot orange
+    '$': ('1f1e1a', 'heat',        'ff8c2a', 230),  # muzzle bottom rim (row 3): bright orange
+    '&': ('2e2c28', 'heat',        'ff7a22', 220),  # muzzle underside outer rim
+    # Stage 2 ('heat_barrel', creeps back from 55%): muzzle sides & top, collar, exposed barrels (rows 3->0) uniformly
     '6': ('555859', 'heat_barrel', 'ff6a1e', 220),  # barrel row 3 (above collar)
-    '7': ('55585c', 'heat_barrel', 'ff5a18', 165),  # barrel row 2
-    '8': ('555858', 'heat_barrel', 'ff4a14', 105),  # barrel row 1
-    '9': ('55595a', 'heat_barrel', 'e83c0f',  50),  # barrel row 0 (under base)
-    '!': ('2e2c2b', 'heat_barrel', 'ff6a1e', 210),  # muzzle_collar lit top/side + muzzle top inner ring
-    '@': ('1f1e1e', 'heat_barrel', 'f05818', 190),  # muzzle_collar shade + muzzle top centre
-    '#': ('2e2c29', 'heat_barrel', 'ff5a18', 130),  # muzzle outer casing mid
-    '$': ('1f1e1a', 'heat_barrel', 'ff6a1e', 165),  # muzzle outer casing bottom rim
+    '7': ('55585c', 'heat_barrel', 'ff5a18', 170),  # barrel row 2
+    '8': ('555858', 'heat_barrel', 'ff4a14', 115),  # barrel row 1
+    '9': ('55595a', 'heat_barrel', 'e83c0f',  60),  # barrel row 0 (under base)
+    '!': ('2e2c2b', 'heat_barrel', 'ff6a1e', 210),  # muzzle_collar top/side + muzzle top inner ring + muzzle lower side
+    '@': ('1f1e1e', 'heat_barrel', 'f05818', 185),  # muzzle_collar shade + muzzle top centre + muzzle side shade edge
+    '#': ('2e2c29', 'heat_barrel', 'ff5e1a', 180),  # muzzle upper side wall (uniform across full width)
+    '%': ('45413e', 'heat_barrel', 'ff5a18', 155),  # muzzle top chamfer & lit side edge (no cold grey outline)
+    '^': ('0f0e0c', 'heat_barrel', 'e84c14', 165),  # muzzle_collar bottom corner
 }
 
 # Export helper for tools/export-frame.py: mask -> {cold_rgb: glow_rgba}
@@ -428,27 +426,26 @@ def barrel_heated(w, h):  # 2 x 10: rows 0..3 creep up from collar, 4..8 inside 
     return rows[:h]
 
 
-def muzzle_side_vent(w, h):  # 9 x 4: emerald moved to base -> recessed dark cooling vent in middle, glows hot
-    m = w // 2
-    rows = ['D' + 'B' * (w - 2) + 'D',
-            'B' + 'h' + 'C' * (m - 3) + 'E3E' + 'C' * (w - m - 4) + 'h' + 'D'] + \
-           ['B' + '#' * (m - 2) + 'E4E' + '#' * (w - m - 3) + 'D'] * (h - 3) + \
-           ['E' + '$' * (m - 2) + 'E5E' + '$' * (w - m - 3) + 'E']
+def muzzle_side_solid(w, h):  # 9 x 4: clean solid muzzle (no front vents); heats uniformly across its full width
+    rows = ['@' + '%' * (w - 2) + '@',
+            '%' + 'h' + '#' * (w - 4) + 'h' + '@'] + \
+           ['%' + '!' * (w - 2) + '@'] * (h - 3) + \
+           ['3' + '$' * (w - 2) + '3']
     assert all(len(r) == w for r in rows), rows
     return rows
 
 
-def muzzle_top_heated(w, h):  # inner ring around collar heats up in stage 2 (very visible from cockpit)
-    return [''.join('B' if i in (0, w - 1) or j in (0, h - 1) else 'h' if i in (1, w - 2) and j in (1, h - 2)
+def muzzle_top_heated(w, h):  # heats uniformly across the whole muzzle top (very visible from cockpit)
+    return [''.join('%' if i in (0, w - 1) or j in (0, h - 1) else 'h' if i in (1, w - 2) and j in (1, h - 2)
                     else '!' if i in (1, w - 2) or j in (1, h - 2) else '@' for i in range(w)) for j in range(h)]
 
 
-def muzzle_bottom_heated(w, h):  # recessed underside glows orange so the four yellow-hot barrel tips pop against it
-    return [''.join('$' if i in (0, w - 1) or j in (0, h - 1) else '3' for i in range(w)) for j in range(h)]
+def muzzle_bottom_heated(w, h):  # recessed underside glows orange uniformly so the four yellow-hot barrel tips pop
+    return [''.join('&' if i in (0, w - 1) or j in (0, h - 1) else '3' for i in range(w)) for j in range(h)]
 
 
 def collar_heated(w, h):
-    return ['!' * (w - 1) + '@'] + ['@' * (w - 1) + 'E'] * (h - 1)
+    return ['!' * (w - 1) + '@'] + ['@' * (w - 1) + '^'] * (h - 1)
 
 
 def doom_build(c, top, look, barrels='4', handle='paint', top_art='rust', drum='dark', body_h=4, barrel_l=5,
@@ -475,7 +472,7 @@ def doom_build(c, top, look, barrels='4', handle='paint', top_art='rust', drum='
     if heated:
         bfaces = {'north': barrel_heated, 'south': barrel_heated, 'east': barrel_heated, 'west': barrel_heated,
                   'up': one('D'), 'down': one('2')}
-        mside = muzzle_side if accent == 'muzzle' else muzzle_side_vent
+        mside = muzzle_side if accent == 'muzzle' else muzzle_side_solid
         mtop, mbot, mcol, mcol_up = muzzle_top_heated, muzzle_bottom_heated, collar_heated, one('!')
     else:
         bfaces = {'north': one('K'), 'south': one('K'), 'east': one('K'), 'west': one('K'), 'up': one('D'), 'down': one('x')}

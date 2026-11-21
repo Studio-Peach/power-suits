@@ -41,7 +41,7 @@ public class SuitGlowLayer extends GeoRenderLayer<PowerSuitEntity, Void, LivingE
 
     private static Identifier[] toolMasks(String build) {
         return Arrays.stream(ToolLight.values()).map(light -> switch (light) {
-            case HEAT -> frameMask("heat" + build);               // the chaingun's hot barrel tips and muzzle cooling vents
+            case HEAT -> frameMask("heat" + build);               // the chaingun's hot barrel tips and muzzle front
             case HEAT_BARREL -> frameMask("heat_barrel" + build); // heat creeping back along the collar and barrels
             case PILOT -> frameMask("pilot" + build);           // the flamethrower's pilot light (the matchstick's head)
             case LAMP_IDLE -> frameMask("lamp_idle" + build);   // the status lamp, red
