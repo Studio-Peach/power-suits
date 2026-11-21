@@ -974,7 +974,7 @@ def _tool_parts(TOOL):
 # glowing side windows, tapered dark-slate muzzle tips), 3-band flowing charge glow (RAIL_FLOW_0..2).
   if TOOL == 'rail':
     import frame_rail_art as rail_art
-    TOOL_PARTS = rail_art.build(6.25 + ARM_OUT, SOCKET_Y, 'dark', os.environ.get('RAIL', 'gauss'),
+    TOOL_PARTS = rail_art.build(6.25 + ARM_OUT, SOCKET_Y, 'dark', os.environ.get('RAIL', 'ori_concave_channel'),
                                 os.environ.get('RAIL_CORE', 'dark'), float(os.environ.get('RAIL_L', '6')),
                                 sleeve=TOOL_SLEEVE, head_scale=HEAD_SCALE)
 # The TNT launcher (frame_tnt_art.py) and the EM projector (frame_em_art.py): the big suit's designs (user, 2026-11-15).

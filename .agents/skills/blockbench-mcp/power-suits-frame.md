@@ -309,14 +309,13 @@ the end and `docs/guide.md` Notes).
   helmet draft under 1 s. Profile first (`python3 -m cProfile -s cumtime model/art/frame_model.py`) before guessing.
 
 ## Rail cannon (2026-11-15; reworked 2026-11-21 for 6x6 sleeve)
-- `frame_rail_art.py`, TOOL=rail (now in TOOL=all): reworked 2026-11-21 for the wider 6x6 sleeved footprint (user
-  picked `RAIL=gauss` over `coil` and `quad`; old drafts A/B/C kept as knobs; `RAIL_L` 6, `RAIL_CORE=dark|lit`):
-  DOOM 2016 Gauss Cannon two-tone dark-slate + bolted light-steel 6x4x6 receiver with glowing blue capacitor windows on
-  front/back (`RAIL_FLOW_0`), recessed horizontal copper induction pockets on the sides, a central glowing breech nozzle
-  in the gap root, and 3-step sculpted twin rails (copper breech clamps -> vented mid rails with dark cockpit/back vents
-  & glowing side windows `RAIL_FLOW_1` -> tapered dark-slate muzzle tips with `RAIL_FLOW_2` notches) framing a 1.5 px
-  open see-through glowing channel. Outer fork on `rail_fork_out`, inner on `rail_fork_in` so `ToolRotors.railShake`
-  spreads them around the breech as it charges.
+- `frame_rail_art.py`, TOOL=rail (standalone `model/tools/rail_cannon.bbmodel` via `tools/export-tools.py`): reworked
+  2026-11-21 for the 6x6 sleeved footprint after reviewing Oritech's CC0 `enderic_railgun` (user picked
+  `RAIL=ori_concave_channel`; earlier drafts kept as knobs): clean seamless steel 6x4x6 receiver (no copper divider)
+  with a tall vertical glowing cyan slit (`RAIL_FLOW_0`) flowing straight into flush steel shoulders and concave
+  C-channel twin rails (front/back flanges framing a recessed dark-slate outer trough) cradling protruding glowing cyan
+  inner accelerator rods (0.5 px past the outer rail tips, 3-band flowing `RAIL_FLOW_0..2`). Outer fork on
+  `rail_fork_out`, inner on `rail_fork_in` so `ToolRotors.railShake` spreads them as it charges.
 - The core is the prongs' inner faces, painted in three bands of reserved dark blues (K / L per band, a shade apart:
   `frame_rail_art.CORE`), each its own glowmask (`TOOL_GLOW` rail_flow_0..2 -> `ToolLight.RAIL_FLOW_0..2`: the wave that
   runs toward the tips). The big suit's emitter light (`RAIL_EMIT`) has no frame texels yet. `muzzleInsetPixels` -1 (tips 10 px

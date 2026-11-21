@@ -462,7 +462,453 @@ def _build_quad(c, top, P, length=6.0):
     return parts
 
 
-def build(c, top, lamp='dark', kind='gauss', core='dark', length=6.0, sleeve=False, head_scale=False):
+def _coil_receiver(c, top, P, part):
+    """Shared cohesive 6x4x6 dark-slate capacitor housing with 3-tier vertical blue charge cells (L0 -> K1 -> L2) and
+    an integrated copper busbar foot (no pinched neck, so the head flows directly from the 6x6 base)."""
+    t = top - 4.0
+    fb = [
+        list('nBBBBBBBBBBn'),
+        list('Bmkkd') + ['L0', 'L0'] + list('dkkmD'),
+        list('Bmkkd') + ['K1', 'K1'] + list('dkkmD'),
+        list('Bmkkd') + ['L2', 'L2'] + list('dkkmD'),
+        list('dmmmddddmmmd'),
+        list('dffffffffffd'),
+        list('dQQQQQQQQQQd'),
+        list('dRRRRRRRRRRd'),
+    ]
+    sd = [
+        list('nBBBBBBBBBBn'),
+        list('BgCCdkkdCCgD'),
+        list('BCCCdkkdCCCD'),
+        list('BCCkd') + ['K0', 'K1'] + list('dkCCD'),
+        list('dDDDdkkdDDDd'),
+        list('dffffffffffd'),
+        list('dQQQQQQQQQQd'),
+        list('dRRRRRRRRRRd'),
+    ]
+    return [
+        part('body', ((c - 3.0, t, -3.0), (c + 3.0, top, 3.0)), {
+            'north': fb, 'south': fb, 'east': sd, 'west': sd,
+            'up': _bevel_up, 'down': _bevel_down,
+        }),
+        part('breech', ((c - 0.75, t - 1.0, -1.25), (c + 0.75, t, 1.25)), {
+            'north': _solid('k'), 'south': _solid('k'), 'east': _solid('d'), 'west': _solid('d'),
+            'up': _solid('.'), 'down': _breech_bore,
+        }),
+    ]
+
+
+def _build_coil_flush(c, top, P, length=6.0):
+    """Coil R2-A (Flush): full 6x4x6 capacitor receiver (no neck pinch), wider 2x4 steel rail bars and three tight
+    induction coil bands aligned flush with the 6x6 silhouette."""
+    part = lambda name, box, faces, bone='tool': dict(drill.part(name, box, _paint(faces, P)), bone=bone)
+    t = top - 4.0
+    parts = _coil_receiver(c, top, P, part)
+    y_tip = t - length
+    for s, name in ((1, 'out'), (-1, 'in')):
+        bone = 'bit' if s > 0 else 'fork_in'
+        outer_f, inner_f = ('east', 'west') if s > 0 else ('west', 'east')
+
+        def bx(y0, y1, x_in, x_out, hd):
+            xa, xb = sorted((c + s * x_in, c + s * x_out))
+            return ((xa, y0, -hd), (xb, y1, hd))
+
+        parts.append(part(f'prong_{name}_bar', bx(y_tip, t, 0.75, 2.75, 2.0), {
+            'north': _plate_box('A', 'B', 'C', 'D', 'E'), 'south': _plate_box('A', 'B', 'C', 'D', 'E'),
+            outer_f: _plate_box('n', 'm', 'k', 'd', 'E'), inner_f: _inner_band(y_tip, t, t, y_tip),
+            'up': _solid('.'), 'down': _solid('d'),
+        }, bone))
+        ribs = (
+            (0, t - 1.5, t - 0.5, 3.0, 2.5, _coil_face),
+            (1, t - 3.5, t - 2.5, 3.0, 2.5, _coil_face),
+            (2, t - 5.5, t - 4.5, 3.0, 2.5, _plate_box('n', 'm', 'k', 'd', 'E')),
+        )
+        for idx, ry0, ry1, xo, hd, face_fn in ribs:
+            parts.append(part(f'prong_{name}_rib{idx}', bx(ry0, ry1, 1.0, xo, hd), {
+                'north': face_fn, 'south': face_fn, outer_f: face_fn, inner_f: _solid('.'),
+                'up': _solid('f' if idx < 2 else 'n'), 'down': _solid('R' if idx < 2 else 'd'),
+            }, bone))
+    return parts
+
+
+def _build_coil_taper(c, top, P, length=6.0):
+    """Coil R2-B (Flush Taper): full 6x4x6 capacitor receiver flowing smoothly into 3-step tapered rail bars wrapped by
+    tightly-hugging copper coils & muzzle clamp (one continuous 6.0 -> 5.5 -> 5.0 envelope)."""
+    part = lambda name, box, faces, bone='tool': dict(drill.part(name, box, _paint(faces, P)), bone=bone)
+    t = top - 4.0
+    parts = _coil_receiver(c, top, P, part)
+    y_tip = t - length
+    for s, name in ((1, 'out'), (-1, 'in')):
+        bone = 'bit' if s > 0 else 'fork_in'
+        outer_f, inner_f = ('east', 'west') if s > 0 else ('west', 'east')
+
+        def bx(y0, y1, x_in, x_out, hd):
+            xa, xb = sorted((c + s * x_in, c + s * x_out))
+            return ((xa, y0, -hd), (xb, y1, hd))
+
+        segs = (
+            (0, t - 2.0, t,       2.75, 2.5),
+            (1, t - 4.0, t - 2.0, 2.25, 2.0),
+            (2, y_tip,   t - 4.0, 2.25, 1.5),
+        )
+        for idx, y0, y1, xo, hd in segs:
+            parts.append(part(f'prong_{name}_s{idx}', bx(y0, y1, 0.75, xo, hd), {
+                'north': _plate_box('A', 'B', 'C', 'D', 'E'), 'south': _plate_box('A', 'B', 'C', 'D', 'E'),
+                outer_f: _plate_box('n', 'm', 'k', 'd', 'E'), inner_f: _inner_band(y0, y1, t, y_tip),
+                'up': _solid('.'), 'down': _solid('d'),
+            }, bone))
+        ribs = (
+            (0, t - 1.5, t - 0.5, 3.0, 2.75, _coil_face),
+            (1, t - 3.5, t - 2.5, 2.5, 2.25, _coil_face),
+            (2, t - 5.5, t - 4.5, 2.5, 2.0,  _plate_box('n', 'm', 'k', 'd', 'E')),
+        )
+        for idx, ry0, ry1, xo, hd, face_fn in ribs:
+            parts.append(part(f'prong_{name}_rib{idx}', bx(ry0, ry1, 1.0, xo, hd), {
+                'north': face_fn, 'south': face_fn, outer_f: face_fn, inner_f: _solid('.'),
+                'up': _solid('f' if idx < 2 else 'n'), 'down': _solid('R' if idx < 2 else 'd'),
+            }, bone))
+    return parts
+
+
+def _build_coil_solid(c, top, P, length=6.0):
+    """Coil R2-C (Grooved Armored Coils): full 6x4x6 capacitor receiver seamlessly joined to heavy flush twin rails
+    built from alternating armored steel sleeves and recessed copper induction coil channels (zero protruding ears)."""
+    part = lambda name, box, faces, bone='tool': dict(drill.part(name, box, _paint(faces, P)), bone=bone)
+    t = top - 4.0
+    parts = _coil_receiver(c, top, P, part)
+    y_tip = t - length
+
+    def sleeve_outer_glow(w, h):
+        rows = [['A'] * (w - 1) + ['B']]
+        for j in range(1, h - 1):
+            if w >= 6:
+                rows.append(['B', 'd'] + ['L1' if j == 1 else 'K1'] * (w - 4) + ['d', 'D'])
+            else:
+                rows.append(['B'] + ['C'] * (w - 2) + ['D'])
+        rows.append(['D'] * (w - 1) + ['E'])
+        return rows
+
+    for s, name in ((1, 'out'), (-1, 'in')):
+        bone = 'bit' if s > 0 else 'fork_in'
+        outer_f, inner_f = ('east', 'west') if s > 0 else ('west', 'east')
+
+        def bx(y0, y1, x_in, x_out, hd):
+            xa, xb = sorted((c + s * x_in, c + s * x_out))
+            return ((xa, y0, -hd), (xb, y1, hd))
+
+        # 5 stacked non-overlapping segments: recessed copper coil -> flush steel shroud -> copper coil -> steel shroud -> dark tip
+        stack = (
+            ('c0',  t - 1.0, t,       2.75, 2.5,  _coil_face,                        _coil_face,        'd'),
+            ('sh0', t - 2.5, t - 1.0, 2.75, 2.75, _plate_box('A', 'B', 'C', 'D', 'E'), _plate_box('A', 'B', 'C', 'D', 'E'), 'D'),
+            ('c1',  t - 3.5, t - 2.5, 2.25, 2.25, _coil_face,                        _coil_face,        'R'),
+            ('sh1', t - 5.0, t - 3.5, 2.75, 2.5,  _plate_box('A', 'B', 'C', 'D', 'E'), sleeve_outer_glow, 'D'),
+            ('tip', y_tip,   t - 5.0, 2.25, 2.0,  _plate_box('n', 'm', 'k', 'd', 'E'), _plate_box('n', 'm', 'k', 'd', 'E'), 'd'),
+        )
+        for tag, y0, y1, xo, hd, fb_fn, out_fn, dn_ch in stack:
+            parts.append(part(f'prong_{name}_{tag}', bx(y0, y1, 0.75, xo, hd), {
+                'north': fb_fn, 'south': fb_fn, outer_f: out_fn,
+                inner_f: _inner_band(y0, y1, t, y_tip),
+                'up': _solid('B' if tag.startswith('sh') else '.'),
+                'down': _solid(dn_ch),
+            }, bone))
+    return parts
+
+
+def _ori_receiver(c, top, P, part, style='steel'):
+    """Clean, uncluttered 6x4x6 Oritech-inspired receiver: big calm color planes, subtle corner bolts, and a single
+    clean glowing charge bar (no busy black grids or choppy stripes)."""
+    t = top - 4.0
+    if style == 'copper':
+        # Oritech's iconic 2-material split: warm copper body with clean dark-slate top/bottom trim & cyan charge bar
+        fb = [
+            list('nmmmmmmmmmmn'),
+            list('kffffffffffk'),
+            list('kQfgQQQQgfQk'),
+            list('kQQQQ') + ['L0', 'L0'] + list('QQQQk'),
+            list('kQQQQ') + ['K0', 'K0'] + list('QQQQk'),
+            list('kQQQQQQQQQQk'),
+            list('kRRRRRRRRRRk'),
+            list('dkkkkkkkkkkd'),
+        ]
+        sd = [
+            list('nmmmmmmmmmmn'),
+            list('kffffffffffk'),
+            list('kQQQQQQQQQQk'),
+            list('kQgQQ') + ['L0', 'K0'] + list('QQgQk'),
+            list('kQQQQQQQQQQk'),
+            list('kRRRRRRRRRRk'),
+            list('kRRRRRRRRRRk'),
+            list('dkkkkkkkkkkd'),
+        ]
+        up = _bevel_up(12, 12, rim='n', mid='m', core='k')
+    elif style == 'flush_clean':
+        # Seamless steel receiver flowing straight into the flush steel cheek plates (no copper divider)
+        fb = [
+            list('nBBBBBBBBBBn'),
+            list('BCCCCCCCCCCD'),
+            list('BCCCCCCCCCCD'),
+            list('BCCCD') + ['L0', 'L0'] + list('DCCCD'),
+            list('BCCCD') + ['K0', 'K0'] + list('DCCCD'),
+            list('BCCCCCCCCCCD'),
+            list('BCCCCCCCCCCD'),
+            list('DDDDDDDDDDDE'),
+        ]
+        sd = [
+            list('nBBBBBBBBBBn'),
+            list('BgCCCCCCCCgD'),
+            list('BCCCCCCCCCCD'),
+            list('BCCCCCCCCCCD'),
+            list('BCCCCCCCCCCD'),
+            list('BCCCCCCCCCCD'),
+            list('BCCCCCCCCCCD'),
+            list('DDDDDDDDDDDE'),
+        ]
+        up = _bevel_up(12, 12, rim='B', mid='C', core='k')
+    elif style == 'flush_seam':
+        # Seamless steel receiver with a taller glowing cyan channel slit feeding straight into the rail gap
+        fb = [
+            list('nBBBBBBBBBBn'),
+            list('BCCCCCCCCCCD'),
+            list('BCCCD') + ['L0', 'L0'] + list('DCCCD'),
+            list('BCCCD') + ['K0', 'K0'] + list('DCCCD'),
+            list('BCCCD') + ['K0', 'K0'] + list('DCCCD'),
+            list('BCCCD') + ['K0', 'K0'] + list('DCCCD'),
+            list('BCCCD') + ['d', 'd'] + list('DCCCD'),
+            list('DDDDDDDDDDDE'),
+        ]
+        sd = [
+            list('nBBBBBBBBBBn'),
+            list('BgCCCCCCCCgD'),
+            list('BCCCCCCCCCCD'),
+            list('BCCCCCCCCCCD'),
+            list('BCCCCCCCCCCD'),
+            list('BCCCCCCCCCCD'),
+            list('BCCCCCCCCCCD'),
+            list('DDDDDDDDDDDE'),
+        ]
+        up = _bevel_up(12, 12, rim='B', mid='C', core='k')
+    elif style == 'flush_dark':
+        # Unified dark-slate gunmetal receiver matching the dark rails + crisp light-steel side cheeks flowing straight down
+        fb = [
+            list('nmmmmmmmmmmn'),
+            list('mkkkkkkkkkkd'),
+            list('mkkkd') + ['L0', 'L0'] + list('dkkkd'),
+            list('mkkkd') + ['K0', 'K0'] + list('dkkkd'),
+            list('mkkkd') + ['K0', 'K0'] + list('dkkkd'),
+            list('mkkkkkkkkkkd'),
+            list('mkkkkkkkkkkd'),
+            list('dddddddddddE'),
+        ]
+        sd = [
+            list('nBBBBBBBBBBn'),
+            list('BgCCCCCCCCgD'),
+            list('BCCCCCCCCCCD'),
+            list('BCCCCCCCCCCD'),
+            list('BCCCCCCCCCCD'),
+            list('BCCCCCCCCCCD'),
+            list('BCCCCCCCCCCD'),
+            list('DDDDDDDDDDDE'),
+        ]
+        up = _bevel_up(12, 12, rim='n', mid='m', core='k')
+    else:
+        # Calm Power Suits steel/slate housing with one clean copper accent collar at the top & single cyan charge bar
+        fb = [
+            list('nBBBBBBBBBBn'),
+            list('BCCCCCCCCCCD'),
+            list('BCCCCCCCCCCD'),
+            list('BCCCD') + ['L0', 'L0'] + list('DCCC' + 'D'),
+            list('BCCCD') + ['K0', 'K0'] + list('DCCC' + 'D'),
+            list('BCCCCCCCCCCD'),
+            list('DffffffffffQ'),
+            list('dQQQQQQQQQQd'),
+        ]
+        sd = [
+            list('nBBBBBBBBBBn'),
+            list('BgCCCCCCCCgD'),
+            list('BCCCCCCCCCCD'),
+            list('BCCCCCCCCCCD'),
+            list('BCCCCCCCCCCD'),
+            list('DDDDDDDDDDDE'),
+            list('DffffffffffQ'),
+            list('dQQQQQQQQQQd'),
+        ]
+        up = _bevel_up(12, 12, rim='B', mid='C', core='k')
+    return [
+        part('body', ((c - 3.0, t, -3.0), (c + 3.0, top, 3.0)), {
+            'north': fb, 'south': fb, 'east': sd, 'west': sd,
+            'up': up, 'down': _bevel_down,
+        }),
+    ]
+
+
+def _smooth_rail(lit='n', body='k', sh='d', dk='E'):
+    """Clean, unbroken rail face: subtle top bevel + smooth solid body + clean shaded edge (zero visual noise)."""
+    def f(w, h):
+        rows = [[lit] * max(1, w - 1) + ([body] if w > 1 else [])]
+        for _ in range(max(0, h - 2)):
+            rows.append([body] * max(1, w - 1) + ([sh] if w > 1 else []))
+        if h > 1:
+            rows.append([sh] * max(1, w - 1) + ([dk] if w > 1 else []))
+        return rows
+    return f
+
+
+def _glow_rod(y0, y1, rail_top, rail_bot):
+    """Protruding glowing cyan accelerator bar (Oritech's inner glowing rail): smooth 3-band charge wave K0->K1->K2
+    with bright hot tip at the muzzle end."""
+    span = rail_top - rail_bot
+    def f(w, h):
+        rows = []
+        for j in range(h):
+            frac = ((rail_top - y1) + (j + 0.5) / 2.0) / span
+            n = min(2, max(0, int(frac * 3)))
+            tip = (j >= h - 2)
+            crest = ((frac * 3) - n) < 0.25
+            ch = ('L' if (tip or crest) else 'K') + str(n)
+            rows.append([ch] * w)
+        return rows
+    return f
+
+
+def _build_oritech(c, top, P, length=6.0, style='steel'):
+    """Oritech-inspired clean twin-rail cannon:
+    - style='steel'  : calm steel/slate receiver with slim copper collar + sleek dark-slate rails + protruding cyan rods
+    - style='copper' : Oritech's 2-material split (clean copper receiver + unbroken dark-slate rails + protruding cyan rods)
+    - style='flush'  : full-width flush monolithic dark-slate rails hugging the 6x6 base + bold protruding cyan rods"""
+    part = lambda name, box, faces, bone='tool': dict(drill.part(name, box, _paint(faces, P)), bone=bone)
+    t = top - 4.0
+    rec_style = style if style in ('copper', 'flush_clean', 'flush_seam', 'flush_dark') else 'steel'
+    parts = _ori_receiver(c, top, P, part, style=rec_style)
+
+    y_rod_tip = t - length              # glowing inner cyan rods extend full 6.0 px (0.5 px past outer rails!)
+    y_rail_tip = y_rod_tip + 0.5        # outer dark-slate rails stop 0.5 px shy so glowing cyan tips protrude cleanly
+    flush = style.startswith('flush')
+
+    # Outer rail geometry: clean, unbroken monolithic blocks (all exact 0.5 px multiples, zero overlap)
+    x_rod_in, x_rod_out = (0.5, 1.0)                   # 0.5 px wide glowing inner accelerator rod (1.0 px open center gap)
+    x_rail_in, x_rail_out = (1.0, 2.5)                 # 1.5 px wide unbroken dark-slate rail
+    rail_hd = 2.5 if flush else 2.0                    # 5.0 deep (flush) or 4.0 deep (sleek)
+    rod_hd = 1.0 if flush else 0.75                    # glowing cyan bar depth in Z (2.0 or 1.5 deep)
+
+    for s, name in ((1, 'out'), (-1, 'in')):
+        bone = 'bit' if s > 0 else 'fork_in'
+        outer_f, inner_f = ('east', 'west') if s > 0 else ('west', 'east')
+
+        def bx(y0, y1, xa_, xb_, hd):
+            xa, xb = sorted((c + s * xa_, c + s * xb_))
+            return ((xa, y0, -hd), (xb, y1, hd))
+
+        # 1. Clean, unbroken dark-slate outer rail (smooth, calm, zero noisy stripes)
+        rail_fb = _smooth_rail('n', 'm', 'k', 'd')
+        rail_out = _smooth_rail('B', 'C', 'D', 'E') if style == 'steel' else _smooth_rail('n', 'm', 'k', 'd')
+        parts.append(part(f'prong_{name}_rail', bx(y_rail_tip, t, x_rail_in, x_rail_out, rail_hd), {
+            'north': rail_fb, 'south': rail_fb, outer_f: rail_out,
+            inner_f: _smooth_rail('k', 'd', 'd', 'E'),
+            'up': _solid('.'), 'down': _solid('d'),
+        }, bone))
+
+        # 2. Glowing cyan inner accelerator rod protruding 0.5 px past the outer rail tip (Oritech's signature!)
+        rod_fn = _glow_rod(y_rod_tip, t, t, y_rod_tip)
+        parts.append(part(f'prong_{name}_rod', bx(y_rod_tip, t, x_rod_in, x_rod_out, rod_hd), {
+            'north': rod_fn, 'south': rod_fn,
+            outer_f: rod_fn, inner_f: rod_fn,
+            'up': _solid('.'), 'down': _solid('L2'),
+        }, bone))
+
+        # 3. Subtle dark-slate capacitor lugs / flush upper cheek sitting flush with the 6x6 receiver (+-3.0)
+        if not flush:
+            for idx, ly in enumerate((t - 1.5, t - 3.5)):
+                parts.append(part(f'prong_{name}_lug{idx}', bx(ly - 0.5, ly + 0.5, 2.5, 3.0, 1.5), {
+                    'north': _solid('d'), 'south': _solid('d'),
+                    outer_f: _smooth_rail('m', 'k', 'd', 'E'), inner_f: _solid('.'),
+                    'up': _solid('n'), 'down': _solid('E'),
+                }, bone))
+        else:
+            # Flush style: clean outer cheek plate on the upper half of the rail for a cohesive 6x6 flush transition
+            parts.append(part(f'prong_{name}_cheek', bx(t - 3.0, t, 2.5, 3.0, 2.5), {
+                'north': _smooth_rail('n', 'k', 'd', 'E'), 'south': _smooth_rail('n', 'k', 'd', 'E'),
+                outer_f: _smooth_rail('A', 'B', 'C', 'D'), inner_f: _solid('.'),
+                'up': _solid('.'), 'down': _solid('d'),
+            }, bone))
+    return parts
+
+
+def _build_oritech_concave(c, top, P, length=6.0, mode='side'):
+    """Concave rail variations built on ori_flush_seam (seamless steel receiver + tall glowing cyan channel slit,
+    no copper divider):
+    - mode='side'    : concave carved side waist (z 5.0 -> 3.5 -> 5.0) with flared dark muzzle lip
+    - mode='both'    : concave hourglass waist in BOTH width and depth (6.0 -> 5.0 -> 6.0 wide, 5.0 -> 4.0 -> 5.0 deep)
+    - mode='channel' : concave C-channel rails (flush front/back rail flanges with a recessed outer trough cradling the bar)"""
+    part = lambda name, box, faces, bone='tool': dict(drill.part(name, box, _paint(faces, P)), bone=bone)
+    t = top - 4.0
+    parts = _ori_receiver(c, top, P, part, style='flush_seam')
+
+    y_rod_tip = t - length              # 6.0 px glowing cyan rods (0.5 px past outer rail tips)
+    y_rail_tip = y_rod_tip + 0.5        # 5.5 px outer rails
+    y_sh = t - 1.5                      # upper flush shoulder bottom
+    y_mz = y_rail_tip + 1.0             # muzzle flare top
+
+    rail_fb = _smooth_rail('n', 'm', 'k', 'd')
+    steel_side = _smooth_rail('A', 'B', 'C', 'D')
+    dark_side = _smooth_rail('n', 'm', 'k', 'd')
+
+    for s, name in ((1, 'out'), (-1, 'in')):
+        bone = 'bit' if s > 0 else 'fork_in'
+        outer_f, inner_f = ('east', 'west') if s > 0 else ('west', 'east')
+
+        def bx(y0, y1, xa_, xb_, z0, z1):
+            xa, xb = sorted((c + s * xa_, c + s * xb_))
+            return ((xa, y0, z0), (xb, y1, z1))
+
+        # Glowing cyan inner accelerator rod (protrudes 0.5 px past the rail tip)
+        rod_fn = _glow_rod(y_rod_tip, t, t, y_rod_tip)
+        parts.append(part(f'prong_{name}_rod', bx(y_rod_tip, t, 0.5, 1.0, -1.0, 1.0), {
+            'north': rod_fn, 'south': rod_fn, outer_f: rod_fn, inner_f: rod_fn,
+            'up': _solid('.'), 'down': _solid('L2'),
+        }, bone))
+
+        # Upper flush steel shoulder seamlessly continuing the 6x6 receiver
+        parts.append(part(f'prong_{name}_root', bx(y_sh, t, 1.0, 3.0, -2.5, 2.5), {
+            'north': steel_side, 'south': steel_side, outer_f: steel_side,
+            inner_f: _smooth_rail('k', 'd', 'd', 'E'), 'up': _solid('.'), 'down': _solid('d'),
+        }, bone))
+
+        if mode in ('side', 'both'):
+            mid_hd = 1.75 if mode == 'side' else 2.0
+            mz_xo = 2.5 if mode == 'side' else 3.0
+            # Concave carved middle waist
+            parts.append(part(f'prong_{name}_mid', bx(y_mz, y_sh, 1.0, 2.5, -mid_hd, mid_hd), {
+                'north': rail_fb, 'south': rail_fb, outer_f: dark_side,
+                inner_f: _smooth_rail('k', 'd', 'd', 'E'), 'up': _solid('.'), 'down': _solid('.'),
+            }, bone))
+            # Flared muzzle end-cap completing the concave profile
+            parts.append(part(f'prong_{name}_tip', bx(y_rail_tip, y_mz, 1.0, mz_xo, -2.5, 2.5), {
+                'north': steel_side if mode == 'both' else rail_fb,
+                'south': steel_side if mode == 'both' else rail_fb,
+                outer_f: steel_side if mode == 'both' else dark_side,
+                inner_f: _smooth_rail('k', 'd', 'd', 'E'),
+                'up': _solid('B' if mode == 'both' else 'n'), 'down': _solid('d'),
+            }, bone))
+        else:
+            # C-channel concave rails: front & back outer rail flanges framing a recessed dark outer trough
+            for tag, z0, z1 in (('fl_f', -2.5, -1.5), ('fl_b', 1.5, 2.5)):
+                z_out, z_in = ('north', 'south') if z0 < 0 else ('south', 'north')
+                parts.append(part(f'prong_{name}_{tag}', bx(y_rail_tip, y_sh, 1.0, 2.5, z0, z1), {
+                    z_out: rail_fb, z_in: _smooth_rail('k', 'd', 'd', 'E'),
+                    outer_f: steel_side, inner_f: _smooth_rail('k', 'd', 'd', 'E'),
+                    'up': _solid('.'), 'down': _solid('d'),
+                }, bone))
+            # Recessed dark-slate trough web connecting the front & back flanges (0.5 px recessed from outer face)
+            parts.append(part(f'prong_{name}_web', bx(y_rail_tip, y_sh, 1.0, 2.0, -1.5, 1.5), {
+                'north': _solid('.'), 'south': _solid('.'),
+                outer_f: _smooth_rail('k', 'd', 'd', 'E'),
+                inner_f: _smooth_rail('k', 'd', 'd', 'E'),
+                'up': _solid('.'), 'down': _solid('E'),
+            }, bone))
+    return parts
+
+
+def build(c, top, lamp='dark', kind='ori_concave_channel', core='dark', length=6.0, sleeve=False, head_scale=False):
     """The rail cannon's parts on an arm centred at x c whose socket is at y top: the receiver (bone 'tool') and the
     prongs / core under it (bone 'bit'). `lamp` is unused (the tools' common signature)."""
     P = pal(core)
@@ -470,6 +916,30 @@ def build(c, top, lamp='dark', kind='gauss', core='dark', length=6.0, sleeve=Fal
         return _build_gauss(c, top, P, length)
     if kind == 'coil':
         return _build_coil(c, top, P, length)
+    if kind == 'coil_flush':
+        return _build_coil_flush(c, top, P, length)
+    if kind == 'coil_taper':
+        return _build_coil_taper(c, top, P, length)
+    if kind == 'coil_solid':
+        return _build_coil_solid(c, top, P, length)
+    if kind == 'ori_steel':
+        return _build_oritech(c, top, P, length, style='steel')
+    if kind == 'ori_copper':
+        return _build_oritech(c, top, P, length, style='copper')
+    if kind == 'ori_flush':
+        return _build_oritech(c, top, P, length, style='flush')
+    if kind == 'ori_flush_clean':
+        return _build_oritech(c, top, P, length, style='flush_clean')
+    if kind == 'ori_flush_seam':
+        return _build_oritech(c, top, P, length, style='flush_seam')
+    if kind == 'ori_flush_dark':
+        return _build_oritech(c, top, P, length, style='flush_dark')
+    if kind == 'ori_concave_side':
+        return _build_oritech_concave(c, top, P, length, mode='side')
+    if kind == 'ori_concave_both':
+        return _build_oritech_concave(c, top, P, length, mode='both')
+    if kind == 'ori_concave_channel':
+        return _build_oritech_concave(c, top, P, length, mode='channel')
     if kind == 'quad':
         return _build_quad(c, top, P, length)
     part = lambda name, box, faces, bone='tool': dict(drill.part(name, box, _paint(faces, P)), bone=bone)

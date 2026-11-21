@@ -72,7 +72,7 @@ def tool_specs():
                          tank_h=4.0, tank_w=3.0, sleeve=True, head_scale=True), glow),
         ('rail_cannon', ('rail_cannon', 'rail_fork_out'), {'fork_in': 'rail_fork_in'},
          ('rail_flow_0', 'rail_flow_1', 'rail_flow_2'),
-         rail_art.build(0, 0, 'dark', kind='gauss', core='dark', length=6.0, sleeve=True, head_scale=True), glow),
+         rail_art.build(0, 0, 'dark', kind='ori_concave_channel', core='dark', length=6.0, sleeve=True, head_scale=True), glow),
         ('tnt_launcher', ('tnt_launcher', 'tnt_launcher_drum'), {}, (),
          tnt_art.build(0, 0, kind='wide', sleeve=True), glow),
         ('em_projector', ('em_projector', 'em_projector_poles'), {}, ('em_core', 'em_arc'),
