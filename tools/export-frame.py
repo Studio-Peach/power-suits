@@ -16,7 +16,7 @@ mod as GeckoLib files, without Blockbench (the frame is script-built: model/art/
       its reserved dark violets lit; <i> the chain's segments from the hip up, see star_masks)
   textures/entity/power_frame_glow_robot_<face>(_slim).png: the robot helmet's visor faces (robot_faces below)
   textures/entity/power_frame_glow_<light>(_slim).png for the tools' lights (TOOL_GLOW below): the flamethrower's pilot
-      light, the status lamp red (idle) and green (running), the chaingun's green muzzle lights
+      light, the status lamp red (idle) and green (running), the chaingun's emerald base vents and heat / heat_barrel glow
   geckolib/animations/entity/power_frame.animation.json
   geckolib/models/view/frame_arm.geo.json, frame_arm_slim.geo.json (the cockpit's right arm, below)
   geckolib/models/view/frame_tool.geo.json, frame_tool_slim.geo.json (the cockpit's socket tool, below)
@@ -309,7 +309,7 @@ TOOL_GLOW = {
     'pilot': {_h('1b2638'): _h('2a6cff'), _h('22304a'): _h('8ec2ff')},   # make-glowmasks.py's pilot colours
     'lamp_idle': {_h('3d2622'): _h('ffb0a0'), _h('2e1915'): _h('e8402a')},   # frame_drill_art LAMPS dark -> red
     'lamp_run': {_h('3d2622'): _h('c8ffc0'), _h('2e1915'): _h('4fe05a')},    # ... -> green
-    'gun_light': {_h('c8ffc0'): _h('c8ffc0'), _h('3cf060'): _h('3cf060')},  # the chaingun's green lights, as painted
+    'gun_light': {_h('c8ffc0'): _h('c8ffc0'), _h('3cf060'): _h('3cf060')},  # the chaingun's emerald base vents, as painted
     # the EM projector's lens and vents (em_core) and pole tips (em_arc): frame_em_art's reserved dark reds -> the big suit's lit ones
     'em_core': {_h('3a0e0c'): _h('7a0600'), _h('4b1310'): _h('b81206'), _h('5c1813'): _h('f0200c'), _h('701f17'): _h('ff6a4a')},
     'em_arc': {_h('4e1411'): _h('c01206'), _h('621a14'): _h('ff2a14')},
@@ -324,6 +324,13 @@ def sea_glow():
     sys.path.insert(0, os.path.join(ROOT, 'model', 'art'))
     import frame_sea_art
     return {frame_sea_art.SEA_DARK[k]: frame_sea_art.EXTRA[k] for k in frame_sea_art.SEA_DARK}
+
+
+def gun_heat_glow():
+    """The chaingun's reserved cold shades -> their orange/yellow heat glow (frame_gun_art.HEAT_GLOW, with per-colour alpha)."""
+    sys.path.insert(0, os.path.join(ROOT, 'model', 'art'))
+    import frame_gun_art
+    return frame_gun_art.HEAT_GLOW
 
 
 def textures(data):
@@ -343,8 +350,9 @@ def textures(data):
     sea = [[seaglow[p[:3]] + (255,) if p[3] == 255 and p[:3] in seaglow else clear for p in row] for row in rows]
     assert any(p != clear for row in sea for p in row), 'no sea texels: build the saved files with the sea engine (SEA=A, SEA_GLOW=dark)'
     tools = {}
-    for name, colours in TOOL_GLOW.items():
-        mask = [[colours[p[:3]] + (255,) if p[3] == 255 and p[:3] in colours else clear for p in row] for row in rows]
+    rgba = lambda c: c if len(c) == 4 else c + (255,)
+    for name, colours in (TOOL_GLOW | gun_heat_glow()).items():
+        mask = [[rgba(colours[p[:3]]) if p[3] == 255 and p[:3] in colours else clear for p in row] for row in rows]
         assert any(p != clear for row in mask for p in row), f'no {name} texels: build the saved files with every tool (TOOL=all, LAMP=dark)'
         tools[name] = png(w, h, mask)
     return png(w, h, opaque), png(w, h, panes), png(w, h, visor), png(w, h, fire), png(w, h, core), png(w, h, sea), tools

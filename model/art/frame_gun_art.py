@@ -1,10 +1,12 @@
 """The chaingun for the frame (frame_model.py, TOOL=gun): the third power tool brought over from the big suit.
 
-PICKED (2026-11-14, user: "this is the one"; frame_model's defaults): GUN_LOOK=doom (after the Doom 2016 chaingun,
-.scratch/gun/ref_doom.png), GUN_BARRELS=4, GUN_TOP=stack: a warm-black 5 x 4 x 5 body, a lit top edge and two bolts a
-side over the band / groove pair three times; four 1 x 1 px barrels on the spinning bone, no ring halfway; the stepped
-muzzle (collar, 4.5 x 2 block, chamfer, bolts, a green light in each side's middle). Built by doom_build() below; the
-sections before it are the earlier rounds (GUN, GUN_BODY), kept as knobs.
+PICKED (2026-11-14, user: "this is the one"; updated 2026-11-20, user: `GUN_ACCENT=vents` + overheat glow): GUN_LOOK=doom
+(after the Doom 2016 chaingun, .scratch/gun/ref_doom.png), GUN_BARRELS=4, GUN_TOP=stack, GUN_ACCENT=vents, GUN_HEAT=dark:
+a warm-black 5 x 4 x 5 body, a lit top edge and two bolts a side over the band / groove pair three times with emerald vent
+slits in the two upper grooves (`gun_light`); four 1 x 1 px barrels on the spinning bone, no ring halfway; the stepped
+muzzle (collar, 4.5 x 2 block, chamfer, bolts, a recessed cooling vent in each side's middle) painted with reserved cold
+shades (`HEAT_SPEC`) that `tools/export-frame.py` turns into `power_frame_glow_heat` and `power_frame_glow_heat_barrel`.
+Built by doom_build() below; the sections before it are the earlier rounds (GUN, GUN_BODY), kept as knobs.
 
 2026-11-14 (user: the chaingun next; reference .scratch/gun/ref.png, a matte black six-barrel minigun: a cylinder
 receiver under a flat top plate with a carry handle, a khaki drive motor and a bent feed pipe under it, a rear grip
@@ -138,10 +140,10 @@ def ring_cap(w, h):  # its top / bottom: the plate, an edge round it
 
 
 def build(c, top, lamp='red', kind='A', body='ref', look='old', barrels='4', handle='paint', top_art='rust', drum='dark',
-          body_h=4, barrel_l=5):
+          body_h=4, barrel_l=5, accent='vents', heat='dark'):
     """The chaingun's parts on an arm centred at x c (right side) whose socket is at y top: the receiver (bone 'tool')
     and the barrels with their rings under it (bone 'bit': they spin). look: GUN_LOOK (below), 'old' the first drafts."""
-    if look != 'old': return doom_build(c, top, look, barrels, handle, top_art, drum, body_h, barrel_l)
+    if look != 'old': return doom_build(c, top, look, barrels, handle, top_art, drum, body_h, barrel_l, accent, heat)
     metal = 'steel' if kind == 'C' else 'black'
     P = pal(metal, lamp)
     part = lambda name, box, faces, bone='tool', rot=0: dict(drill.part(name, box, _paint(faces, P), rot), bone=bone)
@@ -361,10 +363,99 @@ def collar(w, h):        # the collar's side: lit top row, dark under
 # Round 8 (2026-11-14, user: now that tool bodies have their own heights, see the chaingun's lower): GUN_BODY_H (px)
 # the body's height, the stack's band / groove pair repeated to fill it (3 px: twice); GUN_BARREL_L the barrels'
 # length (5: the gun 1 px higher | 6: the muzzle where it was).
-def doom_build(c, top, look, barrels='4', handle='paint', top_art='rust', drum='dark', body_h=4, barrel_l=5):
+#
+# Round 9 (2026-11-20, user: emerald hints on the base + restore the old suit's overheating glow on the barrels/muzzle):
+# GUN_ACCENT: 'muzzle' (old: green lights on muzzle) | 'strip' (centred 2x5 emerald light on base) |
+#             'vents' (emerald slits tucked into the base's horizontal grooves) |
+#             'twins' (twin 1x5 emerald cells flanking each side of the base).
+# For the base accents, the muzzle's old green slot becomes a recessed dark cooling vent that glows orange -> yellow
+# during overheating.
+# GUN_HEAT: 'dark' (game default: reserved shades 1 step off cold metal so cold barrels look identical, lit by
+#           export-frame.py into power_frame_glow_heat + power_frame_glow_heat_barrel) |
+#           'hot' (review preview: blends the full overheat glow directly onto the texture).
+BASE_ACCENTS = {
+    'strip': ['DBBBBBBBBD', 'BhCCCCCChD',
+              'DCBEWWECDE', 'EDDELLEDDE', 'DCBELLECDE', 'EDDELLEDDE', 'DCBEllECDE', 'EDDDDDDDDE'],
+    'vents': ['DBBBBBBBBD', 'BhCCCCCChD',
+              'DCBBCCCCDE', 'EDElLLlEDE', 'DCBBCCCCDE', 'EDElLLlEDE', 'DCBBCCCCDE', 'EDDDDDDDDE'],
+    'twins': ['DBBBBBBBBD', 'BhCCCCCChD',
+              'DEWECCEWED', 'DELEDDELED', 'DELECCELED', 'DELEDDELED', 'DElECCElED', 'EDDDDDDDDE'],
+}
+
+# Reserved heat colours (all 1 step off K / x / C / D / E and unused elsewhere in power_frame.png):
+# letter -> (cold hex, mask name, glow hex, glow alpha)
+HEAT_SPEC = {
+    # Stage 1 ('heat', starts at 30%): barrel tips, bores, muzzle cooling vents, muzzle recessed underside
+    '1': ('55585b', 'heat',        'ffc860', 255),  # barrel tip (row 9, 0.5 px past muzzle): yellow-hot
+    '2': ('050506', 'heat',        'ff9a30', 255),  # barrel bore (down face): orange-yellow
+    '3': ('1f1e1d', 'heat',        'ff6a1a', 235),  # muzzle vent top: orange
+    '4': ('1f1e1b', 'heat',        'ff9a30', 255),  # muzzle vent mid: bright orange
+    '5': ('0f0e0e', 'heat',        'ffc860', 240),  # muzzle vent bottom + muzzle recessed underside: yellow-hot
+    # Stage 2 ('heat_barrel', creeps back from 55%): exposed barrels (rows 3->0), muzzle collar, muzzle casing
+    '6': ('555859', 'heat_barrel', 'ff6a1e', 220),  # barrel row 3 (above collar)
+    '7': ('55585c', 'heat_barrel', 'ff5a18', 165),  # barrel row 2
+    '8': ('555858', 'heat_barrel', 'ff4a14', 105),  # barrel row 1
+    '9': ('55595a', 'heat_barrel', 'e83c0f',  50),  # barrel row 0 (under base)
+    '!': ('2e2c2b', 'heat_barrel', 'ff6a1e', 210),  # muzzle_collar lit top/side + muzzle top inner ring
+    '@': ('1f1e1e', 'heat_barrel', 'f05818', 190),  # muzzle_collar shade + muzzle top centre
+    '#': ('2e2c29', 'heat_barrel', 'ff5a18', 130),  # muzzle outer casing mid
+    '$': ('1f1e1a', 'heat_barrel', 'ff6a1e', 165),  # muzzle outer casing bottom rim
+}
+
+# Export helper for tools/export-frame.py: mask -> {cold_rgb: glow_rgba}
+HEAT_GLOW = {
+    m: {_c(cold)[:3]: _c(glow)[:3] + (a,) for cold, mask, glow, a in HEAT_SPEC.values() if mask == m}
+    for m in ('heat', 'heat_barrel')
+}
+
+
+def _heat_pal(heat):
+    out = {}
+    for ch, (cold, _, glow, a) in HEAT_SPEC.items():
+        cr, cg, cb, _ = _c(cold)
+        if heat == 'hot':
+            gr, gg, gb, _ = _c(glow)
+            f = a / 255.0
+            out[ch] = (round(cr * (1 - f) + gr * f), round(cg * (1 - f) + gg * f), round(cb * (1 - f) + gb * f), 255)
+        else:
+            out[ch] = (cr, cg, cb, 255)
+    return out
+
+
+def barrel_heated(w, h):  # 2 x 10: rows 0..3 creep up from collar, 4..8 inside muzzle, 9 = tip past muzzle
+    # Rows 0..3 are exposed between base and collar; 4..8 sit inside collar/muzzle; row 9 pokes 0.5 px below muzzle.
+    rows = ['9' * w, '8' * w, '7' * w, '6' * w] + ['K' * w] * max(0, h - 5) + ['1' * w]
+    return rows[:h]
+
+
+def muzzle_side_vent(w, h):  # 9 x 4: emerald moved to base -> recessed dark cooling vent in middle, glows hot
+    m = w // 2
+    rows = ['D' + 'B' * (w - 2) + 'D',
+            'B' + 'h' + 'C' * (m - 3) + 'E3E' + 'C' * (w - m - 4) + 'h' + 'D'] + \
+           ['B' + '#' * (m - 2) + 'E4E' + '#' * (w - m - 3) + 'D'] * (h - 3) + \
+           ['E' + '$' * (m - 2) + 'E5E' + '$' * (w - m - 3) + 'E']
+    assert all(len(r) == w for r in rows), rows
+    return rows
+
+
+def muzzle_top_heated(w, h):  # inner ring around collar heats up in stage 2 (very visible from cockpit)
+    return [''.join('B' if i in (0, w - 1) or j in (0, h - 1) else 'h' if i in (1, w - 2) and j in (1, h - 2)
+                    else '!' if i in (1, w - 2) or j in (1, h - 2) else '@' for i in range(w)) for j in range(h)]
+
+
+def muzzle_bottom_heated(w, h):  # recessed underside glows orange so the four yellow-hot barrel tips pop against it
+    return [''.join('$' if i in (0, w - 1) or j in (0, h - 1) else '3' for i in range(w)) for j in range(h)]
+
+
+def collar_heated(w, h):
+    return ['!' * (w - 1) + '@'] + ['@' * (w - 1) + 'E'] * (h - 1)
+
+
+def doom_build(c, top, look, barrels='4', handle='paint', top_art='rust', drum='dark', body_h=4, barrel_l=5,
+               accent='vents', heat='dark'):
     if look == 'doom4': barrels = '4'                       # (round 1's names)
     if look == 'doom3d': handle = '3d'
-    P = DOOM | {k: _c(v) for k, v in DRUMS.get(drum, {}).items()}
+    P = DOOM | {k: _c(v) for k, v in DRUMS.get(drum, {}).items()} | _heat_pal(heat)
     part = lambda name, box, faces, bone='tool', rot=0: dict(drill.part(name, box, _paint(faces, P), rot), bone=bone)
     t, L = top - body_h, barrel_l
     faces = doom_faces(top_art, drum)
@@ -374,20 +465,32 @@ def doom_build(c, top, look, barrels='4', handle='paint', top_art='rust', drum='
         assert n % 2 == 0 and n >= 4, n
         rows = STACK[:2] + STACK[2:4] * ((n - 2) // 2)
         faces = dict(faces, north=rows, south=rows, east=rows, west=rows)
+    if accent in BASE_ACCENTS:
+        assert body_h == 4, 'base accents are drawn for 4 px body'
+        rows = BASE_ACCENTS[accent]
+        faces = dict(faces, north=rows, south=rows, east=rows, west=rows)
     parts = [part('body', ((c - 2.5, t, -2.5), (c + 2.5, top, 2.5)), faces)]
     one = lambda ch: (lambda w, h: [ch * w] * h)
-    bfaces = {'north': one('K'), 'south': one('K'), 'east': one('K'), 'west': one('K'), 'up': one('D'), 'down': one('x')}
+    heated = accent != 'muzzle' or heat == 'hot'
+    if heated:
+        bfaces = {'north': barrel_heated, 'south': barrel_heated, 'east': barrel_heated, 'west': barrel_heated,
+                  'up': one('D'), 'down': one('2')}
+        mside = muzzle_side if accent == 'muzzle' else muzzle_side_vent
+        mtop, mbot, mcol, mcol_up = muzzle_top_heated, muzzle_bottom_heated, collar_heated, one('!')
+    else:
+        bfaces = {'north': one('K'), 'south': one('K'), 'east': one('K'), 'west': one('K'), 'up': one('D'), 'down': one('x')}
+        mside, mtop, mbot, mcol, mcol_up = muzzle_side, muzzle_top, muzzle_bottom, collar, one('C')
     at = {'4': ((-1, -1), (1, -1), (1, 1), (-1, 1)),        # centres (dx, dz), all 1 x 1 px, none turned
           '3': ((-1.5, 0), (0, 0), (1.5, 0)), '3z': ((0, -1.5), (0, 0), (0, 1.5))}[barrels]
     for k, (dx, dz) in enumerate(at):
         parts.append(part(f'barrel{k}', ((c + dx - 0.5, t - L, dz - 0.5), (c + dx + 0.5, t, dz + 0.5)), bfaces, 'bit'))
     y0 = t - L + 0.5                                         # the block's bottom
     parts.append(part('muzzle', ((c - 2.25, y0, -2.25), (c + 2.25, y0 + 2, 2.25)),
-                      {'north': muzzle_side, 'south': muzzle_side, 'east': muzzle_side, 'west': muzzle_side,
-                       'up': muzzle_top, 'down': muzzle_bottom}, 'bit'))
+                      {'north': mside, 'south': mside, 'east': mside, 'west': mside,
+                       'up': mtop, 'down': mbot}, 'bit'))
     # the collar (a straight row of three reaches z / x +-2: it stands through the collar's sides, fine)
     parts.append(part('muzzle_collar', ((c - 1.75, y0 + 2, -1.75), (c + 1.75, y0 + 2.5, 1.75)),
-                      {'north': collar, 'south': collar, 'east': collar, 'west': collar, 'up': one('C'), 'down': one('E')}, 'bit'))
+                      {'north': mcol, 'south': mcol, 'east': mcol, 'west': mcol, 'up': mcol_up, 'down': one('E')}, 'bit'))
     if top_art == 'raised':   # the counter's housing, 4.5 x 3.5, 0.5 px proud of the back, centred on it
         disp = counter('60', True, 9)
         parts.append(part('counter', ((c - 2.25, top - 3.75, 2.5), (c + 2.25, top - 0.25, 3)),

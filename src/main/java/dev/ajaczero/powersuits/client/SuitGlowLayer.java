@@ -36,16 +36,17 @@ import org.jspecify.annotations.Nullable;
  * socket tool's lights ({@link ToolLight}) are worked out by the installed tool's ToolEffects.
  */
 public class SuitGlowLayer extends GeoRenderLayer<PowerSuitEntity, Void, LivingEntityRenderState> {
-    /** The frame's tool lights' glowmasks (tools/export-frame.py), per build, indexed by ToolLight.ordinal(); null for a
-     *  light the frame's tools don't have yet (the chaingun's heat: the big suit's tools had it). Also drawn on the cockpit viewmodel. */
+    /** The frame's tool lights' glowmasks (tools/export-frame.py), per build, indexed by ToolLight.ordinal(). Also drawn on the cockpit viewmodel. */
     static final Identifier[] FRAME_TOOL_MASKS = toolMasks(""), FRAME_TOOL_MASKS_SLIM = toolMasks("_slim");
 
     private static Identifier[] toolMasks(String build) {
         return Arrays.stream(ToolLight.values()).map(light -> switch (light) {
+            case HEAT -> frameMask("heat" + build);               // the chaingun's hot barrel tips and muzzle cooling vents
+            case HEAT_BARREL -> frameMask("heat_barrel" + build); // heat creeping back along the collar and barrels
             case PILOT -> frameMask("pilot" + build);           // the flamethrower's pilot light (the matchstick's head)
             case LAMP_IDLE -> frameMask("lamp_idle" + build);   // the status lamp, red
             case LAMP_RUN -> frameMask("lamp_run" + build);     // and green
-            case GUN_LIGHT -> frameMask("gun_light" + build);   // the chaingun's green muzzle lights
+            case GUN_LIGHT -> frameMask("gun_light" + build);   // the chaingun's emerald base vents
             case EM_CORE -> frameMask("em_core" + build);       // the EM projector's lens and vents
             case EM_ARC -> frameMask("em_arc" + build);         // and its pole tips
             case RAIL_FLOW_0 -> frameMask("rail_flow_0" + build);   // the rail cannon's core, three bands along its prongs

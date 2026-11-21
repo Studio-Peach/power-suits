@@ -482,9 +482,11 @@ until the tool points along the view (pitch and head yaw; a player's one-armed a
 end, where vanilla draws a left hand, turned about the shoulder toward a point low left of the crosshair at rest and
 at the crosshair 10 blocks out when raised, with vanilla's bare-arm sideways roll removed so every tool stays top-side up (CockpitHands.toolArmTransform / levelRoll; the hand pass's pose isn't identity in 26.3, so the turn is worked out under it). No exhaust smoke in the pilot's own first-person view (it drifted past the
 camera). Step 5c: the tools' lights: a status lamp on the drill's and chainsaw's base (red ready, green running,
-dark without power: ToolLight.LAMP_IDLE / LAMP_RUN, painted in reserved dark colours, LAMP=dark), the chaingun's green
-muzzle lights (on with the power) and the flamethrower's blue pilot light, on the suit and the cockpit viewmodel. Not
-on the frame's tools yet: the chaingun's barrel heat glow, the EM projector's and rail cannon's lights (no art). Step 6a
+dark without power: ToolLight.LAMP_IDLE / LAMP_RUN, painted in reserved dark colours, LAMP=dark), the chaingun's emerald
+base vents (moved off the muzzle 2026-11-20, on with the power), its two-stage barrel/muzzle heat glow (`ToolLight.HEAT`
+from 30% on the tips and recessed muzzle cooling vents; `ToolLight.HEAT_BARREL` creeping back from 55% along the collar,
+muzzle top and exposed barrels via per-texel alpha), and the flamethrower's blue pilot light, on the suit and the cockpit
+viewmodel (plus the EM projector's redstone core/tips and rail cannon's flowing core). Step 6a
 (2026-11-14, design sec. 10): the frame's armour as items and slots, no looks yet: Iron Torso / Arm / Leg Armour (one item
 per piece, either side, a tier each), five slots after the old ones (torso, left/right arm, left/right leg: 5-9), each
 piece's armour points as an attribute modifier (transient: rebuilt from the slots on load and following config edits),
