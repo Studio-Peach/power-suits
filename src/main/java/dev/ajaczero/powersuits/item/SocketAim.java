@@ -22,16 +22,16 @@ public final class SocketAim {
     // The frame (2026-11-14, step 5b): the tool arm swings up from its shoulder until the tool points along the view
     // (PowerSuitRenderer.raiseTool, which it always is while a tool works), so the muzzle is the shoulder plus the arm's
     // reach along the view. The shoulder pivot (model/power_frame.bbmodel, left_arm): 8.25 px left of the centre, 28 px up
-    // from the feet; the reach to the chaingun's muzzle (its muzzle block's bottom, y 7.5 under the shoulder's 28): 20.5
-    // px. The other tools end within a px of it (the drill's tip 21, the chainsaw's chain 22.5); their
-    // muzzleInsetPixels are still the big suit's small corrections. The shoulder turns with the torso, which faces the
-    // view within the head's 50 degrees: taking the view's yaw puts it at most ~0.2 blocks off, for a shot that goes for
-    // the crosshair anyway (aimPoint).
+    // from the feet; with the +3 px sleeved tool socket (built y 19), the reach to the chaingun's muzzle (its muzzle
+    // block's bottom, y 10.5 under the shoulder's 28) is 17.5 px. The other tools end within a px or two of it (drill/TNT/
+    // flamethrower 18, rail 19, chainsaw 19.5, EM 16 with its 2 px inset). The shoulder turns with the torso, which faces
+    // the view within the head's 50 degrees: taking the view's yaw puts it at most ~0.2 blocks off, for a shot that goes
+    // for the crosshair anyway (aimPoint).
     // (The big suit's: its raised elbow's muzzle 0.709 left, 2.226 up, 1.738 forward of the feet, the torso pivot
     // 1.695 up, pitching with the view at 55%.)
     // That's where everyone else sees the gun; the pilot's own first-person view draws its bullets from the cockpit
     // viewmodel's muzzle instead (visualMuzzle + Bullet.visualOffset).
-    private static final double SHOULDER_LEFT = 8.25 / 16, SHOULDER_UP = 28.0 / 16, REACH = 20.5 / 16;
+    private static final double SHOULDER_LEFT = 8.25 / 16, SHOULDER_UP = 28.0 / 16, REACH = 17.5 / 16;
 
     /** Where muzzle effects (EM beam particles) start on this client. The client points it at the cockpit viewmodel's
      *  muzzle for its own pilot in first person (CockpitHands); everywhere else it's the suit's muzzle. */

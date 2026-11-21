@@ -271,7 +271,14 @@ u = 0
 for f in FACES:
     GAUNT_UV['socket', f] = (u, 8 + (len(GAUNT) + 1) * 8, len(SOCKET[f][0]), len(SOCKET[f]))
     u += len(SOCKET[f][0])
-SOCKET_Y = 14   # the left arm's bottom (raw): the socket, at his hand's bottom
+# Tool socket lift & 6x6 sleeved bases (2026-11-20, user: at SOCKET_Y=14 the tool arm hung past the knee/ankles and
+# read way too long; lifting +3 px to raw 17 / built 19 leaves a 1 px steel cuff under the iron pauldron and brings tool
+# tips to y 8.5..12 near the empty fist at y 12, while widening tool bases to 6x6 = 0.5 px proud matches the pauldron
+# and reads as a heavy attachment clamped around the forearm instead of replacing it).
+SOCKET_LIFT = float(os.environ.get('SOCKET_LIFT', '3'))
+TOOL_SLEEVE = os.environ.get('TOOL_SLEEVE', '1') == '1'
+SOCKET_Y = 14 + SOCKET_LIFT   # tool top (raw): 17 default (+3 lift, built 19); 14 was the old fist-level socket
+ARM_SOCKET_Y = SOCKET_Y       # arm sleeve meets the 6x6 tool top back-to-back (clean on all 7 tools, zero overlap)
 
 # ---------------------------------------------------------------- shells
 # A limb's faces are composed top to bottom from its painted frame (ARM_ART / LEG_ART: PAL letters, '#' a bar texel,
@@ -414,7 +421,7 @@ ARMOR_BOX = {'helmet': ((-4.5, 25.5, -4.5), (4.5, 34.5, 4.5)),
              'arm': ((3.75 + ARM_OUT, 10, -2.5), (8.75 + ARM_OUT, 26.1, 2.5)),
              'leg': ((-0.25 + LEG_OUT, 0, -2.5), (4.75 + LEG_OUT, 17, 2.5)),   # raw (legs)
              'hip': ((-4.4, 13.9, -2.25), (4.4, 15.1, 2.25))}
-ARMOR_BOX['arm_socket'] = ((3.75 + ARM_OUT, SOCKET_Y, -2.5), (8.75 + ARM_OUT, 26.1, 2.5))   # the left arm's
+ARMOR_BOX['arm_socket'] = ((3.75 + ARM_OUT, ARM_SOCKET_Y, -2.5), (8.75 + ARM_OUT, 26.1, 2.5))   # the left arm's
 # The waist steps in (2026-11-05, user: more steps from the chest down to the waist): a band halfway between the chest
 # and the waist at the sides (wide: 12 -> 11 -> 10 px across; slim 11 -> 10.5 -> 10) and 0.25 px shallower than the
 # chest front and back, y 20-22, over the waist (y 17-20). Picked over one step (the waist straight under the chest)
@@ -911,15 +918,19 @@ GAME_BONES = {'drill': ('drill', 'drill_bit'), 'saw': ('chainsaw', 'chainsaw_cha
               'rail': ('rail_cannon', 'rail_fork_out'), 'tnt': ('tnt_launcher', 'tnt_launcher_drum'),
               'em': ('em_projector', 'em_projector_poles')}
 EXTRA_BONES = {'rail': {'fork_in': 'rail_fork_in'}}   # a tool's other moving bones (the rail cannon's inner prong)
-SHELLS['arm_socket_shell'] = dict(SHELLS['arm_shell'], below=[], end='socket')
-if ARMOR != 'none': SHELLS['arm_socket_armor'] = dict(SHELLS['arm_armor'], below=[], end='socket')
-if ARMOR == 'game': SHELLS['cu_arm_socket_armor'] = dict(SHELLS['cu_arm_armor'], below=[], end='socket')
+def _sock_cage(cage):
+    n = round(26 - ARM_SOCKET_Y)   # rows above the socket (12 at 14; trimmed from the bottom when lifted)
+    return {f: (r[:n] if f in ('north', 'east', 'south', 'west') else r) for f, r in cage.items()}
+SHELLS['arm_socket_shell'] = dict(SHELLS['arm_shell'], cage=_sock_cage(SHELLS['arm_shell']['cage']), below=[], end='socket')
+if ARMOR != 'none': SHELLS['arm_socket_armor'] = dict(SHELLS['arm_armor'], cage=_sock_cage(SHELLS['arm_armor']['cage']), below=[], end='socket')
+if ARMOR == 'game': SHELLS['cu_arm_socket_armor'] = dict(SHELLS['cu_arm_armor'], cage=_sock_cage(SHELLS['cu_arm_armor']['cage']), below=[], end='socket')
 def _tool_parts(TOOL):
   TOOL_PARTS = []
   if TOOL == 'drill':
     import frame_drill_art as drill_art
     TOOL_PARTS = drill_art.build(6.25 + ARM_OUT, SOCKET_Y, os.environ.get('LAMP', 'dark'), os.environ.get('DRILL_ART', 'B'),
-                                 os.environ.get('DRILL_BASE', 'open'), os.environ.get('DRILL_FIT', 'fist'),
+                                 os.environ.get('DRILL_BASE', 'open'),
+                                 'sleeve_box' if TOOL_SLEEVE else os.environ.get('DRILL_FIT', 'fist'),
                                  os.environ.get('DRILL_BAND', 'slate'))
   if TOOL == 'saw':
     import frame_saw_art as saw_art
@@ -927,7 +938,7 @@ def _tool_parts(TOOL):
                                os.environ.get('SAW_ART', 'B'), os.environ.get('SAW_FINS', 'A'),
                                os.environ.get('SAW_COWL', 'slate'), os.environ.get('SAW_BARREL', 'copper'),
                                os.environ.get('SAW_BAR', 'box'), os.environ.get('SAW_LOW', 'fins'),
-                               os.environ.get('SAW_LOOK', 'rancher'))
+                               os.environ.get('SAW_LOOK', 'rancher'), sleeve=TOOL_SLEEVE)
 # The chaingun (frame_gun_art.py): picked 2026-11-14 (user: "this is the one"): GUN_LOOK=doom, GUN_BARRELS=4,
 # GUN_TOP=stack (the defaults); the other knobs are the rounds' drafts, kept to rebuild them.
   if TOOL == 'gun':
@@ -937,23 +948,30 @@ def _tool_parts(TOOL):
                                os.environ.get('GUN_BARRELS', '4'), os.environ.get('GUN_HANDLE', 'paint'),
                                os.environ.get('GUN_COUNTER') or os.environ.get('GUN_TOP', 'stack'), os.environ.get('GUN_DRUM', 'dark'),
                                float(os.environ.get('GUN_BODY_H', '4')), float(os.environ.get('GUN_BARREL_L', '5')),
-                               os.environ.get('GUN_ACCENT', 'vents'), os.environ.get('GUN_HEAT', 'dark'))
+                               os.environ.get('GUN_ACCENT', 'vents'), os.environ.get('GUN_HEAT', 'dark'),
+                               sleeve=TOOL_SLEEVE)
 # The flamethrower (frame_flame_art.py): picked 2026-11-14 after eight rounds (user: "definitely 5 tall"): FLAME=D (the
 # barrel at the front, the red tank behind it, both under the body), FLAME_BODY=pump at FLAME_BODY_H=2, the 7 px barrel
 # FLAME_HOLES=even, FLAME_TANK_H=5 (the defaults); the other knobs are the rounds' drafts, kept to rebuild them.
 # FLAME_PILOT=dark (the reserved pilot colours, as in game) | lit (review).
   if TOOL == 'flame':
     import frame_flame_art as flame_art
+    # At SOCKET_Y=17 (+3 lift), a 3 px pump (14..17 raw) fully encloses Steve's hand (14..26 raw) with a 6 px barrel
+    # and 4 px red tank below it (muzzle at built y=10, matching chaingun/drill/TNT).
+    _fl_bh = '3' if SOCKET_LIFT >= 3 else '2'
+    _fl_th = '4' if SOCKET_LIFT >= 3 else '5'
     TOOL_PARTS = flame_art.build(6.25 + ARM_OUT, SOCKET_Y, os.environ.get('FLAME', 'D'), os.environ.get('FLAME_PILOT', 'dark'),
                                    os.environ.get('FLAME_GLOW', 'lit'), os.environ.get('FLAME_BODY', 'pump'),
-                                   float(os.environ.get('FLAME_BODY_H', '2')), os.environ.get('FLAME_HOLES', 'even'),
-                                   float(os.environ.get('FLAME_TANK_H', '5')), float(os.environ.get('FLAME_TANK_W', '3')))
+                                   float(os.environ.get('FLAME_BODY_H', _fl_bh)), os.environ.get('FLAME_HOLES', 'even'),
+                                   float(os.environ.get('FLAME_TANK_H', _fl_th)), float(os.environ.get('FLAME_TANK_W', '3')),
+                                   sleeve=TOOL_SLEEVE)
 # The rail cannon (frame_rail_art.py; 2026-11-15, the big suit's as the reference): RAIL=A gap | B core | C split,
 # RAIL_CORE=dark | lit, RAIL_L the prongs' length. A picked (user, 2026-11-15): in TOOL=all; B, C kept as knobs.
   if TOOL == 'rail':
     import frame_rail_art as rail_art
     TOOL_PARTS = rail_art.build(6.25 + ARM_OUT, SOCKET_Y, 'dark', os.environ.get('RAIL', 'A'),
-                                os.environ.get('RAIL_CORE', 'dark'), float(os.environ.get('RAIL_L', '6')))
+                                os.environ.get('RAIL_CORE', 'dark'), float(os.environ.get('RAIL_L', '6')),
+                                sleeve=TOOL_SLEEVE)
 # The TNT launcher (frame_tnt_art.py) and the EM projector (frame_em_art.py): the big suit's designs (user, 2026-11-15).
 # TNT knob (2026-11-20 rework, picked 'wide' with ch_out=2.5 so no red peeks over the barrel):
 # 'wide' (default) | 'flush' | 'chunky' | 'legacy'.
@@ -962,11 +980,11 @@ def _tool_parts(TOOL):
 # 'corner' | 'step' | 'legacy'.
   if TOOL == 'tnt':
     import frame_tnt_art as tnt_art
-    TOOL_PARTS = tnt_art.build(6.25 + ARM_OUT, SOCKET_Y, kind=os.environ.get('TNT', 'wide'))
+    TOOL_PARTS = tnt_art.build(6.25 + ARM_OUT, SOCKET_Y, kind=os.environ.get('TNT', 'wide'), sleeve=TOOL_SLEEVE)
   if TOOL == 'em':
     import frame_em_art as em_art
     TOOL_PARTS = em_art.build(6.25 + ARM_OUT, SOCKET_Y, kind=os.environ.get('EM', 'claw_b2'),
-                              glow=os.environ.get('EM_GLOW', 'dark'))
+                              glow=os.environ.get('EM_GLOW', 'dark'), sleeve=TOOL_SLEEVE)
   return TOOL_PARTS
 TOOL_PARTS = {t: _tool_parts(t) for t in TOOLS}
 for t, parts_ in TOOL_PARTS.items():
@@ -1262,7 +1280,7 @@ for side in ('r', 'l'):
         hollow(arm, side, 'arm_shell', f'fr_arm_shell_{side}', (3.75 + ARM_OUT, 10, -2.5), (8.75 + ARM_OUT, 26, 2.5))
     if side in SOCKET_ARMS:
         hollow(arm, side, 'arm_socket_shell', f'fr_arm_socket_shell_{side}' if ARMOR == 'game' else f'fr_arm_shell_{side}',
-               (3.75 + ARM_OUT, SOCKET_Y, -2.5), (8.75 + ARM_OUT, 26, 2.5))
+               (3.75 + ARM_OUT, ARM_SOCKET_Y, -2.5), (8.75 + ARM_OUT, 26, 2.5))
     for t, parts_ in (TOOL_PARTS.items() if side in SOCKET_ARMS else ()):   # each tool, its pivot on the arm's axis at the
         # socket (a drill's bit spins about y); the right arm's bones and cubes carry an _r (the left's keep the game's names)
         sfx = '_r' if side == 'r' else ''

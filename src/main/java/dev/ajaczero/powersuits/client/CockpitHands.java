@@ -71,9 +71,9 @@ public final class CockpitHands {
     /** Draw the tool arm's sleeve (and skin) under the tool, or the tool alone. */
     static boolean showArm = true;
     /** The chaingun's muzzle about the pilot's left arm pivot, in vanilla's arm space (y down the arm, x mirrored; px):
-     *  the socket is 10 px down the arm and 1.25 px off its pivot's axis (tools/export-frame.py), the muzzle block's
-     *  bottom 8.5 px under the socket. */
-    private static final Vector3f MUZZLE_PX = new Vector3f(1.25F, 18.5F, 0F);
+     *  with the +3 px sleeved tool socket (built y 19), the socket is 7 px down the arm and 1.25 px off its pivot's axis
+     *  (tools/export-frame.py), the muzzle block's bottom 8.5 px under the socket. */
+    private static final Vector3f MUZZLE_PX = new Vector3f(1.25F, 15.5F, 0F);
     private static final float RECOIL_TICKS = 6F;
 
     private static boolean wasShooting;

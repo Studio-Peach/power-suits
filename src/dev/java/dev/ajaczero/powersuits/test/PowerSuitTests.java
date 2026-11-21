@@ -1280,7 +1280,8 @@ public final class PowerSuitTests {
             helper.assertTrue(suit.socket().getBeamTarget() == heavy, "caught in the beam");
             helper.assertTrue(!heavy.isNoGravity() && Math.abs(heavy.getY() - start.y) < 0.01, "not lifted");
             double moved = heavy.position().distanceTo(start);
-            helper.assertTrue(moved > 0.1 && moved < 1.5, "dragged a little (1.2 blocks/s at most, slowed), moved " + moved);
+            // 30 ticks (1.5 s) at <= 1.2 blocks/s drag (~1.8 max, stopping at the hold point ~1.63 blocks from start).
+            helper.assertTrue(moved > 0.1 && moved < 2.0, "dragged a little (1.2 blocks/s at most, slowed), moved " + moved);
             suit.socket().setTriggerHeld(pilot, false);
             helper.succeed();
         });

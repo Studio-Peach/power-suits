@@ -210,23 +210,33 @@ BODY_FACES = {   # (north, east, south, west) a body: north column 0 is the oute
 # height (its top stays at the socket, the barrel, tank and pilot hang from its bottom); the pump's paint is drawn for
 # any height: the strap's two rows on top (one under 2.5 px), the bottom's shadow row (none under 3 px), the copper
 # line (lit, mid, shade rows) centred between them, the valve wheel (4 x 3) centred on the outer side over it.
-def pump_faces(n):
-    """The pump body's (north, east, south, west) for a face n texels tall (10 wide)."""
-    top = TOP2 if n >= 5 else TOP2[:1]
-    bottom = ['ssssssssss'] if n >= 6 else []
+def pump_faces(n, w=10):
+    """The pump body's (north, east, south, west) for a face n texels tall and w texels wide (10 or 12)."""
+    top2 = ['h' * (w - 1) + 'e', 'pg' + 'p' * (w - 4) + 'gz']
+    top = top2 if n >= 5 else top2[:1]
+    bot = 's' * w
+    bottom = [bot] if n >= 6 else []
     free = n - len(top) - len(bottom)
     assert free >= 3, n
     a = len(top) + (free - 3) // 2                          # the line's lit row
-    plain = 'hellllllep'
+    plain = 'he' + 'l' * (w - 4) + 'ep'
+    m = w // 2
     def face(line, below, last):
         rows = top + [plain] * free + bottom
         for k in range(3): rows[a + k] = line[k]
         for j in range(a + 3, n): rows[j] = last if j == n - 1 and bottom else below
         return rows
-    north = face(['fffffellep', 'QQQQfQllep', 'CCCCfQllep'], 'hellfQllep', 'sssCfQssss')   # in from the outer edge, down
-    south = face(['hellffffff', 'hellfQQQQQ', 'hellfQCCCC'], 'hellfQllep', 'sssCfQssss')   # up from the tank, out
-    east = face(['ffffffffff', 'QQQQQQQQQQ', 'CCCCCCCCCC'], plain, 'ssssssssss')
-    for k, w in enumerate(('rRRr', 'RxxR', 'rRRr')): east[a + k] = east[a + k][:3] + w + east[a + k][7:]
+    n_below = 'he' + 'l' * (m - 3) + 'fQ' + 'l' * (w - m - 3) + 'ep'
+    n_last = 's' * (m - 2) + 'CfQ' + 's' * (w - m - 1)
+    north = face(['f' * m + 'e' + 'l' * (w - m - 3) + 'ep',
+                  'Q' * (m - 1) + 'fQ' + 'l' * (w - m - 3) + 'ep',
+                  'C' * (m - 1) + 'fQ' + 'l' * (w - m - 3) + 'ep'], n_below, n_last)
+    south = face(['he' + 'l' * (m - 3) + 'f' * (w - m + 1),
+                  'he' + 'l' * (m - 3) + 'f' + 'Q' * (w - m),
+                  'he' + 'l' * (m - 3) + 'fQ' + 'C' * (w - m - 1)], n_below, n_last)
+    east = face(['f' * w, 'Q' * w, 'C' * w], plain, bot)
+    vx = m - 2
+    for k, vw in enumerate(('rRRr', 'RxxR', 'rRRr')): east[a + k] = east[a + k][:vx] + vw + east[a + k][vx + 4:]
     return north, east, south, top + [plain] * free + bottom
 
 
@@ -257,7 +267,7 @@ def barrel_rows(n, holes='keep'):
     return ['sppppz'] + rows + ['pssssz', 'szzzsz']
 
 
-def build(c, top, kind='A', pilot='dark', glow='lit', body_art='burner', body_h=4, holes='keep', tank_h=4, tank_w=3):
+def build(c, top, kind='A', pilot='dark', glow='lit', body_art='burner', body_h=4, holes='keep', tank_h=4, tank_w=3, sleeve=False):
     """The flamethrower's parts on an arm centred at x c (right side) whose socket is at y top (bone 'tool': all still)."""
     P = PAL | PILOT[pilot] | GLOW[glow] | BRASS | BODY4
     part = lambda name, box, faces: dict(drill.part(name, box, _paint(faces, P)), bone='tool')
@@ -265,7 +275,8 @@ def build(c, top, kind='A', pilot='dark', glow='lit', body_art='burner', body_h=
     t = top - body_h                                        # the body's bottom
     L = MUZZLE_DROP - body_h                                # the barrel's length: down to the muzzle
     side = lambda rows: {'north': rows, 'south': rows, 'east': rows, 'west': rows}
-    body = ((c - 2.5, t, -2.5), (c + 2.5, top, 2.5))
+    bw = 3.0 if (sleeve and body_art == 'pump' and kind == 'D') else 2.5
+    body = ((c - bw, t, -bw), (c + bw, top, bw))
     split = kind in ('B', 'D', 'E')                         # barrel at the front, the tank behind it
     if kind in ('A', 'C'):
         parts = [part('body', body, side(TANK_BODY) | {'up': one('E'), 'down': TANK_DOWN})]
@@ -276,9 +287,12 @@ def build(c, top, kind='A', pilot='dark', glow='lit', body_art='burner', body_h=
         parts = [part('body', body, side(JACKET) | {'up': one('k'), 'down': SPLIT_DOWN})]
     else:
         assert body_h == 4 or body_art == 'pump', 'only the pump is drawn for other heights'
+        tw = round(bw * 4)
         faces = (side(BODIES[body_art]) if body_art in BODIES else dict(zip(
-            ('north', 'east', 'south', 'west'), pump_faces(round(body_h * 2)) if body_art == 'pump' else BODY_FACES[body_art])))
-        parts = [part('body', body, faces | {'up': one('k'), 'down': BURNER_DOWN})]
+            ('north', 'east', 'south', 'west'), pump_faces(round(body_h * 2), tw) if body_art == 'pump' else BODY_FACES[body_art])))
+        up_f = (['h' * (tw - 1) + 'e'] + ['h' + 'k' * (tw - 2) + 'p'] * (tw - 2) + ['p' * (tw - 1) + 'z']) if tw > 10 else one('k')
+        dn_f = (['s' * tw] + ['s' + 'p' * (tw - 2) + 'z'] * (tw - 2) + ['z' * tw]) if tw > 10 else BURNER_DOWN
+        parts = [part('body', body, faces | {'up': up_f, 'down': dn_f})]
     if split:
         bz0, bz1 = -2.5, 0.5                                # (0.5 px of daylight to the tank)
         tf = tank_rows(round(tank_h * 2), round(tank_w * 2))

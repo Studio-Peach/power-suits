@@ -76,22 +76,30 @@ def pole(seg):
 
 
 def housing_side(w, h):
-    """Housing side (10 x 6 or 10 x 7 texels): lit top rim, bolted steel body, dark iron collar with symmetric redstone
-    vent slits, dark shadow foot."""
-    assert w == 10 and h in (6, 7), (w, h)
+    """Housing side (10 or 12 wide x 6 or 7 tall): lit top rim, bolted steel body, dark iron collar with symmetric
+    redstone vent slits, dark shadow foot."""
+    assert w in (10, 12) and h in (6, 7), (w, h)
     rows = [
-        list('AAAAAAAAAB'),
-        list('BgCCCCCCgD'),
-        list('BCCCCCCCCD'),
+        list('A' * (w - 1) + 'B'),
+        list('Bg' + 'C' * (w - 4) + 'gD'),
+        list('B' + 'C' * (w - 2) + 'D'),
     ]
     if h == 7:
-        rows.append(list('DDDDDDDDDE'))
+        rows.append(list('D' * (w - 1) + 'E'))
+    pad = ['k'] * ((w - 10) // 2)
     rows += [
-        list('dkkkkkkkkd'),
-        ['d', 'k', 'R2', 'k', 'R3', 'R3', 'k', 'R2', 'k', 'd'],
-        list('EEEEEEEEEE'),
+        list('d' + 'k' * (w - 2) + 'd'),
+        ['d', 'k'] + pad + ['R2', 'k', 'R3', 'R3', 'k', 'R2'] + pad + ['k', 'd'],
+        list('E' * w),
     ]
     return rows
+
+
+def housing_up(w, h):
+    """Housing top face: lit steel bevel rim round the 5 x 5 arm when sleeved (12 x 12), plain dark at 10 x 10."""
+    if w <= 10:
+        return [['D'] * w for _ in range(h)]
+    return [list('A' * (w - 1) + 'B')] + [list('B' + 'D' * (w - 2) + 'C') for _ in range(h - 2)] + [list('D' * w)]
 
 
 def housing_down(w, h):
@@ -228,12 +236,13 @@ def _build_splay(c, top, pal):
     return parts
 
 
-def _build_claw_variant(c, top, pal, hub_r=2.0, r0=2.0, r1=3.0, hub_bone='tool'):
+def _build_claw_variant(c, top, pal, hub_r=2.0, r0=2.0, r1=3.0, hub_bone='tool', sleeve=False):
     """4 cardinal (N/S/E/W) side-mounted prongs around a recessed emitter hub under a 3 px housing (7.0 px overall)."""
     t = top - 3.0
+    bw = 3.0 if sleeve else 2.5
     parts = [
-        _part('body', ((c - 2.5, t, -2.5), (c + 2.5, top, 2.5)),
-              {f: housing_side for f in ('north', 'south', 'east', 'west')} | {'up': solid('D'), 'down': housing_down}, pal),
+        _part('body', ((c - bw, t, -bw), (c + bw, top, bw)),
+              {f: housing_side for f in ('north', 'south', 'east', 'west')} | {'up': housing_up, 'down': housing_down}, pal),
         _part('hub', ((c - hub_r, t - 1.0, -hub_r), (c + hub_r, t, hub_r)),
               {f: lens_side for f in ('north', 'south', 'east', 'west')} | {'up': solid('E'), 'down': lens_down}, pal,
               bone=hub_bone),
@@ -264,11 +273,11 @@ def _build_claw_b1(c, top, pal):
     return _build_claw_variant(c, top, pal, hub_r=1.5, r0=1.75, r1=2.75)
 
 
-def _build_claw_b2(c, top, pal):
-    """B with outer steel rim removed from the center core (3 x 1 x 3) and prongs pulled in 0.5 px (flush with housing,
+def _build_claw_b2(c, top, pal, sleeve=False):
+    """B with outer steel rim removed from the center core (3 x 1 x 3) and prongs pulled in 0.5 px (flush with 5x5 arm,
     snug on core). The 3 x 1 x 3 hub sits on 'bit' (em_projector_poles) so core and prongs spin together cleanly with
-    zero clipping at any angle (hub corner r 2.12 < 2.5 housing)."""
-    return _build_claw_variant(c, top, pal, hub_r=1.5, r0=1.5, r1=2.5, hub_bone='bit')
+    zero clipping at any angle (hub corner r 2.12 < 2.5)."""
+    return _build_claw_variant(c, top, pal, hub_r=1.5, r0=1.5, r1=2.5, hub_bone='bit', sleeve=sleeve)
 
 
 def _build_corner(c, top, pal):
@@ -331,8 +340,10 @@ BUILDERS = {
 }
 
 
-def build(c, top, lamp='dark', kind='claw_b2', length=0.0, glow='dark'):
+def build(c, top, lamp='dark', kind='claw_b2', length=0.0, glow='dark', sleeve=False):
     """The EM projector's parts on an arm centred at x c whose socket is at y top: the housing (bone 'tool') and the
     poles (bone 'bit'). `lamp` and `length` are the tools' common signature."""
     assert kind in BUILDERS, kind
+    if kind == 'claw_b2':
+        return _build_claw_b2(c, top, _pal(glow), sleeve=sleeve)
     return BUILDERS[kind](c, top, _pal(glow))

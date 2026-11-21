@@ -216,13 +216,15 @@ def drum_up_painter(c, x0, z0, R):
 
 SPECS = {
     # (drum_W, drum_N, ch_in, ch_out, ch_span, barrel_W, muzzle_W, sight_W, sight_gap)
-    'wide':   (6.0, 4.0, 1.0, 2.5, 1.0, 3.5, 4.0, 0.5, 1.0),
+    # wide: drum_N=5.0 gives crisp 0.5 px (1-texel) octagonal corner bevels AND 0.5 px clearance around Steve's 4x4 arm
+    # inside the lifted sleeve (zero z-fighting).
+    'wide':   (6.0, 5.0, 1.0, 2.5, 1.0, 3.5, 4.0, 0.5, 1.0),
     'flush':  (5.0, 3.0, 1.0, 2.0, 1.0, 3.0, 3.5, 0.5, 1.0),
     'chunky': (6.0, 4.0, 1.0, 2.5, 1.0, 4.0, 4.5, 1.0, 1.0),
 }
 
 
-def build(c, top, lamp='dark', kind='wide', length=0.0):
+def build(c, top, lamp='dark', kind='wide', length=0.0, collar_w=5.0, sleeve=False):
     """The TNT launcher's parts on an arm centred at x c whose socket is at y top: the collar, barrel, muzzle ring and
     fork sight (bone 'tool'), and the octagonal drum (bone 'bit': turns 90 deg per shot)."""
     if kind == 'legacy':
@@ -234,9 +236,27 @@ def build(c, top, lamp='dark', kind='wide', length=0.0):
     part = lambda name, box, faces, bone='tool': dict(drill.part(name, box, _paint(faces)), bone=bone)
     parts = []
 
-    # 1. Socket collar (5 x 1 x 5, dark gunmetal slate, the old suit's tnt_base)
-    collar = {f: slate_side for f in ('north', 'south', 'east', 'west')} | {'up': solid('D'), 'down': solid('V')}
-    parts.append(part('housing', ((c - 2.5, top - 1, -2.5), (c + 2.5, top, 2.5)), collar))
+    # 1. Socket collar: when sleeved (6x6), an octagonal 6x1x6 collar matches the drum's exact outline (zero square
+    #    eaves overhanging the drum's beveled corners); otherwise a flush 5x1x5 collar.
+    if sleeve:
+        cy0, cy1 = top - 1, top
+        parts.append(part('housing_x', ((c - R, cy0, -r), (c + R, cy1, r)), {
+            'east': slate_side, 'west': slate_side, 'north': slate_side, 'south': slate_side,
+            'up': drum_up_painter(c, c - R, -r, R), 'down': solid('V'),
+        }))
+        parts.append(part('housing_f', ((c - r, cy0, -R), (c + r, cy1, -r)), {
+            'north': slate_side, 'south': solid('.'), 'east': slate_side, 'west': slate_side,
+            'up': drum_up_painter(c, c - r, -R, R), 'down': solid('V'),
+        }))
+        parts.append(part('housing_b', ((c - r, cy0, r), (c + r, cy1, R)), {
+            'south': slate_side, 'north': solid('.'), 'east': slate_side, 'west': slate_side,
+            'up': drum_up_painter(c, c - r, r, R), 'down': solid('V'),
+        }))
+    else:
+        cw = collar_w / 2
+        col_up = (lambda w, h: ['S' * w] + ['I' + 'D' * (w - 2) + 'U'] * (h - 2) + ['U' * w]) if collar_w > 5 else solid('D')
+        collar = {f: slate_side for f in ('north', 'south', 'east', 'west')} | {'up': col_up, 'down': solid('V')}
+        parts.append(part('housing', ((c - cw, top - 1, -cw), (c + cw, top, cw)), collar))
 
     # 2. Octagonal revolver drum (3 px tall, 3 flush non-overlapping cubes: drum_x + drum_f + drum_b, zero z-fighting!)
     y0, y1 = top - 4, top - 1

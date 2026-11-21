@@ -133,10 +133,13 @@ the end and `docs/guide.md` Notes).
 - The left hand is a socket (the big suit's playbook): the left arm's box ends where his hand does (raw 14), its
   underside the socket plate. A tool (`TOOL=drill`, `model/art/frame_drill_art.py`) hangs on a `tool` bone there, the
   spinning part on `tool_bit` under it.
-- **A tool's body takes the fist's place** (`DRILL_FIT=fist`): a 5 x 4 x 5 block flush with the arm (raw y 10-14),
-  so both arms match in width and length from behind, and the tool grows only from its bottom (the drill's bit). A body
-  0.5 px round the arm's end like the shoulder plate (`sleeve`, kept as a knob) made the tool arm look a different size.
-  The same slot fits every later tool.
+- **A tool's body takes the fist's place** (`DRILL_FIT=fist`, 2026-11-13): originally a 5 x 4 x 5 block flush with
+  the arm at raw y 10-14. **Revisited 2026-11-20 (`SOCKET_LIFT=3`, `TOOL_SLEEVE=1`):** at raw 14 the tool arm hung
+  past the knees/ankles (21-22.5 px vs 17 px legs). Lifting the socket +3 px to raw 17 (built 19, leaving a 1 px steel
+  cuff below the iron pauldron) and widening every tool's base to 6 x 6 (0.5 px proud all round, matching the pauldron
+  and bare shoulder plate) brings tool tips up near the empty fist (built y 8.5-12), encloses Steve's hand inside every
+  tool body (flamethrower pump 6 x 3 x 6 with 6 px barrel and 4 px tank; TNT octagonal 6 x 1 x 6 collar + 6 x 3 x 6
+  drum with `drum_N=5.0`), and reads as a heavy attachment clamped around the forearm instead of replacing it.
 - Simple blocks, elements painted (as the engine, shoulders, helmet): a 3D housing and an L-shaped guard cuff with a
   lamp (4dad9e4) didn't feel right; the user replaced them with one block. The drill's paint: a slate base band (lit
   top row, two bolts a face, a 2 x 1 status lamp at the front's outer end: highlight + lit, LAMP red idle / green

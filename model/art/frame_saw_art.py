@@ -260,7 +260,8 @@ def rancher_faces(w, band=True):
     down = [dogs] + [slot("o", "o")] * (w - 5) + [slot('g', 'g'), ''.join('x' if i % 2 and r == 'h' else r for i, r in enumerate(holes())),
                                                    'G' * (w - 1) + 'H', 'J' * w]
     for f in (back, outer, inner, front, down): assert all(len(r) == w for r in f) and len(f) == (w if f is down else 8), f
-    return {'south': back, 'east': outer, 'west': inner, 'north': front, 'up': ['J' * w] * w, 'down': down}
+    up = (['O' * (w - 1) + 'o'] + ['O' + 'J' * (w - 2) + 'o'] * (w - 2) + ['o' * w]) if w > 10 else ['J' * w] * w
+    return {'south': back, 'east': outer, 'west': inner, 'north': front, 'up': up, 'down': down}
 
 
 def look_pal(look, lamp):
@@ -268,11 +269,12 @@ def look_pal(look, lamp):
     return PAL | {k: _c(v) for k, v in LOOKS[look].items()} | {'x': _c('1a1d1f'), 'W': _c(W_), 'L': _c(L_), '.': '.'}
 
 
-def rancher_parts(c, t, look, lamp, part):
+def rancher_parts(c, t, look, lamp, part, sleeve=False):
     pal = look_pal(look, lamp)
     paint = lambda faces: (lambda f, w, h: [[pal[ch] for ch in r] for r in faces[f]])
     sq = lambda n, y0, y1: ((c - n / 2, y0, -n / 2), (c + n / 2, y1, n / 2))
-    if look != 'hoop': return [part('body', sq(5, t, t + 4), paint(rancher_faces(10)))]
+    bw = 6 if sleeve else 5
+    if look != 'hoop': return [part('body', sq(bw, t, t + 4), paint(rancher_faces(bw * 2)))]
     parts = [part('body', sq(4, t, t + 4), paint(rancher_faces(8, band=False)))]
     y0, y1 = t + 4 - 2, t + 4 - 1                        # the band's rows 2-3
     def band(f, w, h):
@@ -285,14 +287,14 @@ def rancher_parts(c, t, look, lamp, part):
     return parts
 
 
-def build(c, top, lamp='red', kind='B', art='B', fins='A', cowl='slate', barrel='copper', bar_shape='box', low='fins', look='rancher'):
+def build(c, top, lamp='red', kind='B', art='B', fins='A', cowl='slate', barrel='copper', bar_shape='box', low='fins', look='rancher', sleeve=False):
     """The chainsaw's parts on an arm centred at x c (right side) whose socket is at y top: the body (the drill's)
     and the bar under it (SAW, picked: B), its paint SAW_ART; bone 'tool' still, 'bit' the chain (it runs)."""
     sq = lambda n, y0, y1: ((c - n / 2, y0, -n / 2), (c + n / 2, y1, n / 2))
     t = top - 4                                         # the body's bottom: the bar hangs from it
     part = lambda name, box, faces, bone='tool': dict(drill.part(name, box, _paint(faces) if isinstance(faces, dict) else faces), bone=bone)
     parts = ([part('body', sq(5, t, top), saw_body(art, lamp, fins, cowl, barrel, low))] if look == 'old' else
-             rancher_parts(c, t, look, lamp, part))
+             rancher_parts(c, t, look, lamp, part, sleeve=sleeve))
     if BARS[bar_shape]:
         parts += toothed_parts(c, t, BARS[bar_shape], part)
         for p in parts: p.setdefault('rot', 0)

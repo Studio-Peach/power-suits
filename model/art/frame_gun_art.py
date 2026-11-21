@@ -140,10 +140,10 @@ def ring_cap(w, h):  # its top / bottom: the plate, an edge round it
 
 
 def build(c, top, lamp='red', kind='A', body='ref', look='old', barrels='4', handle='paint', top_art='rust', drum='dark',
-          body_h=4, barrel_l=5, accent='vents', heat='dark'):
+          body_h=4, barrel_l=5, accent='vents', heat='dark', sleeve=False):
     """The chaingun's parts on an arm centred at x c (right side) whose socket is at y top: the receiver (bone 'tool')
     and the barrels with their rings under it (bone 'bit': they spin). look: GUN_LOOK (below), 'old' the first drafts."""
-    if look != 'old': return doom_build(c, top, look, barrels, handle, top_art, drum, body_h, barrel_l, accent, heat)
+    if look != 'old': return doom_build(c, top, look, barrels, handle, top_art, drum, body_h, barrel_l, accent, heat, sleeve)
     metal = 'steel' if kind == 'C' else 'black'
     P = pal(metal, lamp)
     part = lambda name, box, faces, bone='tool', rot=0: dict(drill.part(name, box, _paint(faces, P), rot), bone=bone)
@@ -449,7 +449,7 @@ def collar_heated(w, h):
 
 
 def doom_build(c, top, look, barrels='4', handle='paint', top_art='rust', drum='dark', body_h=4, barrel_l=5,
-               accent='vents', heat='dark'):
+               accent='vents', heat='dark', sleeve=False):
     if look == 'doom4': barrels = '4'                       # (round 1's names)
     if look == 'doom3d': handle = '3d'
     P = DOOM | {k: _c(v) for k, v in DRUMS.get(drum, {}).items()} | _heat_pal(heat)
@@ -465,8 +465,16 @@ def doom_build(c, top, look, barrels='4', handle='paint', top_art='rust', drum='
     if accent in BASE_ACCENTS:
         assert body_h == 4, 'base accents are drawn for 4 px body'
         rows = BASE_ACCENTS[accent]
+        if sleeve:
+            rows = ['DBBBBBBBBBBD', 'BhCCCCCCCChD',
+                    'DCBBBCCCCCDE', 'EDElLLLLlEDE', 'DCBBBCCCCCDE', 'EDElLLLLlEDE', 'DCBBBCCCCCDE', 'EDDDDDDDDDDE']
         faces = dict(faces, north=rows, south=rows, east=rows, west=rows)
-    parts = [part('body', ((c - 2.5, t, -2.5), (c + 2.5, top, 2.5)), faces)]
+    if sleeve:
+        faces = dict(faces,
+                     up=['B' * 12] + ['B' + 'D' * 10 + 'B'] * 10 + ['B' * 12],
+                     down=['D' * 12] + ['D' + 'E' * 10 + 'D'] * 10 + ['D' * 12])
+    bw = 3.0 if sleeve else 2.5
+    parts = [part('body', ((c - bw, t, -bw), (c + bw, top, bw)), faces)]
     one = lambda ch: (lambda w, h: [ch * w] * h)
     heated = accent != 'muzzle' or heat == 'hot'
     if heated:

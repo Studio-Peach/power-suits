@@ -82,13 +82,24 @@ def tip(w, h): return ['E' * w] * h
 def cap(w, h): return ['D' * w] * h
 
 
-def build(c, top, lamp='dark', kind='A', core='dark', length=6.0):
+def _receiver(w=10):
+    if w == 10: return RECEIVER
+    s = ['D' + 'B' * (w - 2) + 'D', 'Bg' + 'C' * (w - 4) + 'gD', 'D' + 'C' * (w - 2) + 'E',
+         'C' * (w - 1) + 'D', 'E' + 'D' * (w - 2) + 'E', 'f' * (w - 2) + 'QD',
+         'Q' * (w - 2) + 'RR', 'E' + 'R' * (w - 2) + 'E']
+    up = ['B' * w] + ['B' + 'D' * (w - 2) + 'B'] * (w - 2) + ['B' * w]
+    dn = ['D' * w] + ['D' + 'E' * (w - 2) + 'D'] * (w - 2) + ['D' * w]
+    return dict(north=s, south=s, east=s, west=s, up=up, down=dn)
+
+
+def build(c, top, lamp='dark', kind='A', core='dark', length=6.0, sleeve=False):
     """The rail cannon's parts on an arm centred at x c whose socket is at y top: the receiver (bone 'tool') and the
     prongs / core under it (bone 'bit'). `lamp` is unused (the tools' common signature)."""
     P = pal(core)
     part = lambda name, box, faces, bone='tool': dict(drill.part(name, box, _paint(faces, P)), bone=bone)
     t = top - 4                                          # the receiver's bottom
-    parts = [part('body', ((c - 2.5, t, -2.5), (c + 2.5, top, 2.5)), RECEIVER)]
+    bw = 3.0 if sleeve else 2.5
+    parts = [part('body', ((c - bw, t, -bw), (c + bw, top, bw)), _receiver(round(bw * 4)))]
     y_tip = t - length
     nrows = round(length * 2)                            # the prongs' rows (texels)
     split = (t - y_tip) * 0.5                            # the prong narrows halfway down its outer edge (the forks' taper)
