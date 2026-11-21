@@ -140,10 +140,10 @@ def ring_cap(w, h):  # its top / bottom: the plate, an edge round it
 
 
 def build(c, top, lamp='red', kind='A', body='ref', look='old', barrels='4', handle='paint', top_art='rust', drum='dark',
-          body_h=4, barrel_l=5, accent='vents', heat='dark', sleeve=False):
+          body_h=4, barrel_l=5, accent='vents', heat='dark', sleeve=False, head_scale=False):
     """The chaingun's parts on an arm centred at x c (right side) whose socket is at y top: the receiver (bone 'tool')
     and the barrels with their rings under it (bone 'bit': they spin). look: GUN_LOOK (below), 'old' the first drafts."""
-    if look != 'old': return doom_build(c, top, look, barrels, handle, top_art, drum, body_h, barrel_l, accent, heat, sleeve)
+    if look != 'old': return doom_build(c, top, look, barrels, handle, top_art, drum, body_h, barrel_l, accent, heat, sleeve, head_scale)
     metal = 'steel' if kind == 'C' else 'black'
     P = pal(metal, lamp)
     part = lambda name, box, faces, bone='tool', rot=0: dict(drill.part(name, box, _paint(faces, P), rot), bone=bone)
@@ -449,7 +449,7 @@ def collar_heated(w, h):
 
 
 def doom_build(c, top, look, barrels='4', handle='paint', top_art='rust', drum='dark', body_h=4, barrel_l=5,
-               accent='vents', heat='dark', sleeve=False):
+               accent='vents', heat='dark', sleeve=False, head_scale=False):
     if look == 'doom4': barrels = '4'                       # (round 1's names)
     if look == 'doom3d': handle = '3d'
     P = DOOM | {k: _c(v) for k, v in DRUMS.get(drum, {}).items()} | _heat_pal(heat)
@@ -485,16 +485,20 @@ def doom_build(c, top, look, barrels='4', handle='paint', top_art='rust', drum='
     else:
         bfaces = {'north': one('K'), 'south': one('K'), 'east': one('K'), 'west': one('K'), 'up': one('D'), 'down': one('x')}
         mside, mtop, mbot, mcol, mcol_up = muzzle_side, muzzle_top, muzzle_bottom, collar, one('C')
-    at = {'4': ((-1, -1), (1, -1), (1, 1), (-1, 1)),        # centres (dx, dz), all 1 x 1 px, none turned
+    # Scaled head (for 6x6 drum): 4x 1.5x1.5 barrels at +-1.25 (span 4.0, 1.0 gap), 4.5 collar, 5.5 muzzle (0.25 inset).
+    bo, br = (1.25, 0.75) if (head_scale and barrels == '4') else (1.0, 0.5)
+    at = {'4': ((-bo, -bo), (bo, -bo), (bo, bo), (-bo, bo)),
           '3': ((-1.5, 0), (0, 0), (1.5, 0)), '3z': ((0, -1.5), (0, 0), (0, 1.5))}[barrels]
     for k, (dx, dz) in enumerate(at):
-        parts.append(part(f'barrel{k}', ((c + dx - 0.5, t - L, dz - 0.5), (c + dx + 0.5, t, dz + 0.5)), bfaces, 'bit'))
+        parts.append(part(f'barrel{k}', ((c + dx - br, t - L, dz - br), (c + dx + br, t, dz + br)), bfaces, 'bit'))
     y0 = t - L + 0.5                                         # the block's bottom
-    parts.append(part('muzzle', ((c - 2.25, y0, -2.25), (c + 2.25, y0 + 2, 2.25)),
+    mr = 2.75 if head_scale else 2.25
+    cr = 2.25 if head_scale else 1.75
+    parts.append(part('muzzle', ((c - mr, y0, -mr), (c + mr, y0 + 2, mr)),
                       {'north': mside, 'south': mside, 'east': mside, 'west': mside,
                        'up': mtop, 'down': mbot}, 'bit'))
     # the collar (a straight row of three reaches z / x +-2: it stands through the collar's sides, fine)
-    parts.append(part('muzzle_collar', ((c - 1.75, y0 + 2, -1.75), (c + 1.75, y0 + 2.5, 1.75)),
+    parts.append(part('muzzle_collar', ((c - cr, y0 + 2, -cr), (c + cr, y0 + 2.5, cr)),
                       {'north': mcol, 'south': mcol, 'east': mcol, 'west': mcol, 'up': mcol_up, 'down': one('E')}, 'bit'))
     if top_art == 'raised':   # the counter's housing, 4.5 x 3.5, 0.5 px proud of the back, centred on it
         disp = counter('60', True, 9)

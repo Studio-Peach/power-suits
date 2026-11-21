@@ -140,6 +140,10 @@ the end and `docs/guide.md` Notes).
   and bare shoulder plate) brings tool tips up near the empty fist (built y 8.5-12), encloses Steve's hand inside every
   tool body (flamethrower pump 6 x 3 x 6 with 6 px barrel and 4 px tank; TNT octagonal 6 x 1 x 6 collar + 6 x 3 x 6
   drum with `drum_N=5.0`), and reads as a heavy attachment clamped around the forearm instead of replacing it.
+  **Scaled heads (`HEAD_SCALE=1`, 2026-11-21):** drill 4.5->3->1.5, chainsaw 5x6 bar / 6 chain, chaingun 1.5 barrels /
+  4.5 collar / 5.5 muzzle, flamethrower 4x4 barrel / 4x1.5 tank, rail prongs +-3->+-2.5 x 4 deep, EM 4x4 spinning core
+  + flush r=2..3 prongs (2.5 coil / 2.0 shaft+tip). User: right move; revisit individual tool art later to make full use
+  of the wider 6x6 area.
 - Simple blocks, elements painted (as the engine, shoulders, helmet): a 3D housing and an L-shaped guard cuff with a
   lamp (4dad9e4) didn't feel right; the user replaced them with one block. The drill's paint: a slate base band (lit
   top row, two bolts a face, a 2 x 1 status lamp at the front's outer end: highlight + lit, LAMP red idle / green

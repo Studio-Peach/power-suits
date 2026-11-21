@@ -248,26 +248,42 @@ def pump_faces(n, w=10):
 MUZZLE_DROP = 9   # px from the socket to the muzzle
 
 
-def barrel_rows(n, holes='keep'):
-    holes_ = (['hexxlp', 'hexxlp'], ['hlxxep', 'hlxxlp'])  # (the 5 px barrel's two holes, lit a little differently)
+def barrel_rows(n, holes='keep', w=6):
+    pad = (w - 6) // 2
+    pl = 'he' + 'l' * (w - 4) + 'ep'
+    gl = 'he' + 'l' * (pad + 1) + 'g' + 'l' * pad + 'ep'
+    h0 = 'he' + 'l' * pad + 'xx' + 'l' * (pad + 1) + 'p'
+    h1a = 'hl' + 'l' * pad + 'xx' + 'l' * pad + 'ep'
+    h1b = 'hl' + 'l' * pad + 'xx' + 'l' * (pad + 1) + 'p'
+    holes_ = ([h0, h0], [h1a, h1b])  # (the barrel's holes, lit a little differently)
     mid = n - 3                                             # between the shadow row and the two soot rows
     if holes == 'even':
         # (round 7, user: three holes a row apart looked smushed; the body down to 2 px for room) as many holes as fit
         # the 5 px barrel's rhythm (a plain row first, two between holes), the spare plain rows spread between them
         k = max(1, (mid + 1) // 4)
         spare = mid - 2 * k - 1 - 2 * (k - 1)
-        rows = ['hellep'] + holes_[0]
+        rows = [pl] + holes_[0]
         for i in range(1, k):
             gap = 2 + spare // (k - 1) + (1 if i <= spare % (k - 1) else 0)
-            rows += (['helgep'] + ['hellep'] * (gap - 1)) + holes_[i % 2]
+            rows += ([gl] + [pl] * (gap - 1)) + holes_[i % 2]
     else:
-        rows = ['hellep'] + holes_[0] + ['helgep', 'hellep'] + holes_[1]
-    rows += ['hellep'] * (mid - len(rows))
+        rows = [pl] + holes_[0] + [gl, pl] + holes_[1]
+    rows += [pl] * (mid - len(rows))
     assert len(rows) == mid, (n, rows)
-    return ['sppppz'] + rows + ['pssssz', 'szzzsz']
+    return ['s' + 'p' * (w - 2) + 'z'] + rows + ['p' + 's' * (w - 2) + 'z', 's' + 'z' * (w - 3) + 'sz']
 
 
-def build(c, top, kind='A', pilot='dark', glow='lit', body_art='burner', body_h=4, holes='keep', tank_h=4, tank_w=3, sleeve=False):
+def muzzle_face(w):
+    if w == 6: return MUZZLE
+    pad = (w - 4) // 2
+    return (['z' + 's' * (w - 2) + 'z'] +
+            ['s' + 'p' * (w - 2) + 'z'] * pad +
+            ['s' + 'p' * pad + 'xx' + 'p' * pad + 'z'] * 2 +
+            ['s' + 'p' * (w - 2) + 'z'] * pad +
+            ['z' * w])
+
+
+def build(c, top, kind='A', pilot='dark', glow='lit', body_art='burner', body_h=4, holes='keep', tank_h=4, tank_w=3, sleeve=False, head_scale=False):
     """The flamethrower's parts on an arm centred at x c (right side) whose socket is at y top (bone 'tool': all still)."""
     P = PAL | PILOT[pilot] | GLOW[glow] | BRASS | BODY4
     part = lambda name, box, faces: dict(drill.part(name, box, _paint(faces, P)), bone='tool')
@@ -293,20 +309,25 @@ def build(c, top, kind='A', pilot='dark', glow='lit', body_art='burner', body_h=
         up_f = (['h' * (tw - 1) + 'e'] + ['h' + 'k' * (tw - 2) + 'p'] * (tw - 2) + ['p' * (tw - 1) + 'z']) if tw > 10 else one('k')
         dn_f = (['s' * tw] + ['s' + 'p' * (tw - 2) + 'z'] * (tw - 2) + ['z' * tw]) if tw > 10 else BURNER_DOWN
         parts = [part('body', body, faces | {'up': up_f, 'down': dn_f})]
+    bar_w = 4.0 if (head_scale and split) else 3.0
+    tw_ = 4.0 if (head_scale and split) else tank_w
     if split:
-        bz0, bz1 = -2.5, 0.5                                # (0.5 px of daylight to the tank)
-        tf = tank_rows(round(tank_h * 2), round(tank_w * 2))
+        bz0, bz1 = (-3.0, 1.0) if head_scale else (-2.5, 0.5)   # (0.5 px of daylight to the tank)
+        tz0, tz1 = (1.5, 3.0) if head_scale else (1.0, 2.5)
+        tf = tank_rows(round(tank_h * 2), round(tw_ * 2))
         ts = [r[-3:] for r in tf]
-        parts.append(part('tank', ((c - tank_w / 2, t - tank_h, 1), (c + tank_w / 2, t, 2.5)),
+        parts.append(part('tank', ((c - tw_ / 2, t - tank_h, tz0), (c + tw_ / 2, t, tz1)),
                           {'north': tf, 'south': tf, 'east': ts, 'west': ts, 'up': none, 'down': one('E')}))
-        rbox = ((c - 0.5, t - L - 1, 1.25), (c + 0.5, t - tank_h, 2.25))   # under the tank, down to a px under the muzzle
+        rbox = ((c - 0.5, t - L - 1, tz0 + 0.25), (c + 0.5, t - tank_h, tz0 + 1.25))   # under the tank
     else:
         # the barrel 0.5 px in from the body's front, the rod flush with its back, 0.5 px of daylight between them
         bz0, bz1 = -2, 1
+        tz0 = 1.0
         rbox = ((c - 0.5, t - L - 1, 1.5), (c + 0.5, t, 2.5))
-    art = barrel_rows(round(L * 2), holes)
+    art = barrel_rows(round(L * 2), holes, round(bar_w * 2))
     holes = NOZZLE if kind == 'E' else art if kind != 'C' else [r.replace('x', '.') for r in art]
-    parts.append(part('barrel', ((c - 1.5, t - L, bz0), (c + 1.5, t, bz1)), side(holes) | {'up': none, 'down': MUZZLE}))
+    parts.append(part('barrel', ((c - bar_w / 2, t - L, bz0), (c + bar_w / 2, t, bz1)),
+                      side(holes) | {'up': none, 'down': muzzle_face(round(bar_w * 2))}))
     if kind == 'C':   # the core the holes show: black, 2 px inside the 3 px barrel (0.5 behind each hole: a 1 px core let
         # the eye onto the walls' insides, steel), its ends short of the body and the muzzle
         zc = (bz0 + bz1) / 2
@@ -319,14 +340,12 @@ def build(c, top, kind='A', pilot='dark', glow='lit', body_art='burner', body_h=
     if kind == 'D':   # (round 3) the matchstick: the rod 1 px under the tank, the foot forward to the bore's back edge
         y0 = t - L - 1                                      # the foot's bottom, a px under the muzzle
         assert t - tank_h > y0 + 1, 'the tank reaches the matchstick'
-        parts.append(part('pilot', ((c - 0.5, y0, 1), (c + 0.5, t - tank_h, 2)),
+        pz0, pz1 = (1.5, 2.5) if head_scale else (1.0, 2.0)
+        parts.append(part('pilot', ((c - 0.5, y0, pz0), (c + 0.5, t - tank_h, pz1)),
                           side(one('k')) | {'west': lambda w, h: ['mk'] * h, 'up': none, 'down': one('k')}))
-        # the foot: z -0.5 (the bore's back edge, MUZZLE) to the rod, its front 2 texels the blue head; its top under
-        # the barrel (and the gap): not drawn; its back against the rod: not drawn
-        # (round 7, user: the bottom's colours didn't line up with the sides'. Now every face is lit 'v' on the front
-        # texel, 'u' behind it, slate behind that, so they meet at the edges)
+        # the foot: from the bore's back edge (-0.5) to the rod, its front 2 texels the blue head
         head = lambda w, h: ['k' * (w - 2) + 'uv'] * h      # east: back -> front
-        parts.append(part('pilot_foot', ((c - 0.5, y0, -0.5), (c + 0.5, y0 + 1, 1)),
+        parts.append(part('pilot_foot', ((c - 0.5, y0, -0.5), (c + 0.5, y0 + 1, pz0)),
                           {'north': one('v'), 'south': none, 'east': head, 'west': lambda w, h: [r[::-1] for r in head(w, h)],
                            # (a down face's rows run back -> front, checked from straight below: written front -> back
                            # the blue went to the back, the slate under the head)

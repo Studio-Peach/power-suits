@@ -132,12 +132,10 @@ def lens_down(w, h):
                 else:
                     g[j][i] = 'R2' if (i + j) % 2 == 0 else 'R1'
             else:
-                # 8x8 emitter hub: steel rim (d=0), dark bezel (d=1), redstone lens (d>=2) with bright core (d>=3)
+                # 8x8 emitter hub (dark bezel matching 6x6 claw_b2): dark bezel (d=0), 6x6 redstone lens (d>=1), bright core (d>=2)
                 if d == 0:
-                    g[j][i] = 'C'
-                elif d == 1:
                     g[j][i] = 'E'
-                elif d >= 3:
+                elif d >= 2:
                     g[j][i] = 'R3'
                 else:
                     g[j][i] = 'R2' if (i + j) % 2 == 0 else 'R1'
@@ -236,7 +234,7 @@ def _build_splay(c, top, pal):
     return parts
 
 
-def _build_claw_variant(c, top, pal, hub_r=2.0, r0=2.0, r1=3.0, hub_bone='tool', sleeve=False):
+def _build_claw_variant(c, top, pal, hub_r=2.0, r0=2.0, r1=3.0, hub_bone='tool', sleeve=False, w_coil=2.0, w_prong=1.5):
     """4 cardinal (N/S/E/W) side-mounted prongs around a recessed emitter hub under a 3 px housing (7.0 px overall)."""
     t = top - 3.0
     bw = 3.0 if sleeve else 2.5
@@ -249,9 +247,9 @@ def _build_claw_variant(c, top, pal, hub_r=2.0, r0=2.0, r1=3.0, hub_bone='tool',
     ]
     for name, axis, s in (('e', 'x', 1), ('w', 'x', -1), ('s', 'z', 1), ('n', 'z', -1)):
         segs = (
-            ('wind',  t - 1.5, t,       r0, r1, 2.0),   # copper coil collar
-            ('steel', t - 3.0, t - 1.5, r0, r1, 1.5),   # steel prong body
-            ('tip',   t - 4.0, t - 3.0, r0, r1, 1.5),   # glowing redstone tip aligned with prong body
+            ('wind',  t - 1.5, t,       r0, r1, w_coil),    # copper coil collar
+            ('steel', t - 3.0, t - 1.5, r0, r1, w_prong),   # steel prong body
+            ('tip',   t - 4.0, t - 3.0, r0, r1, w_prong),   # glowing redstone tip aligned with prong body
         )
         for seg, y0, y1, p0, p1, tw in segs:
             if axis == 'x':
@@ -273,10 +271,11 @@ def _build_claw_b1(c, top, pal):
     return _build_claw_variant(c, top, pal, hub_r=1.5, r0=1.75, r1=2.75)
 
 
-def _build_claw_b2(c, top, pal, sleeve=False):
-    """B with outer steel rim removed from the center core (3 x 1 x 3) and prongs pulled in 0.5 px (flush with 5x5 arm,
-    snug on core). The 3 x 1 x 3 hub sits on 'bit' (em_projector_poles) so core and prongs spin together cleanly with
-    zero clipping at any angle (hub corner r 2.12 < 2.5)."""
+def _build_claw_b2(c, top, pal, sleeve=False, head_scale=False):
+    """B2: dark-bezel spinning core + 4 cardinal prongs flush with the housing (3x3 core + r=1.5..2.5 at 5x5; scaled to
+    4x4 core + r=2.0..3.0 with 2.5/2.0 prongs flush with the 6x6 sleeve; corner r 2.83 < 3.0, zero clipping)."""
+    if head_scale:
+        return _build_claw_variant(c, top, pal, hub_r=2.0, r0=2.0, r1=3.0, hub_bone='bit', sleeve=sleeve, w_coil=2.5, w_prong=2.0)
     return _build_claw_variant(c, top, pal, hub_r=1.5, r0=1.5, r1=2.5, hub_bone='bit', sleeve=sleeve)
 
 
@@ -340,10 +339,10 @@ BUILDERS = {
 }
 
 
-def build(c, top, lamp='dark', kind='claw_b2', length=0.0, glow='dark', sleeve=False):
+def build(c, top, lamp='dark', kind='claw_b2', length=0.0, glow='dark', sleeve=False, head_scale=False):
     """The EM projector's parts on an arm centred at x c whose socket is at y top: the housing (bone 'tool') and the
     poles (bone 'bit'). `lamp` and `length` are the tools' common signature."""
     assert kind in BUILDERS, kind
     if kind == 'claw_b2':
-        return _build_claw_b2(c, top, _pal(glow), sleeve=sleeve)
+        return _build_claw_b2(c, top, _pal(glow), sleeve=sleeve, head_scale=head_scale)
     return BUILDERS[kind](c, top, _pal(glow))

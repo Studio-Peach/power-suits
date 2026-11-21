@@ -287,7 +287,7 @@ def rancher_parts(c, t, look, lamp, part, sleeve=False):
     return parts
 
 
-def build(c, top, lamp='red', kind='B', art='B', fins='A', cowl='slate', barrel='copper', bar_shape='box', low='fins', look='rancher', sleeve=False):
+def build(c, top, lamp='red', kind='B', art='B', fins='A', cowl='slate', barrel='copper', bar_shape='box', low='fins', look='rancher', sleeve=False, head_scale=False):
     """The chainsaw's parts on an arm centred at x c (right side) whose socket is at y top: the body (the drill's)
     and the bar under it (SAW, picked: B), its paint SAW_ART; bone 'tool' still, 'bit' the chain (it runs)."""
     sq = lambda n, y0, y1: ((c - n / 2, y0, -n / 2), (c + n / 2, y1, n / 2))
@@ -300,7 +300,8 @@ def build(c, top, lamp='red', kind='B', art='B', fins='A', cowl='slate', barrel=
         for p in parts: p.setdefault('rot', 0)
         return parts
     T = 2 if kind == 'C' else 1                         # the bar's thickness (x)
-    bar = ((c - T / 2, t - 6, -2), (c + T / 2, t, 2))
+    bd = 2.5 if head_scale else 2.0                     # bar half-depth (z): 5 px under 6x6 body (chain 6 px flush)
+    bar = ((c - T / 2, t - 6, -bd), (c + T / 2, t, bd))
     lid = lambda w, h: ['k' * w] * h
     if kind in ('A', 'C'):
         parts.append(part('bar', bar, {'north': edge, 'south': edge, 'east': bar_side, 'west': bar_side, 'up': lid,
@@ -312,7 +313,8 @@ def build(c, top, lamp='red', kind='B', art='B', fins='A', cowl='slate', barrel=
         # the chain: 0.5 thick in the bar's middle, 0.5 past it front, back and bottom, up to the body (not into it:
         # 0.5 past the bar is the body's front and back plane; its top, see-through, isn't drawn)
         teeth = lambda w, h: [tooth(j) * w for j in range(h)]
-        parts.append(part('chain', ((c - 0.25, t - 6.5, -2.5), (c + 0.25, t, 2.5)),
+        cd = bd + 0.5
+        parts.append(part('chain', ((c - 0.25, t - 6.5, -cd), (c + 0.25, t, cd)),
                           {'north': teeth, 'south': teeth, 'east': ring, 'west': ring, 'up': lambda w, h: ['.' * w] * h,
                            'down': teeth}, bone='bit'))
     for p in parts: p.setdefault('rot', 0)

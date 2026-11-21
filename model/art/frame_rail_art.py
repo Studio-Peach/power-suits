@@ -92,7 +92,7 @@ def _receiver(w=10):
     return dict(north=s, south=s, east=s, west=s, up=up, down=dn)
 
 
-def build(c, top, lamp='dark', kind='A', core='dark', length=6.0, sleeve=False):
+def build(c, top, lamp='dark', kind='A', core='dark', length=6.0, sleeve=False, head_scale=False):
     """The rail cannon's parts on an arm centred at x c whose socket is at y top: the receiver (bone 'tool') and the
     prongs / core under it (bone 'bit'). `lamp` is unused (the tools' common signature)."""
     P = pal(core)
@@ -103,13 +103,15 @@ def build(c, top, lamp='dark', kind='A', core='dark', length=6.0, sleeve=False):
     y_tip = t - length
     nrows = round(length * 2)                            # the prongs' rows (texels)
     split = (t - y_tip) * 0.5                            # the prong narrows halfway down its outer edge (the forks' taper)
-    if kind in ('A', 'B'):    # prongs left / right of the arm's axis (x), 3 deep (z)
+    pd = 2.0 if head_scale else 1.5                      # prong half-depth (z): 4 px under 6x6 receiver
+    xo_top, xo_bot = (3.0, 2.5) if head_scale else (2.5, 2.0)
+    if kind in ('A', 'B'):    # prongs left / right of the arm's axis (x)
         for s, name in ((1, 'out'), (-1, 'in')):
             def box(y0, y1, x_in, x_out):
                 xa, xb = sorted((c + s * x_in, c + s * x_out))
-                return ((xa, y0, -1.5), (xb, y1, 1.5))
+                return ((xa, y0, -pd), (xb, y1, pd))
             outer_f, inner_f = ('east', 'west') if s > 0 else ('west', 'east')
-            for seg, (y0, y1, xo) in enumerate(((t - split, t, 2.5), (y_tip, t - split, 2.0))):
+            for seg, (y0, y1, xo) in enumerate(((t - split, t, xo_top), (y_tip, t - split, xo_bot))):
                 faces = {'north': plain, 'south': plain, 'up': cap, 'down': tip if seg == 1 else cap,
                          outer_f: vents if seg == 0 else plain, inner_f: inner(seg, nrows)}
                 parts.append(part(f'prong_{name}_{seg}', box(y0, y1, 0.5, xo), faces, 'bit' if s > 0 else 'fork_in'))

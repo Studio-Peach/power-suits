@@ -277,6 +277,7 @@ for f in FACES:
 # and reads as a heavy attachment clamped around the forearm instead of replacing it).
 SOCKET_LIFT = float(os.environ.get('SOCKET_LIFT', '3'))
 TOOL_SLEEVE = os.environ.get('TOOL_SLEEVE', '1') == '1'
+HEAD_SCALE = os.environ.get('HEAD_SCALE', '1') == '1'
 SOCKET_Y = 14 + SOCKET_LIFT   # tool top (raw): 17 default (+3 lift, built 19); 14 was the old fist-level socket
 ARM_SOCKET_Y = SOCKET_Y       # arm sleeve meets the 6x6 tool top back-to-back (clean on all 7 tools, zero overlap)
 
@@ -931,14 +932,14 @@ def _tool_parts(TOOL):
     TOOL_PARTS = drill_art.build(6.25 + ARM_OUT, SOCKET_Y, os.environ.get('LAMP', 'dark'), os.environ.get('DRILL_ART', 'B'),
                                  os.environ.get('DRILL_BASE', 'open'),
                                  'sleeve_box' if TOOL_SLEEVE else os.environ.get('DRILL_FIT', 'fist'),
-                                 os.environ.get('DRILL_BAND', 'slate'))
+                                 os.environ.get('DRILL_BAND', 'slate'), head_scale=HEAD_SCALE)
   if TOOL == 'saw':
     import frame_saw_art as saw_art
     TOOL_PARTS = saw_art.build(6.25 + ARM_OUT, SOCKET_Y, os.environ.get('LAMP', 'dark'), os.environ.get('SAW', 'B'),
                                os.environ.get('SAW_ART', 'B'), os.environ.get('SAW_FINS', 'A'),
                                os.environ.get('SAW_COWL', 'slate'), os.environ.get('SAW_BARREL', 'copper'),
                                os.environ.get('SAW_BAR', 'box'), os.environ.get('SAW_LOW', 'fins'),
-                               os.environ.get('SAW_LOOK', 'rancher'), sleeve=TOOL_SLEEVE)
+                               os.environ.get('SAW_LOOK', 'rancher'), sleeve=TOOL_SLEEVE, head_scale=HEAD_SCALE)
 # The chaingun (frame_gun_art.py): picked 2026-11-14 (user: "this is the one"): GUN_LOOK=doom, GUN_BARRELS=4,
 # GUN_TOP=stack (the defaults); the other knobs are the rounds' drafts, kept to rebuild them.
   if TOOL == 'gun':
@@ -949,7 +950,7 @@ def _tool_parts(TOOL):
                                os.environ.get('GUN_COUNTER') or os.environ.get('GUN_TOP', 'stack'), os.environ.get('GUN_DRUM', 'dark'),
                                float(os.environ.get('GUN_BODY_H', '4')), float(os.environ.get('GUN_BARREL_L', '5')),
                                os.environ.get('GUN_ACCENT', 'vents'), os.environ.get('GUN_HEAT', 'dark'),
-                               sleeve=TOOL_SLEEVE)
+                               sleeve=TOOL_SLEEVE, head_scale=HEAD_SCALE)
 # The flamethrower (frame_flame_art.py): picked 2026-11-14 after eight rounds (user: "definitely 5 tall"): FLAME=D (the
 # barrel at the front, the red tank behind it, both under the body), FLAME_BODY=pump at FLAME_BODY_H=2, the 7 px barrel
 # FLAME_HOLES=even, FLAME_TANK_H=5 (the defaults); the other knobs are the rounds' drafts, kept to rebuild them.
@@ -964,14 +965,14 @@ def _tool_parts(TOOL):
                                    os.environ.get('FLAME_GLOW', 'lit'), os.environ.get('FLAME_BODY', 'pump'),
                                    float(os.environ.get('FLAME_BODY_H', _fl_bh)), os.environ.get('FLAME_HOLES', 'even'),
                                    float(os.environ.get('FLAME_TANK_H', _fl_th)), float(os.environ.get('FLAME_TANK_W', '3')),
-                                   sleeve=TOOL_SLEEVE)
+                                   sleeve=TOOL_SLEEVE, head_scale=HEAD_SCALE)
 # The rail cannon (frame_rail_art.py; 2026-11-15, the big suit's as the reference): RAIL=A gap | B core | C split,
 # RAIL_CORE=dark | lit, RAIL_L the prongs' length. A picked (user, 2026-11-15): in TOOL=all; B, C kept as knobs.
   if TOOL == 'rail':
     import frame_rail_art as rail_art
     TOOL_PARTS = rail_art.build(6.25 + ARM_OUT, SOCKET_Y, 'dark', os.environ.get('RAIL', 'A'),
                                 os.environ.get('RAIL_CORE', 'dark'), float(os.environ.get('RAIL_L', '6')),
-                                sleeve=TOOL_SLEEVE)
+                                sleeve=TOOL_SLEEVE, head_scale=HEAD_SCALE)
 # The TNT launcher (frame_tnt_art.py) and the EM projector (frame_em_art.py): the big suit's designs (user, 2026-11-15).
 # TNT knob (2026-11-20 rework, picked 'wide' with ch_out=2.5 so no red peeks over the barrel):
 # 'wide' (default) | 'flush' | 'chunky' | 'legacy'.
@@ -984,7 +985,7 @@ def _tool_parts(TOOL):
   if TOOL == 'em':
     import frame_em_art as em_art
     TOOL_PARTS = em_art.build(6.25 + ARM_OUT, SOCKET_Y, kind=os.environ.get('EM', 'claw_b2'),
-                              glow=os.environ.get('EM_GLOW', 'dark'), sleeve=TOOL_SLEEVE)
+                              glow=os.environ.get('EM_GLOW', 'dark'), sleeve=TOOL_SLEEVE, head_scale=HEAD_SCALE)
   return TOOL_PARTS
 TOOL_PARTS = {t: _tool_parts(t) for t in TOOLS}
 for t, parts_ in TOOL_PARTS.items():

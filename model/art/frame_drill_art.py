@@ -152,7 +152,7 @@ def fist(art, lamp, band='slate', w=10):
     return lambda f, w, h: _rows(faces.get(f, side), pal)
 
 
-def build(c, top, lamp='red', art='B', mode='open', fit='sleeve', band='slate'):
+def build(c, top, lamp='red', art='B', mode='open', fit='sleeve', band='slate', head_scale=False):
     """The drill's parts on an arm centred at x c (right side) whose end (the socket) is at y top: name, box (raw),
     faces, rot (deg about the arm's axis, y), bone ('tool': still; 'bit': spins). The body (base, motor) is still,
     the steps under it spin."""
@@ -164,9 +164,10 @@ def build(c, top, lamp='red', art='B', mode='open', fit='sleeve', band='slate'):
         t -= 2   # the bit hangs 2 px lower (under the 4 px body, not the sleeve's 2 below the socket)
     else:
         parts = [part('base', sq(6, t, t + 2), base(lamp, mode)), part('motor', sq(6, t - 2, t), motor(art, lamp))]
-    bit = [part('s2', sq(4, t - 4, t - 2), studded, -22.5),
-           part('s3', sq(3, t - 6, t - 4), lambda f, w, h: step(f, w, h, 'diamond'), 22.5),
-           part('tip', sq(1, t - 7, t - 6), lambda f, w, h: step(f, w, h, 'diamond'), 45)]
+    s2, s3, tip_w = (4.5, 3.0, 1.5) if head_scale else (4, 3, 1)
+    bit = [part('s2', sq(s2, t - 4, t - 2), studded, -22.5),
+           part('s3', sq(s3, t - 6, t - 4), lambda f, w, h: step(f, w, h, 'diamond'), 22.5),
+           part('tip', sq(tip_w, t - 7, t - 6), lambda f, w, h: step(f, w, h, 'diamond'), 45)]
     for p in parts: p['bone'] = 'tool'
     for p in bit: p['bone'] = 'bit'
     return parts + bit
