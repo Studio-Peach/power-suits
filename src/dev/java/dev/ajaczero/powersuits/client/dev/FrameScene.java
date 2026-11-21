@@ -51,7 +51,7 @@ final class FrameScene {
     private static Vec3 home;
     private static volatile PowerSuitEntity parked, reactor, tidal;
     private static final PowerSuitEntity[] rogues = new PowerSuitEntity[4];
-    /** The socket tools, in the order shot (ModItems), from tick TOOLS_AT, 16 ticks each. */
+    /** The socket tools, in the order shot (ModItems), from tick TOOLS_AT, 12 ticks each (450..533, before case 534). */
     private static final int TOOLS_AT = 450;
     private static final String[] TOOL_NAMES = {"chaingun", "em_projector", "drill", "chainsaw", "flamethrower", "tnt_launcher", "rail_cannon"};
     private static final List<Supplier<? extends Item>> TOOLS = List.of(
@@ -124,14 +124,14 @@ final class FrameScene {
             case 447 -> AutoPilot.onServer(mc, p -> DevUtil.setTime(p.level(), 6000));
             default -> {}
         }
-        // The tools in the left arm's socket, one after another (the last three stand in with the drill's body).
+        // The tools in the left arm's socket, one after another (12 ticks each -> 450..533, before tool_run_drill at 534).
         int k = s - TOOLS_AT;
-        if (k >= 0 && k < TOOLS.size() * 16) {
-            int i = k / 16;
-            switch (k % 16) {
+        if (k >= 0 && k < TOOLS.size() * 12) {
+            int i = k / 12;
+            switch (k % 12) {
                 case 0 -> { phase = "tool_" + TOOL_NAMES[i]; socket(mc, i); Vec3 at = mc.player.getVehicle().position();
                             camera(mc, at.add(1.9, 1.35, 1.7), at.add(0.45, 0.8, 0)); }
-                case 12 -> AutoPilot.shot(mc, "frame_tool_" + TOOL_NAMES[i]);
+                case 9 -> AutoPilot.shot(mc, "frame_tool_" + TOOL_NAMES[i]);
                 default -> {}
             }
         }
