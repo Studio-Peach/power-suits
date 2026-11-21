@@ -956,12 +956,16 @@ def _tool_parts(TOOL):
 # The TNT launcher (frame_tnt_art.py) and the EM projector (frame_em_art.py): the big suit's designs (user, 2026-11-15).
 # TNT knob (2026-11-20 rework, picked 'wide' with ch_out=2.5 so no red peeks over the barrel):
 # 'wide' (default) | 'flush' | 'chunky' | 'legacy'.
+# EM knob (2026-11-20 rework, picked 'claw_b2': 3 px housing + spinning 3x1x3 redstone core & four cardinal flush
+# copper-wound prongs, 7 px overall, spun by ToolRotors): 'claw_b2' (default) | 'claw_b1' | 'claw' | 'splay' |
+# 'corner' | 'step' | 'legacy'.
   if TOOL == 'tnt':
     import frame_tnt_art as tnt_art
     TOOL_PARTS = tnt_art.build(6.25 + ARM_OUT, SOCKET_Y, kind=os.environ.get('TNT', 'wide'))
   if TOOL == 'em':
     import frame_em_art as em_art
-    TOOL_PARTS = em_art.build(6.25 + ARM_OUT, SOCKET_Y)
+    TOOL_PARTS = em_art.build(6.25 + ARM_OUT, SOCKET_Y, kind=os.environ.get('EM', 'claw_b2'),
+                              glow=os.environ.get('EM_GLOW', 'dark'))
   return TOOL_PARTS
 TOOL_PARTS = {t: _tool_parts(t) for t in TOOLS}
 for t, parts_ in TOOL_PARTS.items():
@@ -1268,7 +1272,17 @@ for side in ('r', 'l'):
         for tp in parts_:
             g_ = bones[tp.get('bone', 'tool')]
             e = painted(g_, side, f"tl_{t}_{tp['name']}", f"tl_{t}_{tp['name']}{sfx}", *tp['box'])
-            if tp['rot']: e['rotation'], e['origin'] = [0, -tp['rot'] * -s, 0], list(g_['origin'])
+            if tp['rot']:
+                if isinstance(tp['rot'], (list, tuple)):
+                    rx, ry, rz = tp['rot']
+                    e['rotation'] = [rx, ry * s, rz * s]
+                else:
+                    e['rotation'] = [0, -tp['rot'] * -s, 0]
+                if tp.get('origin'):
+                    ox, oy, oz = tp['origin']
+                    e['origin'] = [ox * s, oy + FY, oz]
+                else:
+                    e['origin'] = list(g_['origin'])
             for f in FACES:   # a face all see-through isn't drawn (the drill's open base: its bottom lies in the socket's plane)
                 if all(c == '.' for r in tp['faces'][f] for c in r): e['faces'][f]['texture'] = None
     p = group(f'pilot_{nm}_arm', ((6 + ARM_OUT) * s, 26, 0), arm)
@@ -1291,19 +1305,43 @@ for side in ('r', 'l'):
 # Every cube in world space (its own rotation, then each bone's, all about z), as an xy quad plus a z range. Fails on
 # any overlap deeper than EPS between the frame and Steve, or between frame cubes of different limbs (touching is fine).
 EPS = 1e-3
-def world(e):
+def _rot3(pts, o, rot):
+    """Rotate 3D points around origin o by Euler angles [rx, ry, rz] (degrees, Blockbench ZYX order: X -> Y -> Z)."""
     import math
+    rx, ry, rz = rot
+    if not (rx or ry or rz): return pts
+    out = []
+    cx, sx = (math.cos(math.radians(rx)), math.sin(math.radians(rx))) if rx else (1.0, 0.0)
+    cy, sy = (math.cos(math.radians(ry)), math.sin(math.radians(ry))) if ry else (1.0, 0.0)
+    cz, sz = (math.cos(math.radians(rz)), math.sin(math.radians(rz))) if rz else (1.0, 0.0)
+    ox, oy, oz = o
+    for x, y, z in pts:
+        x, y, z = x - ox, y - oy, z - oz
+        if rx: y, z = y * cx - z * sx, y * sx + z * cx
+        if ry: x, z = x * cy + z * sy, -x * sy + z * cy
+        if rz: x, y = x * cz - y * sz, x * sz + y * cz
+        out.append((x + ox, y + oy, z + oz))
+    return out
+
+def world(e):
     (x0, y0, z0), (x1, y1, z1) = e['from'], e['to']
+    rot = e.get('rotation', [0, 0, 0])
+    if rot[0] or rot[1]:
+        corners = [(x, y, z) for x in (x0, x1) for y in (y0, y1) for z in (z0, z1)]
+        wpts = to_world(e, corners)
+        xs = [p[0] for p in wpts]; ys = [p[1] for p in wpts]; zs = [p[2] for p in wpts]
+        return [(min(xs), min(ys)), (max(xs), min(ys)), (max(xs), max(ys)), (min(xs), max(ys))], (min(zs), max(zs))
+    import math
     pts = [(x0, y0), (x1, y0), (x1, y1), (x0, y1)]
-    def rot(pts, origin, deg):
+    def rot2(pts, origin, deg):
         if not deg: return pts
         a = math.radians(deg); c, sn = math.cos(a), math.sin(a)
         return [(origin[0] + (x - origin[0]) * c - (y - origin[1]) * sn, origin[1] + (x - origin[0]) * sn + (y - origin[1]) * c)
                 for x, y in pts]
-    pts = rot(pts, e['origin'], e.get('rotation', [0, 0, 0])[2])
+    pts = rot2(pts, e['origin'], rot[2])
     g = e['_g']
     while g is not None:
-        pts = rot(pts, g['origin'], g['rotation'][2])
+        pts = rot2(pts, g['origin'], g['rotation'][2])
         g = g['_parent']
     return pts, (z0, z1)
 
@@ -1350,16 +1388,11 @@ def encloses(sh, st, W, margin=0.25):
     return (not xs or (min(xs) >= x0 + margin and max(xs) <= x1 - margin)) and za <= zc - margin and zb >= zd + margin
 
 def to_world(e, pts):
-    """3D points of cube e (its coordinates) in world space: its own turn, then its bones' (all about z)."""
-    import math
-    def rot(P, o, deg):
-        if not deg: return P
-        a = math.radians(deg); c, sn = math.cos(a), math.sin(a)
-        return [(o[0] + (x - o[0]) * c - (y - o[1]) * sn, o[1] + (x - o[0]) * sn + (y - o[1]) * c, z) for x, y, z in P]
-    pts = rot(pts, e['origin'], e.get('rotation', [0, 0, 0])[2])
+    """3D points of cube e (its coordinates) in world space: its own turn, then its bones'."""
+    pts = _rot3(pts, e['origin'], e.get('rotation', [0, 0, 0]))
     g = e['_g']
     while g is not None:
-        pts = rot(pts, g['origin'], g['rotation'][2])
+        pts = _rot3(pts, g['origin'], g['rotation'])
         g = g['_parent']
     return pts
 

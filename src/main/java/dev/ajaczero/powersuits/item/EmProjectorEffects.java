@@ -30,16 +30,38 @@ final class EmProjectorEffects implements ToolEffects {
      *  on the cockpit glass, so none are spawned that close. The sparks are tiny and short-lived: they may come closer. */
     private static final double KEEP_CLEAR = 1.3, KEEP_CLEAR_SPARKS = 0.9;
 
+    /** Max pole spin speed in degrees per tick while holding a target (~2.3 turns/s, matching the twisting beam). */
+    private static final float MAX_SPIN_DEG = 42F;
+
     private float coreGlow, arcGlow;
+    private float spin, poleAngle, poleAngleO;
 
     @Override
     public void tick(PowerSuitEntity suit) {
         boolean powered = suit.isPowered();
         boolean holding = powered && suit.socket().getBeamTarget() != null;
-        float coreTarget = !powered ? 0F : holding ? 1F : suit.socket().isActive() ? 0.6F : 0.25F;
+        boolean active = powered && suit.socket().isActive();
+        float coreTarget = !powered ? 0F : holding ? 1F : active ? 0.6F : 0.25F;
         this.coreGlow = ToolEffects.ease(this.coreGlow, coreTarget, 0.35F, 0.1F);
         this.arcGlow = ToolEffects.ease(this.arcGlow, holding ? 1F : 0F, 0.5F, 0.15F);
+        // Spin the splayed prongs while active (faster once the beam locks onto a target), coasting smoothly down after.
+        float spinTarget = holding ? 1F : active ? 0.5F : 0F;
+        this.spin = ToolEffects.ease(this.spin, spinTarget, 0.25F, 0.08F);
+        if (spinTarget == 0F && this.spin < 0.005F) {
+            this.spin = 0F;
+        }
+        this.poleAngleO = this.poleAngle;
+        this.poleAngle += MAX_SPIN_DEG * this.spin;
+        if (this.poleAngle > 3600F) { // keep it small; a multiple of 90 so the 4-prong rotor doesn't jump
+            this.poleAngle -= 3600F;
+            this.poleAngleO -= 3600F;
+        }
         this.beam(suit);
+    }
+
+    @Override
+    public float rotorAngle(float partial) {
+        return Mth.lerp(partial, this.poleAngleO, this.poleAngle);
     }
 
     @Override

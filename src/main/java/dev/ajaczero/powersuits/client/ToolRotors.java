@@ -6,7 +6,8 @@ import net.minecraft.util.Mth;
 /**
  * The socket tools' turning parts, driven by an angle each client accumulates (the tool's ToolEffects.rotorAngle), not by
  * an animation: the chaingun's barrel cluster spins with the synced spin, the TNT launcher's drum turns a quarter turn
- * after each shot. A part whose speed changes, or that steps, is easier to drive from an angle. Shared by the suit
+ * after each shot, and the EM projector's core + four prongs spin while projecting its field. A part whose speed
+ * changes, or that steps, is easier to drive from an angle. Shared by the suit
  * (PowerSuitRenderer) and the cockpit viewmodel (CockpitViewRenderer). No animation keys these bones, and GeckoLib 5
  * starts every bone from its rest pose each frame, so the angle is simply set. Only one tool is installed at a time,
  * so both share the angle.
@@ -20,6 +21,7 @@ final class ToolRotors {
     static void pose(BoneSnapshots bones, float angle, String suffix) {
         bones.ifPresent("chaingun_barrels" + suffix, barrels -> barrels.setRotY(angle * Mth.DEG_TO_RAD));
         bones.ifPresent("tnt_launcher_drum" + suffix, drum -> drum.setRotY(angle * Mth.DEG_TO_RAD));
+        bones.ifPresent("em_projector_poles" + suffix, poles -> poles.setRotY(angle * Mth.DEG_TO_RAD));
     }
 
     /**
