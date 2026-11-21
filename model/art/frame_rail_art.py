@@ -22,9 +22,10 @@ Coordinates raw, right arm (+x; the left mirrors), centred on the arm's axis (x 
 import frame_drill_art as drill
 
 _c = drill._c
-# steel (frame_iron_art.PAL's ramp), copper (frame_heart_art), the core's reserved glass colours (the big suit's E / F /
-# H: dark idle, lit for review; export-frame.py's TOOL_GLOW lights the dark ones), a vent's black
+# steel (frame_iron_art.PAL's ramp), slate (dark gunmetal chassis), copper (frame_heart_art), the core's reserved glass
+# colours (dark idle, lit for review; export-frame.py's TOOL_GLOW lights the dark ones), vent black
 P_BASE = {k: _c(v) for k, v in {'A': '9fa4a9', 'B': '757c85', 'C': '58606a', 'D': '3c424c', 'E': '22262e', 'g': 'cdcfcf',
+                                'n': '4c5559', 'm': '3b4246', 'k': '2f3437', 'd': '1f2226',
                                 'f': 'e09868', 'Q': 'c07440', 'R': '804426', 'x': '0b0c0d'}.items()} | {'.': '.'}
 # The core's light comes in three bands along the prongs (ToolLight RAIL_FLOW_0..2: the energy runs along it toward the
 # tips, as on the big suit's rings), each its own pair of reserved colours a shade apart (K: the body, L: the hot row), so
@@ -92,10 +93,385 @@ def _receiver(w=10):
     return dict(north=s, south=s, east=s, west=s, up=up, down=dn)
 
 
-def build(c, top, lamp='dark', kind='A', core='dark', length=6.0, sleeve=False, head_scale=False):
+# ---------------- 2026-11-21 rework drafts for the 6x6 sleeved footprint ----------------
+# All three keep the see-through glowing gap and 3-band flowing charge light (K0..2 / L0..2 -> RAIL_FLOW_0..2) plus
+# the moving fork bones ('bit' = rail_fork_out, 'fork_in' = rail_fork_in) so the forks spread and shake while charging.
+def _solid(ch):
+    return lambda w, h: [[ch] * w for _ in range(h)]
+
+
+def _bevel_up(w, h, rim='B', mid='m', core='k'):
+    """Top face of a 6x6 sleeved receiver: lit bevel catching light round the 5x5 arm."""
+    return [[rim if i in (0, w - 1) or j in (0, h - 1) else mid if i in (1, w - 2) or j in (1, h - 2) else core
+             for i in range(w)] for j in range(h)]
+
+
+def _bevel_down(w, h, rim='D', mid='k', core='d'):
+    return [[rim if i in (0, w - 1) or j in (0, h - 1) else mid if i in (1, w - 2) or j in (1, h - 2) else core
+             for i in range(w)] for j in range(h)]
+
+
+def _plate_box(lit='A', hi='B', body='C', sh='D', dk='E'):
+    """Clean shaded armor plate face of any size."""
+    def f(w, h):
+        if h == 1:
+            return [[lit] * max(1, w - 1) + ([hi] if w > 1 else [])]
+        if h == 2:
+            return [[lit] * max(1, w - 1) + ([hi] if w > 1 else []),
+                    [body] * max(1, w - 1) + ([sh] if w > 1 else [])]
+        rows = [[lit] * (w - 1) + [hi]]
+        for _ in range(h - 2):
+            rows.append([hi] + [body] * max(0, w - 2) + ([sh] if w > 1 else []))
+        rows.append([sh] * max(1, w - 1) + ([dk] if w > 1 else []))
+        return rows
+    return f
+
+
+def _coil_face(w, h):
+    """Wound copper induction coil: alternating bright/mid/dark horizontal turns with dark outer framing."""
+    rows = []
+    for j in range(h):
+        if h >= 3 and j == h - 1:
+            rows.append(['R'] * w)
+        elif j % 2 == 0:
+            rows.append(['f'] * max(1, w - 1) + (['Q'] if w > 1 else []))
+        else:
+            rows.append(['Q'] * max(1, w - 1) + (['R'] if w > 1 else []))
+    return rows
+
+
+def _breech_bore(w, h):
+    """Glowing blue circular/octagonal accelerator breech facing straight down the rail gap."""
+    g = [['d'] * w for _ in range(h)]
+    for j in range(h):
+        for i in range(w):
+            d = min(i, j, w - 1 - i, h - 1 - j)
+            if d == 0:
+                g[j][i] = 'D' if (i in (0, w - 1) and j in (0, h - 1)) else 'm'
+            elif d == 1 and w >= 5:
+                g[j][i] = 'K0'
+            else:
+                g[j][i] = 'L0' if (w <= 4 or d >= 2) else 'K0'
+    return g
+
+
+def _inner_band(y0, y1, rail_top, rail_bot):
+    """Inner rail face glowing in 3 bands (K0/L0 -> K1/L1 -> K2/L2) mapped by world y along the rail length."""
+    span = rail_top - rail_bot
+    def f(w, h):
+        rows = []
+        for j in range(h):
+            # row 0 is at y1 (top of this box), row h-1 is at y0 (bottom)
+            frac = ((rail_top - y1) + (j + 0.5) / 2.0) / span
+            n = min(2, max(0, int(frac * 3)))
+            # thin hot leading crest at top of each band, bright core down the middle columns
+            band_pos = (frac * 3) - n
+            hot = band_pos < 0.28
+            row = []
+            for i in range(w):
+                edge = (w >= 4 and i in (0, w - 1))
+                if edge:
+                    row.append('d')
+                else:
+                    row.append(('L' if (hot or (w >= 5 and 2 <= i < w - 2 and band_pos < 0.55)) else 'K') + str(n))
+            rows.append(row)
+        return rows
+    return f
+
+
+def _build_gauss(c, top, P, length=6.0):
+    """Draft A (DOOM 2016 Gauss Cannon): two-tone dark-slate chassis + bright-steel armor shrouds, glowing blue
+    capacitor core windows on front/back, recessed copper induction pockets on the sides, a central glowing breech
+    nozzle at the root of the gap, and 3-step sculpted twin rails with vents visible in cockpit AND third-person."""
+    part = lambda name, box, faces, bone='tool': dict(drill.part(name, box, _paint(faces, P)), bone=bone)
+    t = top - 4.0
+    parts = []
+
+    # 1. 6x4x6 armored receiver (12 x 8 texels per side)
+    # Front (north, cockpit top!) & back (south, third-person!): dark slate frame, bolted steel cheeks flanking a
+    # recessed glowing blue capacitor window (K0/L0), dark groove, copper power bus at the lower corners.
+    fb = [
+        list('nBBBBBBBBBBn'),
+        list('BgCCdkkdCCgD'),
+        list('BCCCd') + ['L0', 'L0'] + list('dCCCD'),
+        list('BCCCd') + ['K0', 'K0'] + list('dCCCD'),
+        list('dDDDdkkdDDDd'),
+        list('dffQdkkdQffd'),
+        list('dQQRmmmmRQQd'),
+        list('dEEdkkkkdEEd'),
+    ]
+    # Outer/inner sides (east/west): dark slate top collar, bright steel panel with recessed horizontal copper
+    # induction cylinder pocket in the middle, dark vent slit below.
+    sd = [
+        list('nBBBBBBBBBBn'),
+        list('BgCCCCCCCCgD'),
+        list('BCddffffddCD'),
+        list('BCdQffffQdCD'),
+        list('BCdRRRRRRdCD'),
+        list('dDDDDDDDDDDd'),
+        list('dkxxkxxkxxkd'),
+        list('dEEEEEEEEEE' + 'd'),
+    ]
+    parts.append(part('body', ((c - 3.0, t, -3.0), (c + 3.0, top, 3.0)), {
+        'north': fb, 'south': fb, 'east': sd, 'west': sd,
+        'up': _bevel_up, 'down': _bevel_down,
+    }))
+
+    # 2. Central accelerator breech nozzle tucked between the fork roots (1.5 x 1.5 x 2.5): glowing blue bore facing
+    #    straight down the open channel (like the Gauss Cannon's circular plasma emitter).
+    parts.append(part('breech', ((c - 0.75, t - 1.5, -1.25), (c + 0.75, t, 1.25)), {
+        'north': _plate_box('m', 'k', 'k', 'd', 'd'),
+        'south': _plate_box('m', 'k', 'k', 'd', 'd'),
+        'east': _solid('d'), 'west': _solid('d'),
+        'up': _solid('.'), 'down': _breech_bore,
+    }))
+
+    # 3. Twin 3-step sculpted forks (1.5 px glowing gap x = c +- 0.75, total length 6.0 px -> y_tip = t - 6.0)
+    y_tip = t - length
+    y_a = t - 1.5         # step 0: heavy breech clamp + copper induction collar (1.5 px tall)
+    y_b = t - 4.5         # step 1: vented armored magnetic rail body (3.0 px tall)
+    # step 2: y_tip..y_b  # tapered muzzle accelerator tip (1.5 px tall)
+
+    def rail_fb_vented(w, h):
+        """Front/back face of the mid rail (visible in cockpit & third-person!): bright steel outer rail, dark inner
+        lip beside the beam, two crisp dark cooling slots."""
+        rows = [['A'] * (w - 1) + ['B']]
+        for j in range(1, h - 1):
+            if j in (1, 2, 4) and w >= 4:
+                rows.append(['B'] + ['x'] * (w - 2) + ['D'])
+            else:
+                rows.append(['B'] + ['C'] * (w - 2) + ['D'])
+        rows.append(['D'] * (w - 1) + ['E'])
+        return rows
+
+    def rail_outer_mid(w, h):
+        """Outer side of mid rail: steel frame with glowing blue accelerator window (K1/L1) between dark vents."""
+        rows = [['A'] * (w - 1) + ['B']]
+        for j in range(1, h - 1):
+            if j == 1:
+                rows.append(['B', 'd'] + ['x'] * (w - 4) + ['d', 'D'])
+            elif j == 2:
+                rows.append(['B', 'd'] + ['L1'] * (w - 4) + ['d', 'D'])
+            elif j == 3:
+                rows.append(['B', 'd'] + ['K1'] * (w - 4) + ['d', 'D'])
+            elif j == 4:
+                rows.append(['B', 'd'] + ['x'] * (w - 4) + ['d', 'D'])
+            else:
+                rows.append(['B'] + ['C'] * (w - 2) + ['D'])
+        rows.append(['D'] * (w - 1) + ['E'])
+        return rows
+
+    def rail_tip_outer(w, h):
+        """Dark gunmetal accelerator muzzle tip with bright chamfer and glowing tip notch (K2)."""
+        rows = [['n'] * (w - 1) + ['m']]
+        for j in range(1, h - 1):
+            rows.append(['m', 'k'] + ['K2'] * max(1, w - 4) + ['k', 'd'] if w >= 5 else ['m'] + ['k'] * (w - 2) + ['d'])
+        rows.append(['d'] * w)
+        return rows
+
+    for s, name in ((1, 'out'), (-1, 'in')):
+        bone = 'bit' if s > 0 else 'fork_in'
+        outer_f, inner_f = ('east', 'west') if s > 0 else ('west', 'east')
+
+        def bx(y0, y1, x_in, x_out, hd):
+            xa, xb = sorted((c + s * x_in, c + s * x_out))
+            return ((xa, y0, -hd), (xb, y1, hd))
+
+        # Step 0: heavy copper-wound breech clamp (x +-0.75..2.75 = 2.0 wide, z +-2.5 = 5.0 deep)
+        parts.append(part(f'prong_{name}_0', bx(y_a, t, 0.75, 2.75, 2.5), {
+            'north': _coil_face, 'south': _coil_face,
+            outer_f: _coil_face, inner_f: _inner_band(y_a, t, t, y_tip),
+            'up': _solid('.'), 'down': _solid('d'),
+        }, bone))
+        # Step 1: vented armored magnetic rail (x +-0.75..2.75 = 2.0 wide, z +-2.0 = 4.0 deep)
+        parts.append(part(f'prong_{name}_1', bx(y_b, y_a, 0.75, 2.75, 2.0), {
+            'north': rail_fb_vented, 'south': rail_fb_vented,
+            outer_f: rail_outer_mid, inner_f: _inner_band(y_b, y_a, t, y_tip),
+            'up': _solid('.'), 'down': _solid('D'),
+        }, bone))
+        # Step 2: tapered dark-gunmetal accelerator tip (x +-0.75..2.25 = 1.5 wide, z +-1.5 = 3.0 deep)
+        parts.append(part(f'prong_{name}_2', bx(y_tip, y_b, 0.75, 2.25, 1.5), {
+            'north': _plate_box('n', 'm', 'k', 'd', 'E'), 'south': _plate_box('n', 'm', 'k', 'd', 'E'),
+            outer_f: rail_tip_outer, inner_f: _inner_band(y_tip, y_b, t, y_tip),
+            'up': _solid('.'), 'down': _solid('d'),
+        }, bone))
+    return parts
+
+
+def _build_coil(c, top, P, length=6.0):
+    """Draft B (Industrial Ribbed Coil-Railgun): stepped dark-slate capacitor housing with 3-tier vertical charge
+    gauge cells (K0->K1->K2), a recessed copper busbar neck, and twin rails hugged by three proud 3D induction coil
+    ribs along their length for an unmistakable ribbed silhouette from every angle."""
+    part = lambda name, box, faces, bone='tool': dict(drill.part(name, box, _paint(faces, P)), bone=bone)
+    t = top - 4.0
+    parts = []
+
+    # 1. Upper 6x3x6 dark-slate armored capacitor sleeve (top-3..top, 12 x 6 texels)
+    #    Vertical 3-stage charge cells down the center of front/back/outer so energy climbs even on the housing!
+    cap_fb = [
+        list('nBBBBBBBBBBn'),
+        list('Bmkkd') + ['L0', 'L0'] + list('dkkmD'),
+        list('Bmkkd') + ['K1', 'K1'] + list('dkkmD'),
+        list('Bmkkd') + ['L2', 'L2'] + list('dkkmD'),
+        list('dmmmddddddmm'[:-1] + 'd'),
+        list('dEEEEEEEEEE' + 'd'),
+    ]
+    cap_fb[4] = list('dmmmddddmmmd')
+    cap_sd = [
+        list('nBBBBBBBBBBn'),
+        list('BgCCdkkdCCgD'),
+        list('BCCCdkkdCCCD'),
+        list('BCCkd') + ['K0', 'K1'] + list('dkCCD'),
+        list('dDDDdkkdDDDd'),
+        list('dEEEEEEEEEE' + 'd'),
+    ]
+    parts.append(part('body', ((c - 3.0, top - 3.0, -3.0), (c + 3.0, top, 3.0)), {
+        'north': cap_fb, 'south': cap_fb, 'east': cap_sd, 'west': cap_sd,
+        'up': _bevel_up, 'down': _bevel_down,
+    }))
+    # Recessed 5x1x5 copper busbar neck under the capacitor sleeve (top-4..top-3) — gives real waist silhouette!
+    parts.append(part('neck', ((c - 2.5, t, -2.5), (c + 2.5, top - 3.0, 2.5)), {
+        'north': _coil_face, 'south': _coil_face, 'east': _coil_face, 'west': _coil_face,
+        'up': _solid('.'), 'down': _solid('d'),
+    }))
+    # Central glowing emitter stud between the rail roots
+    parts.append(part('breech', ((c - 0.75, t - 1.0, -1.0), (c + 0.75, t, 1.0)), {
+        'north': _solid('k'), 'south': _solid('k'), 'east': _solid('d'), 'west': _solid('d'),
+        'up': _solid('.'), 'down': _breech_bore,
+    }))
+
+    # 2. Twin slim steel rails (x +-0.75..2.25, z +-1.5 = 3.0 deep, length 6.0) + 3 proud 3D induction coil ribs!
+    y_tip = t - length
+    for s, name in ((1, 'out'), (-1, 'in')):
+        bone = 'bit' if s > 0 else 'fork_in'
+        outer_f, inner_f = ('east', 'west') if s > 0 else ('west', 'east')
+
+        def bx(y0, y1, x_in, x_out, hd):
+            xa, xb = sorted((c + s * x_in, c + s * x_out))
+            return ((xa, y0, -hd), (xb, y1, hd))
+
+        # Main rail core bar
+        parts.append(part(f'prong_{name}_bar', bx(y_tip, t, 0.75, 2.25, 1.5), {
+            'north': _plate_box('A', 'B', 'C', 'D', 'E'), 'south': _plate_box('A', 'B', 'C', 'D', 'E'),
+            outer_f: _plate_box('n', 'm', 'k', 'd', 'E'), inner_f: _inner_band(y_tip, t, t, y_tip),
+            'up': _solid('.'), 'down': _solid('d'),
+        }, bone))
+        # 3 proud 3D induction coil collars stepping down in size toward the tip (tapered ribbed silhouette!)
+        ribs = (
+            (0, t - 1.5, t - 0.5, 3.0, 2.25, _coil_face),                            # heavy copper coil 1
+            (1, t - 3.5, t - 2.5, 2.5, 2.0,  _coil_face),                            # copper coil 2
+            (2, t - 5.5, t - 4.5, 2.5, 1.75, _plate_box('n', 'm', 'k', 'd', 'E')),   # dark gunmetal muzzle clamp
+        )
+        for idx, ry0, ry1, xo, hd, face_fn in ribs:
+            # Wraps outer, front and back of the rail (stops at x_in = 1.0 so it never blocks the glowing inner track!)
+            parts.append(part(f'prong_{name}_rib{idx}', bx(ry0, ry1, 1.0, xo, hd), {
+                'north': face_fn, 'south': face_fn, outer_f: face_fn, inner_f: _solid('.'),
+                'up': _solid('A' if idx < 2 else 'n'), 'down': _solid('D'),
+            }, bone))
+    return parts
+
+
+def _build_quad(c, top, P, length=6.0):
+    """Draft C (Split-Shroud Four-Bar Accelerator): armored dark/light two-tone receiver with glowing center breech,
+    and each fork split into front + back magnetic bars joined at the root and muzzle tip — opening a side window
+    along the rails so the flowing 3-band blue beam channel is visible from ALL FOUR SIDES (including side profile!)."""
+    part = lambda name, box, faces, bone='tool': dict(drill.part(name, box, _paint(faces, P)), bone=bone)
+    t = top - 4.0
+    parts = []
+
+    # 1. 6x4x6 sleek dark-slate + light-steel armored receiver (12 x 8)
+    fb = [
+        list('nBBBBBBBBBBn'),
+        list('BgCCCCCCCCgD'),
+        list('dDDDDDDDDDDd'),
+        list('dkmCC') + ['L0', 'L0'] + list('CCmkd'),
+        list('dkmCC') + ['K0', 'K0'] + list('CCmkd'),
+        list('dmmddkkkkddm'[:-1] + 'd'),
+        list('dQQfdkkkkdfQ'[:-1] + 'd'),
+        list('dRRRdEEEEddR'[:-1] + 'd'),
+    ]
+    fb[5] = list('dmmddkkkkddm'[:11] + 'd')
+    fb[6] = list('dQQfdkkkdfQd')
+    fb[7] = list('dRRRdEEEddRd')
+    sd = [
+        list('nBBBBBBBBBBn'),
+        list('BgCCCCCCCCgD'),
+        list('dDDDDDDDDDDd'),
+        list('dkfQQ') + ['K0', 'K0'] + list('QQfkd'),
+        list('dkQRR') + ['L0', 'L0'] + list('RRQkd'),
+        list('dDDDDDDDDDDd'),
+        list('dmmkxxkkxxmd'),
+        list('dEEEEEEEEEE' + 'd'),
+    ]
+    parts.append(part('body', ((c - 3.0, t, -3.0), (c + 3.0, top, 3.0)), {
+        'north': fb, 'south': fb, 'east': sd, 'west': sd,
+        'up': _bevel_up, 'down': _bevel_down,
+    }))
+
+    #2. Central glowing breech emitter (2.0 x 1.5 x 2.0) visible between the 4 bars from all sides
+    parts.append(part('breech', ((c - 1.0, t - 1.5, -1.0), (c + 1.0, t, 1.0)), {
+        'north': _solid('K0'), 'south': _solid('K0'), 'east': _solid('K0'), 'west': _solid('K0'),
+        'up': _solid('.'), 'down': _breech_bore,
+    }))
+
+    # 3. Split-shroud forks: each fork has a solid copper-banded root yoke (1.5 px), TWO separated front/back rail
+    #    bars (z = -2.25..-0.75 and +0.75..+2.25) with a 1.5 px open side window showing a glowing inner energy rail,
+    #    and a tapered dark-slate muzzle bridge at the tip!
+    y_tip = t - length
+    y_root = t - 1.5
+    y_muzz = y_tip + 1.5
+
+    for s, name in ((1, 'out'), (-1, 'in')):
+        bone = 'bit' if s > 0 else 'fork_in'
+        outer_f, inner_f = ('east', 'west') if s > 0 else ('west', 'east')
+
+        def bx(y0, y1, x_in, x_out, z0, z1):
+            xa, xb = sorted((c + s * x_in, c + s * x_out))
+            return ((xa, y0, z0), (xb, y1, z1))
+
+        # Root yoke (x +-1.0..3.0, z +-2.25): heavy copper-banded shoulder clamping the two bars
+        parts.append(part(f'prong_{name}_root', bx(y_root, t, 1.0, 3.0, -2.25, 2.25), {
+            'north': _coil_face, 'south': _coil_face,
+            outer_f: _coil_face, inner_f: _inner_band(y_root, t, t, y_tip),
+            'up': _solid('.'), 'down': _solid('d'),
+        }, bone))
+        # Front & back rail bars (x +-0.75..2.75, z = -2.25..-0.75 and +0.75..+2.25) — 1.5 px side slot between them!
+        for zname, z0, z1 in (('f', -2.25, -0.75), ('b', 0.75, 2.25)):
+            bar_in_z, bar_out_z = ('south', 'north') if z0 < 0 else ('north', 'south')
+            parts.append(part(f'prong_{name}_{zname}', bx(y_muzz, y_root, 0.75, 2.75, z0, z1), {
+                bar_out_z: _plate_box('A', 'B', 'C', 'D', 'E'),
+                bar_in_z: _plate_box('n', 'm', 'k', 'd', 'E'),
+                outer_f: _plate_box('A', 'B', 'C', 'D', 'E'),
+                inner_f: _inner_band(y_muzz, y_root, t, y_tip),
+                'up': _solid('.'), 'down': _solid('.'),
+            }, bone))
+        # Thin glowing accelerator rail strip recessed inside the side slot (x +-0.75..1.25 = 0.5 wide) so the
+        # flowing blue energy wave shines through BOTH the front/back gap AND the left/right side windows!
+        parts.append(part(f'prong_{name}_glow', bx(y_muzz, y_root, 0.75, 1.25, -0.75, 0.75), {
+            'north': _solid('.'), 'south': _solid('.'),
+            outer_f: _inner_band(y_muzz, y_root, t, y_tip),
+            inner_f: _inner_band(y_muzz, y_root, t, y_tip),
+            'up': _solid('.'), 'down': _solid('.'),
+        }, bone))
+        # Tapered dark-gunmetal muzzle clamp tying the front and back bars at the tip (x +-0.75..2.25, z +-1.75)
+        parts.append(part(f'prong_{name}_tip', bx(y_tip, y_muzz, 0.75, 2.25, -1.75, 1.75), {
+            'north': _plate_box('n', 'm', 'k', 'd', 'E'), 'south': _plate_box('n', 'm', 'k', 'd', 'E'),
+            outer_f: _plate_box('n', 'm', 'k', 'd', 'E'), inner_f: _inner_band(y_tip, y_muzz, t, y_tip),
+            'up': _solid('m'), 'down': _solid('d'),
+        }, bone))
+    return parts
+
+
+def build(c, top, lamp='dark', kind='gauss', core='dark', length=6.0, sleeve=False, head_scale=False):
     """The rail cannon's parts on an arm centred at x c whose socket is at y top: the receiver (bone 'tool') and the
     prongs / core under it (bone 'bit'). `lamp` is unused (the tools' common signature)."""
     P = pal(core)
+    if kind == 'gauss':
+        return _build_gauss(c, top, P, length)
+    if kind == 'coil':
+        return _build_coil(c, top, P, length)
+    if kind == 'quad':
+        return _build_quad(c, top, P, length)
     part = lambda name, box, faces, bone='tool': dict(drill.part(name, box, _paint(faces, P)), bone=bone)
     t = top - 4                                          # the receiver's bottom
     bw = 3.0 if sleeve else 2.5

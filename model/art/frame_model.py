@@ -966,11 +966,13 @@ def _tool_parts(TOOL):
                                    float(os.environ.get('FLAME_BODY_H', _fl_bh)), os.environ.get('FLAME_HOLES', 'even'),
                                    float(os.environ.get('FLAME_TANK_H', _fl_th)), float(os.environ.get('FLAME_TANK_W', '3')),
                                    sleeve=TOOL_SLEEVE, head_scale=HEAD_SCALE)
-# The rail cannon (frame_rail_art.py; 2026-11-15, the big suit's as the reference): RAIL=A gap | B core | C split,
-# RAIL_CORE=dark | lit, RAIL_L the prongs' length. A picked (user, 2026-11-15): in TOOL=all; B, C kept as knobs.
+# The rail cannon (frame_rail_art.py): reworked 2026-11-21 for the 6x6 sleeved footprint (user picked 'gauss' over
+# 'coil' and 'quad'; old drafts A/B/C kept as knobs): DOOM 2016 Gauss Cannon two-tone armored receiver with glowing
+# capacitor core & central breech nozzle + 3-step sculpted twin rails (copper breech clamps, vented mid rails with
+# glowing side windows, tapered dark-slate muzzle tips), 3-band flowing charge glow (RAIL_FLOW_0..2).
   if TOOL == 'rail':
     import frame_rail_art as rail_art
-    TOOL_PARTS = rail_art.build(6.25 + ARM_OUT, SOCKET_Y, 'dark', os.environ.get('RAIL', 'A'),
+    TOOL_PARTS = rail_art.build(6.25 + ARM_OUT, SOCKET_Y, 'dark', os.environ.get('RAIL', 'gauss'),
                                 os.environ.get('RAIL_CORE', 'dark'), float(os.environ.get('RAIL_L', '6')),
                                 sleeve=TOOL_SLEEVE, head_scale=HEAD_SCALE)
 # The TNT launcher (frame_tnt_art.py) and the EM projector (frame_em_art.py): the big suit's designs (user, 2026-11-15).
@@ -1303,8 +1305,9 @@ for side in ('r', 'l'):
                     e['origin'] = [ox * s, oy + FY, oz]
                 else:
                     e['origin'] = list(g_['origin'])
-            for f in FACES:   # a face all see-through isn't drawn (the drill's open base: its bottom lies in the socket's plane)
-                if all(c == '.' for r in tp['faces'][f] for c in r): e['faces'][f]['texture'] = None
+            for f in FACES:   # a face all see-through isn't drawn (mirror east/west on left arm as painted() does)
+                ef = {'east': 'west', 'west': 'east'}.get(f, f) if side == 'l' else f
+                if all(c == '.' for r in tp['faces'][f] for c in r): e['faces'][ef]['texture'] = None
     p = group(f'pilot_{nm}_arm', ((6 + ARM_OUT) * s, 26, 0), arm)
     st = steve(p, f'st_arm_{side}', *sx((4 + ARM_OUT, 14, -2), (4 + AW + ARM_OUT, 26, 2)), STEVE[f'arm_{side}'])
     if side in SOCKET_ARMS: st['faces']['down']['texture'] = None   # in the socket's plane, under it (SOCKET)

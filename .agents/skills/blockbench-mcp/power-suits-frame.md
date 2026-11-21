@@ -300,12 +300,15 @@ the end and `docs/guide.md` Notes).
   the old loop with eps loosened to 0.3: 13 clashes both), a saved-files build ~25 s, a layered draft ~8 s, a flat
   helmet draft under 1 s. Profile first (`python3 -m cProfile -s cumtime model/art/frame_model.py`) before guessing.
 
-## Rail cannon (2026-11-15)
-- `frame_rail_art.py`, TOOL=rail (now in TOOL=all): the big suit's picked design (T2 prongs, see-through core, copper
-  band; reference `.scratch/rail/charge_seethrough_frames.jpg`). Draft A picked (user: "A") of A gap | B core | C split
-  (`RAIL=`, kept as knobs; `RAIL_L` prong length 6, `RAIL_CORE=dark|lit`). Receiver 5x4x5 in the fist's place; the outer
-  prong on `rail_fork_out`, the inner on `rail_fork_in` (frame_model `EXTRA_BONES`) so `ToolRotors.railShake` pulls them
-  apart as on the big suit.
+## Rail cannon (2026-11-15; reworked 2026-11-21 for 6x6 sleeve)
+- `frame_rail_art.py`, TOOL=rail (now in TOOL=all): reworked 2026-11-21 for the wider 6x6 sleeved footprint (user
+  picked `RAIL=gauss` over `coil` and `quad`; old drafts A/B/C kept as knobs; `RAIL_L` 6, `RAIL_CORE=dark|lit`):
+  DOOM 2016 Gauss Cannon two-tone dark-slate + bolted light-steel 6x4x6 receiver with glowing blue capacitor windows on
+  front/back (`RAIL_FLOW_0`), recessed horizontal copper induction pockets on the sides, a central glowing breech nozzle
+  in the gap root, and 3-step sculpted twin rails (copper breech clamps -> vented mid rails with dark cockpit/back vents
+  & glowing side windows `RAIL_FLOW_1` -> tapered dark-slate muzzle tips with `RAIL_FLOW_2` notches) framing a 1.5 px
+  open see-through glowing channel. Outer fork on `rail_fork_out`, inner on `rail_fork_in` so `ToolRotors.railShake`
+  spreads them around the breech as it charges.
 - The core is the prongs' inner faces, painted in three bands of reserved dark blues (K / L per band, a shade apart:
   `frame_rail_art.CORE`), each its own glowmask (`TOOL_GLOW` rail_flow_0..2 -> `ToolLight.RAIL_FLOW_0..2`: the wave that
   runs toward the tips). The big suit's emitter light (`RAIL_EMIT`) has no frame texels yet. `muzzleInsetPixels` -1 (tips 10 px
