@@ -130,6 +130,41 @@ the end and `docs/guide.md` Notes).
   raised middle, for shape from the front; `down`, dipping over the glass, kept as a knob).
 
 ## Tools (2026-11-13, the drill first)
+
+### 2D-texture + outer-cutout-layer tool design system (2026-11-21/22, approved)
+Replaces 3D component kitbashing (stacked flanges, lugs, sub-rods, protruding brackets) with the same 2D-painted +
+`0.5 px` outer-cutout-layer language that made the flat iron armour (`pauldron_decal`) and 2D heart engine (`harness`)
+work. Proven on the Rail Cannon (`2d_hybrid_closed`, `06a8fb8`) and Flamethrower (`halo_olive`, `f04cd10`); apply to the
+remaining tools (Chaingun, TNT Launcher, EM Projector, Drill, Chainsaw):
+- **Minimal geometry (2–4 boxes) + `0.5 px` cutout outer layers:** build each tool from simple inner core boxes wrapped
+  in `0.5 px`-proud outer covering cubes whose alpha-0 cutouts (`'.'`) carve windows, vents, core apertures, stepped
+  muzzles, and angled cowling profiles. In Minecraft 26.3, `RenderTypes.entityCutout` (`ToolModelRenderer`) is already
+  no-cull, so thin cutout outer shells render cleanly from both sides.
+- **Keep every tool visually distinct:** never cookie-cutter one tool's silhouette or palette onto another. Use strong
+  references + signature colours when recognition demands it (orange Husqvarna chainsaw, military olive-drab Halo 3
+  shark-mouth flamethrower, iron-and-cyan rail cannon), tailor cuff height to the tool (`6x3x6` vs `6x4x6`, enclosing
+  Steve's hand `raw y 14..17` inside the `5xH x5` inner base), and drop parts that contradict the suit's mechanics (no
+  wrist fuel tank when the suit's central engine supplies the fuel).
+- **2-layer material split:** outer layer = clean painted armour/housing shell (iron ramp `z s p l e h g w` or signature
+  military/tool ramp); inner layer = recessed mechanical core `0.5 px` deeper (neutral dark gunmetal slate `x d k m n`,
+  copper internals/valves, glowing energy channels, or protruding muzzle barrels). Keep each material on its own ramp
+  (don't mix bluish steel `s/z` into neutral slate `d/k/m/n`).
+- **Corner, coplanar & parallax hygiene:**
+  - Match adjacent outer-layer faces row-for-row at every shared corner (or stop an outer shroud cleanly `0.5 px` above
+    an inner tip across all four sides) so zero floating paper-thin slivers appear in side views.
+  - Leave buried/overlapping faces `'.'` (`texture: None`: `cuff_inner.up`, `cuff_outer.down`, `barrel_inner.up`,
+    `barrel_outer.up/down`) and verify zero drawn shared planes with `coplanar.py`.
+  - Check recessed details (valves, gauges, cores) at 3/4 angles for `0.5 px` parallax clipping.
+- **Aimed orientation & face alignment:** when the arm raises `+90°` to fire, `-y` points forward (muzzle), `-z`
+  (`north`) is UP (hero first-person cockpit face), `+z` (`south`) is DOWN (hero third-person back face), and
+  `east`/`west` are the sides. Author directional cheek art upright (rear->front, top->bottom) and transpose onto
+  `east`/`west`. Center symmetric accents to exact texel centers and wrap across corners onto `down` (rows run `+z`
+  back -> `-z` front).
+- **Lighting & glowmasks:** all tool lights fade by opacity (`fadesByAlpha = true` -> `SuitGlowLayer.energy`), never by
+  darkening. Bind passive power indicators (`RAIL_EMIT`) to `suit.isPowered()` (off unpowered, full lit whenever
+  powered); paint active-only energy channels (`RAIL_FLOW_0..2`) in dark-slate reserved shades so they stay invisible
+  when idle.
+
 - The left hand is a socket (the big suit's playbook): the left arm's box ends where his hand does (raw 14), its
   underside the socket plate. A tool (`TOOL=drill`, `model/art/frame_drill_art.py`) hangs on a `tool` bone there, the
   spinning part on `tool_bit` under it.
