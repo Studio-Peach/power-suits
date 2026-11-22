@@ -1,6 +1,7 @@
 package dev.ajaczero.powersuits.entity;
 
 import java.util.function.Predicate;
+import net.minecraft.world.entity.player.Player;
 
 /**
  * What shared code (this package runs on both sides) may ask about the local player's view.
@@ -14,6 +15,11 @@ public final class ClientView {
     /** Is this client looking out of this suit's cockpit (it's our own suit, first person, the camera on the pilot)?
      *  Always false on a server. */
     public static Predicate<PowerSuitEntity> inCockpit = suit -> false;
+    /** Tell the server the local pilot's suit just jumped (no-op on a server). */
+    public static Runnable sendJump = () -> {};
+    /** Is the local client holding Space right now? Checked directly so the suit jumps on the same tick Space is
+     *  pressed instead of waiting one tick for LocalPlayer.rideTick to copy the key into pilot.jumping. */
+    public static Predicate<Player> jumpPressed = pilot -> false;
 
     private ClientView() {}
 }

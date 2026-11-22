@@ -12,7 +12,7 @@ import net.minecraft.world.phys.Vec3;
 
 /**
  * How the suit moves (design sec. 3): the pilot's keys, walking and sprinting speeds, stepping down ledges, sinking and
- * walking along the bottom of water and lava, the charged jump, crawling in an EM field, and the legs turning under the
+ * walking along the bottom of water and lava, the instant jump, crawling in an EM field, and the legs turning under the
  * torso. The pilot's or the mind's: both drive the same legs.
  *
  * One of the suit's parts (see PowerSuitEntity): {@code suit.driving()}. Vanilla calls its movement hooks on the entity
@@ -26,20 +26,19 @@ public final class SuitDriving {
     // ./gradlew runAutopilot: 42.14 on 1.21.1; on 26.3 the same speed attribute went 2.4% further (0.11865 gave
     // 5.12 blocks/s instead of 5.00), so x43.15.
     private static final double BLOCKS_PER_SECOND_PER_SPEED = 43.15;
-    // A heavy walk and a heavy sprint (2026-10-14 animation overhaul). The suit used to jog at 5 blocks/s and sprint at
-    // 10, but legs this long can't cover 5 blocks/s walking: the walk was really a run (both feet off the ground each
-    // step) with the hips dropped 3.6 px and the knees bent to 128 degrees. From 2026-10-19 the game walked at the walk
-    // animation's own speed (walk v6: 1.0 s cycle, 22 px stance = 2.218 blocks/s); since 2026-10-20 the step rate follows
-    // the real speed (SuitAnimator.movementAnimationRate), so the walk is a game choice: 3.0 (user: half a player's 4.3 was too slow to
-    // get anywhere; the walk steps 1.35x its authored cadence). The sprint stays at the run's own 6.25.
+    // Powered brisk walk and sprint (2026-11-22: 4.8 / 6.8 blocks/s; a player walks at 4.3 and sprints at 5.6).
+    // The old big mech walked at 3.0 to stay close to its baked Blockbench cycle; the frame uses vanilla's procedural
+    // limb swing, so the walk isn't tied to an authored cadence.
     /** The walk on flat ground, blocks/s (tests compare against it). */
-    public static final double WALK_BLOCKS_PER_SECOND = 3.0;
+    public static final double WALK_BLOCKS_PER_SECOND = 4.8;
     /** The movement speed attribute for that walk (PowerSuitEntity.BASE_STATS). */
-    static final double WALK_SPEED = WALK_BLOCKS_PER_SECOND / BLOCKS_PER_SECOND_PER_SPEED; // 0.0695 (a player walks at 4.3)
-    /** Sprint / walk: 6.25 blocks/s sprint (a player sprints at 5.6). */
-    public static final float SPRINT_MULTIPLIER = 2.083F;
+    static final double WALK_SPEED = WALK_BLOCKS_PER_SECOND / BLOCKS_PER_SECOND_PER_SPEED;
+    /** The sprint on flat ground, blocks/s. */
+    public static final double SPRINT_BLOCKS_PER_SECOND = 6.8;
+    /** Sprint / walk multiplier: 6.8 blocks/s sprint. */
+    public static final float SPRINT_MULTIPLIER = (float) (SPRINT_BLOCKS_PER_SECOND / WALK_BLOCKS_PER_SECOND);
     /** Ground speed (blocks/s) between the walk and the sprint: the mind, which has no sprint key, runs above it. */
-    static final double RUN_THRESHOLD = 4.5;
+    static final double RUN_THRESHOLD = 5.8;
     /** A suit held in an EM field crawls: a quarter of its speed. */
     private static final float FIELD_HELD_SPEED = 0.25F;
 
@@ -64,9 +63,12 @@ public final class SuitDriving {
     private static final double UNDERWATER_JUMP_SCALE = 0.6;
 
     // ---- Jumping ---------------------------------------------------------------------------
-    /** Delay between releasing jump and leaving the ground, so the push-off in the jump animation
-     *  (crouch -> legs extend at 0.1 s) happens while the feet are still on the ground. */
-    private static final int LAUNCH_DELAY_TICKS = 2;
+    /** Instant jump vertical velocity (blocks/tick): ~2.30 blocks peak on land (clears 2-block ledges cleanly, stays
+     *  below the 3.5-block stomp threshold; the suit already auto-steps 1-block ledges). */
+    static final double JUMP_VELOCITY = 0.59;
+    /** Matches vanilla LivingEntity.noJumpDelay: holding Space re-jumps on landing without double-firing under a low
+     *  ceiling; releasing Space resets it to 0 immediately. */
+    private static final int JUMP_COOLDOWN_TICKS = 10;
 
     // ---- Turning (legs vs torso) ---------------------------------------------------------------
     /** The torso can twist this far from the legs before the legs are dragged along. */
@@ -80,10 +82,10 @@ public final class SuitDriving {
     private static final float LEG_TURN_IDLE = 7F;
 
     private final PowerSuitEntity suit;
-    /** Pending jump strength 0..1, set by the jump bar when the pilot releases space. */
-    private float pendingJump;
-    /** Ticks left before a pending jump actually launches. */
-    private int launchDelay;
+    /** Ticks before holding Space can trigger another jump (reset to 0 as soon as Space is released). */
+    private int jumpCooldown;
+    /** True on the tick a jump launched, so travel()'s ledge step-down doesn't snap back down under a low ceiling. */
+    private boolean jumpedThisTick;
     /** Legs are turning to catch up with the torso while standing still. */
     private boolean realigning;
     /** Server: tick the suit was last held by an EM field (EmProjectorItem refreshes it every tick it holds us). */
@@ -109,6 +111,18 @@ public final class SuitDriving {
             }
         }
         return new Vec3(pilot.xxa, 0, pilot.zza);
+    }
+
+    /** True while the pilot holds Space. On the local client we read keyJump directly via ClientView so the suit
+     *  jumps on the very tick Space is pressed (the suit ticks before its passenger's LocalPlayer.rideTick). */
+    public static boolean pilotJumping(Player pilot) {
+        if (pilot.level().isClientSide()) {
+            return ClientView.jumpPressed.test(pilot);
+        }
+        if (pilot instanceof ServerPlayer sp && sp.getLastClientInput().jump()) {
+            return true;
+        }
+        return pilot.isJumping();
     }
 
     // ---- Driving: the pilot's keys ---------------------------------------------------------------
@@ -159,7 +173,7 @@ public final class SuitDriving {
         boolean wasOnGround = this.suit.onGround();
         this.suit.vanillaTravel(travelVector);
         if (this.suit.isVehicle() && this.suit.isLocalInstanceAuthoritative() && wasOnGround && !this.suit.onGround()
-                && this.suit.getDeltaMovement().y <= 0 && this.pendingJump == 0) {
+                && this.suit.getDeltaMovement().y <= 0 && !this.jumpedThisTick) {
             AABB below = this.suit.getBoundingBox().expandTowards(0, -STEP_DOWN, 0);
             if (!this.suit.level().noCollision(this.suit, below)) {
                 this.suit.move(MoverType.SELF, new Vec3(0, -STEP_DOWN, 0)); // stops at the ground
@@ -188,50 +202,49 @@ public final class SuitDriving {
         this.suit.calculateEntityAnimation(false);
     }
 
-    // ---- Jumping: the horse jump bar (hold space to charge, the suit crouches; release to jump) ----
+    // ---- Jumping: instant Space-to-jump (2026-11-22; replaced the horse jump bar and 2-tick launch delay) ----
 
-    /** Pilot's client, when space is released: the jump launches LAUNCH_DELAY_TICKS later (launchPendingJump). */
-    void onPlayerJump(int jumpPower) {
-        if (jumpPower > 0 && this.suit.onGround()) {
-            this.pendingJump = jumpPower >= 90 ? 1.0F : 0.4F + 0.6F * jumpPower / 90.0F;
-            this.launchDelay = LAUNCH_DELAY_TICKS;
-            this.suit.animator().jumpStarted();
+    /** Every ridden tick while the suit can operate: launch immediately when Space is held on the ground. */
+    void tryJump(Player pilot) {
+        this.jumpedThisTick = false;
+        if (!this.suit.isLocalInstanceAuthoritative()) {
+            return;
+        }
+        if (this.jumpCooldown > 0) {
+            this.jumpCooldown--;
+        }
+        if (!pilotJumping(pilot)) {
+            this.jumpCooldown = 0;
+            return;
+        }
+        if (this.suit.onGround() && this.jumpCooldown == 0) {
+            Vec3 motion = this.suit.getDeltaMovement();
+            boolean inFluid = this.suit.isInWater() || this.suit.isInLava();
+            double launch = JUMP_VELOCITY * (inFluid ? UNDERWATER_JUMP_SCALE : 1.0);
+            this.suit.setDeltaMovement(motion.x, launch, motion.z); // ~2.30 blocks on land
+            this.suit.needsSync = true; // (was hasImpulse) send the new motion right away
+            this.jumpCooldown = JUMP_COOLDOWN_TICKS;
+            this.jumpedThisTick = true;
+            if (this.suit.level().isClientSide()) {
+                this.suit.animator().jumpStarted();
+                this.suit.playSound(SoundEvents.PISTON_EXTEND, 0.8F, 0.6F);
+                ClientView.sendJump.run();
+            } else {
+                this.onServerJump();
+            }
         }
     }
 
-    /** No charging while airborne or while a launch is already pending. */
-    int jumpCooldown() {
-        return this.suit.onGround() && this.pendingJump == 0 ? 0 : 1;
-    }
-
-    /** Server, when the pilot releases jump: tell all other clients (they play the jump from the counter) and pay. */
-    void jumpReleased() {
+    /** Server, when the pilot's suit jumps (SuitJumpPayload): notify other clients and pay the jump's fuel. */
+    public void onServerJump() {
         this.suit.getEntityData().set(PowerSuitEntity.JUMP_COUNTER, this.suit.getEntityData().get(PowerSuitEntity.JUMP_COUNTER) + 1);
         this.suit.power().consume(PowerSuitsConfig.JUMP_ENERGY.get()); // nothing for a wet tidal engine or a reactor
     }
 
-    /** Power lost (or still booting): a charged jump never happens. */
-    void cancelJump() {
-        this.pendingJump = 0;
-    }
-
-    /** Every ridden tick on the side that moves the suit: launch a pending jump once its delay is over. */
-    void launchPendingJump() {
-        if (!this.suit.isLocalInstanceAuthoritative() || this.pendingJump <= 0) {
-            return;
-        }
-        if (this.launchDelay > 0) {
-            this.launchDelay--;
-            return;
-        }
-        if (this.suit.onGround()) {
-            Vec3 motion = this.suit.getDeltaMovement();
-            double launch = (0.42 + 0.3 * this.pendingJump) * (this.suit.isInWater() ? UNDERWATER_JUMP_SCALE : 1.0);
-            this.suit.setDeltaMovement(motion.x, launch, motion.z); // up to ~2.3 blocks on land
-            this.suit.needsSync = true; // (was hasImpulse) send the new motion right away
-            this.suit.playSound(SoundEvents.PISTON_EXTEND, 0.8F, 0.6F);
-        }
-        this.pendingJump = 0;
+    /** Power lost (or still booting): clear any jump bookkeeping. */
+    void resetJump() {
+        this.jumpCooldown = 0;
+        this.jumpedThisTick = false;
     }
 
     // ---- Turning: the legs under the torso -----------------------------------------------------

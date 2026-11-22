@@ -1,6 +1,7 @@
 package dev.ajaczero.powersuits.entity.ai;
 
 import dev.ajaczero.powersuits.entity.PowerSuitEntity;
+import dev.ajaczero.powersuits.entity.SuitDriving;
 import dev.ajaczero.powersuits.item.ToolMelee;
 import java.util.EnumSet;
 import net.minecraft.world.entity.LivingEntity;
@@ -74,7 +75,7 @@ public abstract class AttackGoal extends Goal {
         this.suit.brain().setAim(target.getBoundingBox().getCenter());
         boolean sees = this.suit.getSensing().hasLineOfSight(target);
         if (!withTool) {
-            this.fists(target, sees, 1.6);
+            this.fists(target, sees, SuitDriving.SPRINT_MULTIPLIER);
             return;
         }
         if (sees && ToolMelee.inReach(this.suit, target)) {
@@ -82,7 +83,7 @@ public abstract class AttackGoal extends Goal {
             this.suit.socket().setAiTrigger(true);
         } else {
             this.suit.socket().setAiTrigger(false);
-            this.approach(target, 1.6);
+            this.approach(target, SuitDriving.SPRINT_MULTIPLIER);
         }
     }
 

@@ -30,7 +30,7 @@ final class GaitScene {
     private static final Object[][] PHASES = {
             {"stand", 0}, {"walk_fwd", 20}, {"back", 80}, {"strafe_r", 140}, {"strafe_l", 200}, {"diag", 260},
             {"settle", 320}, {"turn_spot", 340}, {"settle2", 420}, {"walk_look", 440}, {"sprint", 540},
-            {"sprint_turn", 600}, {"sprint_tap", 660}, {"stop", 760}, {"end", 800}};
+            {"sprint_turn", 600}, {"sprint_tap", 660}, {"stop", 760}, {"jump", 780}, {"end", 820}};
 
     static boolean step(Minecraft mc, int s) {
         var o = mc.options;
@@ -56,7 +56,10 @@ final class GaitScene {
             o.keySprint.setDown(false); // sprint_tap: Ctrl tapped for 3 ticks, W held on: the suit must keep sprinting
             AutoPilot.hold(o.keySprint, false);
         }
-        if (s == 100 || s == 160 || s == 280 || s == 350 || s == 470 || s == 610) {
+        if (s == 782) {
+            AutoPilot.hold(o.keyJump, false); // 2-tick Space tap: instant takeoff with no charge bar
+        }
+        if (s == 100 || s == 160 || s == 280 || s == 350 || s == 470 || s == 610 || s == 785) {
             AutoPilot.shot(mc, "gait_" + phase + "_" + s);
         }
         log(mc, s);
@@ -79,6 +82,7 @@ final class GaitScene {
             case "strafe_l" -> AutoPilot.hold(o.keyLeft, true);
             case "diag" -> { AutoPilot.hold(o.keyUp, true); AutoPilot.hold(o.keyRight, true); }
             case "sprint", "sprint_turn", "sprint_tap" -> { AutoPilot.hold(o.keyUp, true); AutoPilot.hold(o.keySprint, true); }
+            case "jump" -> AutoPilot.hold(o.keyJump, true);
             default -> {}
         }
         if (name.equals("walk_look")) {
@@ -92,7 +96,7 @@ final class GaitScene {
     private static void open() {
         try {
             csv = Files.newBufferedWriter(FMLPaths.GAMEDIR.get().resolve("autopilot_gait.csv"));
-            csv.write("tick,phase,keys,anim,rate,realigning,viewYaw,bodyYaw,twist,legTurn,speed,fwd,lat,expected,slip\n");
+            csv.write("tick,phase,keys,anim,rate,realigning,viewYaw,bodyYaw,twist,legTurn,speed,fwd,lat,expected,slip,y,onGround\n");
         } catch (IOException e) {
             PowerSuits.LOGGER.error("gait csv", e);
         }
@@ -106,7 +110,7 @@ final class GaitScene {
         }
         var o = mc.options;
         String keys = (down(o.keyUp) ? "W" : "") + (down(o.keyDown) ? "S" : "") + (down(o.keyLeft) ? "A" : "")
-                + (down(o.keyRight) ? "D" : "") + (down(o.keySprint) ? "+" : "");
+                + (down(o.keyRight) ? "D" : "") + (down(o.keySprint) ? "+" : "") + (down(o.keyJump) ? "J" : "");
         float body = suit.yBodyRot;
         float legTurn = Float.isNaN(lastBody) ? 0F : Mth.wrapDegrees(body - lastBody);
         lastBody = body;
@@ -121,9 +125,10 @@ final class GaitScene {
         double expected = suit.animator().getSteppedSpeed(); // the planted foot pushes the suit along the legs at this speed
         double slip = Math.hypot(fwd - expected, lat);
         try {
-            csv.write(String.format(Locale.ROOT, "%d,%s,%s,%s,%.3f,%b,%.1f,%.1f,%.1f,%.1f,%.3f,%.3f,%.3f,%.3f,%.3f%n", s, phase,
+            csv.write(String.format(Locale.ROOT, "%d,%s,%s,%s,%.3f,%b,%.1f,%.1f,%.1f,%.1f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%b%n", s, phase,
                     keys.isEmpty() ? "-" : keys, anim, rate, suit.driving().isRealigning(), mc.player.getYRot(), body,
-                    Mth.wrapDegrees(mc.player.getYRot() - body), legTurn, v.length(), fwd, lat, expected, slip));
+                    Mth.wrapDegrees(mc.player.getYRot() - body), legTurn, v.length(), fwd, lat, expected, slip,
+                    suit.getY(), suit.onGround()));
         } catch (IOException ignored) {
             // closed
         }

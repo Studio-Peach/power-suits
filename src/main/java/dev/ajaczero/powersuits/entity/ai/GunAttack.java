@@ -1,6 +1,7 @@
 package dev.ajaczero.powersuits.entity.ai;
 
 import dev.ajaczero.powersuits.entity.PowerSuitEntity;
+import dev.ajaczero.powersuits.entity.SuitDriving;
 import java.util.function.Predicate;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
@@ -45,7 +46,7 @@ public class GunAttack extends AttackGoal {
         this.suit.brain().setAim(aim);
         boolean sees = this.suit.getSensing().hasLineOfSight(target);
         if (!this.suit.isRogue() && !this.gun.hasAmmo().test(this.suit)) {
-            this.fists(target, sees, 1.6);
+            this.fists(target, sees, SuitDriving.SPRINT_MULTIPLIER);
             return;
         }
         boolean inRange = this.suit.distanceTo(target) < this.gun.range();
@@ -58,7 +59,7 @@ public class GunAttack extends AttackGoal {
         } else {
             // Get a clear shot: closer, round the friend in the way. (A short range like the flamethrower's is fine:
             // moveTo stops at the target, and inRange plants the feet on the way.)
-            this.approach(target, 1.6);
+            this.approach(target, SuitDriving.SPRINT_MULTIPLIER);
         }
     }
 }

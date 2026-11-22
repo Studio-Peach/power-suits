@@ -4668,5 +4668,23 @@ public final class PowerSuitTests {
             helper.succeed();
         });
     }
+    /** Instant Space jump (2026-11-22): no horse jump bar (PlayerRideableJumping), server jump spends JUMP_ENERGY. */
+    @SuitTest(timeoutTicks = 40)
+    public static void instantJumpHasNoChargeBarAndCostsEnergy(GameTestHelper helper) {
+        PowerSuitEntity suit = spawnSuit(helper);
+        helper.assertTrue(!(suit instanceof net.minecraft.world.entity.PlayerRideableJumping),
+                "suit must not implement PlayerRideableJumping (no horse charge bar)");
+        suit.power().setBurn(200, 1600);
+        helper.runAfterDelay(2, () -> {
+            helper.assertTrue(suit.canJump(), "a powered suit can jump");
+            int before = suit.power().getTotalEnergy();
+            suit.driving().onServerJump();
+            int spent = before - suit.power().getTotalEnergy();
+            helper.assertTrue(spent == PowerSuitsConfig.JUMP_ENERGY.get(),
+                    "jump must spend JUMP_ENERGY (" + PowerSuitsConfig.JUMP_ENERGY.get() + "), spent " + spent);
+            helper.succeed();
+        });
+    }
+
     private PowerSuitTests() {}
 }

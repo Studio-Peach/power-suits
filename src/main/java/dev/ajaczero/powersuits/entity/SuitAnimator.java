@@ -40,8 +40,8 @@ public final class SuitAnimator {
     /** Length of the land animation (0.6 s), and how much of it to keep when walking away. */
     private static final int LAND_TICKS = 12;
     private static final int LAND_TICKS_WHILE_MOVING = 5;
-    /** How long the jump animation is forced after release, covering the delay + takeoff. */
-    private static final int JUMP_ANIM_HOLD_TICKS = 6;
+    /** How long the jump animation is forced on takeoff. */
+    private static final int JUMP_ANIM_HOLD_TICKS = 4;
     // ---- Animations (names from the exported Blockbench animation file) --------------------
     private static final RawAnimation IDLE = RawAnimation.begin().thenLoop("animation.power_suit.idle");
     private static final RawAnimation WALK = RawAnimation.begin().thenLoop("animation.power_suit.walk");
@@ -54,7 +54,6 @@ public final class SuitAnimator {
     private static final RawAnimation JUMP = RawAnimation.begin().thenPlay("animation.power_suit.jump").thenLoop("animation.power_suit.fall");
     private static final RawAnimation FALL = RawAnimation.begin().thenLoop("animation.power_suit.fall");
     private static final RawAnimation LAND = RawAnimation.begin().thenPlay("animation.power_suit.land");
-    private static final RawAnimation JUMP_CHARGE = RawAnimation.begin().thenPlayAndHold("animation.power_suit.jump_charge");
     // Out of fuel: slump and hold. powered_off is the last frame of shutdown, for suits that were already off.
     private static final RawAnimation SHUTDOWN = RawAnimation.begin().thenPlayAndHold("animation.power_suit.shutdown");
     private static final RawAnimation POWERED_OFF = RawAnimation.begin().thenPlayAndHold("animation.power_suit.powered_off");
@@ -80,9 +79,7 @@ public final class SuitAnimator {
     private int airTicks;
     private boolean jumped;
     private int landTicks;
-    /** Client only: jump bar charge of the local pilot while holding space (set by PilotView). */
-    private float clientJumpCharge;
-    /** Client only: forces the jump animation for a few ticks after release. */
+    /** Client only: forces the jump animation for a few ticks after takeoff. */
     private int jumpAnimTicks;
     private int lastJumpCounter;
     /** Client: how far the animated hips are below/above the gait's average this frame (model px). */
@@ -121,7 +118,7 @@ public final class SuitAnimator {
         return this.steps.current();
     }
 
-    /** Client: the pilot released jump (the jump bar): play the jump for a few ticks, covering the launch delay. */
+    /** Client: the suit just jumped: play the jump for a few ticks. */
     void jumpStarted() {
         this.jumpAnimTicks = JUMP_ANIM_HOLD_TICKS;
     }
@@ -143,9 +140,6 @@ public final class SuitAnimator {
             if (!this.suit.isLocalInstanceAuthoritative()) {
                 this.jumpAnimTicks = JUMP_ANIM_HOLD_TICKS;
             }
-        }
-        if (!this.suit.isVehicle()) {
-            this.clientJumpCharge = 0;
         }
         if (!this.suit.onGround()) {
             if (this.airTicks == 0) {
@@ -201,14 +195,10 @@ public final class SuitAnimator {
             return state.setAndContinue(STARTUP);
         }
         // Powered means driven: by the pilot, or by the machine mind (same gaits, picked from how fast it moves).
-        // Jump states blend fast (the charge crouch ends exactly where the jump starts).
-        boolean jumpState = this.jumpAnimTicks > 0 || this.jumped || (this.clientJumpCharge > 0 && this.suit.onGround());
+        boolean jumpState = this.jumpAnimTicks > 0 || this.jumped;
         state.controller().setTransitionTicks(jumpState ? 2 : 5);
         if (this.jumpAnimTicks > 0 || this.jumped) {
             return state.setAndContinue(JUMP);
-        }
-        if (this.clientJumpCharge > 0 && this.suit.onGround()) {
-            return state.setAndContinue(JUMP_CHARGE);
         }
         if (this.airTicks >= FALL_POSE_AFTER_TICKS) {
             return state.setAndContinue(FALL);
@@ -327,10 +317,6 @@ public final class SuitAnimator {
     /** Client/dev: ticks spent airborne (animation bookkeeping). */
     public int getAirTicks() {
         return this.airTicks;
-    }
-    /** Client: the local pilot's jump bar charge (0 = not charging). */
-    public void setClientJumpCharge(float charge) {
-        this.clientJumpCharge = charge;
     }
     /** Client: 0..1 weight of the torso following the pilot's view. */
     public float getAimBlend() {

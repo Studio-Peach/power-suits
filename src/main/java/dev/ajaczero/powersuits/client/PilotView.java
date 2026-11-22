@@ -15,7 +15,6 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.CalculateDetachedCameraDistanceEvent;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.ComputeFovModifierEvent;
 import net.neoforged.neoforge.client.event.ExtractBlockScreenEffectEvent;
 import net.neoforged.neoforge.client.event.RenderHandEvent;
@@ -101,15 +100,6 @@ public final class PilotView {
     public static void cameraDistance(CalculateDetachedCameraDistanceEvent event) {
         if (Minecraft.getInstance().player != null && Minecraft.getInstance().player.getVehicle() instanceof PowerSuitEntity) {
             event.setDistance(Math.max(event.getDistance(), CAMERA_DISTANCE));
-        }
-    }
-
-    /** Tell our suit how far the jump bar is charged while space is held, so it can crouch. */
-    @SubscribeEvent
-    public static void jumpCharge(ClientTickEvent.Post event) {
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.player != null && mc.player.getVehicle() instanceof PowerSuitEntity suit) {
-            suit.animator().setClientJumpCharge(mc.options.keyJump.isDown() ? Math.max(0.01F, mc.player.getJumpRidingScale()) : 0F);
         }
     }
 

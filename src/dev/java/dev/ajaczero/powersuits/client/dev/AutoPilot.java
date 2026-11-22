@@ -275,11 +275,10 @@ public final class AutoPilot {
             case BASICS + 240 -> { releaseAll(); hold(o.keyUp, true); hold(o.keySprint, true); }
             case BASICS + 262 -> shot(mc, "tp_run");
             case BASICS + 270 -> releaseAll();
-            case BASICS + 280 -> sideCamera(mc);
+            case BASICS + 280 -> { yaw = 0; pitch = 15; o.setCameraType(CameraType.THIRD_PERSON_BACK); }
             case BASICS + 285 -> hold(o.keyJump, true);
-            case BASICS + 288, BASICS + 294 -> shot(mc, "side_charge_" + t);
-            case BASICS + 298 -> hold(o.keyJump, false);
-            case BASICS + 299, BASICS + 300, BASICS + 301, BASICS + 302, BASICS + 304, BASICS + 306, BASICS + 310, BASICS + 316, BASICS + 324, BASICS + 334, BASICS + 342 -> shot(mc, "side_jump_" + t);
+            case BASICS + 287 -> hold(o.keyJump, false);
+            case BASICS + 286, BASICS + 288, BASICS + 290, BASICS + 292, BASICS + 295, BASICS + 300, BASICS + 306 -> shot(mc, "tp_jump_" + t);
             // ---- water: walk off a lip into a 6-deep pool, along the bottom, up stairs on the far side
             case WATER -> { mc.setCameraEntity(mc.player); releaseAll(); yaw = 0; pitch = 15; o.setCameraType(CameraType.THIRD_PERSON_BACK); buildPool(mc); }
             case WATER + 10 -> { openWaterLog(mc); hold(o.keyUp, true); }

@@ -9,9 +9,11 @@ import dev.ajaczero.powersuits.client.hud.TntLauncherHud;
 import dev.ajaczero.powersuits.client.hud.ToolHuds;
 import dev.ajaczero.powersuits.entity.ClientView;
 import dev.ajaczero.powersuits.item.SocketAim;
+import dev.ajaczero.powersuits.network.SuitJumpPayload;
 import dev.ajaczero.powersuits.registry.ModEntities;
 import dev.ajaczero.powersuits.registry.ModItems;
 import dev.ajaczero.powersuits.registry.ModMenus;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.client.renderer.entity.NoopRenderer;
 import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
@@ -24,6 +26,7 @@ import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import net.neoforged.neoforge.client.renderstate.RegisterRenderStateModifiersEvent;
 
 /** Client-only startup (Dist.CLIENT): dedicated servers never load rendering code. */
@@ -33,6 +36,11 @@ public final class ClientSetup {
     public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
         SocketAim.visualMuzzle = CockpitHands::visualMuzzle; // muzzle effects start at the cockpit viewmodel's muzzle
         ClientView.inCockpit = PowerSuitRenderer::isCockpitView; // shared code asks the camera
+        ClientView.sendJump = () -> ClientPacketDistributor.sendToServer(new SuitJumpPayload());
+        ClientView.jumpPressed = pilot -> {
+            Minecraft mc = Minecraft.getInstance();
+            return mc.player == pilot && mc.gui.screen() == null && mc.getCameraEntity() == mc.player && mc.options.keyJump.isDown();
+        };
         event.registerEntityRenderer(ModEntities.POWER_SUIT.get(), PowerSuitRenderer::new);
         event.registerEntityRenderer(ModEntities.BULLET.get(), BulletRenderer::new);
         // The flame stream draws itself with particles (FlameJet.clientTick): nothing to render.

@@ -48,7 +48,6 @@ import net.minecraft.world.entity.HasCustomInventoryScreen;
 import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.PlayerRideableJumping;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
@@ -92,10 +91,10 @@ import org.joml.Vector3fc;
  * </ul>
  * What a tool does lives in its item (item/PowerTool); what the mind decides, in entity/ai.
  */
-public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJumping, HasCustomInventoryScreen {
+public class PowerSuitEntity extends Mob implements GeoEntity, HasCustomInventoryScreen {
     public static final int MAX_HEALTH = 100;
 
-    /** Synced to every client: bumped by the server each time the pilot releases jump, so other
+    /** Synced to every client: bumped by the server each time the pilot jumps, so other
      *  players see the jump animation start at the same moment as the pilot does. */
     static final EntityDataAccessor<Integer> JUMP_COUNTER =
             SynchedEntityData.defineId(PowerSuitEntity.class, EntityDataSerializers.INT);
@@ -825,7 +824,7 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
             this.startupTicks--;
         }
         if (!this.canOperate()) {
-            this.driving.cancelJump();
+            this.driving.resetJump();
         }
     }
 
@@ -999,13 +998,14 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
     protected void tickRidden(Player player, Vec3 travelVector) {
         super.tickRidden(player, travelVector);
         if (!this.canOperate()) {
+            this.driving.resetJump();
             return; // powered down: the torso stays put while the pilot looks around the cockpit
         }
         // yRot/xRot/yHeadRot = where the pilot looks. WASD moves relative to yRot, and the model's
         // torso aims along it. yBodyRot (the legs) is handled separately in tickHeadTurn().
         this.setRot(player.getYRot(), player.getXRot());
         this.yHeadRot = this.getYRot();
-        this.driving.launchPendingJump();
+        this.driving.tryJump(player);
     }
 
     /** Vanilla turns the body every tick; a driven suit turns its legs by its own rule (SuitDriving.turnLegs). */
@@ -1045,31 +1045,10 @@ public class PowerSuitEntity extends Mob implements GeoEntity, PlayerRideableJum
         return true;
     }
 
-    // Jumping uses the horse jump bar: hold space to charge (the suit crouches), release to jump (SuitDriving).
-    // Called on the pilot's client when space is released.
-    @Override
-    public void onPlayerJump(int jumpPower) {
-        this.driving.onPlayerJump(jumpPower);
-    }
-
-    @Override
+    /** True while the suit is able to jump (instant Space jump in SuitDriving.tryJump; no horse jump bar). */
     public boolean canJump() {
         return this.isAlive() && this.canOperate();
     }
-
-    @Override
-    public int getJumpCooldown() {
-        return this.driving.jumpCooldown();
-    }
-
-    /** Called on the server when the pilot releases jump. */
-    @Override
-    public void handleStartJump(int jumpPower) {
-        this.driving.jumpReleased();
-    }
-
-    @Override
-    public void handleStopJump() {}
 
     // =========================================================================================
     // Toughness, damage, death

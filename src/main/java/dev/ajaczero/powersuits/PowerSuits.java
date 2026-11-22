@@ -5,6 +5,7 @@ import dev.ajaczero.powersuits.entity.PowerSuitEntity;
 import dev.ajaczero.powersuits.item.HelmetStyle;
 import dev.ajaczero.powersuits.item.ModTooltip;
 import dev.ajaczero.powersuits.network.PowerSwitchPayload;
+import dev.ajaczero.powersuits.network.SuitJumpPayload;
 import dev.ajaczero.powersuits.network.ToolTriggerPayload;
 import dev.ajaczero.powersuits.registry.ModDataComponents;
 import dev.ajaczero.powersuits.registry.ModEntities;
@@ -50,6 +51,7 @@ public class PowerSuits {
         // Network messages (client -> server: socket tool button (right click) pressed/released).
         modBus.addListener(ToolTriggerPayload::register);
         modBus.addListener(PowerSwitchPayload::register); // the pilot's power switch key
+        modBus.addListener(SuitJumpPayload::register);    // the pilot's instant jump
         // Our items' own tooltip lines (item/ModTooltip), where vanilla's deprecated appendHoverText used to put them.
         modBus.addListener(PowerSuits::registerTooltips);
         // GameTests and the autopilot live in src/dev/ (not shipped): they register from dev/PowerSuitsDev.
