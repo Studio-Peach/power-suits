@@ -111,8 +111,9 @@ public class PowerSuitEntity extends Mob implements GeoEntity, HasCustomInventor
     /** The frame's armour (design sec. 10, 2026-11-14): one piece per part, after the old slots (saves keep their
      *  numbers). See SuitArmour. */
     public static final int TORSO_SLOT = 5, LEFT_ARM_SLOT = 6, RIGHT_ARM_SLOT = 7, LEFT_LEG_SLOT = 8, RIGHT_LEG_SLOT = 9;
-    /** The right arm's socket (2026-11-15: a hand is detachable, either arm can carry a power tool; the left's is SOCKET_SLOT). */
-    public static final int RIGHT_SOCKET_SLOT = 10;
+    /** Legacy right-arm socket slot (removed 2026-11-22: pilots hold tools in their hotbar/off-hand). Kept in the
+     *  container layout so old saves load and drop whatever sat here cleanly at the suit's feet. */
+    public static final int OLD_RIGHT_SOCKET_SLOT = 10;
     /** How many slots the suit has (its container's size; the menu's client copy too). */
     public static final int SLOTS = 11;
     // Drain per tick (idle / walking / sprinting), energy per jump and the low-fuel warning level are balance
@@ -182,9 +183,8 @@ public class PowerSuitEntity extends Mob implements GeoEntity, HasCustomInventor
      *  are furnace data that only the server has, see SuitFuel), so the clients' gauge can count the slot. */
     static final EntityDataAccessor<Integer> FUEL_ENERGY =
             SynchedEntityData.defineId(PowerSuitEntity.class, EntityDataSerializers.INT);
+    /** Synced copy of SOCKET_SLOT (the companion/rogue's stored tool while nobody is piloting). */
     private static final EntityDataAccessor<ItemStack> SOCKET_ITEM =
-            SynchedEntityData.defineId(PowerSuitEntity.class, EntityDataSerializers.ITEM_STACK);
-    private static final EntityDataAccessor<ItemStack> SOCKET_ITEM_R =
             SynchedEntityData.defineId(PowerSuitEntity.class, EntityDataSerializers.ITEM_STACK);
     /** Is a helmet in its slot: clients draw it (or not) and know whether the suit is sealed. */
     private static final EntityDataAccessor<Boolean> HELMET =
@@ -292,7 +292,6 @@ public class PowerSuitEntity extends Mob implements GeoEntity, HasCustomInventor
         builder.define(TOOL_SHOTS, 0);
         builder.define(RAIL_END, new Vector3f());
         builder.define(SOCKET_ITEM, ItemStack.EMPTY);
-        builder.define(SOCKET_ITEM_R, ItemStack.EMPTY);
         builder.define(BEAM_TARGET_R, -1);
         builder.define(TOOL_RUNNING_R, false);
         builder.define(TOOL_ACTIVE_R, false);
@@ -534,9 +533,9 @@ public class PowerSuitEntity extends Mob implements GeoEntity, HasCustomInventor
         return this.socketVisuals[arm.ordinal()];
     }
 
-    /** The inventory slot of the current arm's socket. */
+    /** The suit inventory slot for an unpiloted suit's stored tool (companion / rogue). */
     public int socketSlot() {
-        return this.arm().slot;
+        return SOCKET_SLOT;
     }
 
     /** Client: how the suit moves and animates on this client. */
@@ -585,7 +584,6 @@ public class PowerSuitEntity extends Mob implements GeoEntity, HasCustomInventor
             this.entityData.set(FUEL_ENERGY, SuitFuel.energyOf(SuitEngine.of(this.inventory.getItem(ENGINE_SLOT)),
                     this.inventory.getItem(FUEL_SLOT), this.level()));
             this.entityData.set(SOCKET_ITEM, this.inventory.getItem(SOCKET_SLOT).copy());
-            this.entityData.set(SOCKET_ITEM_R, this.inventory.getItem(RIGHT_SOCKET_SLOT).copy());
             ItemStack head = this.inventory.getItem(HELMET_SLOT);
             this.entityData.set(HELMET, head.getItem() instanceof SuitHelmetItem);
             this.entityData.set(GLASSES, ArGlassesItem.isGlasses(head));
@@ -610,8 +608,7 @@ public class PowerSuitEntity extends Mob implements GeoEntity, HasCustomInventor
      */
     private void checkSlotCopies() {
         if (!ItemStack.matches(this.entityData.get(FUEL_ITEM), this.inventory.getItem(FUEL_SLOT))
-                || !ItemStack.matches(this.entityData.get(SOCKET_ITEM), this.inventory.getItem(SOCKET_SLOT))
-                || !ItemStack.matches(this.entityData.get(SOCKET_ITEM_R), this.inventory.getItem(RIGHT_SOCKET_SLOT))) {
+                || !ItemStack.matches(this.entityData.get(SOCKET_ITEM), this.inventory.getItem(SOCKET_SLOT))) {
             this.syncSlots();
         }
     }
@@ -682,13 +679,21 @@ public class PowerSuitEntity extends Mob implements GeoEntity, HasCustomInventor
         return this.entityData.get(FUEL_ITEM);
     }
 
-    /** Both sides: what is in the current arm's socket (the synced copy on clients). */
+    /** Both sides: the power tool on the current arm, or EMPTY. While piloted, the arms read the pilot's real
+     *  off-hand (LEFT) and selected hotbar slot (RIGHT); unpiloted (companion / rogue), LEFT reads SOCKET_SLOT. */
     public ItemStack getSocketStack() {
         return this.getSocketStack(this.arm());
     }
 
     public ItemStack getSocketStack(ToolArm arm) {
-        return this.entityData.get(arm == ToolArm.LEFT ? SOCKET_ITEM : SOCKET_ITEM_R);
+        if (this.getControllingPassenger() instanceof Player pilot) {
+            ItemStack held = arm == ToolArm.LEFT ? pilot.getOffhandItem() : pilot.getMainHandItem();
+            return held.getItem() instanceof PowerTool ? held : ItemStack.EMPTY;
+        }
+        if (arm == ToolArm.RIGHT) {
+            return ItemStack.EMPTY;
+        }
+        return this.level().isClientSide() ? this.entityData.get(SOCKET_ITEM) : this.inventory.getItem(SOCKET_SLOT);
     }
 
     /**
@@ -706,6 +711,11 @@ public class PowerSuitEntity extends Mob implements GeoEntity, HasCustomInventor
         }
         for (; this.oldNuggets > 0; this.oldNuggets -= Math.min(64, this.oldNuggets)) {
             this.spawnAtLocation(level, new ItemStack(Items.IRON_NUGGET, Math.min(64, this.oldNuggets)));
+        }
+        ItemStack oldRight = this.inventory.getItem(OLD_RIGHT_SOCKET_SLOT);
+        if (!oldRight.isEmpty()) {
+            this.inventory.setItem(OLD_RIGHT_SOCKET_SLOT, ItemStack.EMPTY);
+            this.spawnAtLocation(level, oldRight);
         }
     }
 
@@ -731,7 +741,7 @@ public class PowerSuitEntity extends Mob implements GeoEntity, HasCustomInventor
         return new SuitLoadout(this.inventory.getItem(FUEL_SLOT).copy(), this.inventory.getItem(SOCKET_SLOT).copy(),
                 Mth.ceil(this.power.getBurnLeftExact()), this.power.getBurnTotal(), this.oldNuggets, this.inventory.getItem(HELMET_SLOT).copy(),
                 Optional.of(this.inventory.getItem(ENGINE_SLOT).copy()), this.inventory.getItem(OLD_AMMO_SLOT).copy(),
-                this.power.isSwitchedOn(), this.armourStacks(), this.inventory.getItem(RIGHT_SOCKET_SLOT).copy());
+                this.power.isSwitchedOn(), this.armourStacks(), ItemStack.EMPTY);
     }
 
     /** The armour slots' contents, in SuitArmour.Part order (what a packed suit carries); none worn: an empty list. */
@@ -746,7 +756,7 @@ public class PowerSuitEntity extends Mob implements GeoEntity, HasCustomInventor
     public void applyLoadout(SuitLoadout loadout) {
         this.inventory.setItem(FUEL_SLOT, loadout.fuel().copy());
         this.inventory.setItem(SOCKET_SLOT, loadout.socket().copy());
-        this.inventory.setItem(RIGHT_SOCKET_SLOT, loadout.rightSocket().copy());
+        this.inventory.setItem(OLD_RIGHT_SOCKET_SLOT, loadout.rightSocket().copy()); // legacy right socket: handed back next tick
         this.inventory.setItem(HELMET_SLOT, loadout.helmet().copy());
         this.inventory.setItem(OLD_AMMO_SLOT, loadout.ammo().copy()); // an item packed with ammo: handed back next tick
         SuitArmour.Part[] parts = SuitArmour.Part.values();
@@ -843,8 +853,12 @@ public class PowerSuitEntity extends Mob implements GeoEntity, HasCustomInventor
 
     /** Sneak + right-click on a parked suit, or E inside it: open its inventory. Server only. */
     private void openMenu(Player player) {
-        player.openMenu(new SimpleMenuProvider((id, playerInventory, p) -> new PowerSuitMenu(id, playerInventory, this.inventory, this),
-                this.getDisplayName()), buf -> buf.writeVarInt(this.getId()));
+        boolean piloting = this.getControllingPassenger() == player;
+        player.openMenu(new SimpleMenuProvider((id, playerInventory, p) -> new PowerSuitMenu(id, playerInventory, this.inventory, this, piloting),
+                this.getDisplayName()), buf -> {
+            buf.writeVarInt(this.getId());
+            buf.writeBoolean(piloting);
+        });
     }
 
     // =========================================================================================
@@ -1195,7 +1209,7 @@ public class PowerSuitEntity extends Mob implements GeoEntity, HasCustomInventor
             // Design sec. 8: a defeated rogue gives up its tool only, not a suit's worth of scrap (that's the lightning
             // reboot's reward: the whole suit).
             this.spawnAtLocation(level, this.inventory.getItem(SOCKET_SLOT).copy());
-            this.spawnAtLocation(level, this.inventory.getItem(RIGHT_SOCKET_SLOT).copy());
+            this.spawnAtLocation(level, this.inventory.getItem(OLD_RIGHT_SOCKET_SLOT).copy());
             // and its helmet's template (2026-11-16: the kits' helmets are the styles' own, so beating one is how you find it)
             var template = ModItems.templateOf(SuitHelmetItem.style(this.inventory.getItem(HELMET_SLOT)));
             if (template != null) {

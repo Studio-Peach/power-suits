@@ -88,7 +88,7 @@ final class TntScene {
                           AutoPilot.onServer(mc, p -> {
                               PowerSuitEntity x = suit;
                               if (x != null) {
-                                  TntLauncherItem.setLoaded(x, x.getInventory().getItem(PowerSuitEntity.SOCKET_SLOT), TntLauncherItem.DRUM);
+                                  TntLauncherItem.setLoaded(x, x.getSocketStack(), TntLauncherItem.DRUM);
                               }
                           }); }
             case 144 -> AutoPilot.hold(o.keyUse, true);
@@ -167,7 +167,7 @@ final class TntScene {
             s.getInventory().setItem(PowerSuitEntity.HELMET_SLOT, new ItemStack(ModItems.SUIT_HELMET.get())); DevUtil.ironArmour(s);
             ItemStack launcher = new ItemStack(ModItems.TNT_LAUNCHER.get());
             launcher.set(ModDataComponents.LOADED_ROUNDS.get(), TntLauncherItem.DRUM); // a loaded drum: the scene fires at once
-            s.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, launcher);
+            player.setItemInHand(InteractionHand.OFF_HAND, launcher);
             player.getInventory().setItem(9, new ItemStack(Items.TNT, 8)); // the pilot's own TNT loads the drum
             s.snapTo(x + 0.5, g, z + 0.5, 0, 0);
             s.setYBodyRot(0);
@@ -250,7 +250,7 @@ final class TntScene {
             try {
                 w.write(String.format(Locale.ROOT, "%d,%s,%d,%d,%d,%d,%d,%d,%d,%.1f,%.2f,%.2f%n", s, p, x.socket().getUses(),
                         player.getInventory().countItem(Items.TNT),
-                        TntLauncherItem.loaded(x.getInventory().getItem(PowerSuitEntity.SOCKET_SLOT)), clientAmmo, shells, husks, wall, drum, recoil, raise));
+                        TntLauncherItem.loaded(x.getSocketStack()), clientAmmo, shells, husks, wall, drum, recoil, raise));
             } catch (IOException ignored) {
                 // closed at the end of the scene
             }

@@ -91,7 +91,11 @@ public class TntLauncherItem extends Item implements PowerTool, ModTooltip {
         } else {
             launcher.set(ModDataComponents.LOADED_ROUNDS.get(), Math.min(DRUM, rounds));
         }
-        suit.getInventory().setChanged(); // a component changed in place: sync the socket's copy (the HUD's drum)
+        if (suit.getControllingPassenger() instanceof Player pilot) {
+            pilot.getInventory().setChanged();
+        } else {
+            suit.getInventory().setChanged();
+        }
     }
 
     /** Server: one suit's loading state (not saved: a chamber half loaded when the world closes starts over). */
@@ -106,7 +110,7 @@ public class TntLauncherItem extends Item implements PowerTool, ModTooltip {
      *  free would be a TNT tap). */
     @Override
     public void serverTick(PowerSuitEntity suit) {
-        ItemStack launcher = suit.getInventory().getItem(suit.socketSlot());
+        ItemStack launcher = suit.getSocketStack();
         Drum drum = suit.socket().toolData(Drum.class, Drum::new);
         drum.sinceShot = Math.min(drum.sinceShot + 1, Integer.MAX_VALUE / 2);
         int loaded = loaded(launcher);
@@ -225,7 +229,7 @@ public class TntLauncherItem extends Item implements PowerTool, ModTooltip {
     /** On foot it's just a heavy piece of kit: say where it goes. */
     @Override
     public InteractionResult use(Level level, Player player, InteractionHand hand) {
-        if (!level.isClientSide()) {
+        if (!level.isClientSide() && !(player.getVehicle() instanceof PowerSuitEntity)) {
             player.sendOverlayMessage(Component.translatable("message.power_suits.tool_on_foot"));
         }
         return InteractionResult.PASS;

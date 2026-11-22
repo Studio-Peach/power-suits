@@ -194,7 +194,8 @@ final class RailScene {
             DevUtil.firebox(s);
             s.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.COAL, 16));
             s.getInventory().setItem(PowerSuitEntity.HELMET_SLOT, DevUtil.soulHelmet(s.level())); DevUtil.ironArmour(s);
-            s.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, new ItemStack(ModItems.RAIL_CANNON.get()));
+            s.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, new ItemStack(ModItems.RAIL_CANNON.get())); // for the mind after dismount
+            player.setItemInHand(InteractionHand.OFF_HAND, new ItemStack(ModItems.RAIL_CANNON.get()));
             shards(player, 6); // the pilot's own: each shot takes one
             s.snapTo(x + 0.5, g, z + 0.5, 0, 0);
             s.setYBodyRot(0);

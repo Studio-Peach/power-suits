@@ -17,7 +17,6 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -45,52 +44,66 @@ public class PowerSuitMenu extends AbstractContainerMenu {
     /** The armour (frame step 6b): menu slot MENU_ARMOUR + i is SuitArmour.Part i (torso, left arm, right arm, left
      *  leg, right leg). */
     public static final int MENU_ARMOUR = 4;
-    /** The right arm's socket (2026-11-15): after the armour, so the numbers above stay. */
-    public static final int MENU_RIGHT_SOCKET = MENU_ARMOUR + SuitArmour.Part.values().length;
-    private static final int SUIT_SLOTS = MENU_RIGHT_SOCKET + 1;
+    private static final int SUIT_SLOTS = MENU_ARMOUR + SuitArmour.Part.values().length;
     /** Menu slots of the player's inventory (27, top-left first) and hotbar (9). */
     public static final int INV_START = SUIT_SLOTS, HOTBAR_START = INV_START + 27, END = HOTBAR_START + 9;
     /** Where a shift-click from the player's side tries to put an item, first that takes it and has room (the fuel slot
-     *  last: it takes the most; the right arm and leg before the left: reading order). */
-    private static final int[] SHIFT_CLICK_ORDER = {MENU_SOCKET, MENU_RIGHT_SOCKET, MENU_HELMET, MENU_ARMOUR, MENU_ARMOUR + 2, MENU_ARMOUR + 1,
+     *  last: it takes the most; the right arm and leg before the left: reading order). MENU_SOCKET is skipped while
+     *  piloting (then it is the pilot's real off-hand slot). */
+    private static final int[] SHIFT_CLICK_ORDER = {MENU_SOCKET, MENU_HELMET, MENU_ARMOUR, MENU_ARMOUR + 2, MENU_ARMOUR + 1,
             MENU_ARMOUR + 4, MENU_ARMOUR + 3, MENU_ENGINE, MENU_FUEL};
     /** Button ids sent by the "Pack up" and power switch buttons (vanilla's built-in menu button packet carries them). */
     public static final int BUTTON_PACK = 0, BUTTON_POWER = 1;
 
     /** Slot positions in the 176x166 background (top-left of the 16x16 item area), vanilla's inventory screen's: its
-     *  armour column (x 8) and the column right of the preview (x 77, the off-hand slot at its foot), rows 18 apart from
-     *  y 8; the fuel slot in the crafting corner, level with the result slot. tools/make-gui.py draws the frames. */
+     *  armour column (x 8: helmet, right arm, right leg, engine) and the column right of the preview (x 77: torso, left
+     *  arm, left leg, off-hand / companion tool), rows 18 apart from y 8; fuel in the crafting corner. */
     public static final int LEFT_X = 8, RIGHT_X = 77, ROW_Y = 8, ROW = 18, FUEL_X = 112, FUEL_Y = 28;
-    /** The engine (the backpack) moved from the armour column's foot to the foot's right side, beside the left arm's socket,
-     *  when the right arm got a socket at that foot (2026-11-15): the sockets are the arms' two ends. */
-    public static final int ENGINE_X = 95;
-    /** Empty-slot outlines: vanilla's for the helmet, chest (the torso) and legs, ours for an arm. */
+    /** Empty-slot outlines: vanilla's for the helmet, chest (the torso), legs and off-hand shield, ours for an arm. */
     private static final Identifier EMPTY_HELMET = Identifier.withDefaultNamespace("container/slot/helmet");
     private static final Identifier EMPTY_TORSO = Identifier.withDefaultNamespace("container/slot/chestplate");
     private static final Identifier EMPTY_LEG = Identifier.withDefaultNamespace("container/slot/leggings");
+    private static final Identifier EMPTY_SHIELD = Identifier.withDefaultNamespace("container/slot/shield");
     private static final Identifier EMPTY_ARM = Identifier.fromNamespaceAndPath(PowerSuits.MODID, "container/slot/suit_arm");
 
     @Nullable
     private final PowerSuitEntity suit;
+    /** True when opened from inside the suit (pilot): MENU_SOCKET is the player's real off-hand slot; false when opened
+     *  from outside (parked / companion): MENU_SOCKET is the suit's companion tool slot (SOCKET_SLOT). */
+    private final boolean piloting;
 
     public PowerSuitMenu(int containerId, Inventory playerInventory, Container suitInventory, @Nullable PowerSuitEntity suit) {
+        this(containerId, playerInventory, suitInventory, suit, suit != null && playerInventory.player.getVehicle() == suit);
+    }
+
+    public PowerSuitMenu(int containerId, Inventory playerInventory, Container suitInventory, @Nullable PowerSuitEntity suit, boolean piloting) {
         super(ModMenus.POWER_SUIT.get(), containerId);
         this.suit = suit;
+        this.piloting = piloting;
         checkContainerSize(suitInventory, PowerSuitEntity.SLOTS);
         suitInventory.startOpen(playerInventory.player);
 
         // Added in MENU_* order: the n-th addSlot is menu slot n.
-        this.addSlot(new Slot(suitInventory, PowerSuitEntity.SOCKET_SLOT, RIGHT_X, ROW_Y + 3 * ROW) { // the off-hand slot
-            @Override
-            public boolean mayPlace(ItemStack stack) {
-                return stack.getItem() instanceof PowerTool;
-            }
+        if (this.piloting) {
+            this.addSlot(new Slot(playerInventory, Inventory.SLOT_OFFHAND, RIGHT_X, ROW_Y + 3 * ROW) { // pilot's real off-hand
+                @Override
+                public Identifier getNoItemIcon() {
+                    return EMPTY_SHIELD;
+                }
+            });
+        } else {
+            this.addSlot(new Slot(suitInventory, PowerSuitEntity.SOCKET_SLOT, RIGHT_X, ROW_Y + 3 * ROW) { // companion's tool slot
+                @Override
+                public boolean mayPlace(ItemStack stack) {
+                    return stack.getItem() instanceof PowerTool;
+                }
 
-            @Override
-            public int getMaxStackSize() {
-                return 1;
-            }
-        });
+                @Override
+                public int getMaxStackSize() {
+                    return 1;
+                }
+            });
+        }
         this.addSlot(new Slot(suitInventory, PowerSuitEntity.FUEL_SLOT, FUEL_X, FUEL_Y) {
             @Override
             public boolean mayPlace(ItemStack stack) {
@@ -115,7 +128,7 @@ public class PowerSuitMenu extends AbstractContainerMenu {
                 return 1;
             }
         });
-        this.addSlot(new Slot(suitInventory, PowerSuitEntity.ENGINE_SLOT, ENGINE_X, ROW_Y + 3 * ROW) { // the backpack: worn too
+        this.addSlot(new Slot(suitInventory, PowerSuitEntity.ENGINE_SLOT, LEFT_X, ROW_Y + 3 * ROW) { // the backpack: foot of left column
             @Override
             public boolean mayPlace(ItemStack stack) {
                 return stack.getItem() instanceof EngineItem;
@@ -150,18 +163,6 @@ public class PowerSuitMenu extends AbstractContainerMenu {
                 }
             });
         }
-        // The right arm's socket, at the foot of the left column: the suit faces you, so it sits under its right arm's piece.
-        this.addSlot(new Slot(suitInventory, PowerSuitEntity.RIGHT_SOCKET_SLOT, LEFT_X, ROW_Y + 3 * ROW) {
-            @Override
-            public boolean mayPlace(ItemStack stack) {
-                return stack.getItem() instanceof PowerTool;
-            }
-
-            @Override
-            public int getMaxStackSize() {
-                return 1;
-            }
-        });
         // Player inventory and hotbar, where vanilla's inventory screen has them.
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 9; col++) {
@@ -189,7 +190,8 @@ public class PowerSuitMenu extends AbstractContainerMenu {
     /** Client side: the server told us which suit (entity id). Slot contents arrive separately. */
     public static PowerSuitMenu fromNetwork(int containerId, Inventory playerInventory, RegistryFriendlyByteBuf buf) {
         PowerSuitEntity suit = playerInventory.player.level().getEntity(buf.readVarInt()) instanceof PowerSuitEntity s ? s : null;
-        return new PowerSuitMenu(containerId, playerInventory, new SimpleContainer(PowerSuitEntity.SLOTS), suit);
+        boolean piloting = buf.readBoolean();
+        return new PowerSuitMenu(containerId, playerInventory, new SimpleContainer(PowerSuitEntity.SLOTS), suit, piloting);
     }
 
     @Nullable
@@ -197,9 +199,10 @@ public class PowerSuitMenu extends AbstractContainerMenu {
         return this.suit;
     }
 
-    /** Both sides: is this player inside the suit (its pilot)? Then there's no Pack up: climb out first. */
+    /** Both sides: was this menu opened from inside the suit (pilot)? Then MENU_SOCKET is their real off-hand and
+     *  there's no Pack up: climb out first. */
     public boolean isPiloting(Player player) {
-        return this.suit != null && player.getVehicle() == this.suit;
+        return this.piloting || this.suit != null && player.getVehicle() == this.suit;
     }
 
     /** Usable by the pilot from inside, or on a parked suit you're standing next to (not one somebody else is in). */
@@ -225,43 +228,6 @@ public class PowerSuitMenu extends AbstractContainerMenu {
         return false;
     }
 
-    /**
-     * The swap-hands key (F) over a slot swaps that slot with a socket, not with the player's real off hand: in this
-     * screen the sockets are the hands (vanilla's swap would move the player's hidden off-hand item instead). A tool
-     * goes in, whatever was in the socket comes out; anything that isn't a power tool stays put. Runs on both sides (the
-     * client predicts the click, the server's result is the real one).
-     */
-    @Override
-    public void clicked(int slotIndex, int buttonNum, ContainerInput input, Player player) {
-        if (input == ContainerInput.SWAP && buttonNum == Inventory.SLOT_OFFHAND && slotIndex >= 0 && slotIndex < this.slots.size()) {
-            Slot target = this.slots.get(slotIndex);
-            Slot left = this.slots.get(MENU_SOCKET), right = this.slots.get(MENU_RIGHT_SOCKET);
-            if (target == left || target == right) {
-                swap(left, right, player); // F over a socket moves its tool to the other arm
-            } else {
-                // A tool goes to the first empty socket (left, then right); with both full it swaps with the left's.
-                boolean toRight = !left.getItem().isEmpty() && right.getItem().isEmpty() && !target.getItem().isEmpty();
-                swap(target, toRight ? right : left, player);
-            }
-            return;
-        }
-        super.clicked(slotIndex, buttonNum, input, player);
-    }
-
-    /** Swap two slots' items if each may go in the other (an empty side is fine; nothing happens with both empty). */
-    private static void swap(Slot a, Slot b, Player player) {
-        ItemStack x = a.getItem(), y = b.getItem();
-        if (x.isEmpty() && y.isEmpty() || !a.mayPickup(player) || !b.mayPickup(player)) {
-            return;
-        }
-        boolean xFits = x.isEmpty() || b.mayPlace(x) && x.getCount() <= b.getMaxStackSize(x);
-        boolean yFits = y.isEmpty() || a.mayPlace(y) && y.getCount() <= a.getMaxStackSize(y);
-        if (xFits && yFits) {
-            a.setByPlayer(y.copy());
-            b.setByPlayer(x.copy());
-        }
-    }
-
     /** The suit's menu slot a shift-click from the player's side sends this item to, or -1 (then it hops between
      *  inventory and hotbar, as in vanilla). The first slot that takes it and has room (an arm piece goes to the free
      *  arm); none with room: the first that takes it (nothing moves, like a furnace's full slot). The empty bucket and
@@ -269,6 +235,9 @@ public class PowerSuitMenu extends AbstractContainerMenu {
     private int shiftClickTarget(ItemStack stack) {
         int first = -1;
         for (int target : SHIFT_CLICK_ORDER) {
+            if (target == MENU_SOCKET && this.piloting) {
+                continue; // while piloting this is the player's real off-hand slot (vanilla doesn't shift-click into it)
+            }
             if (target == MENU_FUEL && (stack.is(Items.BUCKET) || stack.is(Items.GLASS_BOTTLE))) {
                 continue;
             }

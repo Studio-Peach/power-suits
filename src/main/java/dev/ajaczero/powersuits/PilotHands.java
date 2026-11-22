@@ -7,7 +7,7 @@ import dev.ajaczero.powersuits.item.ToolMining;
 import java.util.List;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
-import net.minecraft.sounds.SoundEvents;
+
 import net.minecraft.util.TriState;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -24,7 +24,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.EntityMountEvent;
 import net.neoforged.neoforge.event.entity.living.LivingEntityUseItemEvent;
-import net.neoforged.neoforge.event.entity.living.LivingSwapItemsEvent;
+
 import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
@@ -55,52 +55,6 @@ public final class PilotHands {
         return player.getVehicle() instanceof PowerSuitEntity suit ? suit : null;
     }
 
-    // ---- the swap-hands key: the socket is the suit's off hand -------------------------------------
-
-    /**
-     * Server: F while piloting moves tools between the pilot's hand and the arms' sockets, instead of swapping with the player's own
-     * off hand (user, 2026-10-27: keep tools on the hotbar and change them with F). A power tool in hand goes into the
-     * socket and the old tool comes out into the hand; an empty hand takes the tool out; anything else stays where it is.
-     * Works powered or not (it's only a swap). NeoForge posts this event for the swap packet; cancelling it stops
-     * vanilla's own swap.
-     */
-    @SubscribeEvent
-    public static void swapHands(LivingSwapItemsEvent.Hands event) {
-        if (!(event.getEntity() instanceof Player player) || !(player.getVehicle() instanceof PowerSuitEntity suit)
-                || suit.getControllingPassenger() != player) {
-            return;
-        }
-        ItemStack hand = player.getMainHandItem();
-        ItemStack left = suit.getInventory().getItem(ToolArm.LEFT.slot), right = suit.getInventory().getItem(ToolArm.RIGHT.slot);
-        boolean handIsTool = hand.getItem() instanceof PowerTool && hand.getCount() == 1;
-        if (!hand.isEmpty() && !handIsTool && left.isEmpty() && right.isEmpty()) {
-            return; // no tool anywhere: the hands are plain hands, vanilla swaps main and off hand
-        }
-        event.setCanceled(true);
-        if (player.level().isClientSide()) {
-            return;
-        }
-        if (!hand.isEmpty() && !handIsTool) {
-            player.sendOverlayMessage(Component.translatable("message.power_suits.not_a_tool"));
-            return;
-        }
-        if (hand.isEmpty()) { // an empty hand takes a tool out: the left arm's first, then the right's
-            ToolArm from = !left.isEmpty() ? ToolArm.LEFT : ToolArm.RIGHT;
-            if (suit.getInventory().getItem(from.slot).isEmpty()) {
-                return;
-            }
-            player.setItemInHand(InteractionHand.MAIN_HAND, suit.getInventory().getItem(from.slot).copy());
-            suit.getInventory().setItem(from.slot, ItemStack.EMPTY);
-        } else {
-            // a tool goes into the first free socket (left, then right); with both full it swaps with the left's
-            ToolArm into = left.isEmpty() ? ToolArm.LEFT : right.isEmpty() ? ToolArm.RIGHT : ToolArm.LEFT;
-            ItemStack out = suit.getInventory().getItem(into.slot).copy();
-            suit.getInventory().setItem(into.slot, hand.copy());
-            player.setItemInHand(InteractionHand.MAIN_HAND, out);
-        }
-        suit.playSound(SoundEvents.ARMOR_EQUIP_IRON.value(), 0.8F, 1.1F);
-    }
-
     // ---- attacking and mining: normal, but a powered-down hand doesn't move --------------------------
 
     @SubscribeEvent
@@ -108,7 +62,9 @@ public final class PilotHands {
         PowerSuitEntity suit = suitOf(event.getEntity());
         if (suit != null && (!suit.canOperate() || rightIsTool(suit))) {
             event.setCanceled(true);
-            tellUnpowered(event.getEntity());
+            if (!rightIsTool(suit)) {
+                tellUnpowered(event.getEntity());
+            }
         }
     }
 
@@ -200,9 +156,9 @@ public final class PilotHands {
         if (suit == null) {
             return;
         }
-        boolean handIsTool = suit.getSocketStack(event.getHand() == InteractionHand.OFF_HAND ? ToolArm.LEFT : ToolArm.RIGHT).getItem() instanceof PowerTool;
-        if (handIsTool) {
-            cancellable.setCanceled(true); // a detached hand (a tool on that arm): its turn belongs to the tool (ToolInput)
+        boolean offHandTool = event.getHand() == InteractionHand.OFF_HAND && suit.getSocketStack(ToolArm.LEFT).getItem() instanceof PowerTool;
+        if (offHandTool) {
+            cancellable.setCanceled(true); // off-hand power tool: its right-click belongs to ToolInput
         } else if (!suit.canOperate()) {
             cancellable.setCanceled(true);
             if (event.getLevel().isClientSide()) {

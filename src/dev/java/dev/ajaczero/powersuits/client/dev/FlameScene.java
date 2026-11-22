@@ -148,7 +148,7 @@ final class FlameScene {
             DevUtil.firebox(s);
             s.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.COAL, 16));
             s.getInventory().setItem(PowerSuitEntity.HELMET_SLOT, DevUtil.soulHelmet(s.level())); DevUtil.ironArmour(s);
-            s.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, new ItemStack(ModItems.FLAMETHROWER.get()));
+            player.setItemInHand(net.minecraft.world.InteractionHand.OFF_HAND, new ItemStack(ModItems.FLAMETHROWER.get()));
             s.snapTo(x + 0.5, g, z + 0.5, 0, 0);
             s.setYBodyRot(0);
             s.setYHeadRot(0);

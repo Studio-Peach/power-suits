@@ -583,8 +583,7 @@ public final class AutoPilot {
             if (fuelSuit == null) {
                 return;
             }
-            fuelSuit.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT,
-                    new ItemStack(ModItems.EM_PROJECTOR.get()));
+            player.setItemInHand(InteractionHand.OFF_HAND, new ItemStack(ModItems.EM_PROJECTOR.get()));
             player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
             var level = player.level();
             for (int i = 0; i < 3; i++) {
@@ -659,8 +658,7 @@ public final class AutoPilot {
             }
             player.setGameMode(GameType.SURVIVAL);
             player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
-            fuelSuit.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT,
-                    new ItemStack(ModItems.DRILL.get()));
+            player.setItemInHand(InteractionHand.OFF_HAND, new ItemStack(ModItems.DRILL.get()));
             var level = player.level();
             BlockPos base = fuelSuit.blockPosition();
             mineBase = base;
@@ -686,8 +684,7 @@ public final class AutoPilot {
             if (fuelSuit == null) {
                 return;
             }
-            fuelSuit.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT,
-                    new ItemStack(ModItems.CHAINSAW.get()));
+            player.setItemInHand(InteractionHand.OFF_HAND, new ItemStack(ModItems.CHAINSAW.get()));
             var level = player.level();
             level.setBlock(treeBase.below(), Blocks.GRASS_BLOCK.defaultBlockState(), 3);
             level.registryAccess().lookupOrThrow(Registries.FEATURE)
@@ -746,8 +743,7 @@ public final class AutoPilot {
                 player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
                 player.getInventory().setItem(7, new ItemStack(Items.FIRE_CHARGE, 64)); // bullets (survival here), not in the hand
                 player.getInventory().setItem(8, new ItemStack(Items.FIRE_CHARGE, 64));
-                suit.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT,
-                        new ItemStack(ModItems.CHAINGUN.get()));
+                player.setItemInHand(InteractionHand.OFF_HAND, new ItemStack(ModItems.CHAINGUN.get()));
                 suit.interact(player, InteractionHand.MAIN_HAND, suit.position());
             }
         });
@@ -825,6 +821,7 @@ public final class AutoPilot {
         // Take the rivet gun out of the suit (the shot shows the bare socket coupling) and into the player's hand.
         mc.player.getInventory().setSelectedSlot(0);
         onServer(mc, player -> {
+            player.setItemInHand(InteractionHand.OFF_HAND, ItemStack.EMPTY);
             if (fuelSuit != null) {
                 fuelSuit.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, ItemStack.EMPTY);
             }
@@ -1119,20 +1116,11 @@ public final class AutoPilot {
     /** Server: put this tool (or nothing) in the socket of the suit the player sits in. */
     /** The right arm's socket (2026-11-15: either arm can carry a power tool). */
     private static void socketRight(Minecraft mc, @Nullable Item tool) {
-        onServer(mc, player -> {
-            if (player.getVehicle() instanceof PowerSuitEntity suit) {
-                suit.getInventory().setItem(PowerSuitEntity.RIGHT_SOCKET_SLOT, tool == null ? ItemStack.EMPTY : new ItemStack(tool));
-            }
-        });
+        onServer(mc, player -> player.setItemInHand(InteractionHand.MAIN_HAND, tool == null ? ItemStack.EMPTY : new ItemStack(tool)));
     }
 
     private static void socket(Minecraft mc, @Nullable Item tool) {
-        onServer(mc, player -> {
-            if (player.getVehicle() instanceof PowerSuitEntity suit) {
-                suit.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT,
-                        tool == null ? ItemStack.EMPTY : new ItemStack(tool));
-            }
-        });
+        onServer(mc, player -> player.setItemInHand(InteractionHand.OFF_HAND, tool == null ? ItemStack.EMPTY : new ItemStack(tool)));
     }
 
     static void shot(Minecraft mc, String name) {
@@ -1213,9 +1201,9 @@ public final class AutoPilot {
             PowerSuitEntity suit = ModEntities.POWER_SUIT.get().create(level, EntitySpawnReason.COMMAND);
             // A full stack of blaze rods (~4 hours of walking): enough for any scripted drive.
             DevUtil.firebox(suit); suit.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.BLAZE_ROD, 64)); suit.getInventory().setItem(PowerSuitEntity.HELMET_SLOT, new ItemStack(ModItems.SUIT_HELMET.get())); DevUtil.ironArmour(suit);
-            suit.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, new ItemStack(ModItems.CHAINGUN.get()));
             suit.snapTo(player.getX() + 0.5, player.getY(), player.getZ() + 0.5, 0, 0);
             level.addFreshEntity(suit);
+            player.setItemInHand(InteractionHand.OFF_HAND, new ItemStack(ModItems.CHAINGUN.get()));
             player.startRiding(suit);
         });
     }

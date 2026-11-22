@@ -198,7 +198,7 @@ public class FlamethrowerItem extends Item implements PowerTool, ModTooltip {
     /** On foot it's just a heavy piece of kit: say where it goes. */
     @Override
     public InteractionResult use(Level level, Player player, InteractionHand hand) {
-        if (!level.isClientSide()) {
+        if (!level.isClientSide() && !(player.getVehicle() instanceof PowerSuitEntity)) {
             player.sendOverlayMessage(Component.translatable("message.power_suits.tool_on_foot"));
         }
         return InteractionResult.PASS;

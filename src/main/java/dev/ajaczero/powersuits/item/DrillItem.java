@@ -215,7 +215,7 @@ public class DrillItem extends Item implements PowerTool, ModTooltip {
 
     @Override
     public InteractionResult use(Level level, Player player, InteractionHand hand) {
-        if (!level.isClientSide()) {
+        if (!level.isClientSide() && !(player.getVehicle() instanceof PowerSuitEntity)) {
             player.sendOverlayMessage(Component.translatable("message.power_suits.tool_on_foot"));
         }
         return InteractionResult.PASS;

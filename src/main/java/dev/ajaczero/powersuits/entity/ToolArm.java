@@ -1,19 +1,12 @@
 package dev.ajaczero.powersuits.entity;
 
 /**
- * Which of the frame's two arms a socket belongs to (2026-11-15: either hand can be swapped for a power tool, so both arms
- * have a socket). The left arm's socket is the original ({@link PowerSuitEntity#SOCKET_SLOT}); the right arm's is added after
- * the armour slots, so saves keep their numbers.
+ * Which arm of the suit carries a power tool (2026-11-22: for a pilot, power tools live in the normal off-hand and
+ * hotbar main hand instead of dedicated suit slots — LEFT is the off-hand, RIGHT is the selected hotbar slot; for an
+ * unpiloted companion or rogue, LEFT is the suit's stored tool slot {@link PowerSuitEntity#SOCKET_SLOT}).
  */
 public enum ToolArm {
-    LEFT(PowerSuitEntity.SOCKET_SLOT), RIGHT(PowerSuitEntity.RIGHT_SOCKET_SLOT);
-
-    /** The suit's inventory slot of this arm's socket. */
-    public final int slot;
-
-    ToolArm(int slot) {
-        this.slot = slot;
-    }
+    LEFT, RIGHT;
 
     public ToolArm other() {
         return this == LEFT ? RIGHT : LEFT;

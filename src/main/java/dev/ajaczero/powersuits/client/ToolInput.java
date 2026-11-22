@@ -56,11 +56,13 @@ public final class ToolInput {
         }
         boolean main = event.getHand() == InteractionHand.MAIN_HAND;
         if (main && hasTool(suit, ToolArm.RIGHT)) {
-            // The main hand is detached: its items don't work, and the press goes on to the off hand's tool (cancelling
-            // stops vanilla's hand loop, so the off hand's event never comes: this is that turn).
-            HELD[ToolArm.LEFT.ordinal()] = hasTool(suit, ToolArm.LEFT);
-            event.setCanceled(true);
-            event.setSwingHand(false);
+            if (hasTool(suit, ToolArm.LEFT)) {
+                // Dual-wielding two tools: right-click always goes straight to the off-hand tool.
+                HELD[ToolArm.LEFT.ordinal()] = true;
+                event.setCanceled(true);
+                event.setSwingHand(false);
+            }
+            // Otherwise (only main hand holds a power tool): don't cancel so doors, chests and off-hand items (shield/torch) work.
             return;
         }
         if (!main && hasTool(suit, ToolArm.LEFT)) {

@@ -559,61 +559,51 @@ public final class PowerSuitTests {
         helper.succeed();
     }
 
-    /** The swap-hands key (F) and the socket, the suit's off hand (user, 2026-10-27): in the menu, F over a slot swaps it
-     *  with the socket (power tools only; the player's real off hand isn't touched); while piloting, F swaps the item in
-     *  hand with the socket tool (an empty hand takes it out). */
-    @SuitTest
+    /** Pilots hold power tools in their normal hotbar (right arm) and off-hand (left arm); F is pure vanilla
+     *  swap-hands; the menu's bottom-right slot is the pilot's real off-hand inside, and the companion tool slot
+     *  outside (2026-11-22). Legacy right-socket items drop at the suit's feet on tick. */
+    @SuitTest(timeoutTicks = 20)
     public static void swapHandsKeyMovesTheSocketTool(GameTestHelper helper) {
         PowerSuitEntity suit = fueledSuit(helper, new ItemStack(Items.COAL, 4));
         suit.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, new ItemStack(ModItems.CHAINGUN.get()));
         Player player = helper.makeMockPlayer(GameType.SURVIVAL);
         player.snapTo(helper.absoluteVec(new Vec3(2.5, 2, 4.5)));
-        PowerSuitMenu menu = new PowerSuitMenu(1, player.getInventory(), suit.getInventory(), suit);
-        player.getInventory().setItem(0, new ItemStack(ModItems.DRILL.get())); // hotbar slot 0
-        player.setItemInHand(InteractionHand.OFF_HAND, new ItemStack(Items.TORCH));
-        menu.clicked(PowerSuitMenu.HOTBAR_START, Inventory.SLOT_OFFHAND, ContainerInput.SWAP, player);
-        helper.assertTrue(suit.getInventory().getItem(PowerSuitEntity.RIGHT_SOCKET_SLOT).is(ModItems.DRILL.get())
-                && suit.getInventory().getItem(PowerSuitEntity.SOCKET_SLOT).is(ModItems.CHAINGUN.get())
-                && player.getInventory().getItem(0).isEmpty(), "F in the menu puts the drill in the free (right) socket");
-        player.getInventory().setItem(0, new ItemStack(ModItems.CHAINSAW.get()));
-        menu.clicked(PowerSuitMenu.HOTBAR_START, Inventory.SLOT_OFFHAND, ContainerInput.SWAP, player);
-        helper.assertTrue(suit.getInventory().getItem(PowerSuitEntity.SOCKET_SLOT).is(ModItems.CHAINSAW.get())
-                && player.getInventory().getItem(0).is(ModItems.CHAINGUN.get()), "with both full it swaps with the left's");
-        menu.clicked(PowerSuitMenu.MENU_SOCKET, Inventory.SLOT_OFFHAND, ContainerInput.SWAP, player);
-        helper.assertTrue(suit.getInventory().getItem(PowerSuitEntity.SOCKET_SLOT).is(ModItems.DRILL.get())
-                && suit.getInventory().getItem(PowerSuitEntity.RIGHT_SOCKET_SLOT).is(ModItems.CHAINSAW.get()), "F over a socket swaps the two arms' tools");
-        // back to one tool in the left socket (the drill) for the rest
-        suit.getInventory().setItem(PowerSuitEntity.RIGHT_SOCKET_SLOT, ItemStack.EMPTY);
-        player.getInventory().setItem(0, ItemStack.EMPTY);
-        helper.assertTrue(player.getOffhandItem().is(Items.TORCH), "the real off hand is left alone");
-        player.getInventory().setItem(1, new ItemStack(Items.DIRT));
-        menu.clicked(PowerSuitMenu.HOTBAR_START + 1, Inventory.SLOT_OFFHAND, ContainerInput.SWAP, player);
-        helper.assertTrue(suit.getInventory().getItem(PowerSuitEntity.SOCKET_SLOT).is(ModItems.DRILL.get())
-                && player.getInventory().getItem(1).is(Items.DIRT), "dirt doesn't go in");
+        // Opened from outside: MENU_SOCKET is the suit's companion tool slot (PowerTool only).
+        PowerSuitMenu outside = new PowerSuitMenu(1, player.getInventory(), suit.getInventory(), suit, false);
+        helper.assertTrue(outside.getSlot(PowerSuitMenu.MENU_SOCKET).getItem().is(ModItems.CHAINGUN.get()),
+                "outside menu shows the companion tool slot");
+        helper.assertTrue(!outside.getSlot(PowerSuitMenu.MENU_SOCKET).mayPlace(new ItemStack(Items.TORCH)),
+                "companion tool slot takes only power tools");
 
+        // Opened from inside: MENU_SOCKET is the pilot's real off-hand slot (any item; F stays vanilla).
         Player pilot = boardedPilot(helper, suit);
+        pilot.setItemInHand(InteractionHand.OFF_HAND, new ItemStack(Items.TORCH));
         pilot.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.CHAINSAW.get()));
-        var event = CommonHooks.onLivingSwapHandItems(pilot);
-        helper.assertTrue(event.isCanceled(), "the suit takes over the swap");
-        helper.assertTrue(suit.getInventory().getItem(PowerSuitEntity.RIGHT_SOCKET_SLOT).is(ModItems.CHAINSAW.get())
-                && suit.getInventory().getItem(PowerSuitEntity.SOCKET_SLOT).is(ModItems.DRILL.get()) && pilot.getMainHandItem().isEmpty(),
-                "F while piloting puts the chainsaw in the free (right) socket");
-        pilot.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.CHAINGUN.get()));
-        CommonHooks.onLivingSwapHandItems(pilot);
-        helper.assertTrue(suit.getInventory().getItem(PowerSuitEntity.SOCKET_SLOT).is(ModItems.CHAINGUN.get())
-                && pilot.getMainHandItem().is(ModItems.DRILL.get()), "with both full it swaps with the left's");
-        pilot.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
-        CommonHooks.onLivingSwapHandItems(pilot);
-        helper.assertTrue(suit.getInventory().getItem(PowerSuitEntity.SOCKET_SLOT).isEmpty()
-                && pilot.getMainHandItem().is(ModItems.CHAINGUN.get()), "an empty hand takes the left's tool out first");
-        pilot.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.STONE, 5));
-        CommonHooks.onLivingSwapHandItems(pilot);
-        helper.assertTrue(suit.getInventory().getItem(PowerSuitEntity.SOCKET_SLOT).isEmpty()
-                && pilot.getMainHandItem().is(Items.STONE), "stone stays in the hand while a tool is fitted");
-        suit.getInventory().setItem(PowerSuitEntity.RIGHT_SOCKET_SLOT, ItemStack.EMPTY);
-        var plain = CommonHooks.onLivingSwapHandItems(pilot);
-        helper.assertTrue(!plain.isCanceled(), "with no tool on either arm F is vanilla's: the hands are plain hands");
-        helper.succeed();
+        PowerSuitMenu inside = new PowerSuitMenu(2, pilot.getInventory(), suit.getInventory(), suit, true);
+        helper.assertTrue(inside.getSlot(PowerSuitMenu.MENU_SOCKET).getItem().is(Items.TORCH),
+                "inside menu shows the pilot's real off-hand");
+        helper.assertTrue(inside.getSlot(PowerSuitMenu.MENU_SOCKET).mayPlace(new ItemStack(Items.SHIELD)),
+                "pilot's off-hand slot takes any item");
+        helper.assertTrue(suit.getSocketStack(ToolArm.RIGHT).is(ModItems.CHAINSAW.get())
+                && suit.getSocketStack(ToolArm.LEFT).isEmpty(),
+                "piloted arms read the pilot's hotbar (RIGHT) and off-hand (LEFT, empty for a torch)");
+        // F is pure vanilla swap-hands: never canceled by the suit.
+        helper.assertTrue(!CommonHooks.onLivingSwapHandItems(pilot).isCanceled(), "F is pure vanilla swap-hands");
+        // Companion's stored tool stays untouched in SOCKET_SLOT for when the pilot climbs out.
+        pilot.stopRiding();
+        helper.assertTrue(suit.getSocketStack(ToolArm.LEFT).is(ModItems.CHAINGUN.get()),
+                "unpiloted suit gets its stored companion tool back");
+
+        // Legacy right-socket item drops cleanly on tick so old saves lose nothing.
+        suit.getInventory().setItem(PowerSuitEntity.OLD_RIGHT_SOCKET_SLOT, new ItemStack(ModItems.DRILL.get()));
+        helper.runAfterDelay(3, () -> {
+            helper.assertTrue(suit.getInventory().getItem(PowerSuitEntity.OLD_RIGHT_SOCKET_SLOT).isEmpty(),
+                    "legacy right socket slot cleared");
+            var dropped = helper.getLevel().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,
+                    suit.getBoundingBox().inflate(3), e -> e.getItem().is(ModItems.DRILL.get()));
+            helper.assertTrue(!dropped.isEmpty(), "legacy right socket drill dropped at the suit's feet");
+            helper.succeed();
+        });
     }
 
     // =========================================================================================
@@ -630,6 +620,7 @@ public final class PowerSuitTests {
     /** A pilot carrying bullets (iron fire charges) for the chaingun. */
     private static Player armedPilot(GameTestHelper helper, PowerSuitEntity suit) {
         Player pilot = boardedPilot(helper, suit);
+        pilot.setItemInHand(InteractionHand.OFF_HAND, suit.getInventory().getItem(PowerSuitEntity.SOCKET_SLOT).copy());
         pilot.getInventory().add(new ItemStack(Items.FIRE_CHARGE, 64));
         return pilot;
     }
@@ -640,6 +631,7 @@ public final class PowerSuitTests {
         pilot.getAbilities().instabuild = true;
         pilot.snapTo(helper.absoluteVec(new Vec3(1.5, 2, 4.5)));
         suit.interact(pilot, InteractionHand.MAIN_HAND, suit.position());
+        pilot.setItemInHand(InteractionHand.OFF_HAND, suit.getInventory().getItem(PowerSuitEntity.SOCKET_SLOT).copy());
         return pilot;
     }
 
@@ -713,6 +705,7 @@ public final class PowerSuitTests {
     public static void chaingunUsesOneNuggetPerBullet(GameTestHelper helper) {
         PowerSuitEntity suit = armedSuit(helper, SUIT_POS, new ItemStack(Items.BLAZE_ROD, 2));
         Player pilot = boardedPilot(helper, suit);
+        pilot.setItemInHand(InteractionHand.OFF_HAND, new ItemStack(ModItems.CHAINGUN.get()));
         pilot.getInventory().add(new ItemStack(Items.FIRE_CHARGE, 3));
         suit.positionRider(pilot);
         suit.socket().setTriggerHeld(pilot, true);
@@ -803,7 +796,7 @@ public final class PowerSuitTests {
         });
         helper.runAfterDelay(6, () -> {
             helper.assertTrue(!suit.socket().isActive(), "released: the arm should lower");
-            suit.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, ItemStack.EMPTY);
+            pilot.setItemInHand(InteractionHand.OFF_HAND, ItemStack.EMPTY);
             suit.socket().setTriggerHeld(pilot, true);
         });
         helper.runAfterDelay(9, () -> {
@@ -978,21 +971,22 @@ public final class PowerSuitTests {
         BlockHitResult hit = new BlockHitResult(Vec3.atCenterOf(block).add(0, 0.5, 0), Direction.UP, block, false);
         helper.runAfterDelay(5, () -> {
             helper.assertTrue(!CommonHooks.onRightClickBlock(pilot, InteractionHand.OFF_HAND, block, hit).isCanceled(),
-                    "no tool on the left arm: the off hand is a plain hand");
+                    "no tool in off-hand: vanilla off-hand works");
             helper.assertTrue(!CommonHooks.onRightClickBlock(pilot, InteractionHand.MAIN_HAND, block, hit).isCanceled(),
                     "the main hand still uses things");
-            suit.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, new ItemStack(ModItems.DRILL.get()));
+            pilot.setItemInHand(InteractionHand.OFF_HAND, new ItemStack(ModItems.DRILL.get()));
         });
         helper.runAfterDelay(8, () -> {
             helper.assertTrue(CommonHooks.onRightClickBlock(pilot, InteractionHand.OFF_HAND, block, hit).isCanceled(),
-                    "a tool on the left arm takes the off hand's turn");
+                    "a power tool in off-hand takes the off-hand's right-click turn");
             helper.assertTrue(!CommonHooks.onRightClickBlock(pilot, InteractionHand.MAIN_HAND, block, hit).isCanceled(),
-                    "the main hand is still a hand");
-            suit.getInventory().setItem(PowerSuitEntity.RIGHT_SOCKET_SLOT, new ItemStack(ModItems.CHAINSAW.get()));
+                    "the main hand is still a normal hand");
+            pilot.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.CHAINSAW.get()));
         });
         helper.runAfterDelay(11, () -> {
-            helper.assertTrue(CommonHooks.onRightClickBlock(pilot, InteractionHand.MAIN_HAND, block, hit).isCanceled(),
-                    "a tool on the right arm takes the main hand's turn");
+            helper.assertTrue(PilotHands.rightIsTool(suit), "a power tool in main hand mounts on the right arm");
+            helper.assertTrue(!CommonHooks.onRightClickBlock(pilot, InteractionHand.MAIN_HAND, block, hit).isCanceled(),
+                    "holding a power tool in main hand still lets doors/chests/off-hand items work on right-click");
             helper.succeed();
         });
     }
@@ -1042,6 +1036,7 @@ public final class PowerSuitTests {
         suit.setYRot(0);
         suit.setYBodyRot(0);
         Player pilot = boardedPilot(helper, suit);
+        pilot.setItemInHand(InteractionHand.OFF_HAND, suit.getInventory().getItem(PowerSuitEntity.SOCKET_SLOT).copy());
         suit.positionRider(pilot);
         lookAt(pilot, at);
         return pilot;
@@ -1933,31 +1928,29 @@ public final class PowerSuitTests {
     public static void bothArmsCarryTools(GameTestHelper helper) {
         PowerSuitEntity suit = toolSuit(helper);
         suit.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.BLAZE_ROD, 4));
-        suit.getInventory().setItem(PowerSuitEntity.RIGHT_SOCKET_SLOT, new ItemStack(ModItems.DRILL.get()));
+        Player pilot = boardedPilot(helper, suit);
+        pilot.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.DRILL.get()));
         helper.runAfterDelay(2, () -> {
-            helper.assertTrue(suit.arm() == ToolArm.RIGHT, "a tool in the right socket alone is the primary one, got " + suit.arm());
+            helper.assertTrue(suit.arm() == ToolArm.RIGHT, "a tool in the main hand alone is the primary one, got " + suit.arm());
             helper.assertTrue(suit.getSocketStack().is(ModItems.DRILL.get()), "\"the socket\" is the right one's: " + suit.getSocketStack());
-            suit.socket().setAiTrigger(true);
+            suit.socket(ToolArm.RIGHT).setTriggerHeld(pilot, true);
         });
         helper.runAfterDelay(6, () -> {
             helper.assertTrue(suit.socket(ToolArm.RIGHT).isActive(), "the right arm's tool runs");
-            helper.assertFalse(suit.socket(ToolArm.LEFT).isActive(), "the left socket (empty) stays idle");
-            suit.socket().setAiTrigger(false);
-            suit.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, new ItemStack(ModItems.CHAINGUN.get()));
+            helper.assertFalse(suit.socket(ToolArm.LEFT).isActive(), "the left arm (empty) stays idle");
+            suit.socket(ToolArm.RIGHT).setTriggerHeld(pilot, false);
+            pilot.setItemInHand(InteractionHand.OFF_HAND, new ItemStack(ModItems.CHAINGUN.get()));
         });
         helper.runAfterDelay(10, () -> {
             helper.assertTrue(suit.arm() == ToolArm.LEFT, "with both, the left is the primary (the first tool)");
             helper.assertTrue(suit.getSocketStack(ToolArm.RIGHT).is(ModItems.DRILL.get())
-                    && suit.getSocketStack(ToolArm.LEFT).is(ModItems.CHAINGUN.get()), "each socket keeps its own tool");
-            suit.socket(ToolArm.RIGHT).setAiTrigger(true);
+                    && suit.getSocketStack(ToolArm.LEFT).is(ModItems.CHAINGUN.get()), "each hand mounts its own tool");
+            suit.socket(ToolArm.RIGHT).setTriggerHeld(pilot, true);
         });
         helper.runAfterDelay(16, () -> {
             helper.assertTrue(suit.socket(ToolArm.RIGHT).isActive() && !suit.socket(ToolArm.LEFT).isActive(),
                     "each arm has its own trigger: the right's runs, the left's doesn't");
-            suit.socket(ToolArm.RIGHT).setAiTrigger(false);
-            var loadout = suit.getLoadout();
-            helper.assertTrue(loadout.socket().is(ModItems.CHAINGUN.get()) && loadout.rightSocket().is(ModItems.DRILL.get()),
-                    "a packed suit carries both tools");
+            suit.socket(ToolArm.RIGHT).setTriggerHeld(pilot, false);
             helper.succeed();
         });
     }
@@ -1966,12 +1959,13 @@ public final class PowerSuitTests {
     @SuitTest(timeoutTicks = 20)
     public static void eachArmShootsFromItsShoulder(GameTestHelper helper) {
         PowerSuitEntity suit = toolSuit(helper);
-        suit.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, new ItemStack(ModItems.CHAINGUN.get()));
-        suit.getInventory().setItem(PowerSuitEntity.RIGHT_SOCKET_SLOT, new ItemStack(ModItems.CHAINGUN.get()));
+        Player pilot = boardedPilot(helper, suit);
+        pilot.setItemInHand(InteractionHand.OFF_HAND, new ItemStack(ModItems.CHAINGUN.get()));
+        pilot.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.CHAINGUN.get()));
         helper.runAfterDelay(3, () -> {
             Vec3[] muzzle = new Vec3[2];
             for (ToolArm arm : ToolArm.values()) {
-                suit.onArm(arm, () -> muzzle[arm.ordinal()] = SocketAim.muzzlePosition(suit, suit));
+                suit.onArm(arm, () -> muzzle[arm.ordinal()] = SocketAim.muzzlePosition(suit, pilot));
             }
             Vec3 across = muzzle[0].subtract(muzzle[1]);
             helper.assertTrue(across.horizontalDistance() > 0.45 && Math.abs(across.y) < 1e-6,
@@ -1997,28 +1991,30 @@ public final class PowerSuitTests {
         });
     }
 
-    /** Dual wielding (2026-11-15): a chaingun in each arm, each with its own trigger, spin and shots. */
+    /** Dual wielding (2026-11-22): a chaingun in main hand and off-hand, each with its own trigger, spin and shots. */
     @SuitTest(timeoutTicks = 60)
     public static void dualChainguns(GameTestHelper helper) {
         PowerSuitEntity suit = toolSuit(helper);
         suit.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.BLAZE_ROD, 4));
-        suit.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, new ItemStack(ModItems.CHAINGUN.get()));
-        suit.getInventory().setItem(PowerSuitEntity.RIGHT_SOCKET_SLOT, new ItemStack(ModItems.CHAINGUN.get()));
+        Player pilot = creativePilot(helper, suit);
+        pilot.setItemInHand(InteractionHand.OFF_HAND, new ItemStack(ModItems.CHAINGUN.get()));
+        pilot.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.CHAINGUN.get()));
+        suit.positionRider(pilot);
+        aim(helper, pilot, new Vec3(4.5, 3, 7));
         helper.runAfterDelay(2, () -> {
-            suit.brain().setAim(helper.absoluteVec(new Vec3(4.5, 3, 7)));
-            suit.socket(ToolArm.LEFT).setAiTrigger(true);
-            suit.socket(ToolArm.RIGHT).setAiTrigger(true);
+            suit.socket(ToolArm.LEFT).setTriggerHeld(pilot, true);
+            suit.socket(ToolArm.RIGHT).setTriggerHeld(pilot, true);
         });
         helper.runAfterDelay(25, () -> {
             helper.assertTrue(suit.socket(ToolArm.LEFT).getUses() > 0 && suit.socket(ToolArm.RIGHT).getUses() > 0,
                     "both guns shoot, left " + suit.socket(ToolArm.LEFT).getUses() + " right " + suit.socket(ToolArm.RIGHT).getUses());
             helper.assertTrue(suit.socket(ToolArm.LEFT).getSpin() > 0F && suit.socket(ToolArm.RIGHT).getSpin() > 0F, "both spin up");
-            suit.socket(ToolArm.LEFT).setAiTrigger(false); // release one: the other keeps going
+            suit.socket(ToolArm.LEFT).setTriggerHeld(pilot, false); // release one: the other keeps going
         });
         helper.runAfterDelay(45, () -> {
             helper.assertTrue(suit.socket(ToolArm.RIGHT).isActive() && !suit.socket(ToolArm.LEFT).isActive(),
                     "letting go of the left gun leaves the right one firing");
-            suit.socket(ToolArm.RIGHT).setAiTrigger(false);
+            suit.socket(ToolArm.RIGHT).setTriggerHeld(pilot, false);
             helper.succeed();
         });
     }
@@ -2028,9 +2024,9 @@ public final class PowerSuitTests {
     @SuitTest(timeoutTicks = 40)
     public static void rightArmProjectilesUseRightMuzzle(GameTestHelper helper) {
         PowerSuitEntity suit = toolSuit(helper);
-        // Left arm holds a drill so suit.arm() outside onArm() defaults to LEFT.
+        // Left arm (off-hand) holds a drill so suit.arm() outside onArm() defaults to LEFT.
         Player pilot = toolPilot(helper, suit, new ItemStack(ModItems.DRILL.get()), new Vec3(4.5, 3, 12));
-        suit.getInventory().setItem(PowerSuitEntity.RIGHT_SOCKET_SLOT, new ItemStack(ModItems.CHAINGUN.get()));
+        pilot.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.CHAINGUN.get()));
         pilot.getInventory().add(new ItemStack(Items.FIRE_CHARGE, 8));
         AABB box = suit.getBoundingBox().inflate(32);
         Vec3[] muzzles = new Vec3[2];
@@ -2050,7 +2046,7 @@ public final class PowerSuitTests {
             helper.assertTrue(b.visualShift(b.position()).dot(leftToRight) > 0,
                     "bullet visual shift leans to the right muzzle, not left: shift=" + b.visualShift(b.position()) + " L->R=" + leftToRight);
             bullets.forEach(Entity::discard);
-            suit.getInventory().setItem(PowerSuitEntity.RIGHT_SOCKET_SLOT, new ItemStack(ModItems.FLAMETHROWER.get()));
+            pilot.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.FLAMETHROWER.get()));
         });
         helper.runAfterDelay(7, () -> suit.socket(ToolArm.RIGHT).setTriggerHeld(pilot, true));
         helper.runAfterDelay(10, () -> {
@@ -2061,7 +2057,7 @@ public final class PowerSuitTests {
             flames.forEach(Entity::discard);
             ItemStack launcher = new ItemStack(ModItems.TNT_LAUNCHER.get());
             TntLauncherItem.setLoaded(suit, launcher, 1);
-            suit.getInventory().setItem(PowerSuitEntity.RIGHT_SOCKET_SLOT, launcher);
+            pilot.setItemInHand(InteractionHand.MAIN_HAND, launcher);
         });
         helper.runAfterDelay(13, () -> suit.socket(ToolArm.RIGHT).setTriggerHeld(pilot, true));
         helper.runAfterDelay(15, () -> {
@@ -3961,10 +3957,10 @@ public final class PowerSuitTests {
     private static Player flamePilot(GameTestHelper helper, PowerSuitEntity[] out, BlockPos at, Vec3 target, ItemStack fuel) {
         PowerSuitEntity suit = suitAt(helper, at);
         suit.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, fuel);
-        suit.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, new ItemStack(ModItems.FLAMETHROWER.get()));
         suit.setYRot(0);
         suit.setYBodyRot(0);
         Player pilot = boardedPilot(helper, suit);
+        pilot.setItemInHand(InteractionHand.OFF_HAND, new ItemStack(ModItems.FLAMETHROWER.get()));
         suit.positionRider(pilot);
         aim(helper, pilot, target);
         out[0] = suit;
@@ -4154,10 +4150,10 @@ public final class PowerSuitTests {
         if (drum > 0) {
             launcher.set(ModDataComponents.LOADED_ROUNDS.get(), drum);
         }
-        suit.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, launcher);
         suit.setYRot(0);
         suit.setYBodyRot(0);
         Player pilot = boardedPilot(helper, suit);
+        pilot.setItemInHand(InteractionHand.OFF_HAND, launcher);
         if (tnt > 0) {
             pilot.getInventory().setItem(9, new ItemStack(Items.TNT, tnt));
         }
@@ -4180,7 +4176,7 @@ public final class PowerSuitTests {
     }
 
     private static int drumOf(PowerSuitEntity suit) {
-        return TntLauncherItem.loaded(suit.getInventory().getItem(PowerSuitEntity.SOCKET_SLOT));
+        return TntLauncherItem.loaded(suit.getSocketStack());
     }
 
     /** With an empty drum and no TNT the trigger only clicks: no round, nothing used. */
@@ -4410,10 +4406,10 @@ public final class PowerSuitTests {
     private static Player railPilot(GameTestHelper helper, PowerSuitEntity[] out, Vec3 target, int ingots) {
         PowerSuitEntity suit = suitAt(helper, new BlockPos(4, 2, 1));
         suit.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.BLAZE_ROD, 2));
-        suit.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, new ItemStack(ModItems.RAIL_CANNON.get()));
         suit.setYRot(0);
         suit.setYBodyRot(0);
         Player pilot = boardedPilot(helper, suit);
+        pilot.setItemInHand(InteractionHand.OFF_HAND, new ItemStack(ModItems.RAIL_CANNON.get()));
         if (ingots > 0) {
             pilot.getInventory().setItem(9, new ItemStack(Items.AMETHYST_SHARD, ingots));
         }
@@ -4595,10 +4591,10 @@ public final class PowerSuitTests {
         golem.setItemSlot(net.minecraft.world.entity.EquipmentSlot.CHEST, new ItemStack(Items.IRON_CHESTPLATE));
         PowerSuitEntity suit = suitAt(helper, new BlockPos(4, 2, 1));
         suit.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.BLAZE_ROD, 2));
-        suit.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, new ItemStack(tool));
         suit.setYRot(0);
         suit.setYBodyRot(0);
         pilot[0] = boardedPilot(helper, suit);
+        pilot[0].setItemInHand(InteractionHand.OFF_HAND, new ItemStack(tool));
         suit.positionRider(pilot[0]);
         aim(helper, pilot[0], new Vec3(4.5, 3, 4.5));
         out[0] = suit;

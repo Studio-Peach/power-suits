@@ -87,6 +87,7 @@ final class HudScene {
             // the last bullets (the barrels are cold again by the shot)
             case 380 -> { phase = "last_bullets"; server(mc, (p, x) -> {
                               p.getInventory().clearContent();
+                              p.setItemInHand(InteractionHand.OFF_HAND, new ItemStack(ModItems.CHAINGUN.get()));
                               p.getInventory().setItem(9, new ItemStack(Items.FIRE_CHARGE, 10)); }); }
             case 396 -> AutoPilot.shot(mc, "hud_last_bullets");
             case 397 -> server(mc, (p, x) -> p.getInventory().setItem(9, new ItemStack(Items.FIRE_CHARGE, 64)));
@@ -132,7 +133,7 @@ final class HudScene {
             // the TNT launcher (TntLauncherHud): a full drum, the trigger held until it's empty (4 rounds, one every half
             // second), then the chambers loading back one by one from the ammo slot
             case 550 -> { phase = "tnt"; tool(mc, ModItems.TNT_LAUNCHER.get(), new ItemStack(Items.TNT, 8)); AutoPilot.setView(0, -35);
-                          server(mc, (p, x) -> TntLauncherItem.setLoaded(x, x.getInventory().getItem(PowerSuitEntity.SOCKET_SLOT), TntLauncherItem.DRUM)); }
+                          server(mc, (p, x) -> TntLauncherItem.setLoaded(x, x.getSocketStack(), TntLauncherItem.DRUM)); }
             case 556 -> AutoPilot.shot(mc, "hud_tnt_ready");
             case 558 -> AutoPilot.hold(o.keyUse, true);
             case 574 -> AutoPilot.shot(mc, "hud_tnt_firing");
@@ -313,7 +314,7 @@ final class HudScene {
     /** Swap the socket tool on the server (the menu's job in the game) and give the pilot its ammo (inventory slot 10). */
     private static void tool(Minecraft mc, Item tool, ItemStack ammo) {
         server(mc, (p, x) -> {
-            x.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, new ItemStack(tool));
+            p.setItemInHand(net.minecraft.world.InteractionHand.OFF_HAND, new ItemStack(tool));
             p.getInventory().setItem(10, ammo);
         });
     }
@@ -340,7 +341,7 @@ final class HudScene {
             DevUtil.firebox(s);
             s.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.COAL, 40));
             s.getInventory().setItem(PowerSuitEntity.HELMET_SLOT, new ItemStack(ModItems.SUIT_HELMET.get())); DevUtil.ironArmour(s);
-            s.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, new ItemStack(ModItems.CHAINGUN.get()));
+            player.setItemInHand(net.minecraft.world.InteractionHand.OFF_HAND, new ItemStack(ModItems.CHAINGUN.get()));
             s.snapTo(x + 0.5, g, z + 0.5, 0, 0);
             s.setYBodyRot(0);
             s.setYHeadRot(0);

@@ -49,6 +49,9 @@ public final class SuitSocket {
     private Object toolData;
     /** Server: the tool was in use last tick (for the raise sound). */
     private boolean wasActive;
+    /** Server: the tool on this arm last tick (switching hotbar slots resets spin/heat/beam). */
+    @Nullable
+    private PowerTool lastTool;
 
     SuitSocket(PowerSuitEntity suit, ToolArm arm) {
         this.suit = suit;
@@ -100,10 +103,10 @@ public final class SuitSocket {
         return this.aiTrigger;
     }
 
-    /** Server: the tool in the real slot (the synced copy can lag a tick behind). */
+    /** Server: the tool currently mounted on this arm (pilot's hand when piloted, else SOCKET_SLOT). */
     @Nullable
     private PowerTool serverTool() {
-        return this.suit.getInventory().getItem(this.arm.slot).getItem() instanceof PowerTool tool ? tool : null;
+        return this.suit.getSocketStack(this.arm).getItem() instanceof PowerTool tool ? tool : null;
     }
 
     /** Server: run the socket tool. Repeating tools fire each time they're ready while the trigger is held;
@@ -113,6 +116,12 @@ public final class SuitSocket {
             this.cooldown--;
         }
         PowerTool tool = this.serverTool();
+        if (tool != this.lastTool) {
+            this.setSpin(0F, 0F);
+            this.setBeamTarget(null);
+            this.toolData = null;
+            this.lastTool = tool;
+        }
         // The pilot works the tool with their trigger; with nobody inside, the machine mind with its own.
         LivingEntity operator = this.suit.toolOperator();
         boolean trigger = operator instanceof Player ? this.triggerHeld : this.aiTrigger;
@@ -144,7 +153,7 @@ public final class SuitSocket {
         if (!active) {
             return;
         }
-        var stack = this.suit.getInventory().getItem(this.arm.slot);
+        var stack = this.suit.getSocketStack(this.arm);
         if (tool.isContinuous()) {
             this.activeContinuousTool = tool;
             this.activeOperator = operator;

@@ -146,13 +146,11 @@ final class FrameScene {
             case 576 -> AutoPilot.shot(mc, "frame_tool_run_chaingun");
             case 578 -> { AutoPilot.hold(o.keyUse, false); socket(mc, -1); }
             // The right arm's tool is the attack button's (2026-11-15): the chainsaw there runs on left click alone.
-            case 580 -> { phase = "tool_run_right"; AutoPilot.onServer(mc, p -> { if (p.getVehicle() instanceof PowerSuitEntity suit)
-                              suit.getInventory().setItem(PowerSuitEntity.RIGHT_SOCKET_SLOT, new ItemStack(ModItems.CHAINSAW.get())); });
+            case 580 -> { phase = "tool_run_right"; AutoPilot.onServer(mc, p -> p.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.CHAINSAW.get())));
                           AutoPilot.hold(o.keyAttack, true); }
             case 582 -> net.neoforged.neoforge.common.NeoForge.EVENT_BUS.post(new net.neoforged.neoforge.client.event.InputEvent.InteractionKeyMappingTriggered(0, o.keyAttack, net.minecraft.world.InteractionHand.MAIN_HAND)); // the click: vanilla's startAttack posts this (a held key alone starts no attack)
             case 586 -> AutoPilot.shot(mc, "frame_tool_run_right_chainsaw");
-            case 588 -> { AutoPilot.hold(o.keyAttack, false); AutoPilot.onServer(mc, p -> { if (p.getVehicle() instanceof PowerSuitEntity suit)
-                              suit.getInventory().setItem(PowerSuitEntity.RIGHT_SOCKET_SLOT, ItemStack.EMPTY); }); }
+            case 588 -> { AutoPilot.hold(o.keyAttack, false); AutoPilot.onServer(mc, p -> p.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY)); }
             // The cockpit: the empty right hand (his arm in the frame's), nothing of the body looking down.
             case 590 -> { phase = "cockpit"; mc.setCameraEntity(mc.player); DevUtil.hideGui(mc, false); o.setCameraType(CameraType.FIRST_PERSON); }
             case 604 -> AutoPilot.shot(mc, "frame_cockpit_arm");
@@ -272,10 +270,10 @@ final class FrameScene {
             // third person, so screenshots verify projectiles/flames come from the right muzzle, not the left.
             case 1048 -> { phase = "right_flame_cockpit"; mc.setCameraEntity(mc.player); DevUtil.hideGui(mc, false);
                            o.setCameraType(CameraType.FIRST_PERSON); AutoPilot.setView(0, 0);
-                           AutoPilot.onServer(mc, p -> { if (p.getVehicle() instanceof PowerSuitEntity suit) {
-                               suit.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, new ItemStack(ModItems.DRILL.get()));
-                               suit.getInventory().setItem(PowerSuitEntity.RIGHT_SOCKET_SLOT, new ItemStack(ModItems.FLAMETHROWER.get()));
-                           } });
+                           AutoPilot.onServer(mc, p -> {
+                               p.setItemInHand(InteractionHand.OFF_HAND, new ItemStack(ModItems.DRILL.get()));
+                               p.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.FLAMETHROWER.get()));
+                           });
                            AutoPilot.hold(o.keyAttack, true); }
             case 1050 -> net.neoforged.neoforge.common.NeoForge.EVENT_BUS.post(new net.neoforged.neoforge.client.event.InputEvent.InteractionKeyMappingTriggered(0, o.keyAttack, net.minecraft.world.InteractionHand.MAIN_HAND));
             case 1060 -> AutoPilot.shot(mc, "frame_right_flame_cockpit");
@@ -338,11 +336,8 @@ final class FrameScene {
     /** Puts TOOLS[i] in the pilot's suit's socket (-1: empties it), on the server. */
     private static void socket(Minecraft mc, int i) {
         AutoPilot.onServer(mc, p -> {
-            if (p.getVehicle() instanceof PowerSuitEntity suit) {
-                suit.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, i < 0 ? ItemStack.EMPTY : new ItemStack(TOOLS.get(i).get()));
-                // the right arm carries another tool (2026-11-15: either arm can): the third one on from the left's
-                suit.getInventory().setItem(PowerSuitEntity.RIGHT_SOCKET_SLOT, i < 0 ? ItemStack.EMPTY : new ItemStack(TOOLS.get((i + 3) % TOOLS.size()).get()));
-            }
+            p.setItemInHand(InteractionHand.OFF_HAND, i < 0 ? ItemStack.EMPTY : new ItemStack(TOOLS.get(i).get()));
+            p.setItemInHand(InteractionHand.MAIN_HAND, i < 0 ? ItemStack.EMPTY : new ItemStack(TOOLS.get((i + 3) % TOOLS.size()).get()));
         });
     }
 

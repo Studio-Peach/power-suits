@@ -150,7 +150,7 @@ public final class SuitBrain {
      * stop() lets go of the trigger and the aim). A tool in the slot of a suit just loaded counts as a change.
      */
     void updateToolGoals() {
-        PowerTool tool = this.suit.getInventory().getItem(this.suit.socketSlot()).getItem() instanceof PowerTool t ? t : null;
+        PowerTool tool = this.suit.getSocketStack().getItem() instanceof PowerTool t ? t : null;
         if (tool == this.goalsTool) {
             return;
         }

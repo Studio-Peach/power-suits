@@ -7,6 +7,7 @@ import com.geckolib.util.RenderUtil;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import dev.ajaczero.powersuits.entity.PowerSuitEntity;
+import dev.ajaczero.powersuits.item.PowerTool;
 import java.util.List;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
@@ -37,8 +38,8 @@ public class HeldItemLayer extends BlockAndItemGeoLayer<PowerSuitEntity, Void, L
             return List.of();
         }
         ItemStack stack = pilot.getMainHandItem();
-        if (stack.isEmpty()) {
-            return List.of();
+        if (stack.isEmpty() || stack.getItem() instanceof PowerTool) {
+            return List.of(); // power tools mount as 3D tools on right_socket (ToolLayer)
         }
         ItemDisplayContext context = ItemDisplayContext.THIRD_PERSON_RIGHT_HAND;
         return List.of(RenderData.item("right_hand", context, RenderUtil.createRenderStateForItem(stack, this.itemModelResolver, context, suit)));

@@ -198,6 +198,7 @@ final class MenuScene {
             Inventory inv = player.getInventory();
             inv.clearContent();
             inv.setSelectedSlot(0);
+            player.setItemInHand(InteractionHand.OFF_HAND, new ItemStack(ModItems.CHAINGUN.get()));
             inv.setItem(1, new ItemStack(ModItems.DRILL.get()));
             inv.setItem(2, new ItemStack(ModItems.CHAINSAW.get()));
             inv.setItem(9, new ItemStack(Items.FIRE_CHARGE, 64));
@@ -238,7 +239,7 @@ final class MenuScene {
         AutoPilot.onServer(mc, player -> {
             try {
                 w.write(String.format(Locale.ROOT, "%d,%s,%s,%b,%s,%s,%b,%b,%b,%b,%s,%d,%b%n", s, p, screen, vehicleInventory,
-                        id(x.getInventory().getItem(PowerSuitEntity.SOCKET_SLOT)), clientSocket, x.power().isSwitchedOn(), clientOn,
+                        id(x.getSocketStack()), clientSocket, x.power().isSwitchedOn(), clientOn,
                         x.isPowered(), clientPowered, id(player.getMainHandItem()), armour, sealed));
             } catch (IOException ignored) {
                 // closed at the end of the scene

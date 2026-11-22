@@ -262,8 +262,7 @@ public class PowerSuitScreen extends AbstractContainerScreen<PowerSuitMenu> {
         }
         int index = this.menu.slots.indexOf(this.hoveredSlot);
         int armour = index - PowerSuitMenu.MENU_ARMOUR;
-        String key = index == PowerSuitMenu.MENU_SOCKET ? "gui.power_suits.socket_slot"
-                : index == PowerSuitMenu.MENU_RIGHT_SOCKET ? "gui.power_suits.right_socket_slot"
+        String key = index == PowerSuitMenu.MENU_SOCKET && !this.menu.isPiloting(this.minecraft.player) ? "gui.power_suits.socket_slot"
                 : index == PowerSuitMenu.MENU_FUEL ? "gui.power_suits.fuel_slot"
                 : index == PowerSuitMenu.MENU_HELMET ? "gui.power_suits.helmet_slot"
                 : index == PowerSuitMenu.MENU_ENGINE ? "gui.power_suits.engine_slot"

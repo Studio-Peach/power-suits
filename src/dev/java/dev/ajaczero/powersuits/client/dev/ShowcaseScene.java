@@ -696,6 +696,7 @@ public final class ShowcaseScene {
             // a lived-in hotbar: the selected slot stays empty (right click goes to the tool)
             var inv = player.getInventory();
             inv.clearContent();
+            player.setItemInHand(net.minecraft.world.InteractionHand.OFF_HAND, new ItemStack(loadout.tool()));
             inv.setSelectedSlot(0);
             inv.setItem(1, new ItemStack(Items.IRON_PICKAXE));
             inv.setItem(2, new ItemStack(Items.TORCH, 37));
