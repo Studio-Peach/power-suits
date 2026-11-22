@@ -229,7 +229,7 @@ public class ChaingunItem extends Item implements PowerTool, ModTooltip {
         float spread = MAX_SPREAD * s.spin * Mth.DEG_TO_RAD;
         direction = direction.xRot((float) level.getRandom().nextGaussian() * spread).yRot((float) level.getRandom().nextGaussian() * spread);
         float spin = s.spin;
-        level.addFreshEntity(new Bullet(level, operator, eye, direction.scale(Bullet.SPEED), damage(spin), 1F - spin));
+        level.addFreshEntity(new Bullet(level, operator, eye, direction.scale(Bullet.SPEED), damage(spin), 1F - spin, suit.arm()));
         suit.socket().countUse();
         suit.socket().countShot(); // every client: recoil kick, muzzle burst (the pilot's own client draws it on screen)
         s.sinceShot = 0;

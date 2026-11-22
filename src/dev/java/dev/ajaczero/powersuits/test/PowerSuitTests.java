@@ -2023,6 +2023,61 @@ public final class PowerSuitTests {
         });
     }
 
+    /** Projectiles fired from the right arm while the left also holds a tool carry ToolArm.RIGHT so clients draw
+     *  tracers, flames and TNT shells from the right muzzle instead of falling back to the primary (left) arm. */
+    @SuitTest(timeoutTicks = 40)
+    public static void rightArmProjectilesUseRightMuzzle(GameTestHelper helper) {
+        PowerSuitEntity suit = toolSuit(helper);
+        // Left arm holds a drill so suit.arm() outside onArm() defaults to LEFT.
+        Player pilot = toolPilot(helper, suit, new ItemStack(ModItems.DRILL.get()), new Vec3(4.5, 3, 12));
+        suit.getInventory().setItem(PowerSuitEntity.RIGHT_SOCKET_SLOT, new ItemStack(ModItems.CHAINGUN.get()));
+        pilot.getInventory().add(new ItemStack(Items.FIRE_CHARGE, 8));
+        AABB box = suit.getBoundingBox().inflate(32);
+        Vec3[] muzzles = new Vec3[2];
+        helper.runAfterDelay(2, () -> {
+            for (ToolArm arm : ToolArm.values()) {
+                suit.onArm(arm, () -> muzzles[arm.ordinal()] = SocketAim.muzzlePosition(suit, pilot));
+            }
+            suit.socket(ToolArm.RIGHT).setTriggerHeld(pilot, true);
+        });
+        helper.runAfterDelay(4, () -> {
+            suit.socket(ToolArm.RIGHT).setTriggerHeld(pilot, false);
+            var bullets = helper.getLevel().getEntitiesOfClass(Bullet.class, box, b -> b.getOwner() == pilot);
+            helper.assertTrue(!bullets.isEmpty(), "right chaingun fired a bullet");
+            Bullet b = bullets.get(0);
+            helper.assertTrue(b.arm() == ToolArm.RIGHT, "bullet carries RIGHT arm, got " + b.arm());
+            Vec3 leftToRight = muzzles[ToolArm.RIGHT.ordinal()].subtract(muzzles[ToolArm.LEFT.ordinal()]);
+            helper.assertTrue(b.visualShift(b.position()).dot(leftToRight) > 0,
+                    "bullet visual shift leans to the right muzzle, not left: shift=" + b.visualShift(b.position()) + " L->R=" + leftToRight);
+            bullets.forEach(Entity::discard);
+            suit.getInventory().setItem(PowerSuitEntity.RIGHT_SOCKET_SLOT, new ItemStack(ModItems.FLAMETHROWER.get()));
+        });
+        helper.runAfterDelay(7, () -> suit.socket(ToolArm.RIGHT).setTriggerHeld(pilot, true));
+        helper.runAfterDelay(10, () -> {
+            suit.socket(ToolArm.RIGHT).setTriggerHeld(pilot, false);
+            var flames = helper.getLevel().getEntitiesOfClass(FlameJet.class, box, f -> f.getOwner() == pilot);
+            helper.assertTrue(!flames.isEmpty(), "right flamethrower sprayed a gob");
+            helper.assertTrue(flames.get(0).arm() == ToolArm.RIGHT, "flame gob carries RIGHT arm, got " + flames.get(0).arm());
+            flames.forEach(Entity::discard);
+            ItemStack launcher = new ItemStack(ModItems.TNT_LAUNCHER.get());
+            TntLauncherItem.setLoaded(suit, launcher, 1);
+            suit.getInventory().setItem(PowerSuitEntity.RIGHT_SOCKET_SLOT, launcher);
+        });
+        helper.runAfterDelay(13, () -> suit.socket(ToolArm.RIGHT).setTriggerHeld(pilot, true));
+        helper.runAfterDelay(15, () -> {
+            suit.socket(ToolArm.RIGHT).setTriggerHeld(pilot, false);
+            var shells = helper.getLevel().getEntitiesOfClass(TntShell.class, box, s -> s.getOwner() == pilot);
+            helper.assertTrue(!shells.isEmpty(), "right TNT launcher fired a shell");
+            TntShell s = shells.get(0);
+            helper.assertTrue(s.arm() == ToolArm.RIGHT, "TNT shell carries RIGHT arm, got " + s.arm());
+            Vec3 leftToRight = muzzles[ToolArm.RIGHT.ordinal()].subtract(muzzles[ToolArm.LEFT.ordinal()]);
+            helper.assertTrue(s.visualShift(s.position()).dot(leftToRight) > 0,
+                    "TNT shell visual shift leans to the right muzzle, not left: shift=" + s.visualShift(s.position()) + " L->R=" + leftToRight);
+            shells.forEach(Entity::discard);
+            helper.succeed();
+        });
+    }
+
     // =========================================================================================
     // Phase 8 step 2: ammo (the hidden nugget store until 2026-10-27), the chaingun job (follow + defend the owner)
     // =========================================================================================

@@ -6,6 +6,8 @@ import dev.ajaczero.powersuits.registry.ModEntities;
 import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
@@ -51,6 +53,10 @@ public class Bullet extends Projectile {
     public static final ResourceKey<DamageType> BULLET = ResourceKey.create(Registries.DAMAGE_TYPE,
             Identifier.fromNamespaceAndPath(PowerSuits.MODID, "bullet"));
 
+    /** Which arm of the suit fired this bullet, synced so clients draw the tracer from that arm's muzzle. */
+    private static final EntityDataAccessor<Byte> ARM =
+            SynchedEntityData.defineId(Bullet.class, EntityDataSerializers.BYTE);
+
     private float damage = 3F;
     private float knockback;
 
@@ -59,15 +65,24 @@ public class Bullet extends Projectile {
     }
 
     public Bullet(Level level, Entity owner, Vec3 from, Vec3 velocity, float damage, float knockback) {
+        this(level, owner, from, velocity, damage, knockback, ToolArm.LEFT);
+    }
+
+    public Bullet(Level level, Entity owner, Vec3 from, Vec3 velocity, float damage, float knockback, ToolArm arm) {
         this(ModEntities.BULLET.get(), level);
         this.setOwner(owner);
         this.setPos(from);
         this.setDeltaMovement(velocity);
         this.damage = damage;
         this.knockback = knockback;
+        this.entityData.set(ARM, (byte) arm.ordinal());
         ProjectileUtil.rotateTowardsMovement(this, 1F);
         this.yRotO = this.getYRot();
         this.xRotO = this.getXRot();
+    }
+
+    public ToolArm arm() {
+        return ToolArm.byIndex(this.entityData.get(ARM));
     }
 
     public float getDamage() {
@@ -76,6 +91,7 @@ public class Bullet extends Projectile {
 
     @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
+        builder.define(ARM, (byte) ToolArm.LEFT.ordinal());
     }
 
     /** Client: the drawn path. Set on the first client tick: where the real path starts (the pilot's eye) and goes,
@@ -97,7 +113,7 @@ public class Bullet extends Projectile {
         PowerSuitEntity suit = operator instanceof PowerSuitEntity self ? self
                 : operator != null && operator.getVehicle() instanceof PowerSuitEntity ridden ? ridden : null;
         if (suit != null) {
-            this.gap = SocketAim.visualMuzzle.apply(suit, operator).subtract(this.pathStart);
+            suit.onArm(this.arm(), () -> this.gap = SocketAim.visualMuzzle.apply(suit, operator).subtract(this.pathStart));
             Vec3 target = SocketAim.aimPoint(suit, operator, 96);
             this.convergeDistance = (float) Math.max(2.0, target.distanceTo(this.pathStart));
         }
@@ -206,6 +222,7 @@ public class Bullet extends Projectile {
         super.addAdditionalSaveData(tag);
         tag.putFloat("Damage", this.damage);
         tag.putFloat("Knockback", this.knockback);
+        tag.putByte("Arm", this.entityData.get(ARM));
     }
 
     @Override
@@ -213,6 +230,7 @@ public class Bullet extends Projectile {
         super.readAdditionalSaveData(tag);
         this.damage = tag.getFloatOr("Damage", 0F);
         this.knockback = tag.getFloatOr("Knockback", 0F);
+        this.entityData.set(ARM, (byte) ToolArm.byIndex(tag.getByteOr("Arm", (byte) 0)).ordinal());
     }
 
     @Override

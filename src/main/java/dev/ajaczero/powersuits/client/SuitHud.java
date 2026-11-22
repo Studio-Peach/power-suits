@@ -210,11 +210,17 @@ public final class SuitHud {
 
         // ---- the socket tool's own readout (client/hud), if it has one ----------------------------------------------
         String toolShown = "";
+        // Two of the same tool (dual chainguns, dual TNT launchers...) share one corner readout so they don't overdraw:
+        // show whichever arm is actually working (active, holding, spinning/charging, hotter), defaulting to left.
+        boolean twins = suit.socket(ToolArm.LEFT).tool() != null
+                && suit.getSocketStack(ToolArm.LEFT).is(suit.getSocketStack(ToolArm.RIGHT).getItem());
+        ToolArm twinArm = twins ? activeTwinArm(suit) : null;
         for (ToolArm arm : ToolArm.values()) { // both arms' tools have their readouts (each runs as "the socket" of its arm)
+            if (twins && arm != twinArm) {
+                continue;
+            }
             ToolHud toolHud = suit.socket(arm).tool() == null ? null : ToolHuds.get(suit.getSocketStack(arm).getItem());
-            // Two of the same tool (dual chainguns) have one readout: they'd draw over each other in the same corner.
-            boolean twin = arm == ToolArm.RIGHT && suit.getSocketStack(ToolArm.LEFT).is(suit.getSocketStack(ToolArm.RIGHT).getItem());
-            if (toolHud != null && !twin) {
+            if (toolHud != null) {
                 String[] drawn = {""};
                 suit.onArm(arm, () -> drawn[0] = toolHud.render(g, new HudView(g, mc, suit, pilot, VisorConfig.colour(), delta.getGameTimeDeltaPartialTick(false))));
                 toolShown = toolShown.isEmpty() ? drawn[0] : toolShown + " | " + drawn[0];
@@ -235,6 +241,22 @@ public final class SuitHud {
      * count from north clockwise; Minecraft's yaw counts from south (0 south, 90 west), hence the 180. Returns what the
      * readout row says, then the night vision row ({@code NV}, {@code NV~} on standby) (for the autopilot's log).
      */
+    /** When both arms carry the same tool, pick the arm that is firing/holding/charging/hotter (left on a tie). */
+    private static ToolArm activeTwinArm(PowerSuitEntity suit) {
+        var left = suit.socket(ToolArm.LEFT);
+        var right = suit.socket(ToolArm.RIGHT);
+        if (right.isActive() && !left.isActive()) {
+            return ToolArm.RIGHT;
+        }
+        if (right.getBeamTarget() != null && left.getBeamTarget() == null) {
+            return ToolArm.RIGHT;
+        }
+        if (!left.isActive() && (right.getSpin() > left.getSpin() + 1e-3F || right.getHeat() > left.getHeat() + 1e-3F)) {
+            return ToolArm.RIGHT;
+        }
+        return ToolArm.LEFT;
+    }
+
     private static String compassAndClock(GuiGraphicsExtractor g, Minecraft mc, PowerSuitEntity suit, Font font, int main,
                                           int faint, DeltaTracker delta) {
         // The suit's compass and clock work like the vanilla items they're made from: only in the overworld. Elsewhere

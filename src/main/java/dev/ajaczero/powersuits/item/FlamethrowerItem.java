@@ -179,7 +179,7 @@ public class FlamethrowerItem extends Item implements PowerTool, ModTooltip {
         direction = direction.xRot((float) level.getRandom().nextGaussian() * spread)
                 .yRot((float) level.getRandom().nextGaussian() * spread);
         Vec3 velocity = direction.scale(FlameJet.SPEED).add(suit.getDeltaMovement().multiply(1, 0, 1));
-        level.addFreshEntity(new FlameJet(level, operator, eye, velocity));
+        level.addFreshEntity(new FlameJet(level, operator, eye, velocity, suit.arm()));
         suit.socket().countUse();
     }
 

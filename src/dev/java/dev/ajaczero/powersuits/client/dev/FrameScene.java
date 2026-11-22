@@ -268,7 +268,20 @@ final class FrameScene {
                               } }); }
             case 1036 -> around(mc, mc.player.getVehicle(), 3.0);
             case 1046 -> AutoPilot.shot(mc, "frame_copper_mixed");
-            case 1048 -> { close(); return false; }
+            // Dual-wielding right-arm shooting (2026-11-22): drill on left, flamethrower on right firing in cockpit and
+            // third person, so screenshots verify projectiles/flames come from the right muzzle, not the left.
+            case 1048 -> { phase = "right_flame_cockpit"; mc.setCameraEntity(mc.player); DevUtil.hideGui(mc, false);
+                           o.setCameraType(CameraType.FIRST_PERSON); AutoPilot.setView(0, 0);
+                           AutoPilot.onServer(mc, p -> { if (p.getVehicle() instanceof PowerSuitEntity suit) {
+                               suit.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, new ItemStack(ModItems.DRILL.get()));
+                               suit.getInventory().setItem(PowerSuitEntity.RIGHT_SOCKET_SLOT, new ItemStack(ModItems.FLAMETHROWER.get()));
+                           } });
+                           AutoPilot.hold(o.keyAttack, true); }
+            case 1050 -> net.neoforged.neoforge.common.NeoForge.EVENT_BUS.post(new net.neoforged.neoforge.client.event.InputEvent.InteractionKeyMappingTriggered(0, o.keyAttack, net.minecraft.world.InteractionHand.MAIN_HAND));
+            case 1060 -> AutoPilot.shot(mc, "frame_right_flame_cockpit");
+            case 1062 -> { phase = "right_flame_3p"; o.setCameraType(CameraType.THIRD_PERSON_BACK); DevUtil.hideGui(mc, true); }
+            case 1072 -> AutoPilot.shot(mc, "frame_right_flame_3p");
+            case 1074 -> { AutoPilot.hold(o.keyAttack, false); close(); return false; }
             default -> {}
         }
         if (s >= 1) {

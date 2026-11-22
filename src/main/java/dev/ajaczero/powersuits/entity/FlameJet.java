@@ -11,6 +11,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
@@ -97,6 +99,10 @@ public class FlameJet extends Projectile {
     public static final ResourceKey<DamageType> FLAMETHROWER = ResourceKey.create(Registries.DAMAGE_TYPE,
             Identifier.fromNamespaceAndPath(PowerSuits.MODID, "flamethrower"));
 
+    /** Which arm of the suit sprayed this gob, synced so clients draw the stream from that arm's nozzle. */
+    private static final EntityDataAccessor<Byte> ARM =
+            SynchedEntityData.defineId(FlameJet.class, EntityDataSerializers.BYTE);
+
     /** Server: who it has already burnt (each gob hurts a mob once; the next gobs keep the fire going). */
     private final IntSet burnt = new IntOpenHashSet();
     /** Server: it touched food, so it sets no blocks on fire. */
@@ -109,14 +115,24 @@ public class FlameJet extends Projectile {
     }
 
     public FlameJet(Level level, Entity owner, Vec3 from, Vec3 velocity) {
+        this(level, owner, from, velocity, ToolArm.LEFT);
+    }
+
+    public FlameJet(Level level, Entity owner, Vec3 from, Vec3 velocity, ToolArm arm) {
         this(ModEntities.FLAME_JET.get(), level);
         this.setOwner(owner);
         this.setPos(from);
         this.setDeltaMovement(velocity);
+        this.entityData.set(ARM, (byte) arm.ordinal());
+    }
+
+    public ToolArm arm() {
+        return ToolArm.byIndex(this.entityData.get(ARM));
     }
 
     @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
+        builder.define(ARM, (byte) ToolArm.LEFT.ordinal());
     }
 
     /** How far out it burns at this age (blocks). */
@@ -321,7 +337,7 @@ public class FlameJet extends Projectile {
             PowerSuitEntity suit = operator instanceof PowerSuitEntity self ? self
                     : operator != null && operator.getVehicle() instanceof PowerSuitEntity ridden ? ridden : null;
             if (suit != null) {
-                this.gap = SocketAim.visualMuzzle.apply(suit, operator).subtract(this.position());
+                suit.onArm(this.arm(), () -> this.gap = SocketAim.visualMuzzle.apply(suit, operator).subtract(this.position()));
             }
         }
         double left = Math.max(0, 1 - age / (LIFETIME * 0.7));

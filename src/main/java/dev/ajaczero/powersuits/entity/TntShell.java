@@ -7,6 +7,8 @@ import java.util.function.Predicate;
 import net.minecraft.core.BlockPos;
 import dev.ajaczero.powersuits.registry.ModEntities;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
@@ -58,6 +60,10 @@ public class TntShell extends Projectile {
     /** Blocks over which the drawn round moves from the muzzle onto its real path. */
     private static final double CONVERGE = 4.0;
 
+    /** Which arm of the suit fired this shell, synced so clients draw the round from that arm's muzzle. */
+    private static final EntityDataAccessor<Byte> ARM =
+            SynchedEntityData.defineId(TntShell.class, EntityDataSerializers.BYTE);
+
     private float power = 4F;
     private boolean breaksBlocks = true;
 
@@ -66,16 +72,26 @@ public class TntShell extends Projectile {
     }
 
     public TntShell(Level level, Entity owner, Vec3 from, Vec3 velocity, float power, boolean breaksBlocks) {
+        this(level, owner, from, velocity, power, breaksBlocks, ToolArm.LEFT);
+    }
+
+    public TntShell(Level level, Entity owner, Vec3 from, Vec3 velocity, float power, boolean breaksBlocks, ToolArm arm) {
         this(ModEntities.TNT_SHELL.get(), level);
         this.setOwner(owner);
         this.setPos(from);
         this.setDeltaMovement(velocity);
         this.power = power;
         this.breaksBlocks = breaksBlocks;
+        this.entityData.set(ARM, (byte) arm.ordinal());
+    }
+
+    public ToolArm arm() {
+        return ToolArm.byIndex(this.entityData.get(ARM));
     }
 
     @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
+        builder.define(ARM, (byte) ToolArm.LEFT.ordinal());
     }
 
     // ---- where it's drawn (client) -------------------------------------------------------------------
@@ -93,7 +109,7 @@ public class TntShell extends Projectile {
         this.pathStart = this.position();
         // Fired by a pilot: the owner is the player in the suit.
         if (this.getOwner() instanceof LivingEntity operator && operator.getVehicle() instanceof PowerSuitEntity suit) {
-            this.gap = SocketAim.visualMuzzle.apply(suit, operator).subtract(this.pathStart);
+            suit.onArm(this.arm(), () -> this.gap = SocketAim.visualMuzzle.apply(suit, operator).subtract(this.pathStart));
         }
     }
 
@@ -230,6 +246,7 @@ public class TntShell extends Projectile {
         super.addAdditionalSaveData(tag);
         tag.putFloat("Power", this.power);
         tag.putBoolean("BreaksBlocks", this.breaksBlocks);
+        tag.putByte("Arm", this.entityData.get(ARM));
     }
 
     @Override
@@ -237,6 +254,7 @@ public class TntShell extends Projectile {
         super.readAdditionalSaveData(tag);
         this.power = tag.getFloatOr("Power", 4F);
         this.breaksBlocks = tag.getBooleanOr("BreaksBlocks", true);
+        this.entityData.set(ARM, (byte) ToolArm.byIndex(tag.getByteOr("Arm", (byte) 0)).ordinal());
     }
 
     @Override

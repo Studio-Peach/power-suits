@@ -173,7 +173,7 @@ public class TntLauncherItem extends Item implements PowerTool, ModTooltip {
         suit.socket().setSpin(0F, 0F); // (serverTick ran first this tick and may have counted it on)
         Launch launch = launch(suit, operator, 1F);
         level.addFreshEntity(new TntShell(level, operator, launch.from(), launch.velocity(),
-                PowerSuitsConfig.TNT_LAUNCHER_POWER.get().floatValue(), PowerSuitsConfig.TNT_LAUNCHER_BREAKS_BLOCKS.get()));
+                PowerSuitsConfig.TNT_LAUNCHER_POWER.get().floatValue(), PowerSuitsConfig.TNT_LAUNCHER_BREAKS_BLOCKS.get(), suit.arm()));
         // The launch: a deep thunk, the whoosh of the round leaving and the hiss of its fuse.
         level.playSound(null, muzzle.x, muzzle.y, muzzle.z, SoundEvents.DISPENSER_LAUNCH, SoundSource.PLAYERS, 1.0F, 0.5F);
         level.playSound(null, muzzle.x, muzzle.y, muzzle.z, SoundEvents.FIREWORK_ROCKET_LAUNCH, SoundSource.PLAYERS, 0.8F, 0.6F);

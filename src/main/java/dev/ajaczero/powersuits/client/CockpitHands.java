@@ -1,6 +1,5 @@
 package dev.ajaczero.powersuits.client;
 
-import com.geckolib.animation.AnimationController;
 import com.geckolib.util.ClientUtil;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -74,21 +73,16 @@ public final class CockpitHands {
      *  with the +3 px sleeved tool socket (built y 19), the socket is 7 px down the arm and 1.25 px off its pivot's axis
      *  (tools/export-frame.py), the muzzle block's bottom 8.5 px under the socket. */
     private static final Vector3f MUZZLE_PX = new Vector3f(1.25F, 15.5F, 0F);
-    private static final float RECOIL_TICKS = 6F;
 
-    private static boolean wasShooting;
-    private static double shotAt = -100;
-
-    /** The socket tool, low on the left (the off hand's place). */
+    /** The socket tool on {@code arm} (left = off hand, right = main hand). */
     static void renderTool(RenderHandEvent event, PowerSuitEntity suit, ToolArm arm) {
         PoseStack pose = event.getPoseStack();
         CockpitView view = CockpitView.INSTANCE;
         view.suit = suit;
         view.arm = arm;
         view.slim = Minecraft.getInstance().player != null && Minecraft.getInstance().player.getSkin().model() == PlayerModelType.SLIM;
-        pollShot(suit, view);
         float partial = event.getPartialTick();
-        float kick = Math.max(arm == ToolArm.LEFT ? recoil(partial) : 0F, suit.socketVisuals(arm).recoil(partial)); // EM push / chaingun shots
+        float kick = suit.socketVisuals(arm).recoil(partial); // synced per-arm shot recoil (chaingun, TNT, rail, EM push)
         pose.pushPose();
         toolArmTransform(pose, suit, arm, suit.socketVisuals(arm).raise(partial), kick);
         view.hideArm = !showArm; // the tool alone: no skin arm, no shell (CockpitViewRenderer hides the shell)
@@ -233,29 +227,6 @@ public final class CockpitHands {
         // (AvatarRenderer.renderHand). Its box runs y -2..10 (model Y runs down the arm, toward the fist at y 10).
         pose.translate(side * -5F / 16F, 2F / 16F, 0F);
         pose.rotate(Axis.ZP, side * 0.1F);
-    }
-
-    /** The suit plays tool_recoil when the EM projector pushes; start the kick here too. (Chaingun shots kick through
-     *  the suit's synced shot counter, SocketVisuals.recoil.) */
-    private static void pollShot(PowerSuitEntity suit, CockpitView view) {
-        AnimationController<?> action = suit.getAnimatableInstanceCache().getManagerForId(suit.getId()).getAnimationControllers().get("action");
-        var triggered = action == null ? null : action.getCurrentRawAnimation();
-        boolean shooting = action != null && action.isPlayingTriggeredAnimation() && triggered != null
-                && triggered.getAnimationStages().get(0).animationName().endsWith("tool_recoil");
-        if (shooting && !wasShooting) {
-            shotAt = ClientUtil.getCurrentTick();
-        }
-        wasShooting = shooting;
-    }
-
-    /** 1 right after a shot, easing back to 0. */
-    private static float recoil(float partial) {
-        double age = ClientUtil.getCurrentTick() - shotAt;
-        if (age < 0 || age > RECOIL_TICKS) {
-            return 0F;
-        }
-        float t = (float) (age / RECOIL_TICKS);
-        return t < 0.15F ? t / 0.15F : (1 - t) / 0.85F * (1 - t);
     }
 
     /**

@@ -287,6 +287,7 @@ public class EmProjectorItem extends Item implements PowerTool, ModTooltip {
         suit.socket().setBeamTarget(null);
         suit.socket().setCooldown(COOLDOWN_TICKS);
         suit.socket().countUse();
+        suit.socket().countShot(); // kicks the throwing arm in both cockpit and third-person views
         suit.triggerAnim("action", "tool_recoil");
         suit.playSound(SoundEvents.WIND_CHARGE_BURST.value(), 1.0F, 0.8F);
         if (suit.level() instanceof ServerLevel level) {
