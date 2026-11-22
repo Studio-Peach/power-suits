@@ -36,7 +36,7 @@ CORE = {'dark': {f'{k}{n}': v[n] for n in range(3) for k, v in (('K', BODY_DARK)
         'lit': {f'{k}{n}': v for n in range(3) for k, v in (('K', '2f9cff'), ('L', 'a8f0ff'))}}
 
 
-def pal(core): return P_BASE | {k: _c(v) for k, v in CORE[core].items()}
+def pal(core): return P_BASE | {k: _c(v) for k, v in CORE.get(core, CORE['dark']).items()}
 
 
 def _paint(faces, P):
@@ -1437,53 +1437,56 @@ def _build_2d_flat(c, top, P, length=6.0):
     ]
 
 
-def _build_2d_hybrid(c, top, P, length=6.0, core_mode='open', idle_beam='invisible', lit=False):
+def _build_2d_hybrid(c, top, P, length=6.0, core_mode='open', idle_beam='invisible', lit=False,
+                     cuff_style='clean', core_lit=None):
     """Hybrid of 2d_flat's stepped silhouette (flared 6x4x6 cuff -> arm-flush 5x6x5 barrel) and 2d_monolith's
-    2-layer construction (recessed 4x6x4 dark-slate/copper/cyan inner core + 5x6x5 iron-steel cutout covering,
-    4 cubes total).
+    2-layer construction (recessed slate/copper inner cores + pure iron-steel cutout coverings on BOTH base and
+    barrel, 4 cubes total).
     - Narrower 2-texel (1.0 px) beam gap on front/back with wider 4-texel (2.0 px) steel shields on each side.
-    - Contained octagonal generator core in the base (solid closed steel above; copper conduits feeding the sides):
-      core_mode='open'   -> core narrows into a 2-texel beam exit at cuff bottom;
-      core_mode='closed' -> core is fully framed in the base, beam slot begins cleanly below on the barrel.
+    - Base (cuff): pure iron-armor outer covering (6x4x6) over dark-slate + copper inner core (5x4x5) with an
+      enclosed octagonal generator core (ToolLight.RAIL_EMIT: off when unpowered, fully lit whenever suit is powered).
+      cuff_style='clean' -> solid iron flanks around the core on front/back + 6x2 recessed copper window on sides;
+      cuff_style='slits' -> adds 2x2 front/back flank cutouts exposing recessed copper power feeds into the core.
     - idle_beam='invisible': when not charging (lit=False), beam channel texels are dark gunmetal slate (invisible
-      until charging lights up the RAIL_FLOW_0..2 glowmasks), while the base core shows subtle dark-blue glass."""
-    # When idle (not lit), beam channel texels use dark-slate reserved shades so the beam is invisible until charging;
-    # the base generator core (C_BODY / C_HOT -> ToolLight.RAIL_EMIT) keeps a subtle dark-blue crystal tint when idle.
+      until charging lights up the RAIL_FLOW_0..2 glowmasks)."""
+    # core_lit defaults to lit when unspecified (for review: core_lit=True, lit=False shows powered-idle state!)
+    if core_lit is None:
+        core_lit = lit
     Ph = dict(P)
-    if lit:
+    if core_lit:
         Ph['CB'] = _c('2f9cff')
         Ph['CH'] = _c('d8fcff')
     else:
         Ph['CB'] = _c('1b3652')
         Ph['CH'] = _c('264c73')
-        if idle_beam == 'invisible':
-            for n, (kb, lh) in enumerate((('1f2227', '25292d'), ('1f2228', '25292e'), ('1f2229', '25292f'))):
-                Ph[f'K{n}'] = _c(kb)
-                Ph[f'L{n}'] = _c(lh)
+    if not lit and idle_beam == 'invisible':
+        for n, (kb, lh) in enumerate((('1f2227', '25292d'), ('1f2228', '25292e'), ('1f2229', '25292f'))):
+            Ph[f'K{n}'] = _c(kb)
+            Ph[f'L{n}'] = _c(lh)
 
     part = lambda name, box, faces, bone='tool': dict(drill.part(name, box, _paint(faces, Ph)), bone=bone)
     t = top - 4.0
     y_bot = t - length
     rh = round(length * 2)  # 12 barrel rows
 
-    # 1. Cuff inner (5x4x5 -> 10x8 sides, 10x10 down): solid dark slate housing + glowing generator CORE behind window
+    # 1. Cuff inner (5x4x5 -> 10x8 sides, 10x10 down): dark slate + recessed copper power bus + glowing generator CORE
     in_cuff_fb = [
         list('dkkkkkkkkd'),
         list('dmmmmmmmmd'),
-        list('dkkX') + ['CB', 'CB'] + list('Xkkd'),
-        list('dmm') + ['CB', 'CH', 'CH', 'CB'] + list('mmd'),
-        list('dkk') + ['CB', 'CH', 'CH', 'CB'] + list('kkd'),
-        list('dmmX') + (['K0', 'K0'] if core_mode == 'open' else ['CB', 'CB']) + list('Xmmd'),
+        list('dXRX') + ['CB', 'CB'] + list('XRXd'),
+        list('dff') + ['CB', 'CH', 'CH', 'CB'] + list('ffd'),
+        list('dQQ') + ['CB', 'CH', 'CH', 'CB'] + list('QQd'),
+        list('dXRX') + (['K0', 'K0'] if core_mode == 'open' else ['CB', 'CB']) + list('XRXd'),
         list('dkkX') + (['K0', 'K0'] if core_mode == 'open' else ['k', 'k']) + list('Xkkd'),
         list('dXXd') + (['L0', 'L0'] if core_mode == 'open' else ['d', 'd']) + list('dXXd'),
     ]
     in_cuff_sd = [
         list('dkkkkkkkkd'),
         list('dmmmmmmmmd'),
-        list('dkkffffkkd'),
-        list('dmmQQQQmmd'),
-        list('dkkRRRRkkd'),
-        list('dmmmmmmmmd'),
+        list('dXRRRRRRXd'),
+        list('dfffUUfffd'),
+        list('dQQQYYQQQd'),
+        list('dXRRRRRRXd'),
         list('dkkkkkkkkd'),
         list('dddddddddd'),
     ]
@@ -1492,14 +1495,19 @@ def _build_2d_hybrid(c, top, P, length=6.0, core_mode='open', idle_beam='invisib
         for i in range(1, 9):
             in_cuff_dn[j][i] = 'k'
 
-    # 2. Cuff outer (6x4x6 -> 12x8 sides): solid closed steel header -> octagonal core porthole fed by copper straps
+    # 2. Cuff outer (6x4x6 -> 12x8 sides): pure iron-armor covering with cutouts matching the barrel's 2-layer style
+    mid_top = list('eX.X....X.Xp') if cuff_style == 'slits' else list('ellX....Xllp')
+    mid_bot = list('eX.X....X.Xp') if cuff_style == 'slits' else list('ellX....Xllp')
+    if cuff_style == 'slits':
+        mid_top = list('e..X....X..p')
+        mid_bot = list('e..X....X..p')
     if core_mode == 'open':
         out_cuff_fb = [
             list('ghhhhhhhhhhe'),
             list('ezllllllllzp'),
             list('ellXX..XXllp'),
-            list('ffQX....XQff'),
-            list('QQRX....XRQQ'),
+            mid_top,
+            mid_bot,
             list('hhhXX..XXhhp'),
             list('ssssX..Xsssz'),
             list('XXXXX..XXXXX'),
@@ -1509,8 +1517,8 @@ def _build_2d_hybrid(c, top, P, length=6.0, core_mode='open', idle_beam='invisib
             list('ghhhhhhhhhhe'),
             list('ezllllllllzp'),
             list('ellXX..XXllp'),
-            list('ffQX....XQff'),
-            list('QQRX....XRQQ'),
+            mid_top,
+            mid_bot,
             list('hhhXX..XXhhp'),
             list('ssssXXXXsssz'),
             list('XXXXXXXXXXXX'),
@@ -1518,9 +1526,9 @@ def _build_2d_hybrid(c, top, P, length=6.0, core_mode='open', idle_beam='invisib
     out_cuff_sd = [
         list('ghhhhhhhhhhe'),
         list('ezllllllllzp'),
-        list('eXXXXXXXXXXp'),
-        list('fffffUUfffff'),
-        list('QQQQQYYQQQQQ'),
+        list('ellllllllllp'),
+        list('elX......Xlp'),
+        list('elX......Xlp'),
         list('hhhhhhhhhhhp'),
         list('sssssssssssz'),
         list('XXXXXXXXXXXX'),
@@ -1618,7 +1626,11 @@ def build(c, top, lamp='dark', kind='2d_hybrid_closed', core='dark', length=6.0,
     if kind == '2d_hybrid':
         return _build_2d_hybrid(c, top, P, length, core_mode='open', lit=(core == 'lit'))
     if kind == '2d_hybrid_closed':
-        return _build_2d_hybrid(c, top, P, length, core_mode='closed', lit=(core == 'lit'))
+        return _build_2d_hybrid(c, top, P, length, core_mode='closed', lit=(core == 'lit'),
+                                cuff_style='clean', core_lit=(core in ('lit', 'powered')))
+    if kind == '2d_hybrid_slits':
+        return _build_2d_hybrid(c, top, P, length, core_mode='closed', lit=(core == 'lit'),
+                                cuff_style='slits', core_lit=(core in ('lit', 'powered')))
     if kind == '2d_fork_layer':
         return _build_2d_fork_layer(c, top, P, length)
     if kind == '2d_fork_flat':

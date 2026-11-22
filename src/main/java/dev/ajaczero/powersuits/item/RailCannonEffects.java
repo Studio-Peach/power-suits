@@ -43,8 +43,9 @@ public final class RailCannonEffects implements ToolEffects {
     /** How long a beam is drawn, ticks. */
     public static final int BEAM_TICKS = 8;
 
-    /** Client: the base generator core's glow (subtle idle when powered, ramps with charge), the barrel beam's glow
-     *  (0 when idle so the beam channel is invisible dark slate until charging), and the wave phase along the barrel. */
+    /** Client: the base generator core's glow (bound to suit power: 0 off when unpowered, 1 fully lit whenever
+     *  powered — even idle), the barrel beam's glow (0 when idle so the beam channel is invisible dark slate until
+     *  charging), and the wave phase along the barrel. */
     private float glow, beamGlow, flow, flowO;
 
     /** HUD: shots left (the amethyst shards the pilot carries), low on the last one; the charge (it fires at full). */
@@ -57,7 +58,7 @@ public final class RailCannonEffects implements ToolEffects {
     @Override
     public void tick(PowerSuitEntity suit) {
         float charge = suit.socket().getSpin();
-        float coreTarget = !suit.isPowered() ? 0F : 0.2F + 0.8F * charge;
+        float coreTarget = suit.isPowered() ? 1F : 0F;
         float beamTarget = !suit.isPowered() || charge <= 0.001F ? 0F : 0.25F + 0.75F * charge;
         this.glow = ToolEffects.ease(this.glow, coreTarget, 0.5F, 0.12F);
         this.beamGlow = ToolEffects.ease(this.beamGlow, beamTarget, 0.5F, 0.14F);

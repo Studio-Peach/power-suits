@@ -312,11 +312,12 @@ the end and `docs/guide.md` Notes).
 - `frame_rail_art.py`, TOOL=rail (standalone `model/tools/rail_cannon.bbmodel` via `tools/export-tools.py`): reworked
   2026-11-21 away from 3D component kitbashing to match the iron armour and heart engine's 2D-painted + 0.5 px cutout
   outer-layer language (user picked `RAIL=2d_hybrid_closed`; earlier drafts kept as knobs): 4 cubes total — a flared
-  `6x4x6` cutout iron-steel/copper gauntlet cuff over a `5x4x5` inner cuff (solid closed steel top, copper power straps
-  feeding an enclosed octagonal generator core, `ToolLight.RAIL_EMIT`, subtle 0.20 idle glow when powered) stepping
-  down to an arm-flush `5x6x5` cutout iron-steel barrel covering over a recessed `4x6x4` dark-slate/copper inner barrel
-  (wide `2.0 px` front/back shields framing a tight `1.0 px` beam slit + two wide side coil windows + stepped `4x4`
-  dark-slate muzzle tip 0.5 px below the shroud).
+  `6x4x6` pure iron-steel cutout gauntlet cuff over a `5x4x5` dark-slate/copper inner base (matching the barrel's
+  slate+copper inside / iron covering outside, with a `6x2` recessed side copper window and an enclosed octagonal
+  generator core, `ToolLight.RAIL_EMIT`, bound directly to `suit.isPowered()`: off when unpowered, fully lit whenever
+  powered even in idle) stepping down to an arm-flush `5x6x5` cutout iron-steel barrel covering over a recessed
+  `4x6x4` dark-slate/copper inner barrel (wide `2.0 px` front/back shields framing a tight `1.0 px` beam slit + two
+  matching `6x2` side coil windows + stepped `4x4` dark-slate muzzle tip 0.5 px below the shroud).
 - The barrel beam channel and side coil pulses use dark-slate reserved shades (`1f2227..25292f`) in the base texture
   and `RailCannonEffects` drives `ToolLight.RAIL_FLOW_0..2` strictly from charge (`0` when idle, racing cyan wave
   while charging, flash on shot), so the beam is completely invisible dark slate when not in use. `ToolLight.RAIL_EMIT`
