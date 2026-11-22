@@ -29,7 +29,11 @@ GLOW_MAPS = {
     'gun_light': {_h('c8ffc0'): _h('c8ffc0'), _h('3cf060'): _h('3cf060')},
     'em_core':   {_h('3a0e0c'): _h('7a0600'), _h('4b1310'): _h('b81206'), _h('5c1813'): _h('f0200c'), _h('701f17'): _h('ff6a4a')},
     'em_arc':    {_h('4e1411'): _h('c01206'), _h('621a14'): _h('ff2a14')},
-    **{f'rail_flow_{n}': {_h(('1d3f5e', '1d3f6f', '1d3f7f')[n]): _h('2f9cff'), _h(('254e73', '254e74', '254e75')[n]): _h('a8f0ff')}
+    'rail_emit': {_h('1b3652'): _h('2f9cff'), _h('264c73'): _h('d8fcff')},
+    **{f'rail_flow_{n}': {_h(('1d3f5e', '1d3f6f', '1d3f7f')[n]): _h('2f9cff'),
+                          _h(('254e73', '254e74', '254e75')[n]): _h('a8f0ff'),
+                          _h(('1f2227', '1f2228', '1f2229')[n]): _h('2f9cff'),
+                          _h(('25292d', '25292e', '25292f')[n]): _h('a8f0ff')}
        for n in range(3)},
 }
 
@@ -71,8 +75,8 @@ def tool_specs():
          flame_art.build(0, 0, kind='D', pilot='dark', glow='lit', body_art='pump', body_h=3.0, holes='even',
                          tank_h=4.0, tank_w=3.0, sleeve=True, head_scale=True), glow),
         ('rail_cannon', ('rail_cannon', 'rail_fork_out'), {'fork_in': 'rail_fork_in'},
-         ('rail_flow_0', 'rail_flow_1', 'rail_flow_2'),
-         rail_art.build(0, 0, 'dark', kind='ori_concave_channel', core='dark', length=6.0, sleeve=True, head_scale=True), glow),
+         ('rail_flow_0', 'rail_flow_1', 'rail_flow_2', 'rail_emit'),
+         rail_art.build(0, 0, 'dark', kind='2d_hybrid_closed', core='dark', length=6.0, sleeve=True, head_scale=True), glow),
         ('tnt_launcher', ('tnt_launcher', 'tnt_launcher_drum'), {}, (),
          tnt_art.build(0, 0, kind='wide', sleeve=True), glow),
         ('em_projector', ('em_projector', 'em_projector_poles'), {}, ('em_core', 'em_arc'),

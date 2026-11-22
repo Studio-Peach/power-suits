@@ -308,18 +308,20 @@ the end and `docs/guide.md` Notes).
   the old loop with eps loosened to 0.3: 13 clashes both), a saved-files build ~25 s, a layered draft ~8 s, a flat
   helmet draft under 1 s. Profile first (`python3 -m cProfile -s cumtime model/art/frame_model.py`) before guessing.
 
-## Rail cannon (2026-11-15; reworked 2026-11-21 for 6x6 sleeve)
+## Rail cannon (2026-11-15; reworked 2026-11-21 in 2D-texture + outer-layer direction)
 - `frame_rail_art.py`, TOOL=rail (standalone `model/tools/rail_cannon.bbmodel` via `tools/export-tools.py`): reworked
-  2026-11-21 for the 6x6 sleeved footprint after reviewing Oritech's CC0 `enderic_railgun` (user picked
-  `RAIL=ori_concave_channel`; earlier drafts kept as knobs): clean seamless steel 6x4x6 receiver (no copper divider)
-  with a tall vertical glowing cyan slit (`RAIL_FLOW_0`) flowing straight into flush steel shoulders and concave
-  C-channel twin rails (front/back flanges framing a recessed dark-slate outer trough) cradling protruding glowing cyan
-  inner accelerator rods (0.5 px past the outer rail tips, 3-band flowing `RAIL_FLOW_0..2`). Outer fork on
-  `rail_fork_out`, inner on `rail_fork_in` so `ToolRotors.railShake` spreads them as it charges.
-- The core is the prongs' inner faces, painted in three bands of reserved dark blues (K / L per band, a shade apart:
-  `frame_rail_art.CORE`), each its own glowmask (`TOOL_GLOW` rail_flow_0..2 -> `ToolLight.RAIL_FLOW_0..2`: the wave that
-  runs toward the tips). The big suit's emitter light (`RAIL_EMIT`) has no frame texels yet. `muzzleInsetPixels` -1 (tips 10 px
-  under the socket, 1 px past the chaingun's muzzle). `runAutopilotRail` shows it.
+  2026-11-21 away from 3D component kitbashing to match the iron armour and heart engine's 2D-painted + 0.5 px cutout
+  outer-layer language (user picked `RAIL=2d_hybrid_closed`; earlier drafts kept as knobs): 4 cubes total — a flared
+  `6x4x6` cutout iron-steel/copper gauntlet cuff over a `5x4x5` inner cuff (solid closed steel top, copper power straps
+  feeding an enclosed octagonal generator core, `ToolLight.RAIL_EMIT`, subtle 0.20 idle glow when powered) stepping
+  down to an arm-flush `5x6x5` cutout iron-steel barrel covering over a recessed `4x6x4` dark-slate/copper inner barrel
+  (wide `2.0 px` front/back shields framing a tight `1.0 px` beam slit + two wide side coil windows + stepped `4x4`
+  dark-slate muzzle tip 0.5 px below the shroud).
+- The barrel beam channel and side coil pulses use dark-slate reserved shades (`1f2227..25292f`) in the base texture
+  and `RailCannonEffects` drives `ToolLight.RAIL_FLOW_0..2` strictly from charge (`0` when idle, racing cyan wave
+  while charging, flash on shot), so the beam is completely invisible dark slate when not in use. `ToolLight.RAIL_EMIT`
+  (now `fadesByAlpha = true`) drives the enclosed base core's `rail_emit` glowmask independently. `muzzleInsetPixels`
+  -1 (10 px under the socket). `runAutopilotRail` shows it (1P + 3P).
 
 ## TNT launcher and EM projector (2026-11-15; both reworked 2026-11-20)
 - `frame_tnt_art.py` (TOOL=tnt, knob `TNT=wide` default | `flush` | `chunky` | `legacy`; reworked 2026-11-20 to match

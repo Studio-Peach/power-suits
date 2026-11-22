@@ -43,9 +43,9 @@ public final class RailCannonEffects implements ToolEffects {
     /** How long a beam is drawn, ticks. */
     public static final int BEAM_TICKS = 8;
 
-    /** Client: the core's glow, 0..1 (the charge, a flash after each shot), and how far the light running along it has
-     *  gone (in rings; faster as it charges). */
-    private float glow, flow, flowO;
+    /** Client: the base generator core's glow (subtle idle when powered, ramps with charge), the barrel beam's glow
+     *  (0 when idle so the beam channel is invisible dark slate until charging), and the wave phase along the barrel. */
+    private float glow, beamGlow, flow, flowO;
 
     /** HUD: shots left (the amethyst shards the pilot carries), low on the last one; the charge (it fires at full). */
     @Override
@@ -57,8 +57,10 @@ public final class RailCannonEffects implements ToolEffects {
     @Override
     public void tick(PowerSuitEntity suit) {
         float charge = suit.socket().getSpin();
-        float target = !suit.isPowered() ? 0F : 0.15F + 0.85F * charge;
-        this.glow = ToolEffects.ease(this.glow, target, 0.5F, 0.12F);
+        float coreTarget = !suit.isPowered() ? 0F : 0.2F + 0.8F * charge;
+        float beamTarget = !suit.isPowered() || charge <= 0.001F ? 0F : 0.25F + 0.75F * charge;
+        this.glow = ToolEffects.ease(this.glow, coreTarget, 0.5F, 0.12F);
+        this.beamGlow = ToolEffects.ease(this.beamGlow, beamTarget, 0.5F, 0.14F);
         this.flowO = this.flow;
         this.flow += 0.06F + 0.55F * charge;
         if (this.flow > 300F) { // keep it small (a multiple of 3 rings: the pattern repeats every 3)
@@ -70,8 +72,9 @@ public final class RailCannonEffects implements ToolEffects {
 
     @Override
     public void shot(PowerSuitEntity suit) {
-        // The beam, drawn here by every client from the muzzle it sees; the core flashes white-hot.
+        // The beam, drawn here by every client from the muzzle it sees; the core and barrel flash white-hot.
         this.glow = 1F;
+        this.beamGlow = 1F;
         LivingEntity operator = suit.getControllingPassenger() instanceof Player pilot ? pilot : suit;
         beam(suit, operator, suit.socket().getRailBeamEnd());
     }
@@ -84,16 +87,17 @@ public final class RailCannonEffects implements ToolEffects {
     @Override
     public void lights(PowerSuitEntity suit, float time, float partial, float[] out) {
         float charge = suit.socket().getSpin();
-        // The rings: a wave runs along the core, so each third brightens in turn after the one behind it. Dim and lazy
-        // while idle, a bright fast pulse train while charging, all lit when it fires (the flash).
+        // Barrel beam wave: invisible (0) while idle, racing bright cyan rings toward the muzzle while charging,
+        // and all three bands flashing together when it fires before fading back to dark slate.
         float flow = Mth.lerp(partial, this.flowO, this.flow);
-        float flash = Math.max(0F, this.glow - (0.15F + 0.85F * charge)); // what's left of a shot's flash: all rings lit
+        float beamTarget = !suit.isPowered() || charge <= 0.001F ? 0F : 0.25F + 0.75F * charge;
+        float flash = Math.max(0F, this.beamGlow - beamTarget);
         for (int phase = 0; phase < 3; phase++) {
             float wave = Mth.cos((flow - phase) * Mth.TWO_PI / 3F) * 0.5F + 0.5F; // 1 when the crest is on this phase
             float crest = wave * wave * wave;                                    // a narrow crest, so it reads as moving rings
-            out[ToolLight.RAIL_FLOW_0.ordinal() + phase] = Math.min(1F, this.glow * (0.3F + 0.7F * crest) + flash);
+            out[ToolLight.RAIL_FLOW_0.ordinal() + phase] = Math.min(1F, this.beamGlow * (0.3F + 0.7F * crest) + flash);
         }
-        // the emitter: steady while it charges, a fast shimmer once it's full
+        // Base generator core: subtle idle glow when powered, steady build while charging, shimmer once full.
         boolean full = charge >= 0.999F;
         out[ToolLight.RAIL_EMIT.ordinal()] = this.glow * (full ? 0.85F + 0.15F * Mth.sin(time * 2.7F + suit.getId()) : 1F);
     }

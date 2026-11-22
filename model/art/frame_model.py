@@ -968,13 +968,13 @@ def _tool_parts(TOOL):
                                    float(os.environ.get('FLAME_BODY_H', _fl_bh)), os.environ.get('FLAME_HOLES', 'even'),
                                    float(os.environ.get('FLAME_TANK_H', _fl_th)), float(os.environ.get('FLAME_TANK_W', '3')),
                                    sleeve=TOOL_SLEEVE, head_scale=HEAD_SCALE)
-# The rail cannon (frame_rail_art.py): reworked 2026-11-21 for the 6x6 sleeved footprint (user picked 'gauss' over
-# 'coil' and 'quad'; old drafts A/B/C kept as knobs): DOOM 2016 Gauss Cannon two-tone armored receiver with glowing
-# capacitor core & central breech nozzle + 3-step sculpted twin rails (copper breech clamps, vented mid rails with
-# glowing side windows, tapered dark-slate muzzle tips), 3-band flowing charge glow (RAIL_FLOW_0..2).
+# The rail cannon (frame_rail_art.py): reworked 2026-11-21 in the 2D-texture + 0.5 px cutout outer-layer direction
+# (matching the iron armour & heart engine; user picked 2d_hybrid_closed): flared 6x4x6 cutout cuff with copper power
+# straps & enclosed octagonal generator core (RAIL_EMIT, subtle idle glow) + arm-flush 5x6x5 cutout metal covering over
+# a recessed 4x6x4 dark-slate/copper barrel with a narrow 1 px beam slot (RAIL_FLOW_0..2, invisible dark slate when idle).
   if TOOL == 'rail':
     import frame_rail_art as rail_art
-    TOOL_PARTS = rail_art.build(6.25 + ARM_OUT, SOCKET_Y, 'dark', os.environ.get('RAIL', 'ori_concave_channel'),
+    TOOL_PARTS = rail_art.build(6.25 + ARM_OUT, SOCKET_Y, 'dark', os.environ.get('RAIL', '2d_hybrid_closed'),
                                 os.environ.get('RAIL_CORE', 'dark'), float(os.environ.get('RAIL_L', '6')),
                                 sleeve=TOOL_SLEEVE, head_scale=HEAD_SCALE)
 # The TNT launcher (frame_tnt_art.py) and the EM projector (frame_em_art.py): the big suit's designs (user, 2026-11-15).

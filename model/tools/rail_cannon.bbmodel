@@ -16,12 +16,96 @@
  "timeline_setups": [],
  "unhandled_root_fields": {},
  "resolution": {
-  "width": 128,
+  "width": 64,
   "height": 64
  },
  "elements": [
   {
-   "name": "tl_rail_cannon_body",
+   "name": "tl_rail_cannon_cuff_inner",
+   "box_uv": false,
+   "render_order": "default",
+   "locked": false,
+   "export": true,
+   "scope": 0,
+   "allow_mirror_modeling": true,
+   "from": [
+    -2.5,
+    -4,
+    -2.5
+   ],
+   "to": [
+    2.5,
+    0,
+    2.5
+   ],
+   "autouv": 0,
+   "color": 1,
+   "origin": [
+    0,
+    0,
+    0
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      10,
+      36,
+      0,
+      44
+     ],
+     "texture": 0
+    },
+    "east": {
+     "uv": [
+      40,
+      36,
+      30,
+      44
+     ],
+     "texture": 0
+    },
+    "south": {
+     "uv": [
+      30,
+      36,
+      20,
+      44
+     ],
+     "texture": 0
+    },
+    "west": {
+     "uv": [
+      20,
+      36,
+      10,
+      44
+     ],
+     "texture": 0
+    },
+    "up": {
+     "uv": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "texture": null
+    },
+    "down": {
+     "uv": [
+      50,
+      36,
+      40,
+      46
+     ],
+     "texture": 0
+    }
+   },
+   "type": "cube",
+   "uuid": "ef025e28-c823-48a3-8212-6eb5a9ac27ce"
+  },
+  {
+   "name": "tl_rail_cannon_cuff_outer",
    "box_uv": false,
    "render_order": "default",
    "locked": false,
@@ -93,355 +177,19 @@
     },
     "down": {
      "uv": [
-      72,
-      0,
-      60,
-      12
-     ],
-     "texture": 0
-    }
-   },
-   "type": "cube",
-   "uuid": "463c1198-3c0a-44db-95e5-71d9c0de3f23"
-  },
-  {
-   "name": "tl_rail_cannon_prong_out_rod",
-   "box_uv": false,
-   "render_order": "default",
-   "locked": false,
-   "export": true,
-   "scope": 0,
-   "allow_mirror_modeling": true,
-   "from": [
-    -1,
-    -10,
-    -1
-   ],
-   "to": [
-    -0.5,
-    -4,
-    1
-   ],
-   "autouv": 0,
-   "color": 1,
-   "origin": [
-    0,
-    0,
-    0
-   ],
-   "faces": {
-    "north": {
-     "uv": [
-      73,
-      0,
-      72,
-      12
-     ],
-     "texture": 0
-    },
-    "east": {
-     "uv": [
-      82,
-      0,
-      78,
-      12
-     ],
-     "texture": 0
-    },
-    "south": {
-     "uv": [
-      78,
-      0,
-      77,
-      12
-     ],
-     "texture": 0
-    },
-    "west": {
-     "uv": [
-      77,
-      0,
-      73,
-      12
-     ],
-     "texture": 0
-    },
-    "up": {
-     "uv": [
       0,
       0,
       0,
       0
      ],
      "texture": null
-    },
-    "down": {
-     "uv": [
-      83,
-      0,
-      82,
-      4
-     ],
-     "texture": 0
     }
    },
    "type": "cube",
-   "uuid": "011e0737-fba5-4828-9343-2f89d855388b"
+   "uuid": "386643f7-4014-4f60-a08a-5f105e8fef47"
   },
   {
-   "name": "tl_rail_cannon_prong_out_root",
-   "box_uv": false,
-   "render_order": "default",
-   "locked": false,
-   "export": true,
-   "scope": 0,
-   "allow_mirror_modeling": true,
-   "from": [
-    -3,
-    -5.5,
-    -2.5
-   ],
-   "to": [
-    -1,
-    -4,
-    2.5
-   ],
-   "autouv": 0,
-   "color": 1,
-   "origin": [
-    0,
-    0,
-    0
-   ],
-   "faces": {
-    "north": {
-     "uv": [
-      98,
-      0,
-      94,
-      3
-     ],
-     "texture": 0
-    },
-    "east": {
-     "uv": [
-      122,
-      0,
-      112,
-      3
-     ],
-     "texture": 0
-    },
-    "south": {
-     "uv": [
-      112,
-      0,
-      108,
-      3
-     ],
-     "texture": 0
-    },
-    "west": {
-     "uv": [
-      108,
-      0,
-      98,
-      3
-     ],
-     "texture": 0
-    },
-    "up": {
-     "uv": [
-      0,
-      0,
-      0,
-      0
-     ],
-     "texture": null
-    },
-    "down": {
-     "uv": [
-      126,
-      0,
-      122,
-      10
-     ],
-     "texture": 0
-    }
-   },
-   "type": "cube",
-   "uuid": "b2435b44-f9aa-4e64-876d-70e6c43e080f"
-  },
-  {
-   "name": "tl_rail_cannon_prong_out_fl_f",
-   "box_uv": false,
-   "render_order": "default",
-   "locked": false,
-   "export": true,
-   "scope": 0,
-   "allow_mirror_modeling": true,
-   "from": [
-    -2.5,
-    -9.5,
-    -2.5
-   ],
-   "to": [
-    -1,
-    -5.5,
-    -1.5
-   ],
-   "autouv": 0,
-   "color": 1,
-   "origin": [
-    0,
-    0,
-    0
-   ],
-   "faces": {
-    "north": {
-     "uv": [
-      35,
-      12,
-      32,
-      20
-     ],
-     "texture": 0
-    },
-    "east": {
-     "uv": [
-      42,
-      12,
-      40,
-      20
-     ],
-     "texture": 0
-    },
-    "south": {
-     "uv": [
-      40,
-      12,
-      37,
-      20
-     ],
-     "texture": 0
-    },
-    "west": {
-     "uv": [
-      37,
-      12,
-      35,
-      20
-     ],
-     "texture": 0
-    },
-    "up": {
-     "uv": [
-      0,
-      0,
-      0,
-      0
-     ],
-     "texture": null
-    },
-    "down": {
-     "uv": [
-      45,
-      12,
-      42,
-      14
-     ],
-     "texture": 0
-    }
-   },
-   "type": "cube",
-   "uuid": "94df1e16-9d4b-41aa-896a-b31c61129fc0"
-  },
-  {
-   "name": "tl_rail_cannon_prong_out_fl_b",
-   "box_uv": false,
-   "render_order": "default",
-   "locked": false,
-   "export": true,
-   "scope": 0,
-   "allow_mirror_modeling": true,
-   "from": [
-    -2.5,
-    -9.5,
-    1.5
-   ],
-   "to": [
-    -1,
-    -5.5,
-    2.5
-   ],
-   "autouv": 0,
-   "color": 1,
-   "origin": [
-    0,
-    0,
-    0
-   ],
-   "faces": {
-    "north": {
-     "uv": [
-      48,
-      12,
-      45,
-      20
-     ],
-     "texture": 0
-    },
-    "east": {
-     "uv": [
-      55,
-      12,
-      53,
-      20
-     ],
-     "texture": 0
-    },
-    "south": {
-     "uv": [
-      53,
-      12,
-      50,
-      20
-     ],
-     "texture": 0
-    },
-    "west": {
-     "uv": [
-      50,
-      12,
-      48,
-      20
-     ],
-     "texture": 0
-    },
-    "up": {
-     "uv": [
-      0,
-      0,
-      0,
-      0
-     ],
-     "texture": null
-    },
-    "down": {
-     "uv": [
-      58,
-      12,
-      55,
-      14
-     ],
-     "texture": 0
-    }
-   },
-   "type": "cube",
-   "uuid": "b830b56a-828a-4ef1-8ef3-bbbc05ca90ef"
-  },
-  {
-   "name": "tl_rail_cannon_prong_out_web",
+   "name": "tl_rail_cannon_barrel_inner",
    "box_uv": false,
    "render_order": "default",
    "locked": false,
@@ -450,433 +198,13 @@
    "allow_mirror_modeling": true,
    "from": [
     -2,
-    -9.5,
-    -1.5
-   ],
-   "to": [
-    -1,
-    -5.5,
-    1.5
-   ],
-   "autouv": 0,
-   "color": 1,
-   "origin": [
-    0,
-    0,
-    0
-   ],
-   "faces": {
-    "north": {
-     "uv": [
-      0,
-      0,
-      0,
-      0
-     ],
-     "texture": null
-    },
-    "east": {
-     "uv": [
-      70,
-      12,
-      64,
-      20
-     ],
-     "texture": 0
-    },
-    "south": {
-     "uv": [
-      0,
-      0,
-      0,
-      0
-     ],
-     "texture": null
-    },
-    "west": {
-     "uv": [
-      64,
-      12,
-      58,
-      20
-     ],
-     "texture": 0
-    },
-    "up": {
-     "uv": [
-      0,
-      0,
-      0,
-      0
-     ],
-     "texture": null
-    },
-    "down": {
-     "uv": [
-      72,
-      12,
-      70,
-      18
-     ],
-     "texture": 0
-    }
-   },
-   "type": "cube",
-   "uuid": "32de182d-d82f-48d9-b387-e893cf2f1a26"
-  },
-  {
-   "name": "tl_rail_cannon_prong_in_rod",
-   "box_uv": false,
-   "render_order": "default",
-   "locked": false,
-   "export": true,
-   "scope": 0,
-   "allow_mirror_modeling": true,
-   "from": [
-    0.5,
     -10,
-    -1
-   ],
-   "to": [
-    1,
-    -4,
-    1
-   ],
-   "autouv": 0,
-   "color": 1,
-   "origin": [
-    0,
-    0,
-    0
-   ],
-   "faces": {
-    "north": {
-     "uv": [
-      84,
-      0,
-      83,
-      12
-     ],
-     "texture": 0
-    },
-    "east": {
-     "uv": [
-      93,
-      0,
-      89,
-      12
-     ],
-     "texture": 0
-    },
-    "south": {
-     "uv": [
-      89,
-      0,
-      88,
-      12
-     ],
-     "texture": 0
-    },
-    "west": {
-     "uv": [
-      88,
-      0,
-      84,
-      12
-     ],
-     "texture": 0
-    },
-    "up": {
-     "uv": [
-      0,
-      0,
-      0,
-      0
-     ],
-     "texture": null
-    },
-    "down": {
-     "uv": [
-      94,
-      0,
-      93,
-      4
-     ],
-     "texture": 0
-    }
-   },
-   "type": "cube",
-   "uuid": "19c7ae9a-22c8-4cfe-b37b-92e9dab8026f"
-  },
-  {
-   "name": "tl_rail_cannon_prong_in_root",
-   "box_uv": false,
-   "render_order": "default",
-   "locked": false,
-   "export": true,
-   "scope": 0,
-   "allow_mirror_modeling": true,
-   "from": [
-    1,
-    -5.5,
-    -2.5
-   ],
-   "to": [
-    3,
-    -4,
-    2.5
-   ],
-   "autouv": 0,
-   "color": 1,
-   "origin": [
-    0,
-    0,
-    0
-   ],
-   "faces": {
-    "north": {
-     "uv": [
-      4,
-      12,
-      0,
-      15
-     ],
-     "texture": 0
-    },
-    "east": {
-     "uv": [
-      28,
-      12,
-      18,
-      15
-     ],
-     "texture": 0
-    },
-    "south": {
-     "uv": [
-      18,
-      12,
-      14,
-      15
-     ],
-     "texture": 0
-    },
-    "west": {
-     "uv": [
-      14,
-      12,
-      4,
-      15
-     ],
-     "texture": 0
-    },
-    "up": {
-     "uv": [
-      0,
-      0,
-      0,
-      0
-     ],
-     "texture": null
-    },
-    "down": {
-     "uv": [
-      32,
-      12,
-      28,
-      22
-     ],
-     "texture": 0
-    }
-   },
-   "type": "cube",
-   "uuid": "d87b19e2-d885-4a6f-990f-7cedfbffe104"
-  },
-  {
-   "name": "tl_rail_cannon_prong_in_fl_f",
-   "box_uv": false,
-   "render_order": "default",
-   "locked": false,
-   "export": true,
-   "scope": 0,
-   "allow_mirror_modeling": true,
-   "from": [
-    1,
-    -9.5,
-    -2.5
-   ],
-   "to": [
-    2.5,
-    -5.5,
-    -1.5
-   ],
-   "autouv": 0,
-   "color": 1,
-   "origin": [
-    0,
-    0,
-    0
-   ],
-   "faces": {
-    "north": {
-     "uv": [
-      75,
-      12,
-      72,
-      20
-     ],
-     "texture": 0
-    },
-    "east": {
-     "uv": [
-      82,
-      12,
-      80,
-      20
-     ],
-     "texture": 0
-    },
-    "south": {
-     "uv": [
-      80,
-      12,
-      77,
-      20
-     ],
-     "texture": 0
-    },
-    "west": {
-     "uv": [
-      77,
-      12,
-      75,
-      20
-     ],
-     "texture": 0
-    },
-    "up": {
-     "uv": [
-      0,
-      0,
-      0,
-      0
-     ],
-     "texture": null
-    },
-    "down": {
-     "uv": [
-      85,
-      12,
-      82,
-      14
-     ],
-     "texture": 0
-    }
-   },
-   "type": "cube",
-   "uuid": "eae7a51c-260e-45d2-b686-b748296adba6"
-  },
-  {
-   "name": "tl_rail_cannon_prong_in_fl_b",
-   "box_uv": false,
-   "render_order": "default",
-   "locked": false,
-   "export": true,
-   "scope": 0,
-   "allow_mirror_modeling": true,
-   "from": [
-    1,
-    -9.5,
-    1.5
-   ],
-   "to": [
-    2.5,
-    -5.5,
-    2.5
-   ],
-   "autouv": 0,
-   "color": 1,
-   "origin": [
-    0,
-    0,
-    0
-   ],
-   "faces": {
-    "north": {
-     "uv": [
-      88,
-      12,
-      85,
-      20
-     ],
-     "texture": 0
-    },
-    "east": {
-     "uv": [
-      95,
-      12,
-      93,
-      20
-     ],
-     "texture": 0
-    },
-    "south": {
-     "uv": [
-      93,
-      12,
-      90,
-      20
-     ],
-     "texture": 0
-    },
-    "west": {
-     "uv": [
-      90,
-      12,
-      88,
-      20
-     ],
-     "texture": 0
-    },
-    "up": {
-     "uv": [
-      0,
-      0,
-      0,
-      0
-     ],
-     "texture": null
-    },
-    "down": {
-     "uv": [
-      98,
-      12,
-      95,
-      14
-     ],
-     "texture": 0
-    }
-   },
-   "type": "cube",
-   "uuid": "ad18f0ef-ca4a-40fd-89a3-454f3106c7bf"
-  },
-  {
-   "name": "tl_rail_cannon_prong_in_web",
-   "box_uv": false,
-   "render_order": "default",
-   "locked": false,
-   "export": true,
-   "scope": 0,
-   "allow_mirror_modeling": true,
-   "from": [
-    1,
-    -9.5,
-    -1.5
+    -2
    ],
    "to": [
     2,
-    -5.5,
-    1.5
+    -4,
+    2
    ],
    "autouv": 0,
    "color": 1,
@@ -888,37 +216,37 @@
    "faces": {
     "north": {
      "uv": [
+      8,
+      12,
       0,
-      0,
-      0,
-      0
+      24
      ],
-     "texture": null
+     "texture": 0
     },
     "east": {
      "uv": [
-      110,
+      32,
       12,
-      104,
-      20
+      24,
+      24
      ],
      "texture": 0
     },
     "south": {
      "uv": [
-      0,
-      0,
-      0,
-      0
+      24,
+      12,
+      16,
+      24
      ],
-     "texture": null
+     "texture": 0
     },
     "west": {
      "uv": [
-      104,
+      16,
       12,
-      98,
-      20
+      8,
+      24
      ],
      "texture": 0
     },
@@ -933,22 +261,106 @@
     },
     "down": {
      "uv": [
-      112,
+      40,
       12,
-      110,
-      18
+      32,
+      20
      ],
      "texture": 0
     }
    },
    "type": "cube",
-   "uuid": "834b17fd-5f45-4411-9f0f-934077ad9321"
+   "uuid": "89e8abdc-5ed0-433b-9e3c-02c927da7d80"
+  },
+  {
+   "name": "tl_rail_cannon_barrel_outer",
+   "box_uv": false,
+   "render_order": "default",
+   "locked": false,
+   "export": true,
+   "scope": 0,
+   "allow_mirror_modeling": true,
+   "from": [
+    -2.5,
+    -10,
+    -2.5
+   ],
+   "to": [
+    2.5,
+    -4,
+    2.5
+   ],
+   "autouv": 0,
+   "color": 1,
+   "origin": [
+    0,
+    0,
+    0
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      10,
+      24,
+      0,
+      36
+     ],
+     "texture": 0
+    },
+    "east": {
+     "uv": [
+      40,
+      24,
+      30,
+      36
+     ],
+     "texture": 0
+    },
+    "south": {
+     "uv": [
+      30,
+      24,
+      20,
+      36
+     ],
+     "texture": 0
+    },
+    "west": {
+     "uv": [
+      20,
+      24,
+      10,
+      36
+     ],
+     "texture": 0
+    },
+    "up": {
+     "uv": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "texture": null
+    },
+    "down": {
+     "uv": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "texture": null
+    }
+   },
+   "type": "cube",
+   "uuid": "b27c4759-31ce-40a4-bec6-cd44dc616263"
   }
  ],
  "groups": [
   {
    "name": "rail_cannon",
-   "uuid": "2661dc4e-acaa-42b4-a186-1437f2955f23",
+   "uuid": "5e0516a7-0771-451f-b235-adcb15826a1b",
    "export": true,
    "locked": false,
    "scope": 0,
@@ -976,7 +388,7 @@
   },
   {
    "name": "rail_fork_out",
-   "uuid": "a94ad513-5fa8-4c6d-9736-17aeab3dc596",
+   "uuid": "4ae720bc-a074-4afc-aad4-3ebb27f5d6ed",
    "export": true,
    "locked": false,
    "scope": 0,
@@ -1004,7 +416,7 @@
   },
   {
    "name": "rail_fork_in",
-   "uuid": "eadbeece-9c8e-4c64-a917-075efd68c683",
+   "uuid": "06fb47f7-0af1-4c4c-ac64-5b6fb940aec0",
    "export": true,
    "locked": false,
    "scope": 0,
@@ -1033,32 +445,23 @@
  ],
  "outliner": [
   {
-   "uuid": "2661dc4e-acaa-42b4-a186-1437f2955f23",
+   "uuid": "5e0516a7-0771-451f-b235-adcb15826a1b",
    "isOpen": true,
    "children": [
     {
-     "uuid": "a94ad513-5fa8-4c6d-9736-17aeab3dc596",
+     "uuid": "4ae720bc-a074-4afc-aad4-3ebb27f5d6ed",
      "isOpen": true,
-     "children": [
-      "011e0737-fba5-4828-9343-2f89d855388b",
-      "b2435b44-f9aa-4e64-876d-70e6c43e080f",
-      "94df1e16-9d4b-41aa-896a-b31c61129fc0",
-      "b830b56a-828a-4ef1-8ef3-bbbc05ca90ef",
-      "32de182d-d82f-48d9-b387-e893cf2f1a26"
-     ]
+     "children": []
     },
     {
-     "uuid": "eadbeece-9c8e-4c64-a917-075efd68c683",
+     "uuid": "06fb47f7-0af1-4c4c-ac64-5b6fb940aec0",
      "isOpen": true,
-     "children": [
-      "19c7ae9a-22c8-4cfe-b37b-92e9dab8026f",
-      "d87b19e2-d885-4a6f-990f-7cedfbffe104",
-      "eae7a51c-260e-45d2-b686-b748296adba6",
-      "ad18f0ef-ca4a-40fd-89a3-454f3106c7bf",
-      "834b17fd-5f45-4411-9f0f-934077ad9321"
-     ]
+     "children": []
     },
-    "463c1198-3c0a-44db-95e5-71d9c0de3f23"
+    "ef025e28-c823-48a3-8212-6eb5a9ac27ce",
+    "386643f7-4014-4f60-a08a-5f105e8fef47",
+    "89e8abdc-5ed0-433b-9e3c-02c927da7d80",
+    "b27c4759-31ce-40a4-bec6-cd44dc616263"
    ]
   }
  ],
@@ -1070,9 +473,9 @@
    "namespace": "",
    "id": "0",
    "group": "",
-   "width": 128,
+   "width": 64,
    "height": 64,
-   "uv_width": 128,
+   "uv_width": 64,
    "uv_height": 64,
    "particle": false,
    "use_as_default": false,
@@ -1088,9 +491,9 @@
    "visible": true,
    "internal": true,
    "saved": true,
-   "uuid": "97c87df9-c258-4cce-ace9-8bed078a6d46",
+   "uuid": "d98b45dc-ccd7-4b6f-9297-7a5004c3240e",
    "relative_path": "rail_cannon.png",
-   "source": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAABACAYAAADS1n9/AAACFElEQVR42u2asUpDMRSG+yJFKLSjLoKDQqGDU+km6CLOLg7aTXDyOVxcfBjpIymHciSkyc1JelNu6vfBT7167ulJ8htzjx0tb+5+1q/vJkns0OKtsaqrxTJL09WzUeus2I/Prz9JXe51TH6cXJ+dXyR1MpntaKRIktuHR5NkQiT+e7NJxkqMxg8lvxrAMmkiiR3P702SRc2JdU2ptaXkx8l1aHEtihrAdb18HVqg3AU9RP7UYvoGSE1QbQP447CO17+2LPZkdppnAC20lgFq5G/NAKMDgwEKDTBdvZgkc5kTiwGa2QGeTJK5zIkdtAE0qJYBauTHAIUGyHkkksPE0OIxwJ4GaJ36Z4C1SdszgD0WAzRigPH8zaTtDmCPxQA9G6BWI+hYdoCjpX4r+MgNUNpbLu1l+1uR9v8vF9c7NehWHNqe3Trc/yNInq57/HHEvi8HTFEob+j9Y/Xpa2icfdTX629QTm+5tJft55EJ0ckt6W/rPW6e0v643z4VpfJaa953nLH69jZAaW+5tJddOjGxA02XAboOQX0bIPVeoXH2UV9zf7MxAAbAABgAA2CAgRtA7xuqAZp9bu96pPMPivpBBt/p/mHUbe64P0tNcOiDEv69obyh94/Vp6+hcfZRX/MGoJX1z8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPr9OmCTBZfFlEAAAAABJRU5ErkJggg=="
+   "source": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAACmklEQVR42u1avU7DMBDuc4BQpUoNZKBdECDBgCrE1AkxMDIi1sKCGFhYmNhALCwsbDwCL4C68AC8ieEcHXUPO3H8k7rtfdInhd5PnS/24Zzb+hyPxcvrmxXvHx5Fiv62hJgWBSTpZD1xdXNXSvA5PbsQqflrb8oA8NcKgElX1tqSaMO/0Y4DxM+riP4x83sL8P10LoAflwdTg1MHCTb00/Hr/USyzCdWfm8B4MuBt4eZcYBgQz8dn693Jct8YuX3FkAtKqYpinaccrak/rHyewmwPxgKlXSdqTYoPNS/jDr/0Pm9BbAtOKnSW4B5BwvAAiy5ALBxqlM4/yVodzLR39qRBaWbb0rCNXwGNrTrqNpd42FQ6EepHXBoqDfQ7qxL0hvAzYrKwn9aANd4U4UHWxIC4FYW7bh1tRWgKr6IzX9nT18SrpMSALeyaMetq60AVfHJCNDNe5LuNcAtPqEZsCHpXgPc4pMXYLKGC7u5BrjFJ1QE9TcwWcOF3VwD6scn9W8Qp6B7DagfP/Od1PQTzP/Wn1sNqB8/FwLYzgCX+KQEWMoloPbhabtKbT3Z9OtpXz9EvkbeprAPTwdcp1+v8wuRrxEB1L49HTDt15vymM4BfPOxACkJUHVcVVcAm3yNCKAWLd01DtimTx86Hy8BFoBrQPy2ss3GxfUs0DdfdAHouZ064LpndtQvRL4Wo6GXoTJWvdTE9rOhlwB7g6NS4pfMys9GqCAzANbp6vaxJL7S6p4Y/ZmKyS90vmgCoOIw0Gw4koRr0xOjP1Mx+YXK19gMoAM2PQna3jL5hc4XfQbQKeu7tkPla7QG6K5dq3vofNEEUA8iVJo+r2LofFEFWJR9ykILEHUjxGAwGAwGg8FgMBgMBoPBWDL8AM5F+Nwj+mn2AAAAAElFTkSuQmCC"
   }
  ]
 }

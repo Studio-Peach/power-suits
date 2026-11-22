@@ -25,8 +25,9 @@ _c = drill._c
 # steel (frame_iron_art.PAL's ramp), slate (dark gunmetal chassis), copper (frame_heart_art), the core's reserved glass
 # colours (dark idle, lit for review; export-frame.py's TOOL_GLOW lights the dark ones), vent black
 P_BASE = {k: _c(v) for k, v in {'A': '9fa4a9', 'B': '757c85', 'C': '58606a', 'D': '3c424c', 'E': '22262e', 'g': 'cdcfcf',
-                                'n': '4c5559', 'm': '3b4246', 'k': '2f3437', 'd': '1f2226',
-                                'f': 'e09868', 'Q': 'c07440', 'R': '804426', 'x': '0b0c0d'}.items()} | {'.': '.'}
+                                'z': '22262e', 's': '3c424c', 'p': '58606a', 'l': '757c85', 'e': '8a9097', 'h': '9fa4a9', 'w': 'fbf8f0',
+                                'X': '1a1d1f', 'n': '4c5559', 'm': '3b4246', 'k': '2f3437', 'd': '1f2226',
+                                'f': 'e09868', 'Q': 'c07440', 'R': '804426', 'U': 'd4b054', 'Y': '9a7a38', 'x': '0b0c0d'}.items()} | {'.': '.'}
 # The core's light comes in three bands along the prongs (ToolLight RAIL_FLOW_0..2: the energy runs along it toward the
 # tips, as on the big suit's rings), each its own pair of reserved colours a shade apart (K: the body, L: the hot row), so
 # the exporter's masks (TOOL_GLOW rail_flow_0..2) can tell them. Dark idle (nearly the same blue); lit for review.
@@ -908,10 +909,722 @@ def _build_oritech_concave(c, top, P, length=6.0, mode='side'):
     return parts
 
 
-def build(c, top, lamp='dark', kind='ori_concave_channel', core='dark', length=6.0, sleeve=False, head_scale=False):
+# ---------------- 2026-11-21 2D-texture + outer-cutout-layer rework experiments ----------------
+# Inspired by the frame's flat iron armour (frame_iron_art.pauldron_decal) and 2D heart engine harness
+# (frame_heart_art.harness): simple Minecraft-native boxes matching the 5x5 arm + 0.5 px cutout outer layer ('.' ->
+# alpha 0) carrying sculpted silhouettes, copper conduits, louvers and glowing charge windows without 3D kitbashing.
+
+def _orient(rows, flip):
+    """Reverse each row when a prong's face runs gap->outer instead of canonical outer->gap."""
+    return [r[::-1] for r in rows] if flip else rows
+
+
+def _band_ch(j, h, hot_rows=(0,)):
+    """3-band flowing rail glow letter (K0..2 / L0..2) for row j of an h-row rail (top -> muzzle)."""
+    n = min(2, (j * 3) // h)
+    local = j - (n * h) // 3
+    return ('L' if (local in hot_rows or j == h - 1) else 'K') + str(n)
+
+
+def _cuff_up_ring(w, h):
+    """1-texel lit steel bevel ring around the 5x5 arm opening; inner 10x10 transparent (no arm overlap)."""
+    g = [['.'] * w for _ in range(h)]
+    for i in range(w):
+        g[0][i] = 'g' if i < w - 1 else 'h'
+        g[h - 1][i] = 'e' if i == 0 else 's'
+    for j in range(1, h - 1):
+        g[j][0] = 'h'
+        g[j][w - 1] = 'p'
+    return g
+
+
+def _2d_cuff_parts(c, top, part):
+    """Shared 5x4x5 inner core + 6x4x6 2D cutout outer steel/copper gauntlet cuff (0.5 px proud, matching the
+    pauldron decal and heart engine harness). Zero drawn coplanar faces."""
+    t = top - 4.0
+    # Inner 5x4x5 core (10x8 sides, 10x10 down): ribbed dark slate + vertical glowing cyan breech core + copper bus
+    in_fb = [
+        list('dkkkkkkkkd'),
+        list('dmmX') + ['L0', 'L0'] + list('Xmmd'),
+        list('dkkX') + ['K0', 'K0'] + list('Xkkd'),
+        list('dmmX') + ['L0', 'L0'] + list('Xmmd'),
+        list('dkkX') + ['K0', 'K0'] + list('Xkkd'),
+        list('dmmX') + ['K0', 'K0'] + list('Xmmd'),
+        list('dkkX') + ['K0', 'K0'] + list('Xkkd'),
+        list('dXXd') + ['L0', 'L0'] + list('dXXd'),
+    ]
+    in_sd = [
+        list('dkkkkkkkkd'),
+        list('dmmmmmmmmd'),
+        list('dkkffffkkd'),
+        list('dmmQQQQmmd'),
+        list('dkkRRRRkkd'),
+        list('dmmmmmmmmd'),
+        list('dkkkkkkkkd'),
+        list('dddddddddd'),
+    ]
+    # Bottom face (10x10): glowing breech emitter centered between the rails
+    in_dn = [['d'] * 10 for _ in range(10)]
+    for j in range(1, 9):
+        for i in range(1, 9):
+            in_dn[j][i] = 'k'
+    for j in range(3, 7):
+        for i in range(3, 7):
+            in_dn[j][i] = 'X' if (i in (3, 6) and j in (3, 6)) else ('L0' if 4 <= i <= 5 and 4 <= j <= 5 else 'K0')
+
+    # Outer 6x4x6 cutout layer (12x8 sides): iron-armor steel plate (l/e/h/g) + heart-engine copper strap (f/Q/R)
+    # wrapping corners cleanly into the open central cutout window (cols 4..7 = '.'), pauldron-style rolled bottom.
+    out_fb = [
+        list('ghhhhhhhhhhe'),
+        list('ezllllllllzp'),
+        list('ellX....Xllp'),
+        list('ffQX....XQff'),
+        list('QQRX....XRQQ'),
+        list('hhhX....Xhhp'),
+        list('ssX......Xss'),
+        list('XX........XX'),
+    ]
+    out_sd = [
+        list('ghhhhhhhhhhe'),
+        list('ezllllllllzp'),
+        list('eXXXXXXXXXXp'),
+        list('fffffUUfffff'),
+        list('QQQQQYYQQQQQ'),
+        list('hhhhhhhhhhhp'),
+        list('sssssssssssz'),
+        list('XXXXXXXXXXXX'),
+    ]
+    return [
+        part('cuff_inner', ((c - 2.5, t, -2.5), (c + 2.5, top, 2.5)), {
+            'north': in_fb, 'south': in_fb, 'east': in_sd, 'west': in_sd,
+            'up': _solid('.'), 'down': in_dn,
+        }),
+        part('cuff_outer', ((c - 3.0, t, -3.0), (c + 3.0, top, 3.0)), {
+            'north': out_fb, 'south': out_fb, 'east': out_sd, 'west': out_sd,
+            'up': _cuff_up_ring, 'down': _solid('.'),
+        }),
+    ]
+
+
+def _build_2d_monolith(c, top, P, length=6.0):
+    """Option A: Pure 2-cube arm-cannon sleeve (5x10x5 inner core flush with the arm + 6x10x6 2D cutout outer shroud).
+    Zero extra 3D blocks: twin rails, cooling windows, copper conduits, and muzzle taper all live in the 2D outer layer."""
+    part = lambda name, box, faces, bone='tool': dict(drill.part(name, box, _paint(faces, P)), bone=bone)
+    y_bot = top - 4.0 - length
+    H = round((top - y_bot) * 2)  # 20 rows (8 cuff + 12 barrel)
+
+    # Inner 5x10x5 box (10 x 20 sides): recessed dark-slate rail trough + 3-band glowing cyan core channel & side coils
+    in_fb, in_sd = [], []
+    for j in range(H):
+        if j < 8:
+            ch = 'L0' if j in (1, 3, 7) else 'K0'
+            base = 'm' if j % 2 else 'k'
+            in_fb.append(['d', base, base, 'X', ch, ch, 'X', base, base, 'd'])
+            if j == 2: in_sd.append(list('dkkffffkkd'))
+            elif j == 3: in_sd.append(list('dmmQQQQmmd'))
+            elif j == 4: in_sd.append(list('dkkRRRRkkd'))
+            else: in_sd.append(['d'] + [base] * 8 + ['d'])
+        else:
+            rj = j - 8
+            rh = H - 8
+            g = _band_ch(rj, rh)
+            k = 'K' + g[1]
+            # Front/back: deep dark trough with glowing 2-texel plasma beam core + dark blue edge shimmer
+            in_fb.append(['d', 'k', 'X', k, g, g, k, 'X', 'k', 'd'])
+            # Sides: recessed copper coils alternating with glowing cyan capacitor slots behind the outer louvers
+            if rj in (1, 2, 5, 6, 9, 10):
+                in_sd.append(['d', 'X', 'f', 'Q', g, g, 'Q', 'f', 'X', 'd'])
+            else:
+                in_sd.append(list('dkkXRRXkkd'))
+
+    # Muzzle bottom face (10x10): glowing cyan rail bore ringed in dark slate & steel muzzle jaws
+    in_dn = [['k'] * 10 for _ in range(10)]
+    for j in range(10):
+        for i in range(10):
+            if i in (0, 9) or j in (0, 9):
+                in_dn[j][i] = 's' if (i in (0, 9) and j in (0, 9)) else 'd'
+            elif 3 <= i <= 6 and 2 <= j <= 7:
+                in_dn[j][i] = 'L2' if (4 <= i <= 5 and 3 <= j <= 6) else 'K2'
+            elif 2 <= i <= 7 and 1 <= j <= 8:
+                in_dn[j][i] = 'X'
+
+    # Outer 6x10x6 2D cutout layer (12 x 20 sides): cuff + sculpted cutout twin rails & side coil windows
+    out_fb = [
+        list('ghhhhhhhhhhe'),
+        list('ezllllllllzp'),
+        list('ellX....Xllp'),
+        list('ffQX....XQff'),
+        list('QQRX....XRQQ'),
+        list('hhhX....Xhhp'),
+        list('ssX......Xss'),
+        list('eXX......XXp'),
+    ]
+    out_sd = [
+        list('ghhhhhhhhhhe'),
+        list('ezllllllllzp'),
+        list('eXXXXXXXXXXp'),
+        list('fffffUUfffff'),
+        list('QQQQQYYQQQQQ'),
+        list('hhhhhhhhhhhp'),
+        list('sssssssssssz'),
+        list('eXXXXXXXXXXp'),
+    ]
+    rh = H - 8
+    for rj in range(rh):
+        if rj == 0:
+            out_fb.append(list('ghhX....Xhhp'))
+            out_sd.append(list('ghhhhhhhhhhe'))
+        elif rj in (2, 3, 6, 7):
+            # Clean wide cutout vent windows on sides exposing recessed copper + glowing cyan core
+            out_fb.append(list('ellX....Xllp'))
+            out_sd.append(list('elX......Xlp'))
+        elif rj == 5:
+            # Slim steel stabilizer bridge spanning the front/back rail slot
+            out_fb.append(list('ehhXhhhhXhhp'))
+            out_sd.append(list('ehhhhhhhhhhp'))
+        elif rj == 9:
+            # Rolled steel lower hem all round (full width at corners -> zero floating edge slivers)
+            out_fb.append(list('hhhX....Xhhp'))
+            out_sd.append(list('hhhhhhhhhhhp'))
+        elif rj == 10:
+            out_fb.append(list('ssX......Xss'))
+            out_sd.append(list('sssssssssssz'))
+        elif rj == 11:
+            # Shroud stops cleanly 0.5 px short of inner muzzle so dark-slate muzzle projects cleanly
+            out_fb.append(list('............'))
+            out_sd.append(list('............'))
+        else:
+            out_fb.append(list('ellX....Xllp'))
+            out_sd.append(list('ellllllllllp'))
+
+    return [
+        part('body_inner', ((c - 2.5, y_bot, -2.5), (c + 2.5, top, 2.5)), {
+            'north': in_fb, 'south': in_fb, 'east': in_sd, 'west': in_sd,
+            'up': _solid('.'), 'down': in_dn,
+        }),
+        part('body_outer', ((c - 3.0, y_bot, -3.0), (c + 3.0, top, 3.0)), {
+            'north': out_fb, 'south': out_fb, 'east': out_sd, 'west': out_sd,
+            'up': _cuff_up_ring, 'down': _solid('.'),
+        }),
+    ]
+
+
+def _build_2d_fork_layer(c, top, P, length=6.0):
+    """Option B: Clean 3-box twin-fork core (5x4x5 receiver + two 1.5x6x4 prongs with 2.0 px open see-through gap)
+    wrapped in 0.5 px 2D cutout outer shrouds (6x4x6 cuff + 2.0x6x5 sculpted rail cowlings). Keeps railShake."""
+    part = lambda name, box, faces, bone='tool': dict(drill.part(name, box, _paint(faces, P)), bone=bone)
+    parts = _2d_cuff_parts(c, top, part)
+    t = top - 4.0
+    y_tip = t - length
+    rh = round(length * 2)  # 12 rows
+
+    for s, name in ((1, 'out'), (-1, 'in')):
+        bone = 'bit' if s > 0 else 'fork_in'
+        outer_f, inner_f = ('east', 'west') if s > 0 else ('west', 'east')
+
+        def bx(xa_, xb_, hd):
+            xa, xb = sorted((c + s * xa_, c + s * xb_))
+            return ((xa, y_tip, -hd), (xb, t, hd))
+
+        # Inner prong (1.5 x 6 x 4 -> N/S 3x12, E/W 8x12, down 3x8): calm dark-slate core + glowing cyan plasma rails
+        in_fb_canon, in_outer, in_gap = [], [], []
+        for j in range(rh):
+            g = _band_ch(j, rh)
+            k = 'K' + g[1]
+            # Canonical outer -> gap (3 cols): calm dark slate + bright glowing cyan rail along gap edge
+            in_fb_canon.append(['d', 'k', g])
+            # Outer side (8 cols): dark slate chassis + central glowing cyan energy channel behind shroud slit
+            if 1 <= j <= 9:
+                in_outer.append(['d', 'k', 'X', k, g, 'X', 'k', 'd'])
+            else:
+                in_outer.append(list('dkkkkkkd'))
+            # Inner gap-facing wall (8 cols): crisp 4-texel glowing cyan plasma rail framed in dark slate
+            in_gap.append(['d', 'X', k, g, g, k, 'X', 'd'])
+
+        # Bottom face (3x8): col 0..2 is -x..+x!
+        dn_row = ['d', 'k', 'L2'] if s < 0 else ['L2', 'k', 'd']
+        in_dn = [dn_row[:] for _ in range(8)]
+        in_dn[0] = ['d', 'd', 'd']
+        in_dn[-1] = ['d', 'd', 'd']
+
+        parts.append(part(f'prong_{name}_core', bx(1.0, 2.5, 2.0), {
+            'north': _orient(in_fb_canon, s < 0),
+            'south': _orient(in_fb_canon, s > 0),
+            outer_f: in_outer, inner_f: in_gap,
+            'up': _solid('.'), 'down': in_dn,
+        }, bone))
+
+        # Outer 2D cutout shroud (0.5 px proud on outer/front/back -> 2.0 x 6 x 5, N/S 4x12, outer 10x12)
+        # Calm iron-armor steel plate with one tall clean cutout channel (no busy swiss-cheese) & clean stepped end
+        sh_fb_canon, sh_outer = [], []
+        for j in range(rh):
+            if j == 0:
+                sh_fb_canon.append(list('ghh.'))
+                sh_outer.append(list('ghhhhhhhhe'))
+            elif j == 1:
+                sh_fb_canon.append(list('ezl.'))
+                sh_outer.append(list('ezllllllzp'))
+            elif j in (2, 3, 4, 6, 7, 8):
+                sh_fb_canon.append(list('ell.'))
+                sh_outer.append(list('ellX..Xllp'))
+            elif j == 5:
+                sh_fb_canon.append(list('ehh.'))
+                sh_outer.append(list('ehhhhhhhhp'))
+            elif j == 9:
+                sh_fb_canon.append(list('ehh.'))
+                sh_outer.append(list('ehhhhhhhhp'))
+            elif j == 10:
+                sh_fb_canon.append(list('sss.'))
+                sh_outer.append(list('sssssssssz'))
+            else:
+                # Shroud stops cleanly 0.5 px above inner muzzle -> crisp stepped tip, zero floating edge slivers
+                sh_fb_canon.append(list('....'))
+                sh_outer.append(list('..........'))
+
+        parts.append(part(f'prong_{name}_shroud', bx(1.0, 3.0, 2.5), {
+            'north': _orient(sh_fb_canon, s < 0),
+            'south': _orient(sh_fb_canon, s > 0),
+            outer_f: sh_outer, inner_f: _solid('.'),
+            'up': _solid('.'), 'down': _solid('.'),
+        }, bone))
+    return parts
+
+
+def _build_2d_fork_flat(c, top, P, length=6.0):
+    """Option C: Engine-style 2D outer cuff on the receiver ONLY + purely flat-painted monolithic twin prongs
+    (2.0x6x4, 1.0 px open see-through gap, 4 cubes total). Tests flat-painted rails vs layered rails."""
+    part = lambda name, box, faces, bone='tool': dict(drill.part(name, box, _paint(faces, P)), bone=bone)
+    parts = _2d_cuff_parts(c, top, part)
+    t = top - 4.0
+    y_tip = t - length
+    rh = round(length * 2)  # 12 rows
+
+    for s, name in ((1, 'out'), (-1, 'in')):
+        bone = 'bit' if s > 0 else 'fork_in'
+        outer_f, inner_f = ('east', 'west') if s > 0 else ('west', 'east')
+        xa, xb = sorted((c + s * 0.5, c + s * 2.5))
+        box = ((xa, y_tip, -2.0), (xb, t, 2.0))
+
+        # Front/back (4x12, canonical outer -> gap): iron-armor plate spine + ink seam + glowing cyan accelerator rail
+        fb_canon, outer_side, inner_side = [], [], []
+        for j in range(rh):
+            g = _band_ch(j, rh)
+            k = 'K' + g[1]
+            if j == 0:
+                fb_canon.append(['g', 'h', 'X', g])
+                outer_side.append(list('ghhhhhhe'))
+            elif j == 1:
+                fb_canon.append(['e', 'z', 'X', g])
+                outer_side.append(list('ezllllzp'))
+            elif j == 2:
+                fb_canon.append(['f', 'Q', 'X', g])
+                outer_side.append(list('ffQQQQff'))
+            elif j in (3, 6, 9):
+                # Recessed glowing cyan capacitor vents painted flat in 2D
+                fb_canon.append(['e', 'l', 'X', g])
+                outer_side.append(['e', 'X', k, g, g, k, 'X', 'p'])
+            elif j == 4:
+                fb_canon.append(['e', 'l', 'X', g])
+                outer_side.append(list('elXXXXlp'))
+            elif j == 7:
+                fb_canon.append(['h', 's', 'X', g])
+                outer_side.append(list('ehhhhhhp'))
+            elif j == 10:
+                fb_canon.append(['h', 's', 'X', g])
+                outer_side.append(list('ssssssss'))
+            elif j == 11:
+                fb_canon.append(['s', 'X', 'd', 'L2'])
+                outer_side.append(list('XXXXXXXX'))
+            else:
+                fb_canon.append(['e', 'l', 'X', g])
+                outer_side.append(list('ellllllp'))
+            inner_side.append(['d', 'X', k, g, g, k, 'X', 'd'])
+
+        dn_row = ['s', 'k', 'X', 'L2'] if s < 0 else ['L2', 'X', 'k', 's']
+        dn = [dn_row[:] for _ in range(8)]
+        dn[0] = ['d'] * 4
+        dn[-1] = ['d'] * 4
+
+        parts.append(part(f'prong_{name}', box, {
+            'north': _orient(fb_canon, s < 0),
+            'south': _orient(fb_canon, s > 0),
+            outer_f: outer_side, inner_f: inner_side,
+            'up': _solid('.'), 'down': dn,
+        }, bone))
+    return parts
+
+
+def _build_2d_slim_shroud(c, top, P, length=6.0):
+    """Option D: Flared 6x4x6 gauntlet cuff (mirroring the shoulder pauldron) tapering neatly to arm-flush 5x4 twin
+    rails: slim 1.0x6x3 glowing/copper inner cores wrapped in 1.5x6x4 2D cutout shrouds with wide cutaway slots."""
+    part = lambda name, box, faces, bone='tool': dict(drill.part(name, box, _paint(faces, P)), bone=bone)
+    parts = _2d_cuff_parts(c, top, part)
+    t = top - 4.0
+    y_tip = t - length
+    rh = round(length * 2)  # 12 rows
+
+    for s, name in ((1, 'out'), (-1, 'in')):
+        bone = 'bit' if s > 0 else 'fork_in'
+        outer_f, inner_f = ('east', 'west') if s > 0 else ('west', 'east')
+
+        def bx(xa_, xb_, hd):
+            xa, xb = sorted((c + s * xa_, c + s * xb_))
+            return ((xa, y_tip, -hd), (xb, t, hd))
+
+        # Slim inner core (1.0 x 6 x 3 -> N/S 2x12, E/W 6x12, down 2x6): calm dark slate + glowing cyan plasma core
+        in_fb_canon, in_outer, in_gap = [], [], []
+        for j in range(rh):
+            g = _band_ch(j, rh)
+            k = 'K' + g[1]
+            # N/S (2 cols, outer -> gap): dark slate + glowing cyan accelerator rail
+            in_fb_canon.append(['k', g])
+            # Outer side (6 cols): bold glowing cyan core framed by dark slate behind the outer shroud's long window
+            in_outer.append(['d', 'X', k, g, 'X', 'd'] if 1 <= j <= 9 else list('dkkkkd'))
+            # Gap-facing inner side (6 cols): bold glowing cyan plasma rail
+            in_gap.append(['X', k, g, g, k, 'X'])
+
+        dn_row = ['k', 'L2'] if s < 0 else ['L2', 'k']
+        in_dn = [dn_row[:] for _ in range(6)]
+        in_dn[0] = ['d', 'd']
+        in_dn[-1] = ['d', 'd']
+
+        parts.append(part(f'prong_{name}_core', bx(1.0, 2.0, 1.5), {
+            'north': _orient(in_fb_canon, s < 0),
+            'south': _orient(in_fb_canon, s > 0),
+            outer_f: in_outer, inner_f: in_gap,
+            'up': _solid('.'), 'down': in_dn,
+        }, bone))
+
+        # Arm-flush outer 2D cutout shroud (1.5 x 6 x 4 -> N/S 3x12, outer 8x12, 0.5 px proud on outer/front/back)
+        # Calm iron-armor rail sleeve with one clean vertical cutout slit & clean stepped muzzle (no slivers)
+        sh_fb_canon, sh_outer = [], []
+        for j in range(rh):
+            if j == 0:
+                sh_fb_canon.append(list('gh.'))
+                sh_outer.append(list('ghhhhhhe'))
+            elif j == 1:
+                sh_fb_canon.append(list('el.'))
+                sh_outer.append(list('ezllllzp'))
+            elif j in (2, 3, 4, 6, 7, 8):
+                sh_fb_canon.append(list('el.'))
+                sh_outer.append(list('elX..Xlp'))
+            elif j in (5, 9):
+                sh_fb_canon.append(list('eh.'))
+                sh_outer.append(list('ehhhhhhp'))
+            elif j == 10:
+                sh_fb_canon.append(list('ss.'))
+                sh_outer.append(list('sssssssz'))
+            else:
+                sh_fb_canon.append(list('...'))
+                sh_outer.append(list('........'))
+
+        parts.append(part(f'prong_{name}_shroud', bx(1.0, 2.5, 2.0), {
+            'north': _orient(sh_fb_canon, s < 0),
+            'south': _orient(sh_fb_canon, s > 0),
+            outer_f: sh_outer, inner_f: _solid('.'),
+            'up': _solid('.'), 'down': _solid('.'),
+        }, bone))
+    return parts
+
+
+def _build_2d_flat(c, top, P, length=6.0):
+    """Contender 2 (merged flat): 2 cubes total — one continuous 5x10x5 inner body flush with the 5x5 arm + one
+    6x4x6 2D cutout outer cuff on the receiver only (matching the shoulder pauldron). The two flat-painted steel rail
+    halves and central 2-texel glowing cyan channel line up 1-to-1 with the cuff's breech core all the way to the muzzle."""
+    part = lambda name, box, faces, bone='tool': dict(drill.part(name, box, _paint(faces, P)), bone=bone)
+    t = top - 4.0
+    y_bot = t - length
+    H = round((top - y_bot) * 2)  # 20 rows (8 cuff + 12 barrel)
+    rh = H - 8                    # 12 barrel rows
+
+    # Continuous 5x10x5 inner body (10x20 sides, 10x10 down)
+    in_fb = [
+        list('dkkkkkkkkd'),
+        list('dmmX') + ['L0', 'L0'] + list('Xmmd'),
+        list('dkkX') + ['K0', 'K0'] + list('Xkkd'),
+        list('dmmX') + ['L0', 'L0'] + list('Xmmd'),
+        list('dkkX') + ['K0', 'K0'] + list('Xkkd'),
+        list('dmmX') + ['K0', 'K0'] + list('Xmmd'),
+        list('dkkX') + ['K0', 'K0'] + list('Xkkd'),
+        list('dXXd') + ['L0', 'L0'] + list('dXXd'),
+    ]
+    in_sd = [
+        list('dkkkkkkkkd'),
+        list('dmmmmmmmmd'),
+        list('dkkffffkkd'),
+        list('dmmQQQQmmd'),
+        list('dkkRRRRkkd'),
+        list('dmmmmmmmmd'),
+        list('dkkkkkkkkd'),
+        list('dddddddddd'),
+    ]
+    for rj in range(rh):
+        g = _band_ch(rj, rh)
+        k = 'K' + g[1]
+        if rj == 0:
+            in_fb.append(['g', 'h', 'h', 'X', g, g, 'X', 'h', 'h', 'p'])
+            in_sd.append(list('ghhhhhhhhe'))
+        elif rj == 1:
+            in_fb.append(['e', 'z', 'l', 'X', g, g, 'X', 'l', 'z', 'p'])
+            in_sd.append(list('ezllllllzp'))
+        elif rj == 2:
+            in_fb.append(['f', 'f', 'Q', 'X', g, g, 'X', 'Q', 'f', 'f'])
+            in_sd.append(list('ffQQQQQQff'))
+        elif rj in (3, 6, 9):
+            in_fb.append(['e', 'l', 'l', 'X', g, g, 'X', 'l', 'l', 'p'])
+            in_sd.append(['e', 'X', k, g, g, g, g, k, 'X', 'p'])
+        elif rj == 4:
+            in_fb.append(['e', 'l', 'l', 'X', g, g, 'X', 'l', 'l', 'p'])
+            in_sd.append(list('elXXXXXXlp'))
+        elif rj == 7:
+            in_fb.append(['h', 's', 's', 'X', g, g, 'X', 's', 's', 'p'])
+            in_sd.append(list('ehhhhhhhhp'))
+        elif rj == 10:
+            in_fb.append(['h', 's', 's', 'X', g, g, 'X', 's', 's', 'p'])
+            in_sd.append(list('ssssssssss'))
+        elif rj == 11:
+            in_fb.append(['X', 'X', 'X', 'X', 'L2', 'L2', 'X', 'X', 'X', 'X'])
+            in_sd.append(list('XXXXXXXXXX'))
+        else:
+            in_fb.append(['e', 'l', 'l', 'X', g, g, 'X', 'l', 'l', 'p'])
+            in_sd.append(list('ellllllllp'))
+
+    # Muzzle bottom face (10x10): central cyan rail channel continues across the muzzle bore
+    in_dn = [['k'] * 10 for _ in range(10)]
+    for j in range(10):
+        for i in range(10):
+            if i in (0, 9) or j in (0, 9):
+                in_dn[j][i] = 'X' if i in (3, 6) else ('L2' if i in (4, 5) else 's')
+            elif i in (4, 5):
+                in_dn[j][i] = 'L2'
+            elif i in (3, 6) and 2 <= j <= 7:
+                in_dn[j][i] = 'K2'
+            elif i in (2, 7) and 2 <= j <= 7:
+                in_dn[j][i] = 'X'
+            elif i in (3, 6):
+                in_dn[j][i] = 'X'
+
+    # Outer 6x4x6 cutout cuff on the receiver only (identical to _2d_cuff_parts)
+    out_fb = [
+        list('ghhhhhhhhhhe'),
+        list('ezllllllllzp'),
+        list('ellX....Xllp'),
+        list('ffQX....XQff'),
+        list('QQRX....XRQQ'),
+        list('hhhX....Xhhp'),
+        list('ssX......Xss'),
+        list('XX........XX'),
+    ]
+    out_sd = [
+        list('ghhhhhhhhhhe'),
+        list('ezllllllllzp'),
+        list('eXXXXXXXXXXp'),
+        list('fffffUUfffff'),
+        list('QQQQQYYQQQQQ'),
+        list('hhhhhhhhhhhp'),
+        list('sssssssssssz'),
+        list('XXXXXXXXXXXX'),
+    ]
+    return [
+        part('body_inner', ((c - 2.5, y_bot, -2.5), (c + 2.5, top, 2.5)), {
+            'north': in_fb, 'south': in_fb, 'east': in_sd, 'west': in_sd,
+            'up': _solid('.'), 'down': in_dn,
+        }),
+        part('cuff_outer', ((c - 3.0, t, -3.0), (c + 3.0, top, 3.0)), {
+            'north': out_fb, 'south': out_fb, 'east': out_sd, 'west': out_sd,
+            'up': _cuff_up_ring, 'down': _solid('.'),
+        }),
+    ]
+
+
+def _build_2d_hybrid(c, top, P, length=6.0, core_mode='open', idle_beam='invisible', lit=False):
+    """Hybrid of 2d_flat's stepped silhouette (flared 6x4x6 cuff -> arm-flush 5x6x5 barrel) and 2d_monolith's
+    2-layer construction (recessed 4x6x4 dark-slate/copper/cyan inner core + 5x6x5 iron-steel cutout covering,
+    4 cubes total).
+    - Narrower 2-texel (1.0 px) beam gap on front/back with wider 4-texel (2.0 px) steel shields on each side.
+    - Contained octagonal generator core in the base (solid closed steel above; copper conduits feeding the sides):
+      core_mode='open'   -> core narrows into a 2-texel beam exit at cuff bottom;
+      core_mode='closed' -> core is fully framed in the base, beam slot begins cleanly below on the barrel.
+    - idle_beam='invisible': when not charging (lit=False), beam channel texels are dark gunmetal slate (invisible
+      until charging lights up the RAIL_FLOW_0..2 glowmasks), while the base core shows subtle dark-blue glass."""
+    # When idle (not lit), beam channel texels use dark-slate reserved shades so the beam is invisible until charging;
+    # the base generator core (C_BODY / C_HOT -> ToolLight.RAIL_EMIT) keeps a subtle dark-blue crystal tint when idle.
+    Ph = dict(P)
+    if lit:
+        Ph['CB'] = _c('2f9cff')
+        Ph['CH'] = _c('d8fcff')
+    else:
+        Ph['CB'] = _c('1b3652')
+        Ph['CH'] = _c('264c73')
+        if idle_beam == 'invisible':
+            for n, (kb, lh) in enumerate((('1f2227', '25292d'), ('1f2228', '25292e'), ('1f2229', '25292f'))):
+                Ph[f'K{n}'] = _c(kb)
+                Ph[f'L{n}'] = _c(lh)
+
+    part = lambda name, box, faces, bone='tool': dict(drill.part(name, box, _paint(faces, Ph)), bone=bone)
+    t = top - 4.0
+    y_bot = t - length
+    rh = round(length * 2)  # 12 barrel rows
+
+    # 1. Cuff inner (5x4x5 -> 10x8 sides, 10x10 down): solid dark slate housing + glowing generator CORE behind window
+    in_cuff_fb = [
+        list('dkkkkkkkkd'),
+        list('dmmmmmmmmd'),
+        list('dkkX') + ['CB', 'CB'] + list('Xkkd'),
+        list('dmm') + ['CB', 'CH', 'CH', 'CB'] + list('mmd'),
+        list('dkk') + ['CB', 'CH', 'CH', 'CB'] + list('kkd'),
+        list('dmmX') + (['K0', 'K0'] if core_mode == 'open' else ['CB', 'CB']) + list('Xmmd'),
+        list('dkkX') + (['K0', 'K0'] if core_mode == 'open' else ['k', 'k']) + list('Xkkd'),
+        list('dXXd') + (['L0', 'L0'] if core_mode == 'open' else ['d', 'd']) + list('dXXd'),
+    ]
+    in_cuff_sd = [
+        list('dkkkkkkkkd'),
+        list('dmmmmmmmmd'),
+        list('dkkffffkkd'),
+        list('dmmQQQQmmd'),
+        list('dkkRRRRkkd'),
+        list('dmmmmmmmmd'),
+        list('dkkkkkkkkd'),
+        list('dddddddddd'),
+    ]
+    in_cuff_dn = [['d'] * 10 for _ in range(10)]
+    for j in range(1, 9):
+        for i in range(1, 9):
+            in_cuff_dn[j][i] = 'k'
+
+    # 2. Cuff outer (6x4x6 -> 12x8 sides): solid closed steel header -> octagonal core porthole fed by copper straps
+    if core_mode == 'open':
+        out_cuff_fb = [
+            list('ghhhhhhhhhhe'),
+            list('ezllllllllzp'),
+            list('ellXX..XXllp'),
+            list('ffQX....XQff'),
+            list('QQRX....XRQQ'),
+            list('hhhXX..XXhhp'),
+            list('ssssX..Xsssz'),
+            list('XXXXX..XXXXX'),
+        ]
+    else:
+        out_cuff_fb = [
+            list('ghhhhhhhhhhe'),
+            list('ezllllllllzp'),
+            list('ellXX..XXllp'),
+            list('ffQX....XQff'),
+            list('QQRX....XRQQ'),
+            list('hhhXX..XXhhp'),
+            list('ssssXXXXsssz'),
+            list('XXXXXXXXXXXX'),
+        ]
+    out_cuff_sd = [
+        list('ghhhhhhhhhhe'),
+        list('ezllllllllzp'),
+        list('eXXXXXXXXXXp'),
+        list('fffffUUfffff'),
+        list('QQQQQYYQQQQQ'),
+        list('hhhhhhhhhhhp'),
+        list('sssssssssssz'),
+        list('XXXXXXXXXXXX'),
+    ]
+
+    parts = [
+        part('cuff_inner', ((c - 2.5, t, -2.5), (c + 2.5, top, 2.5)), {
+            'north': in_cuff_fb, 'south': in_cuff_fb, 'east': in_cuff_sd, 'west': in_cuff_sd,
+            'up': _solid('.'), 'down': in_cuff_dn,
+        }),
+        part('cuff_outer', ((c - 3.0, t, -3.0), (c + 3.0, top, 3.0)), {
+            'north': out_cuff_fb, 'south': out_cuff_fb, 'east': out_cuff_sd, 'west': out_cuff_sd,
+            'up': _cuff_up_ring, 'down': _solid('.'),
+        }),
+    ]
+
+    # 3. Recessed 4x6x4 inner barrel core (8x12 sides, 8x8 down): dark slate + copper coils + narrow 2-texel beam core
+    in_fb, in_sd = [], []
+    for rj in range(rh):
+        g = _band_ch(rj, rh)
+        k = 'K' + g[1]
+        # Narrow 2-texel beam channel (cols 3..4) framed by dark slate walls -> invisible dark slate when idle!
+        in_fb.append(['d', 'k', 'X', g, g, 'X', 'k', 'd'])
+        if rj in (2, 6):
+            in_sd.append(['d', 'f', 'Q', g, g, 'Q', 'f', 'd'])
+        elif rj in (3, 7):
+            in_sd.append(['d', 'Q', 'R', k, k, 'R', 'Q', 'd'])
+        elif rj in (1, 5, 9):
+            in_sd.append(list('dXRRRRXd'))
+        else:
+            in_sd.append(list('dkkkkkkd'))
+
+    # Muzzle bottom face (8x8): dark-slate bore that lights up cyan when charging
+    in_dn = [['k'] * 8 for _ in range(8)]
+    for j in range(8):
+        for i in range(8):
+            if i in (0, 7) or j in (0, 7):
+                in_dn[j][i] = 's' if (i in (0, 7) and j in (0, 7)) else 'd'
+            elif 3 <= i <= 4 and 2 <= j <= 5:
+                in_dn[j][i] = 'L2'
+            elif 2 <= i <= 5 and 2 <= j <= 5:
+                in_dn[j][i] = 'K2'
+            elif 1 <= i <= 6 and 1 <= j <= 6:
+                in_dn[j][i] = 'X'
+
+    parts.append(part('barrel_inner', ((c - 2.0, y_bot, -2.0), (c + 2.0, t, 2.0)), {
+        'north': in_fb, 'south': in_fb, 'east': in_sd, 'west': in_sd,
+        'up': _solid('.'), 'down': in_dn,
+    }))
+
+    # 4. Arm-flush 5x6x5 2D cutout metal covering (10x12 sides, 0.5 px proud of barrel_inner):
+    # Wider 4-texel (2.0 px) steel shields on each side framing a tighter 2-texel (1.0 px) central beam slit!
+    out_fb, out_sd = [], []
+    for rj in range(rh):
+        if rj == 0:
+            out_fb.append(list('ghhX..Xhhp'))
+            out_sd.append(list('ghhhhhhhhe'))
+        elif rj == 1:
+            out_fb.append(list('ezlX..Xlzp'))
+            out_sd.append(list('ezllllllzp'))
+        elif rj in (2, 3, 6, 7):
+            out_fb.append(list('ellX..Xllp'))
+            out_sd.append(list('eX......Xp'))
+        elif rj == 5:
+            out_fb.append(list('ehhXhhXhhp'))
+            out_sd.append(list('ehhhhhhhhp'))
+        elif rj == 9:
+            out_fb.append(list('hhhX..Xhhp'))
+            out_sd.append(list('hhhhhhhhhp'))
+        elif rj == 10:
+            out_fb.append(list('sssX..Xssz'))
+            out_sd.append(list('sssssssssz'))
+        elif rj == 11:
+            out_fb.append(list('..........'))
+            out_sd.append(list('..........'))
+        else:
+            out_fb.append(list('ellX..Xllp'))
+            out_sd.append(list('ellllllllp'))
+
+    parts.append(part('barrel_outer', ((c - 2.5, y_bot, -2.5), (c + 2.5, t, 2.5)), {
+        'north': out_fb, 'south': out_fb, 'east': out_sd, 'west': out_sd,
+        'up': _solid('.'), 'down': _solid('.'),
+    }))
+    return parts
+
+
+def build(c, top, lamp='dark', kind='2d_hybrid_closed', core='dark', length=6.0, sleeve=False, head_scale=False):
     """The rail cannon's parts on an arm centred at x c whose socket is at y top: the receiver (bone 'tool') and the
     prongs / core under it (bone 'bit'). `lamp` is unused (the tools' common signature)."""
     P = pal(core)
+    if kind == '2d_monolith':
+        return _build_2d_monolith(c, top, P, length)
+    if kind == '2d_flat':
+        return _build_2d_flat(c, top, P, length)
+    if kind == '2d_hybrid':
+        return _build_2d_hybrid(c, top, P, length, core_mode='open', lit=(core == 'lit'))
+    if kind == '2d_hybrid_closed':
+        return _build_2d_hybrid(c, top, P, length, core_mode='closed', lit=(core == 'lit'))
+    if kind == '2d_fork_layer':
+        return _build_2d_fork_layer(c, top, P, length)
+    if kind == '2d_fork_flat':
+        return _build_2d_fork_flat(c, top, P, length)
+    if kind == '2d_slim_shroud':
+        return _build_2d_slim_shroud(c, top, P, length)
     if kind == 'gauss':
         return _build_gauss(c, top, P, length)
     if kind == 'coil':

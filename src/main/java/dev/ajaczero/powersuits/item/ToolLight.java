@@ -23,7 +23,7 @@ public enum ToolLight {
     RAIL_FLOW_1(true),
     RAIL_FLOW_2(true),
     /** The emitter in the rail cannon's band. */
-    RAIL_EMIT(false),
+    RAIL_EMIT(true),
     /** The frame's tools' status lamp (the drill's, chainsaw's and chaingun's base, 2026-11-14): red while the tool is
      *  ready, green while it runs, dark without power (ToolEffects.statusLamp). One mask per colour. */
     LAMP_IDLE(false),

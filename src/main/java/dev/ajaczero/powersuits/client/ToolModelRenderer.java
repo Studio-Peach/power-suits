@@ -58,7 +58,8 @@ final class ToolModelRenderer extends GeoObjectRenderer<ToolModelRenderer.Dummy,
             "chaingun", masks("chaingun", Map.of(ToolLight.GUN_LIGHT, "gun_light", ToolLight.HEAT, "heat", ToolLight.HEAT_BARREL, "heat_barrel")),
             "flamethrower", masks("flamethrower", Map.of(ToolLight.PILOT, "pilot")),
             "rail_cannon", masks("rail_cannon", Map.of(
-                    ToolLight.RAIL_FLOW_0, "rail_flow_0", ToolLight.RAIL_FLOW_1, "rail_flow_1", ToolLight.RAIL_FLOW_2, "rail_flow_2")),
+                    ToolLight.RAIL_FLOW_0, "rail_flow_0", ToolLight.RAIL_FLOW_1, "rail_flow_1",
+                    ToolLight.RAIL_FLOW_2, "rail_flow_2", ToolLight.RAIL_EMIT, "rail_emit")),
             "em_projector", masks("em_projector", Map.of(ToolLight.EM_CORE, "em_core", ToolLight.EM_ARC, "em_arc")));
 
     private static final Dummy DUMMY = new Dummy();
@@ -132,6 +133,7 @@ final class ToolModelRenderer extends GeoObjectRenderer<ToolModelRenderer.Dummy,
 
     @Override
     public @Nullable RenderType getRenderType(GeoRenderState state, Identifier texture) {
+        // In MC 26.3 entityCutout is already no-cull (culled is entityCutoutCull), so thin 2D outer cutout layers draw cleanly.
         return RenderTypes.entityCutout(texture);
     }
 
