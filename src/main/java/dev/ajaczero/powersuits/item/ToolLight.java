@@ -17,7 +17,7 @@ public enum ToolLight {
     /** The EM projector's prong tips. */
     EM_ARC(false),
     /** The flamethrower's pilot light. */
-    PILOT(false),
+    PILOT(true),
     /** The rail cannon's core rings, a third each: lit in turn, the energy runs along the core. */
     RAIL_FLOW_0(true),
     RAIL_FLOW_1(true),

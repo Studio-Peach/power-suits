@@ -955,15 +955,16 @@ def _tool_parts(TOOL):
                                sleeve=TOOL_SLEEVE, head_scale=HEAD_SCALE)
 # The flamethrower (frame_flame_art.py): picked 2026-11-14 after eight rounds (user: "definitely 5 tall"): FLAME=D (the
 # barrel at the front, the red tank behind it, both under the body), FLAME_BODY=pump at FLAME_BODY_H=2, the 7 px barrel
-# FLAME_HOLES=even, FLAME_TANK_H=5 (the defaults); the other knobs are the rounds' drafts, kept to rebuild them.
+# The flamethrower (frame_flame_art.py): reworked 2026-11-22 in the 2D-texture + cutout outer-layer style after the
+# Halo 3 M7057/DP head (user picked FLAME=halo_olive, 4 cubes): compact 6x3x6 olive cuff over 5x3x5 slate base with
+# recessed 4x3 red valve wheel on the outer side, heavy 3x7x3 dark-gunmetal protruding nozzle (centered 4-way blue
+# pilot ports, muzzle 10 px under socket), and 5x6x5 angled cutout olive shark-mouth heat shield + overhanging hood.
 # FLAME_PILOT=dark (the reserved pilot colours, as in game) | lit (review).
   if TOOL == 'flame':
     import frame_flame_art as flame_art
-    # At SOCKET_Y=17 (+3 lift), a 3 px pump (14..17 raw) fully encloses Steve's hand (14..26 raw) with a 6 px barrel
-    # and 4 px red tank below it (muzzle at built y=10, matching chaingun/drill/TNT).
     _fl_bh = '3' if SOCKET_LIFT >= 3 else '2'
     _fl_th = '4' if SOCKET_LIFT >= 3 else '5'
-    TOOL_PARTS = flame_art.build(6.25 + ARM_OUT, SOCKET_Y, os.environ.get('FLAME', 'D'), os.environ.get('FLAME_PILOT', 'dark'),
+    TOOL_PARTS = flame_art.build(6.25 + ARM_OUT, SOCKET_Y, os.environ.get('FLAME', 'halo_olive'), os.environ.get('FLAME_PILOT', 'dark'),
                                    os.environ.get('FLAME_GLOW', 'lit'), os.environ.get('FLAME_BODY', 'pump'),
                                    float(os.environ.get('FLAME_BODY_H', _fl_bh)), os.environ.get('FLAME_HOLES', 'even'),
                                    float(os.environ.get('FLAME_TANK_H', _fl_th)), float(os.environ.get('FLAME_TANK_W', '3')),

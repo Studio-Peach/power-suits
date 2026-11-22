@@ -65,11 +65,11 @@ public class FlamethrowerItem extends Item implements PowerTool, ModTooltip {
         return PowerSuitsConfig.FLAMETHROWER_ENERGY.get();
     }
 
-    /** The 3x3 barrel and the tank behind it are centred under the 7x7 base together, so the barrel's centre is 1 px in
-     *  front of the socket's axis. */
+    /** The 3x7x3 dark-gunmetal nozzle barrel sits tucked under the overhanging top hood at z -1.0..+2.0 (centre
+     *  z = +0.5 -> 0.5 px back from the socket's axis). */
     @Override
     public float barrelForwardPixels() {
-        return 1F;
+        return -0.5F;
     }
 
     @Override
@@ -82,10 +82,10 @@ public class FlamethrowerItem extends Item implements PowerTool, ModTooltip {
         return "flamethrower";
     }
 
-    /** Its barrel ends where the chaingun's muzzle does, 10 px below the socket base (the tip is painted on its end). */
+    /** The protruding nozzle ends 10 px below the socket base (1 px past the chaingun's 9 px, matching the rail cannon). */
     @Override
     public float muzzleInsetPixels() {
-        return 0F;
+        return -1F;
     }
 
     @Override
