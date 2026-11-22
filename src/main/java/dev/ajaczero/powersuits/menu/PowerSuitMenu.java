@@ -45,7 +45,9 @@ public class PowerSuitMenu extends AbstractContainerMenu {
      *  leg, right leg). */
     public static final int MENU_ARMOUR = 4;
     private static final int SUIT_SLOTS = MENU_ARMOUR + SuitArmour.Part.values().length;
-    /** Menu slots of the player's inventory (27, top-left first) and hotbar (9). */
+    /** First menu slot of the robot companion's 8-slot pack (only present when {@link #isRobotMenu()} is true). */
+    public static final int MENU_PACK = SUIT_SLOTS;
+    /** Menu slots of the player's inventory (27, top-left first) and hotbar (9) in the standard menu (no robot pack). */
     public static final int INV_START = SUIT_SLOTS, HOTBAR_START = INV_START + 27, END = HOTBAR_START + 9;
     /** Where a shift-click from the player's side tries to put an item, first that takes it and has room (the fuel slot
      *  last: it takes the most; the right arm and leg before the left: reading order). MENU_SOCKET is skipped while
@@ -59,6 +61,8 @@ public class PowerSuitMenu extends AbstractContainerMenu {
      *  armour column (x 8: helmet, right arm, right leg, engine) and the column right of the preview (x 77: torso, left
      *  arm, left leg, off-hand / companion tool), rows 18 apart from y 8; fuel in the crafting corner. */
     public static final int LEFT_X = 8, RIGHT_X = 77, ROW_Y = 8, ROW = 18, FUEL_X = 112, FUEL_Y = 28;
+    /** Robot companion menu (A2, 2026-11-22): Fuel moves to (98, 19) to make room for the 4x2 pack grid at (98, 44). */
+    public static final int ROBOT_FUEL_X = 98, ROBOT_FUEL_Y = 19, PACK_X = 98, PACK_Y = 44;
     /** Empty-slot outlines: vanilla's for the helmet, chest (the torso), legs and off-hand shield, ours for an arm. */
     private static final Identifier EMPTY_HELMET = Identifier.withDefaultNamespace("container/slot/helmet");
     private static final Identifier EMPTY_TORSO = Identifier.withDefaultNamespace("container/slot/chestplate");
@@ -71,15 +75,23 @@ public class PowerSuitMenu extends AbstractContainerMenu {
     /** True when opened from inside the suit (pilot): MENU_SOCKET is the player's real off-hand slot; false when opened
      *  from outside (parked / companion): MENU_SOCKET is the suit's companion tool slot (SOCKET_SLOT). */
     private final boolean piloting;
+    /** True when opened from outside on a suit wearing a Robot Helmet (A2): shows the 8-slot pack grid. */
+    private final boolean robotMenu;
 
     public PowerSuitMenu(int containerId, Inventory playerInventory, Container suitInventory, @Nullable PowerSuitEntity suit) {
         this(containerId, playerInventory, suitInventory, suit, suit != null && playerInventory.player.getVehicle() == suit);
     }
 
     public PowerSuitMenu(int containerId, Inventory playerInventory, Container suitInventory, @Nullable PowerSuitEntity suit, boolean piloting) {
+        this(containerId, playerInventory, suitInventory, suit, piloting, !piloting && suit != null && suit.hasRobotHelmet());
+    }
+
+    public PowerSuitMenu(int containerId, Inventory playerInventory, Container suitInventory, @Nullable PowerSuitEntity suit,
+            boolean piloting, boolean robotMenu) {
         super(ModMenus.POWER_SUIT.get(), containerId);
         this.suit = suit;
         this.piloting = piloting;
+        this.robotMenu = robotMenu;
         checkContainerSize(suitInventory, PowerSuitEntity.SLOTS);
         suitInventory.startOpen(playerInventory.player);
 
@@ -104,7 +116,7 @@ public class PowerSuitMenu extends AbstractContainerMenu {
                 }
             });
         }
-        this.addSlot(new Slot(suitInventory, PowerSuitEntity.FUEL_SLOT, FUEL_X, FUEL_Y) {
+        this.addSlot(new Slot(suitInventory, PowerSuitEntity.FUEL_SLOT, this.robotMenu ? ROBOT_FUEL_X : FUEL_X, this.robotMenu ? ROBOT_FUEL_Y : FUEL_Y) {
             @Override
             public boolean mayPlace(ItemStack stack) {
                 // Any engine's fuel, like a furnace's slot (what the installed engine can't use just sits there), and
@@ -163,6 +175,14 @@ public class PowerSuitMenu extends AbstractContainerMenu {
                 }
             });
         }
+        // Robot companion mini-inventory (4x2 = 8 slots, accepts any item: ammo, spare fuel, loot).
+        if (this.robotMenu) {
+            for (int row = 0; row < 2; row++) {
+                for (int col = 0; col < 4; col++) {
+                    this.addSlot(new Slot(suitInventory, PowerSuitEntity.PACK_START + row * 4 + col, PACK_X + col * 18, PACK_Y + row * 18));
+                }
+            }
+        }
         // Player inventory and hotbar, where vanilla's inventory screen has them.
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 9; col++) {
@@ -191,12 +211,31 @@ public class PowerSuitMenu extends AbstractContainerMenu {
     public static PowerSuitMenu fromNetwork(int containerId, Inventory playerInventory, RegistryFriendlyByteBuf buf) {
         PowerSuitEntity suit = playerInventory.player.level().getEntity(buf.readVarInt()) instanceof PowerSuitEntity s ? s : null;
         boolean piloting = buf.readBoolean();
-        return new PowerSuitMenu(containerId, playerInventory, new SimpleContainer(PowerSuitEntity.SLOTS), suit, piloting);
+        boolean robotMenu = buf.readBoolean();
+        return new PowerSuitMenu(containerId, playerInventory, new SimpleContainer(PowerSuitEntity.SLOTS), suit, piloting, robotMenu);
     }
 
     @Nullable
     public PowerSuitEntity getSuit() {
         return this.suit;
+    }
+
+    /** Both sides: is this the robot companion menu (A2, with the 8-slot pack grid)? */
+    public boolean isRobotMenu() {
+        return this.robotMenu;
+    }
+
+    /** First menu slot of the player's inventory (shifts by PACK_SLOTS when the robot pack is shown). */
+    public int invStart() {
+        return this.robotMenu ? MENU_PACK + PowerSuitEntity.PACK_SLOTS : INV_START;
+    }
+
+    public int hotbarStart() {
+        return this.invStart() + 27;
+    }
+
+    public int slotEnd() {
+        return this.hotbarStart() + 9;
     }
 
     /** Both sides: was this menu opened from inside the suit (pilot)? Then MENU_SOCKET is their real off-hand and
@@ -253,8 +292,9 @@ public class PowerSuitMenu extends AbstractContainerMenu {
         return first;
     }
 
-    /** Shift-click: suit slots -> player; player -> socket (tools), helmet slot (a helmet), armour slots (a piece),
-     *  engine slot (an engine) or fuel slot (fuel). */
+    /** Shift-click: suit/pack slots -> player; player -> matching suit slot first (tool, helmet, armour, engine,
+     *  fuel), then into the robot's 8-slot pack if this is the robot menu (also overflows spare fuel when the fuel slot
+     *  is full), else hops between inventory and hotbar as in vanilla. */
     @Override
     public ItemStack quickMoveStack(Player player, int index) {
         Slot slot = this.slots.get(index);
@@ -263,22 +303,29 @@ public class PowerSuitMenu extends AbstractContainerMenu {
         }
         ItemStack stack = slot.getItem();
         ItemStack original = stack.copy();
-        if (index < SUIT_SLOTS) {
-            if (!this.moveItemStackTo(stack, INV_START, END, true)) {
+        int invStart = this.invStart(), hotbarStart = this.hotbarStart(), end = this.slotEnd();
+        if (index < invStart) {
+            if (!this.moveItemStackTo(stack, invStart, end, true)) {
                 return ItemStack.EMPTY;
             }
         } else {
             int target = this.shiftClickTarget(stack);
-            if (target >= 0) {
-                if (!this.moveItemStackTo(stack, target, target + 1, false)) {
+            boolean moved = target >= 0 && this.moveItemStackTo(stack, target, target + 1, false);
+            if (!moved && this.robotMenu) {
+                // Ammo, carried items, and spare fuel (when the fuel slot is full) go into the robot's 8-slot pack.
+                moved = this.moveItemStackTo(stack, MENU_PACK, MENU_PACK + PowerSuitEntity.PACK_SLOTS, false);
+            }
+            if (!moved) {
+                if (target >= 0 && !this.robotMenu) {
                     return ItemStack.EMPTY; // that slot is full: nothing moves (like a furnace)
                 }
-            } else if (index < HOTBAR_START) {
-                if (!this.moveItemStackTo(stack, HOTBAR_START, END, false)) {
+                if (index < hotbarStart) {
+                    if (!this.moveItemStackTo(stack, hotbarStart, end, false)) {
+                        return ItemStack.EMPTY;
+                    }
+                } else if (!this.moveItemStackTo(stack, invStart, hotbarStart, false)) {
                     return ItemStack.EMPTY;
                 }
-            } else if (!this.moveItemStackTo(stack, INV_START, HOTBAR_START, false)) {
-                return ItemStack.EMPTY;
             }
         }
         if (stack.isEmpty()) {

@@ -16,6 +16,8 @@
   "gui.power_suits.no_fuel": "NO FUEL",
   "gui.power_suits.socket_slot": "Companion tool",
   "gui.power_suits.socket_slot.hint": "A power tool here is carried by the suit while nobody is piloting (companions and rogues). Pilots use power tools directly from their own hotbar and off-hand.",
+  "gui.power_suits.pack_slot": "Robot pack",
+  "gui.power_suits.pack_slot.hint": "Holds ammo (fire charges, amethyst shards), spare fuel (auto-refills the fuel slot) or carried items.",
   "gui.power_suits.fuel_slot": "Fuel",
   "gui.power_suits.fuel_slot.hint": "Firebox: anything a furnace burns, as long as a furnace burns it (coal 1:20, blaze rod 2:00, lava bucket 16:40 of walking). Tidal Engine on land: water buckets or bottles. Star Reactor: a Nether Star.",
   "item.power_suits.power_tool.stats": "%s hearts per shot, %s fuel, every %s s",

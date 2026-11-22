@@ -31,10 +31,10 @@ HINT = (85, 85, 85, 255)  # vanilla's empty-slot outlines (container/slot/chestp
 img = inventory.copy()
 
 
-def fill(x0, y0, x1, y1, c):
+def fill(x0, y0, x1, y1, c, target=img):
     for x in range(x0, x1):
         for y in range(y0, y1):
-            img.putpixel((x, y), c)
+            target.putpixel((x, y), c)
 
 
 slot_frame = img.crop((76, 61, 94, 79))     # vanilla's off-hand slot frame (18x18)
@@ -45,6 +45,19 @@ for y in (7, 25, 43):                       # three slots above the off-hand slo
 img.paste(slot_frame, (111, 27))            # the fuel slot, before vanilla's arrow (x 135..150)
 img.save('src/main/resources/assets/power_suits/textures/gui/power_suit.png')
 print('wrote textures/gui/power_suit.png')
+
+# Robot companion menu (2026-11-22, pick A2): same 176x166 window with Fuel -> Power + Pack on the top-right row and a
+# 4x2 (8-slot) mini-inventory below for ammo, spare fuel and carried items.
+robot = img.copy()
+fill(96, 16, 171, 80, PANEL, robot)
+arrow = inventory.crop((135, 29, 150, 44))  # vanilla's 15x15 crafting arrow
+robot.paste(slot_frame, (97, 18))           # fuel slot (item at 98, 19)
+robot.alpha_composite(arrow, (117, 20))     # arrow -> Power (134, 18) + Pack (153, 18)
+for row in range(2):
+    for col in range(4):
+        robot.paste(slot_frame, (97 + col * 18, 43 + row * 18))  # 4x2 pack grid (items at 98 + col*18, 44 + row*18)
+robot.save('src/main/resources/assets/power_suits/textures/gui/power_suit_robot.png')
+print('wrote textures/gui/power_suit_robot.png')
 
 
 def sprite(name, rows, colour=LIGHT, size=None):

@@ -1974,19 +1974,21 @@ public final class PowerSuitTests {
         });
     }
 
-    /** The chaingun with the mind at the trigger: it spins up and shoots, needing no fire charges (2026-10-27: the mind's
-     *  tools never run out). */
+    /** Friendly companion chaingun draws fire charges from its robot pack (2026-11-22); a rogue still fires for free. */
     @SuitTest(timeoutTicks = 40)
     public static void mindChaingunNeedsNoAmmo(GameTestHelper helper) {
         PowerSuitEntity suit = toolSuit(helper);
         suit.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.BLAZE_ROD, 4));
         suit.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, new ItemStack(ModItems.CHAINGUN.get()));
+        suit.getInventory().setItem(PowerSuitEntity.PACK_START, new ItemStack(Items.FIRE_CHARGE, 32));
         helper.runAfterDelay(2, () -> {
             suit.brain().setAim(helper.absoluteVec(new Vec3(4.5, 3, 7)));
             suit.socket().setAiTrigger(true);
         });
         helper.runAfterDelay(20, () -> {
-            helper.assertTrue(suit.socket().isActive() && suit.socket().getUses() > 0, "spins and shoots without fire charges, shots " + suit.socket().getUses());
+            int left = suit.getInventory().getItem(PowerSuitEntity.PACK_START).getCount();
+            helper.assertTrue(suit.socket().isActive() && suit.socket().getUses() > 0, "spins and shoots from its pack, shots " + suit.socket().getUses());
+            helper.assertTrue(left == 32 - suit.socket().getUses(), "spent one fire charge per shot: left " + left + " uses " + suit.socket().getUses());
             helper.succeed();
         });
     }
@@ -2120,7 +2122,12 @@ public final class PowerSuitTests {
         helper.assertTrue(ChaingunItem.takeBullet(suit, pilot) && pilot.getOffhandItem().isEmpty(), "the off hand first");
         helper.assertTrue(ChaingunItem.takeBullet(suit, pilot) && ChaingunItem.takeBullet(suit, pilot), "then the inventory");
         helper.assertTrue(!ChaingunItem.takeBullet(suit, pilot) && ChaingunItem.countBullets(pilot) == 0, "then nothing");
-        helper.assertTrue(ChaingunItem.takeBullet(suit, suit), "the mind's gun never runs dry");
+        helper.assertTrue(!ChaingunItem.takeBullet(suit, suit), "empty friendly companion pack has no bullets");
+        suit.getInventory().setItem(PowerSuitEntity.PACK_START, new ItemStack(Items.FIRE_CHARGE, 1));
+        helper.assertTrue(ChaingunItem.takeBullet(suit, suit) && suit.getInventory().getItem(PowerSuitEntity.PACK_START).isEmpty(),
+                "friendly companion takes a bullet from its pack");
+        suit.setMind(SuitMind.ROGUE);
+        helper.assertTrue(ChaingunItem.takeBullet(suit, suit), "a rogue's gun never runs dry");
         pilot.getAbilities().instabuild = true;
         helper.assertTrue(ChaingunItem.takeBullet(suit, pilot) && ChaingunItem.countBullets(pilot) == SuitAmmo.ENDLESS, "creative: free");
         helper.succeed();
@@ -2152,6 +2159,7 @@ public final class PowerSuitTests {
         companion(helper, suit);
         suit.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.BLAZE_ROD, 4));
         suit.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, new ItemStack(ModItems.CHAINGUN.get()));
+        suit.getInventory().setItem(PowerSuitEntity.PACK_START, new ItemStack(Items.FIRE_CHARGE, 64));
         return suit;
     }
 
@@ -4544,6 +4552,7 @@ public final class PowerSuitTests {
         companion(helper, suit);
         suit.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.BLAZE_ROD, 4));
         suit.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, new ItemStack(ModItems.RAIL_CANNON.get()));
+        suit.getInventory().setItem(PowerSuitEntity.PACK_START, new ItemStack(Items.AMETHYST_SHARD, 16));
         suit.brain().setHome(helper.absolutePos(at));
         return suit;
     }
@@ -4678,6 +4687,68 @@ public final class PowerSuitTests {
             int spent = before - suit.power().getTotalEnergy();
             helper.assertTrue(spent == PowerSuitsConfig.JUMP_ENERGY.get(),
                     "jump must spend JUMP_ENERGY (" + PowerSuitsConfig.JUMP_ENERGY.get() + "), spent " + spent);
+            helper.succeed();
+        });
+    }
+
+    /** Robot companion menu (A2, 2026-11-22): parked Robot Helmet suit opens with 8 pack slots accepting any item,
+     *  shift-click routes ammo/loot/overflow-fuel into the pack, packing up preserves it, and piloting stays normal. */
+    @SuitTest(timeoutTicks = 40)
+    public static void robotMenuPackSlotsShiftClickAndPersistence(GameTestHelper helper) {
+        PowerSuitEntity suit = companion(helper, fueledSuit(helper, new ItemStack(Items.COAL, 64)));
+        Player player = helper.makeMockPlayer(GameType.SURVIVAL);
+        player.snapTo(helper.absoluteVec(new Vec3(2.5, 2, 4.5)));
+
+        // Outside menu on a Robot Helmet suit: robotMenu == true with 8 pack slots.
+        PowerSuitMenu robot = new PowerSuitMenu(1, player.getInventory(), suit.getInventory(), suit, false);
+        helper.assertTrue(robot.isRobotMenu(), "parked Robot Helmet suit opens the robot menu");
+        helper.assertTrue(robot.invStart() == PowerSuitMenu.MENU_PACK + PowerSuitEntity.PACK_SLOTS, "8 pack slots before player inventory");
+
+        // Shift-click fire charges, cobble, and extra coal (fuel slot already full): all go into the robot's pack.
+        player.getInventory().setItem(9, new ItemStack(Items.FIRE_CHARGE, 12));
+        player.getInventory().setItem(10, new ItemStack(Items.COBBLESTONE, 5));
+        player.getInventory().setItem(11, new ItemStack(Items.COAL, 10));
+        robot.quickMoveStack(player, robot.invStart());
+        robot.quickMoveStack(player, robot.invStart() + 1);
+        robot.quickMoveStack(player, robot.invStart() + 2);
+        helper.assertTrue(suit.getInventory().getItem(PowerSuitEntity.PACK_START).is(Items.FIRE_CHARGE)
+                && suit.getInventory().getItem(PowerSuitEntity.PACK_START).getCount() == 12, "fire charges went into pack");
+        helper.assertTrue(suit.getInventory().getItem(PowerSuitEntity.PACK_START + 1).is(Items.COBBLESTONE), "cobblestone went into pack");
+        helper.assertTrue(suit.getInventory().getItem(PowerSuitEntity.PACK_START + 2).is(Items.COAL), "overflow coal went into pack");
+
+        // Inside menu (piloting) stays the normal pilot menu (no robot pack).
+        Player pilot = boardedPilot(helper, suit);
+        PowerSuitMenu inside = new PowerSuitMenu(2, pilot.getInventory(), suit.getInventory(), suit, true);
+        helper.assertTrue(!inside.isRobotMenu(), "inside E menu stays the standard pilot inventory");
+        pilot.stopRiding();
+
+        // Packing up preserves the 8 pack slots on the item and restores them on deploy.
+        helper.assertTrue(suit.packUp(player), "packed up robot suit");
+        ItemStack packed = packedSuit(player);
+        PowerSuitEntity deployed = suitAt(helper, new BlockPos(6, 2, 4));
+        deployed.applyLoadout(packed.get(ModDataComponents.LOADOUT.get()));
+        helper.assertTrue(deployed.getInventory().getItem(PowerSuitEntity.PACK_START).is(Items.FIRE_CHARGE)
+                && deployed.getInventory().getItem(PowerSuitEntity.PACK_START).getCount() == 12
+                && deployed.getInventory().getItem(PowerSuitEntity.PACK_START + 1).is(Items.COBBLESTONE),
+                "pack contents survived packing up and redeploying");
+        helper.succeed();
+    }
+
+    /** Companion auto-refuel (+F, 2026-11-22): when the fuel slot runs empty or holds an empty bucket remainder,
+     *  matching fuel in the robot's pack is pulled automatically into the fuel slot with no loss of power. */
+    @SuitTest(timeoutTicks = 40)
+    public static void suitAutoRefuelsFromPack(GameTestHelper helper) {
+        PowerSuitEntity suit = companion(helper, suitAt(helper, new BlockPos(4, 2, 2)));
+        suit.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.BUCKET)); // spent lava bucket remainder
+        suit.getInventory().setItem(PowerSuitEntity.PACK_START, new ItemStack(Items.COBBLESTONE, 4));
+        suit.getInventory().setItem(PowerSuitEntity.PACK_START + 1, new ItemStack(Items.COAL, 3));
+        helper.runAfterDelay(4, () -> {
+            helper.assertTrue(suit.isPowered(), "pulled coal from pack and powered on");
+            helper.assertTrue(suit.getInventory().getItem(PowerSuitEntity.FUEL_SLOT).is(Items.COAL)
+                    && suit.getInventory().getItem(PowerSuitEntity.FUEL_SLOT).getCount() == 2,
+                    "coal moved to fuel slot and 1 ignited, got " + suit.getInventory().getItem(PowerSuitEntity.FUEL_SLOT));
+            helper.assertTrue(suit.getInventory().getItem(PowerSuitEntity.PACK_START + 1).is(Items.BUCKET),
+                    "empty bucket swapped neatly into pack slot, got " + suit.getInventory().getItem(PowerSuitEntity.PACK_START + 1));
             helper.succeed();
         });
     }

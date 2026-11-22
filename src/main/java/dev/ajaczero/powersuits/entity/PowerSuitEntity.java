@@ -114,8 +114,10 @@ public class PowerSuitEntity extends Mob implements GeoEntity, HasCustomInventor
     /** Legacy right-arm socket slot (removed 2026-11-22: pilots hold tools in their hotbar/off-hand). Kept in the
      *  container layout so old saves load and drop whatever sat here cleanly at the suit's feet. */
     public static final int OLD_RIGHT_SOCKET_SLOT = 10;
+    /** The robot companion's 8-slot mini-inventory (2026-11-22, pick A2): ammo, spare fuel and carried items. */
+    public static final int PACK_START = 11, PACK_SLOTS = 8;
     /** How many slots the suit has (its container's size; the menu's client copy too). */
-    public static final int SLOTS = 11;
+    public static final int SLOTS = PACK_START + PACK_SLOTS;
     // Drain per tick (idle / walking / sprinting), energy per jump and the low-fuel warning level are balance
     // knobs in PowerSuitsConfig. Walking = 1 per tick, so SuitFuel values read as ticks of walking.
     /** Length of the startup animation (1.4 s): the suit can't move until it has stood up. */
@@ -658,6 +660,11 @@ public class PowerSuitEntity extends Mob implements GeoEntity, HasCustomInventor
         return !this.isRogue() && this.getHelmetSoul() != null && !this.isHelmetBroken();
     }
 
+    /** Both sides: wearing a Robot Helmet (even broken or unsouled, so items in its pack stay reachable). */
+    public boolean hasRobotHelmet() {
+        return this.hasHelmet() && this.getHelmetStyle() == HelmetStyle.ROBOT;
+    }
+
     /** Both sides: the worn helmet's style (design sec. 4c), null for the standard one (or no helmet). */
     public @Nullable HelmetStyle getHelmetStyle() {
         return HelmetStyle.byId(this.entityData.get(HELMET_STYLE));
@@ -741,7 +748,7 @@ public class PowerSuitEntity extends Mob implements GeoEntity, HasCustomInventor
         return new SuitLoadout(this.inventory.getItem(FUEL_SLOT).copy(), this.inventory.getItem(SOCKET_SLOT).copy(),
                 Mth.ceil(this.power.getBurnLeftExact()), this.power.getBurnTotal(), this.oldNuggets, this.inventory.getItem(HELMET_SLOT).copy(),
                 Optional.of(this.inventory.getItem(ENGINE_SLOT).copy()), this.inventory.getItem(OLD_AMMO_SLOT).copy(),
-                this.power.isSwitchedOn(), this.armourStacks(), ItemStack.EMPTY);
+                this.power.isSwitchedOn(), this.armourStacks(), ItemStack.EMPTY, this.packStacks());
     }
 
     /** The armour slots' contents, in SuitArmour.Part order (what a packed suit carries); none worn: an empty list. */
@@ -749,6 +756,15 @@ public class PowerSuitEntity extends Mob implements GeoEntity, HasCustomInventor
         List<ItemStack> stacks = new ArrayList<>();
         for (SuitArmour.Part part : SuitArmour.Part.values()) {
             stacks.add(this.inventory.getItem(part.slot).copy());
+        }
+        return stacks.stream().allMatch(ItemStack::isEmpty) ? List.of() : stacks;
+    }
+
+    /** The robot companion's 8 pack slots (empty list if nothing is stored). */
+    private List<ItemStack> packStacks() {
+        List<ItemStack> stacks = new ArrayList<>(PACK_SLOTS);
+        for (int i = 0; i < PACK_SLOTS; i++) {
+            stacks.add(this.inventory.getItem(PACK_START + i).copy());
         }
         return stacks.stream().allMatch(ItemStack::isEmpty) ? List.of() : stacks;
     }
@@ -762,6 +778,9 @@ public class PowerSuitEntity extends Mob implements GeoEntity, HasCustomInventor
         SuitArmour.Part[] parts = SuitArmour.Part.values();
         for (int i = 0; i < parts.length; i++) { // items packed before the armour carry none: a bare frame
             this.inventory.setItem(parts[i].slot, i < loadout.armour().size() ? loadout.armour().get(i).copy() : ItemStack.EMPTY);
+        }
+        for (int i = 0; i < PACK_SLOTS; i++) {
+            this.inventory.setItem(PACK_START + i, i < loadout.pack().size() ? loadout.pack().get(i).copy() : ItemStack.EMPTY);
         }
         // Items packed (or crafted) before the engines carry none: they had their firebox built in.
         this.inventory.setItem(ENGINE_SLOT, loadout.engine().map(ItemStack::copy)
@@ -854,10 +873,15 @@ public class PowerSuitEntity extends Mob implements GeoEntity, HasCustomInventor
     /** Sneak + right-click on a parked suit, or E inside it: open its inventory. Server only. */
     private void openMenu(Player player) {
         boolean piloting = this.getControllingPassenger() == player;
-        player.openMenu(new SimpleMenuProvider((id, playerInventory, p) -> new PowerSuitMenu(id, playerInventory, this.inventory, this, piloting),
-                this.getDisplayName()), buf -> {
+        boolean robotMenu = !piloting && this.hasRobotHelmet();
+        Soul soul = this.getHelmetSoul();
+        Component title = robotMenu && !this.hasCustomName() && soul != null
+                ? Component.translatable(soul.nameKey()) : this.getDisplayName();
+        player.openMenu(new SimpleMenuProvider((id, playerInventory, p) -> new PowerSuitMenu(id, playerInventory, this.inventory, this, piloting, robotMenu),
+                title), buf -> {
             buf.writeVarInt(this.getId());
             buf.writeBoolean(piloting);
+            buf.writeBoolean(robotMenu);
         });
     }
 

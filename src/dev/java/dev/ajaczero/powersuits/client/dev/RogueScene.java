@@ -137,6 +137,7 @@ final class RogueScene {
             PowerSuitEntity f = ModEntities.POWER_SUIT.get().create(level, EntitySpawnReason.COMMAND);
             DevUtil.firebox(f); f.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.BLAZE_ROD, 16)); f.getInventory().setItem(PowerSuitEntity.HELMET_SLOT, new ItemStack(ModItems.SUIT_HELMET.get())); DevUtil.ironArmour(f);
             f.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, new ItemStack(ModItems.CHAINGUN.get()));
+            f.getInventory().setItem(PowerSuitEntity.PACK_START, new ItemStack(Items.FIRE_CHARGE, 64));
             f.brain().setOwnerId(player.getUUID());
             f.snapTo(x + 3.5, y, z - 1.5, 0, 0);
             level.addFreshEntity(f);

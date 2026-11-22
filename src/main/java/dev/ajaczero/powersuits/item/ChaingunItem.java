@@ -104,7 +104,7 @@ public class ChaingunItem extends Item implements PowerTool, ModTooltip {
 
     /** How the mind fights with it (GunAttack). */
     private static final GunAttack.Gun MIND_GUN =
-            new GunAttack.Gun(28, false, suit -> true, suit -> !isOverheated(suit)); // the mind never runs out (SuitAmmo)
+            new GunAttack.Gun(28, false, suit -> SuitAmmo.has(suit, ChaingunItem::isBullet), suit -> !isOverheated(suit));
 
     @Override
     public ToolUse mindUse() {

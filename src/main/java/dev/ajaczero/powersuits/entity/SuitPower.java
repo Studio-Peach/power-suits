@@ -89,6 +89,7 @@ public final class SuitPower {
         if (engine == SuitEngine.FIREBOX && underWater && !this.suit.isRogue()) {
             this.floodFirebox();
         }
+        this.refillFuelFromPack();
         boolean free = this.runsFree();
         this.suit.getEntityData().set(PowerSuitEntity.FREE_POWER, free);
         if (this.stunTicks == 0 && !this.suit.isRogue() && !free && this.shouldRun(pilot)) { // a knocked-out engine burns nothing
@@ -132,7 +133,31 @@ public final class SuitPower {
 
     /** Takes one item from the fuel slot and starts burning it. Lava and water leave their bucket behind, water bottles
      *  their glass bottle. */
+    /** Server (+F, 2026-11-22): when the fuel slot has nothing usable for the installed engine, pull the first
+     *  matching fuel stack from the suit's 8-slot pack (swapping out any empty bucket / bottle remainder). */
+    private void refillFuelFromPack() {
+        SuitEngine engine = this.suit.getEngine();
+        if (this.suit.isRogue() || engine == null || this.isFlooded()) {
+            return;
+        }
+        ItemStack current = this.fuelSlot();
+        if (SuitFuel.powersForever(engine, current) || SuitFuel.energyOf(engine, current, this.suit.level()) > 0) {
+            return;
+        }
+        SimpleContainer inv = this.slots();
+        for (int i = PowerSuitEntity.PACK_START; i < PowerSuitEntity.PACK_START + PowerSuitEntity.PACK_SLOTS; i++) {
+            ItemStack candidate = inv.getItem(i);
+            if (!candidate.isEmpty() && (SuitFuel.powersForever(engine, candidate)
+                    || SuitFuel.energyOf(engine, candidate, this.suit.level()) > 0)) {
+                inv.setItem(PowerSuitEntity.FUEL_SLOT, candidate);
+                inv.setItem(i, current);
+                return;
+            }
+        }
+    }
+
     private void igniteNextItem() {
+        this.refillFuelFromPack();
         ItemStack stack = this.fuelSlot();
         int energy = SuitFuel.energyOf(this.suit.getEngine(), stack, this.suit.level());
         if (energy <= 0 || this.isFlooded()) {
@@ -303,7 +328,11 @@ public final class SuitPower {
         if (this.suit.isRogue() || this.runsFree()) {
             return;
         }
-        while (this.burnLeft < amount && SuitFuel.isFuel(this.suit.getEngine(), this.fuelSlot()) && !this.isFlooded()) {
+        while (this.burnLeft < amount && !this.isFlooded()) {
+            this.refillFuelFromPack();
+            if (!SuitFuel.isFuel(this.suit.getEngine(), this.fuelSlot())) {
+                break;
+            }
             this.igniteNextItem();
         }
         this.setBurnState(Math.max(0, this.burnLeft - amount), this.burnTotal);

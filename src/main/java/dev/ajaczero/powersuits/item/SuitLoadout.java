@@ -23,15 +23,16 @@ import net.minecraft.world.item.ItemStack;
  * needs a Codec (how to save it to disk) and a StreamCodec (how to send it over the network).
  */
 public record SuitLoadout(ItemStack fuel, ItemStack socket, int burnLeft, int burnTotal, int nuggets, ItemStack helmet,
-        Optional<ItemStack> engine, ItemStack ammo, boolean switchedOn, List<ItemStack> armour, ItemStack rightSocket) {
+        Optional<ItemStack> engine, ItemStack ammo, boolean switchedOn, List<ItemStack> armour, ItemStack rightSocket,
+        List<ItemStack> pack) {
     /** The loadouts from before the right arm's socket (2026-11-15) had none. */
     public SuitLoadout(ItemStack fuel, ItemStack socket, int burnLeft, int burnTotal, int nuggets, ItemStack helmet,
             Optional<ItemStack> engine, ItemStack ammo, boolean switchedOn, List<ItemStack> armour) {
-        this(fuel, socket, burnLeft, burnTotal, nuggets, helmet, engine, ammo, switchedOn, armour, ItemStack.EMPTY);
+        this(fuel, socket, burnLeft, burnTotal, nuggets, helmet, engine, ammo, switchedOn, armour, ItemStack.EMPTY, List.of());
     }
 
     public static final SuitLoadout EMPTY = new SuitLoadout(ItemStack.EMPTY, ItemStack.EMPTY, 0, 0, 0, ItemStack.EMPTY, Optional.empty(),
-            ItemStack.EMPTY, true, List.of(), ItemStack.EMPTY);
+            ItemStack.EMPTY, true, List.of(), ItemStack.EMPTY, List.of());
 
     public static final Codec<SuitLoadout> CODEC = RecordCodecBuilder.create(i -> i.group(
             ItemStack.OPTIONAL_CODEC.optionalFieldOf("fuel", ItemStack.EMPTY).forGetter(SuitLoadout::fuel),
@@ -45,7 +46,8 @@ public record SuitLoadout(ItemStack fuel, ItemStack socket, int burnLeft, int bu
             ItemStack.OPTIONAL_CODEC.optionalFieldOf("ammo", ItemStack.EMPTY).forGetter(SuitLoadout::ammo),
             Codec.BOOL.optionalFieldOf("switched_on", true).forGetter(SuitLoadout::switchedOn),
             ItemStack.OPTIONAL_CODEC.listOf().optionalFieldOf("armour", List.of()).forGetter(SuitLoadout::armour),
-            ItemStack.OPTIONAL_CODEC.optionalFieldOf("right_socket", ItemStack.EMPTY).forGetter(SuitLoadout::rightSocket)
+            ItemStack.OPTIONAL_CODEC.optionalFieldOf("right_socket", ItemStack.EMPTY).forGetter(SuitLoadout::rightSocket),
+            ItemStack.OPTIONAL_CODEC.listOf().optionalFieldOf("pack", List.of()).forGetter(SuitLoadout::pack)
     ).apply(i, SuitLoadout::new));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, SuitLoadout> STREAM_CODEC = StreamCodec.composite(
@@ -60,6 +62,7 @@ public record SuitLoadout(ItemStack fuel, ItemStack socket, int burnLeft, int bu
             ByteBufCodecs.BOOL, SuitLoadout::switchedOn,
             ItemStack.OPTIONAL_LIST_STREAM_CODEC, SuitLoadout::armour,
             ItemStack.OPTIONAL_STREAM_CODEC, SuitLoadout::rightSocket,
+            ItemStack.OPTIONAL_LIST_STREAM_CODEC, SuitLoadout::pack,
             SuitLoadout::new);
 
     // ItemStack has no equals(), but components are compared to decide whether two stacks are the same.
@@ -71,7 +74,8 @@ public record SuitLoadout(ItemStack fuel, ItemStack socket, int burnLeft, int bu
                 && this.engine.isPresent() == other.engine.isPresent()
                 && (this.engine.isEmpty() || ItemStack.matches(this.engine.get(), other.engine.get()))
                 && ItemStack.matches(this.ammo, other.ammo) && this.switchedOn == other.switchedOn
-                && stacksMatch(this.armour, other.armour) && ItemStack.matches(this.rightSocket, other.rightSocket);
+                && stacksMatch(this.armour, other.armour) && ItemStack.matches(this.rightSocket, other.rightSocket)
+                && stacksMatch(this.pack, other.pack);
     }
 
     /** ItemStack.listMatches is deprecated: the same, by hand. */
@@ -91,6 +95,7 @@ public record SuitLoadout(ItemStack fuel, ItemStack socket, int burnLeft, int bu
     public int hashCode() {
         return 31 * (31 * ItemStack.hashItemAndComponents(this.fuel) + ItemStack.hashItemAndComponents(this.socket)) + this.burnLeft + 17 * this.nuggets
                 + 7 * ItemStack.hashItemAndComponents(this.helmet) + 3 * this.engine.map(ItemStack::hashItemAndComponents).orElse(-1)
-                + 5 * ItemStack.hashItemAndComponents(this.ammo) + (this.switchedOn ? 0 : 11) + 13 * this.armour.stream().mapToInt(ItemStack::hashItemAndComponents).sum();
+                + 5 * ItemStack.hashItemAndComponents(this.ammo) + (this.switchedOn ? 0 : 11) + 13 * this.armour.stream().mapToInt(ItemStack::hashItemAndComponents).sum()
+                + 19 * this.pack.stream().mapToInt(ItemStack::hashItemAndComponents).sum();
     }
 }

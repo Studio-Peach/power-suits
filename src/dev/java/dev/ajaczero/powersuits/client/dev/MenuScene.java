@@ -146,7 +146,28 @@ final class MenuScene {
             case 257 -> AutoPilot.shot(mc, "menu_hover_power");
             case 259 -> pointAt(mc, PowerSuitScreen.PACK_X + 9, PowerSuitScreen.PACK_Y + 9);
             case 261 -> AutoPilot.shot(mc, "menu_hover_pack");
-            case 264 -> { pointAt(mc, -100, -100); mc.player.closeContainer(); close(); return false; }
+            // Robot companion menu (A2, 2026-11-22): put a souled Robot Helmet on, stock ammo/spare fuel in its pack, reopen
+            case 264 -> { phase = "robot"; pointAt(mc, -100, -100); mc.player.closeContainer();
+                          AutoPilot.onServer(mc, p -> {
+                              PowerSuitEntity x = suit;
+                              if (x == null) {
+                                  return;
+                              }
+                              DevUtil.firebox(x);
+                              x.getInventory().setItem(PowerSuitEntity.FUEL_SLOT, new ItemStack(Items.COAL, 16));
+                              x.getInventory().setItem(PowerSuitEntity.HELMET_SLOT, DevUtil.soulHelmet(x.level()));
+                              x.getInventory().setItem(PowerSuitEntity.PACK_START, new ItemStack(Items.FIRE_CHARGE, 48));
+                              x.getInventory().setItem(PowerSuitEntity.PACK_START + 1, new ItemStack(Items.AMETHYST_SHARD, 16));
+                              x.getInventory().setItem(PowerSuitEntity.PACK_START + 2, new ItemStack(Items.COAL, 32));
+                              x.getInventory().setItem(PowerSuitEntity.PACK_START + 4, new ItemStack(Items.IRON_INGOT, 12));
+                              p.setShiftKeyDown(true);
+                              x.interact(p, InteractionHand.MAIN_HAND, x.position());
+                              p.setShiftKeyDown(false);
+                          }); }
+            case 276 -> AutoPilot.shot(mc, "menu_robot");
+            case 277 -> pointAt(mc, PowerSuitMenu.PACK_X + 3 * 18 + 8, PowerSuitMenu.PACK_Y + 18 + 8);
+            case 279 -> AutoPilot.shot(mc, "menu_robot_hover");
+            case 282 -> { pointAt(mc, -100, -100); mc.player.closeContainer(); close(); return false; }
             default -> {}
         }
         if (s >= 2) {

@@ -1317,6 +1317,7 @@ public final class AutoPilot {
             case 534 -> { mindPhase = "load"; mc.setCameraEntity(mc.player); o.setCameraType(CameraType.FIRST_PERSON); DevUtil.hideGui(mc, false);
                           onServer(mc, p -> { if (mindSuit != null) {
                               mindSuit.getInventory().setItem(PowerSuitEntity.SOCKET_SLOT, new ItemStack(ModItems.CHAINGUN.get()));
+                              mindSuit.getInventory().setItem(PowerSuitEntity.PACK_START, new ItemStack(Items.FIRE_CHARGE, 64));
                               p.setGameMode(GameType.SURVIVAL);
                               p.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, 1200, 4));
                               p.setShiftKeyDown(true);          // sneak + right-click: the menu

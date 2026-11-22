@@ -44,6 +44,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class PowerSuitScreen extends AbstractContainerScreen<PowerSuitMenu> {
     private static final Identifier BACKGROUND = Identifier.fromNamespaceAndPath(PowerSuits.MODID, "textures/gui/power_suit.png");
+    private static final Identifier ROBOT_BACKGROUND = Identifier.fromNamespaceAndPath(PowerSuits.MODID, "textures/gui/power_suit_robot.png");
     /** The keys' symbols (tools/make-gui.py). Power is 9 wide for a 1 px stem (user's pick D, 2026-10-27): on an 18 px
      *  key it can't be exactly centred, so it sits half a pixel left, a pixel up (its light goes under it). Pack is 8x8,
      *  centred (x 5..12). */
@@ -55,6 +56,8 @@ public class PowerSuitScreen extends AbstractContainerScreen<PowerSuitMenu> {
     /** The keys: Power where the crafting result slot was, Pack up where the recipe book's button sits (vanilla's
      *  InventoryScreen: leftPos + 104, 22 above the middle = y 61). Public: the menu scene points the mouse at them. */
     public static final int POWER_X = 153, POWER_Y = 27, PACK_X = 130, PACK_Y = 61;
+    /** Compact top-right button positions in the robot companion menu (A2). */
+    public static final int ROBOT_POWER_X = 134, ROBOT_POWER_Y = 18, ROBOT_PACK_X = 153, ROBOT_PACK_Y = 18;
     /** The title where vanilla writes "Crafting", in vanilla's label grey. */
     private static final int TITLE_X = 97, TITLE_W = 75, LABEL = 0xFF404040;
 
@@ -80,11 +83,14 @@ public class PowerSuitScreen extends AbstractContainerScreen<PowerSuitMenu> {
         // Buttons in container screens don't need a custom packet: vanilla sends the button id to the
         // server, which calls PowerSuitMenu.clickMenuButton.
         // A key has a symbol, no caption: its tooltip is its name, one word (user, 2026-10-27: the key shows its state).
-        SuitKey power = this.addRenderableWidget(new SuitKey(this.leftPos + POWER_X, this.topPos + POWER_Y, POWER_SYMBOL,
+        boolean robot = this.menu.isRobotMenu();
+        SuitKey power = this.addRenderableWidget(new SuitKey(this.leftPos + (robot ? ROBOT_POWER_X : POWER_X),
+                this.topPos + (robot ? ROBOT_POWER_Y : POWER_Y), POWER_SYMBOL,
                 Component.translatable("gui.power_suits.power"), () -> switchedOn(this.menu.getSuit()),
                 () -> this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId, PowerSuitMenu.BUTTON_POWER)));
         power.setTooltip(Tooltip.create(power.getMessage()));
-        SuitKey pack = this.addRenderableWidget(new SuitKey(this.leftPos + PACK_X, this.topPos + PACK_Y, PACK_SYMBOL,
+        SuitKey pack = this.addRenderableWidget(new SuitKey(this.leftPos + (robot ? ROBOT_PACK_X : PACK_X),
+                this.topPos + (robot ? ROBOT_PACK_Y : PACK_Y), PACK_SYMBOL,
                 Component.translatable("gui.power_suits.pack"), null,
                 () -> this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId, PowerSuitMenu.BUTTON_PACK)));
         // Packing up needs you outside: from inside the key is there but greyed out.
@@ -116,7 +122,8 @@ public class PowerSuitScreen extends AbstractContainerScreen<PowerSuitMenu> {
     public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         super.extractBackground(graphics, mouseX, mouseY, partialTick);
         int x = this.leftPos, y = this.topPos;
-        graphics.blit(RenderPipelines.GUI_TEXTURED, BACKGROUND, x, y, 0F, 0F, this.imageWidth, this.imageHeight, 256, 256);
+        graphics.blit(RenderPipelines.GUI_TEXTURED, this.menu.isRobotMenu() ? ROBOT_BACKGROUND : BACKGROUND,
+                x, y, 0F, 0F, this.imageWidth, this.imageHeight, 256, 256);
         PowerSuitEntity suit = this.menu.getSuit();
         if (suit == null) {
             return;
@@ -267,7 +274,9 @@ public class PowerSuitScreen extends AbstractContainerScreen<PowerSuitMenu> {
                 : index == PowerSuitMenu.MENU_HELMET ? "gui.power_suits.helmet_slot"
                 : index == PowerSuitMenu.MENU_ENGINE ? "gui.power_suits.engine_slot"
                 : armour >= 0 && armour < SuitArmour.Part.values().length
-                        ? "gui.power_suits.armour_slot." + SuitArmour.Part.values()[armour].piece.getName() : null;
+                        ? "gui.power_suits.armour_slot." + SuitArmour.Part.values()[armour].piece.getName()
+                : this.menu.isRobotMenu() && index >= PowerSuitMenu.MENU_PACK && index < PowerSuitMenu.MENU_PACK + PowerSuitEntity.PACK_SLOTS
+                        ? "gui.power_suits.pack_slot" : null;
         if (key != null) {
             graphics.setComponentTooltipForNextFrame(this.font, List.of(Component.translatable(key),
                     Component.translatable(key + ".hint").withStyle(ChatFormatting.GRAY)), mouseX, mouseY);
