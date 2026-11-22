@@ -199,7 +199,7 @@ public final class SuitDriving {
             vy = 0.3;
         }
         this.suit.setDeltaMovement(v.x * WATER_DRAG_XZ, vy, v.z * WATER_DRAG_XZ);
-        this.suit.calculateEntityAnimation(false);
+        // LivingEntity.aiStep calls calculateEntityAnimation after travel() on 26.3: calling it here too doubled it underwater.
     }
 
     // ---- Jumping: instant Space-to-jump (2026-11-22; replaced the horse jump bar and 2-tick launch delay) ----

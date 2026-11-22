@@ -1027,6 +1027,18 @@ public class PowerSuitEntity extends Mob implements GeoEntity, HasCustomInventor
         super.travel(travelVector);
     }
 
+    /**
+     * The frame's legs are a third longer than a player's (16 px vs 12 px), so it covers its faster walk (4.8 blocks/s)
+     * with longer, steadier strides instead of swinging back and forth faster. Scaling vanilla's distance factor (4.0)
+     * and stride frequency (1.0) down by the limb ratio keeps the walk deliberate (~2.4 steps/s at a 62 deg stride, vs
+     * 4.1 steps/s with vanilla's numbers) while letting the sprint open up to a full 80 deg stride (~3.2 steps/s).
+     */
+    @Override
+    protected void updateWalkAnimation(float distance) {
+        float targetSpeed = Math.min(distance * 3.2F, 1.0F);
+        this.walkAnimation.update(targetSpeed, 0.4F, 0.75F);
+    }
+
     /** The suit itself is a sealed machine and never runs out of air (its pilot can, though). */
     @Override
     public boolean canDrownInFluidType(FluidType type) {
