@@ -97,6 +97,13 @@ public class ChaingunItem extends Item implements PowerTool, ModTooltip {
         return "chaingun";
     }
 
+    /** The reworked 6 px barrels end 10 px below the socket base (1 px past the old 9 px chaingun, matching the rail
+     *  cannon and flamethrower). */
+    @Override
+    public float muzzleInsetPixels() {
+        return -1F;
+    }
+
     @Override
     public ToolEffects createEffects() {
         return new ChaingunEffects();

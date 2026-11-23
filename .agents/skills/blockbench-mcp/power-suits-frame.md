@@ -134,8 +134,8 @@ the end and `docs/guide.md` Notes).
 ### 2D-texture + outer-cutout-layer tool design system (2026-11-21/22, approved)
 Replaces 3D component kitbashing (stacked flanges, lugs, sub-rods, protruding brackets) with the same 2D-painted +
 `0.5 px` outer-cutout-layer language that made the flat iron armour (`pauldron_decal`) and 2D heart engine (`harness`)
-work. Proven on the Rail Cannon (`2d_hybrid_closed`, `06a8fb8`) and Flamethrower (`halo_olive`, `f04cd10`); apply to the
-remaining tools (Chaingun, TNT Launcher, EM Projector, Drill, Chainsaw):
+work. Proven on the Rail Cannon (`2d_hybrid_closed`, `06a8fb8`), Flamethrower (`halo_olive`, `f04cd10`), and Chaingun
+(`2d_copper`); apply to the remaining tools (TNT Launcher, EM Projector, Drill, Chainsaw):
 - **Minimal geometry (2–4 boxes) + `0.5 px` cutout outer layers:** build each tool from simple inner core boxes wrapped
   in `0.5 px`-proud outer covering cubes whose alpha-0 cutouts (`'.'`) carve windows, vents, core apertures, stepped
   muzzles, and angled cowling profiles. In Minecraft 26.3, `RenderTypes.entityCutout` (`ToolModelRenderer`) is already
@@ -213,6 +213,17 @@ remaining tools (Chaingun, TNT Launcher, EM Projector, Drill, Chainsaw):
   smallest legible digit at 2 texels a px, so two digits fill a whole face (smaller needs finer pixels or a light bar).
   Lessons: a reference gives the tool's signature, not a parts list; when the user says "the top half", ask or draft
   both halves (round 4 replaced the drum by mistake).
+  **Reworked 2026-11-22 in the 2D-texture + cutout outer-layer style (`GUN_LOOK=2d_copper`, 8 cubes):** kept the
+  beloved warm-black stacked-drum `6x4x6` cuff (now split into a `5x4x5` inner core + `6x4x6` outer cutout shell with
+  the two horizontal grooves cut `0.5 px` deep revealing recessed wound **copper motor coils**, dropping the green
+  `gun_light` cuff glow since green inside the motor didn't fit); replaced the clunky Doom muzzle block with the old
+  big-suit chaingun's open 4-barrel silhouette (`4 x 1.5x6x1.5` textured cylindrical gunmetal barrels + cold `1x5.5x1`
+  central spinning axle, `10 px` total -> `muzzleInsetPixels() = -1F`) wrapped in ONE single `5x6x5` `0.5 px`-cutout
+  outer layer (`rings_outer`) carrying both slim clamp rings (cool mid ring + heated front ring with orange-heated
+  corner bolts `H`, `1.0 px` protruding tips); matched the old big-suit overheat lighting (`tools/make-glowmasks.py`)
+  exactly — upper barrel shafts, mid ring, central axle and dark bores stay cold; Stage 1 (`heat`, 30%+) lights the
+  protruding tips orange (`ff6a1a`) -> yellow-hot (`ffc860`); Stage 2 (`heat_barrel`, 55%+) lights the front outer-layer
+  ring (and its bolts) warm orange with a 3-step alpha fade (`210 -> 150 -> 90`) right behind it.
 - The flamethrower (`TOOL=flame`, `model/art/frame_flame_art.py`, reworked 2026-11-22 in the 2D-texture + cutout
   outer-layer direction after the Halo 3 M7057/DP head, user picked `FLAME=halo_olive`, 4 cubes): ditched the wrist
   gas canister (the suit's central engine supplies the fuel) and built a distinct military olive-drab head: a compact

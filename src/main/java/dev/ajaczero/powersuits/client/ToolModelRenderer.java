@@ -55,7 +55,7 @@ final class ToolModelRenderer extends GeoObjectRenderer<ToolModelRenderer.Dummy,
     private static final Map<String, Identifier[]> GLOW_MASKS = Map.of(
             "drill", masks("drill", Map.of(ToolLight.LAMP_IDLE, "lamp_idle", ToolLight.LAMP_RUN, "lamp_run")),
             "chainsaw", masks("chainsaw", Map.of(ToolLight.LAMP_IDLE, "lamp_idle", ToolLight.LAMP_RUN, "lamp_run")),
-            "chaingun", masks("chaingun", Map.of(ToolLight.GUN_LIGHT, "gun_light", ToolLight.HEAT, "heat", ToolLight.HEAT_BARREL, "heat_barrel")),
+            "chaingun", masks("chaingun", Map.of(ToolLight.HEAT, "heat", ToolLight.HEAT_BARREL, "heat_barrel")),
             "flamethrower", masks("flamethrower", Map.of(ToolLight.PILOT, "pilot")),
             "rail_cannon", masks("rail_cannon", Map.of(
                     ToolLight.RAIL_FLOW_0, "rail_flow_0", ToolLight.RAIL_FLOW_1, "rail_flow_1",

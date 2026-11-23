@@ -942,12 +942,14 @@ def _tool_parts(TOOL):
                                os.environ.get('SAW_COWL', 'slate'), os.environ.get('SAW_BARREL', 'copper'),
                                os.environ.get('SAW_BAR', 'box'), os.environ.get('SAW_LOW', 'fins'),
                                os.environ.get('SAW_LOOK', 'rancher'), sleeve=TOOL_SLEEVE, head_scale=HEAD_SCALE)
-# The chaingun (frame_gun_art.py): picked 2026-11-14 (user: "this is the one"): GUN_LOOK=doom, GUN_BARRELS=4,
-# GUN_TOP=stack (the defaults); the other knobs are the rounds' drafts, kept to rebuild them.
+# The chaingun (frame_gun_art.py): reworked 2026-11-22 in the 2D-texture + cutout outer-layer style (GUN_LOOK=2d_copper):
+# warm-black stacked-drum 6x4x6 cutout cuff over recessed copper motor coils, 4 textured 1.5x6x1.5 barrels + cold central
+# axle + ONE 5x6x5 outer-layer clamp-ring cage (cool mid ring + heated front ring w/ orange bolts, 1 px tips, 10 px total),
+# exact old-suit 2-stage overheat lighting. Earlier rounds (doom, etc.) are kept as knobs.
   if TOOL == 'gun':
     import frame_gun_art as gun_art
     TOOL_PARTS = gun_art.build(6.25 + ARM_OUT, SOCKET_Y, os.environ.get('LAMP', 'dark'), os.environ.get('GUN', 'A'),
-                               os.environ.get('GUN_BODY', 'ref'), os.environ.get('GUN_LOOK', 'doom'),
+                               os.environ.get('GUN_BODY', 'ref'), os.environ.get('GUN_LOOK', '2d_copper'),
                                os.environ.get('GUN_BARRELS', '4'), os.environ.get('GUN_HANDLE', 'paint'),
                                os.environ.get('GUN_COUNTER') or os.environ.get('GUN_TOP', 'stack'), os.environ.get('GUN_DRUM', 'dark'),
                                float(os.environ.get('GUN_BODY_H', '4')), float(os.environ.get('GUN_BARREL_L', '5')),

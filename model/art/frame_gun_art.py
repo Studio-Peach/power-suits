@@ -1,12 +1,19 @@
 """The chaingun for the frame (frame_model.py, TOOL=gun): the third power tool brought over from the big suit.
 
-PICKED (2026-11-14, user: "this is the one"; updated 2026-11-20, user: `GUN_ACCENT=vents` + overheat glow): GUN_LOOK=doom
-(after the Doom 2016 chaingun, .scratch/gun/ref_doom.png), GUN_BARRELS=4, GUN_TOP=stack, GUN_ACCENT=vents, GUN_HEAT=dark:
-a warm-black 5 x 4 x 5 body, a lit top edge and two bolts a side over the band / groove pair three times with emerald vent
-slits in the two upper grooves (`gun_light`); four 1 x 1 px barrels on the spinning bone, no ring halfway; the stepped
-muzzle (collar, 4.5 x 2 block, chamfer, bolts, solid sides with no front vents so the barrel assembly heats uniformly) painted with reserved cold
-shades (`HEAT_SPEC`) that `tools/export-frame.py` turns into `power_frame_glow_heat` and `power_frame_glow_heat_barrel`.
-Built by doom_build() below; the sections before it are the earlier rounds (GUN, GUN_BODY), kept as knobs.
+PICKED (2026-11-22, reworked in the 2D-texture + 0.5 px cutout outer-layer system; user picked GUN_LOOK=2d_copper):
+- Base cuff (6x4x6 cutout outer shell over 5x4x5 inner core, y top-4..top): keeps the beloved warm-black stacked-drum
+  body with its two horizontal grooves cut out 0.5 px deep, revealing recessed wound copper motor coils (`inner='copper'`,
+  no green cuff glow);
+- Spinning 6 px barrel cluster (bone `bit`, y top-10..top-4, 10 px total matching rail cannon & flamethrower): four
+  1.5x6x1.5 textured cylindrical gunmetal barrels + cold 1x5.5x1 central spinning axle, wrapped in ONE single 5x6x5
+  0.5 px cutout outer layer (`rings_outer`) carrying the two slim clamp rings (cool mid ring + heated front ring with
+  orange-heated corner bolts `H`, 1.0 px protruding tips);
+- Overheat lighting matches the old big-suit chaingun (`tools/make-glowmasks.py`) exactly: upper barrel shafts, mid ring,
+  central axle, and black barrel bores stay 100% cold; Stage 1 (`heat`, 30%+) lights the protruding tips orange ->
+  yellow-hot; Stage 2 (`heat_barrel`, 55%+) lights the front outer-layer clamp ring (and its bolts) warm orange with a
+  3-step alpha fade (210 -> 150 -> 90) right behind it.
+
+Earlier picked design (2026-11-14 / 2026-11-20, GUN_LOOK=doom) and all earlier draft rounds are kept as knobs below.
 
 2026-11-14 (user: the chaingun next; reference .scratch/gun/ref.png, a matte black six-barrel minigun: a cylinder
 receiver under a flat top plate with a carry handle, a khaki drive motor and a bent feed pipe under it, a rear grip
@@ -143,6 +150,22 @@ def build(c, top, lamp='red', kind='A', body='ref', look='old', barrels='4', han
           body_h=4, barrel_l=5, accent='vents', heat='dark', sleeve=False, head_scale=False):
     """The chaingun's parts on an arm centred at x c (right side) whose socket is at y top: the receiver (bone 'tool')
     and the barrels with their rings under it (bone 'bit': they spin). look: GUN_LOOK (below), 'old' the first drafts."""
+    if look == '2d_doom': return build_2d_doom(c, top, heat)
+    if look == '2d_legion': return build_2d_legion(c, top, heat)
+    if look == '2d_vulcan': return build_2d_vulcan(c, top, heat)
+    if look == 'r2_oldsuit': return build_r2_classic(c, top, heat, rings='oldsuit', cuff='orig', ring_metal='dark')
+    if look == 'r2_2ring': return build_r2_classic(c, top, heat, rings='two', cuff='orig', ring_metal='dark')
+    if look == 'r2_2d_cuff': return build_r2_classic(c, top, heat, rings='oldsuit', cuff='cutout', ring_metal='brass')
+    if look == 'r2_2d_dark': return build_r2_classic(c, top, heat, rings='two', cuff='cutout', ring_metal='dark')
+    if look == 'r3_oldsuit_tight': return build_r2_classic(c, top, heat, rings='oldsuit', cuff='cutout', ring_metal='dark', heat_zone='head_tight')
+    if look == 'r3_oldsuit_soft': return build_r2_classic(c, top, heat, rings='oldsuit', cuff='cutout', ring_metal='dark', heat_zone='head_soft')
+    if look == 'r3_2ring_tight': return build_r2_classic(c, top, heat, rings='two', cuff='cutout', ring_metal='dark', heat_zone='head_tight')
+    if look == 'r3_orig_tight': return build_r2_classic(c, top, heat, rings='oldsuit', cuff='orig', ring_metal='dark', heat_zone='head_tight')
+    if look == 'r4_oldsuit': return build_r4_outer_rings(c, top, heat, rings='oldsuit')
+    if look == 'r4_2ring': return build_r4_outer_rings(c, top, heat, rings='two')
+    if look in ('2d_copper', 'r6_copper'): return build_r4_outer_rings(c, top, heat, rings='two', inner='copper')
+    if look == 'r6_copper_red': return build_r4_outer_rings(c, top, heat, rings='two', inner='copper_red', lit=(lamp != 'dark'))
+    if look == 'r6_redstone': return build_r4_outer_rings(c, top, heat, rings='two', inner='redstone', lit=(lamp != 'dark'))
     if look != 'old': return doom_build(c, top, look, barrels, handle, top_art, drum, body_h, barrel_l, accent, heat, sleeve, head_scale)
     metal = 'steel' if kind == 'C' else 'black'
     P = pal(metal, lamp)
@@ -382,22 +405,41 @@ BASE_ACCENTS = {
 # Reserved heat colours (all 1 step off K / x / B / C / D / E and unused elsewhere in power_frame.png):
 # letter -> (cold hex, mask name, glow hex, glow alpha)
 HEAT_SPEC = {
-    # Stage 1 ('heat', starts at 30%): barrel tips, bores, muzzle bottom rim & underside (uniform around the front)
-    '1': ('55585b', 'heat',        'ffc860', 255),  # barrel tip (row 9, 0.5 px past muzzle): yellow-hot
-    '2': ('050506', 'heat',        'ff9a30', 255),  # barrel bore (down face): orange-yellow
-    '3': ('0f0e0e', 'heat',        'ff6a1a', 225),  # muzzle recessed underside + bottom corners: hot orange
-    '$': ('1f1e1a', 'heat',        'ff8c2a', 230),  # muzzle bottom rim (row 3): bright orange
-    '&': ('2e2c28', 'heat',        'ff7a22', 220),  # muzzle underside outer rim
-    # Stage 2 ('heat_barrel', creeps back from 55%): muzzle sides & top, collar, exposed barrels (rows 3->0) uniformly
-    '6': ('555859', 'heat_barrel', 'ff6a1e', 220),  # barrel row 3 (above collar)
-    '7': ('55585c', 'heat_barrel', 'ff5a18', 170),  # barrel row 2
-    '8': ('555858', 'heat_barrel', 'ff4a14', 115),  # barrel row 1
-    '9': ('55595a', 'heat_barrel', 'e83c0f',  60),  # barrel row 0 (under base)
-    '!': ('2e2c2b', 'heat_barrel', 'ff6a1e', 210),  # muzzle_collar top/side + muzzle top inner ring + muzzle lower side
-    '@': ('1f1e1e', 'heat_barrel', 'f05818', 185),  # muzzle_collar shade + muzzle top centre + muzzle side shade edge
-    '#': ('2e2c29', 'heat_barrel', 'ff5e1a', 180),  # muzzle upper side wall (uniform across full width)
-    '%': ('45413e', 'heat_barrel', 'ff5a18', 155),  # muzzle top chamfer & lit side edge (no cold grey outline)
-    '^': ('0f0e0c', 'heat_barrel', 'e84c14', 165),  # muzzle_collar bottom corner
+    # Stage 1 ('heat', starts at 30%): barrel tips (exact old power_suit make-glowmasks.py colours: orange -> yellow-hot)
+    '1': ('55585b', 'heat',        'ffc860', 255),  # legacy doom barrel tip
+    '0': ('55585d', 'heat',        'ff6a1a', 255),  # legacy orange tip
+    # Cylindrical 3-column shaded barrel tips (cold shades 1 step off lit 62686d / mid 4e5459 / shade 3a4045)
+    '(': ('62686e', 'heat',        'ffd87a', 255),  # tip last row, lit edge: bright yellow-hot
+    ')': ('4e545a', 'heat',        'ffc860', 255),  # tip last row, mid: yellow-hot (exact old ffc860)
+    '[': ('3a4046', 'heat',        'f2b248', 255),  # tip last row, shade edge: warm yellow-hot
+    ']': ('62686f', 'heat',        'ff7c24', 255),  # tip 2nd row, lit edge: bright orange
+    '{': ('4e545b', 'heat',        'ff6a1a', 255),  # tip 2nd row, mid: orange (exact old ff6a1a)
+    '}': ('3a4047', 'heat',        'e85814', 255),  # tip 2nd row, shade edge: deep orange
+    '2': ('050506', 'heat',        'ff9a30', 255),  # (legacy doom bore)
+    '3': ('0f0e0e', 'heat',        'ff6a1a', 225),  # (legacy doom muzzle underside)
+    '$': ('1f1e1a', 'heat',        'ff8c2a', 230),  # (legacy doom muzzle rim)
+    '&': ('2e2c28', 'heat',        'ff7a22', 220),  # (legacy doom muzzle outer rim)
+    # Stage 2 ('heat_barrel', creeps back from 55%): exact old power_suit alphas (210 / 150 / 90) + front ring colours!
+    '6': ('555859', 'heat_barrel', 'ff6a1e', 210),  # legacy under front ring
+    '7': ('55585c', 'heat_barrel', 'ff5a18', 150),  # legacy 3rd row
+    '8': ('555858', 'heat_barrel', 'ff4a14',  90),  # legacy 4th row
+    '9': ('55595a', 'heat_barrel', 'e83c0f',  60),  # (legacy doom upper barrel)
+    # Cylindrical 3-column shaded Stage 2 barrel creep (exact old alphas: 210 under ring, 150 above ring, 90 faint)
+    'a': ('62686c', 'heat_barrel', 'ff7222', 210),  # under front ring, lit (alpha 210)
+    'c': ('4e5458', 'heat_barrel', 'ff6a1e', 210),  # under front ring, mid (alpha 210)
+    'e': ('3a4044', 'heat_barrel', 'e65214', 210),  # under front ring, shade (alpha 210)
+    'i': ('62676d', 'heat_barrel', 'ff621c', 150),  # 3rd row from tip, lit (alpha 150)
+    'j': ('4e5359', 'heat_barrel', 'ff5a18', 150),  # 3rd row from tip, mid (alpha 150)
+    'o': ('3a3f45', 'heat_barrel', 'e04612', 150),  # 3rd row from tip, shade (alpha 150)
+    'p': ('61686d', 'heat_barrel', 'ff5218',  90),  # 4th row from tip, lit (alpha 90)
+    'r': ('4d5459', 'heat_barrel', 'ff4a14',  90),  # 4th row from tip, mid (alpha 90)
+    's': ('394045', 'heat_barrel', 'e03a0e',  90),  # 4th row from tip, shade (alpha 90)
+    '!': ('2e2c2b', 'heat_barrel', 'f0601e', 255),  # front ring mid (old H('7d888f') -> f0601e)
+    '@': ('1f1e1e', 'heat_barrel', 'dd4c14', 255),  # front ring shade/corners (old H('6f797f') -> dd4c14)
+    '#': ('2e2c29', 'heat_barrel', 'ff5e1a', 180),  # (legacy)
+    '%': ('45413e', 'heat_barrel', 'ff7a2a', 255),  # front ring lit top bevel (old H('89939b') -> ff7a2a)
+    'H': ('8a857d', 'heat_barrel', 'ff9a42', 255),  # front ring steel bolts (1 step off h=8a857c; glow bright orange when hot!)
+    '^': ('0f0e0c', 'heat_barrel', 'e84c14', 165),  # (legacy)
 }
 
 # Export helper for tools/export-frame.py: mask -> {cold_rgb: glow_rgba}
@@ -409,9 +451,9 @@ HEAT_GLOW = {
 
 def _heat_pal(heat):
     out = {}
-    for ch, (cold, _, glow, a) in HEAT_SPEC.items():
+    for ch, (cold, mask, glow, a) in HEAT_SPEC.items():
         cr, cg, cb, _ = _c(cold)
-        if heat == 'hot':
+        if heat == 'hot' or (heat == 'warm' and mask == 'heat'):
             gr, gg, gb, _ = _c(glow)
             f = a / 255.0
             out[ch] = (round(cr * (1 - f) + gr * f), round(cg * (1 - f) + gg * f), round(cb * (1 - f) + gb * f), 255)
@@ -513,4 +555,676 @@ def doom_build(c, top, look, barrels='4', handle='paint', top_art='rust', drum='
                           {'south': lambda w, h: ['A' * (w - 1) + 'B'] + ['B' * (w - 1) + 'D'] * (h - 1),
                            'north': one('.'), 'east': side_e, 'west': side_w,
                            'up': lambda w, h: ['C' * w, 'A' * w], 'down': lambda w, h: ['D' * w, 'E' * w]}))
+    return parts
+
+
+# ======================================================================================================================
+# 2D-texture + 0.5 px cutout outer-layer redesign (2026-11-22, matching Rail Cannon 2d_hybrid_closed & Flamethrower
+# halo_olive). Three distinct concepts behind GUN_LOOK:
+# - 2d_doom:   warm-black tactical rotary (4 px cutout cuff w/ recessed emerald vents + 5.5 px 4-barrel rotor + 0.5 px
+#              cutout muzzle shroud over hot barrel cluster);
+# - 2d_legion: heavy shrouded mech autocannon (3.5 px charcoal/hazard-ochre cuff w/ recessed brass ammo feed + STATIC
+#              perforated 5 px cutout cooling jacket + 6 px spinning rotary barrels glowing through the cooling slots);
+# - 2d_vulcan: classic long-barrel Gatling minigun (compact 3 px blued-steel/brass cuff w/ brass feed + long 7 px
+#              exposed 4-barrel rotor held by a single 0.5 px cutout skeletal clamp-ring & muzzle-brake cage).
+# ======================================================================================================================
+
+def _ring_up(lit, top_c, side_c, shade):
+    """1-texel hollow top rim for a 0.5 px-proud outer cuff/shroud (inner area '.' so zero coplanar faces)."""
+    def fn(w, h):
+        g = [['.'] * w for _ in range(h)]
+        for i in range(w):
+            g[0][i] = lit if i < w - 1 else top_c
+            g[h - 1][i] = side_c if i == 0 else shade
+        for j in range(1, h - 1):
+            g[j][0] = top_c
+            g[j][w - 1] = shade
+        return g
+    return fn
+
+
+def _cuff_dn_10():
+    return ['dddddddddd'] + ['dkkkkkkkkd'] * 8 + ['dddddddddd']
+
+
+def _barrel_down_3(w, h):
+    return ['111', '121', '111']
+
+
+def _make_2d_base_pal(heat):
+    """Shared recessed gunmetal slate + copper + brass + emerald gun_light + HEAT_SPEC palette."""
+    return ({k: _c(v) for k, v in {
+        # Recessed neutral dark gunmetal slate core (never mixes bluish iron steel)
+        'n': '4b5258', 'm': '3b4246', 'k': '2f3437', 'd': '25292c', 'X': '16181a', 'x': '08090a',
+        # Rivets / machined bright steel
+        'g': 'cfcac0', 'h': '8a857c',
+        # Copper / brass ammo & internals
+        'b': 'e2c572', 'Z': 'b09044', 'z': '6e5826',
+        'f': 'e09868', 'Q': 'c07440', 'q': '7c4824',
+        # Emerald gun_light (matches export-tools.py GLOW_MAPS['gun_light'])
+        'W': 'c8ffc0', 'L': '3cf060', 'l': '1f8a34',
+        # Cold barrel steel
+        'K': '55585a',
+    }.items()} | _heat_pal(heat) | {'.': '.'})
+
+
+def build_2d_doom(c, top, heat='dark'):
+    """Draft A (2d_doom): Warm-black tactical rotary chaingun in 2D + 0.5 px cutout language (9.5 px total)."""
+    P = _make_2d_base_pal(heat) | {k: _c(v) for k, v in {
+        'A': '857e72', 'B': '45413d', 'C': '2e2c2a', 'D': '1f1e1c', 'E': '0f0e0d',
+    }.items()}
+    part = lambda name, box, faces, bone='tool': dict(drill.part(name, box, _paint(faces, P)), bone=bone)
+    none = lambda w, h: ['.' * w] * h
+    t = top - 4.0
+
+    # 1. Cuff inner (5x4x5, y top-4..top): recessed dark gunmetal core + deep emerald vent bars + side drive mechanics
+    in_fb = [
+        'dkkkkkkkkd',
+        'dmmmmmmmmd',
+        'dXlLWWLlXd',   # upper glowing emerald louver bar (0.5 px deep inside outer slot)
+        'dXmmmmmmXd',
+        'dkkkkkkkkd',
+        'dXlLWWLlXd',   # lower glowing emerald louver bar
+        'dXkkkkkkXd',
+        'dddddddddd',
+    ]
+    in_sd = [
+        'dkkkkkkkkd',
+        'dmmmmmmmmd',
+        'dXkxkxkxXd',
+        'dXlLWWLlXd',   # recessed emerald status vent matching front/back language
+        'dXkxkxkxXd',
+        'dkkkkkkkkd',
+        'dmmmmmmmmd',
+        'dddddddddd',
+    ]
+    # 2. Cuff outer (6x4x6, y top-4..top): warm-black armor sleeve w/ 0.5 px cutout vent windows & corner bolts
+    out_fb = [
+        'ABBBBBBBBBBA',
+        'BhCCCCCCCCgD',
+        'BCX......XCD',   # upper vent cutout exposing recessed emerald bar
+        'BCCCCCCCCCCD',
+        'BDDDDDDDDDDE',
+        'BCX......XCD',   # lower vent cutout exposing recessed emerald bar
+        'BhCCCCCCCCgD',
+        'EEEEEEEEEEEE',
+    ]
+    out_sd = [
+        'ABBBBBBBBBBA',
+        'BhCCCCCCCCgD',
+        'BCCCCCCCCCCD',
+        'BCX......XCD',   # side drive cutout
+        'BCX......XCD',
+        'BDDDDDDDDDDE',
+        'BhCCCCCCCCgD',
+        'EEEEEEEEEEEE',
+    ]
+    parts = [
+        part('cuff_inner', ((c - 2.5, t, -2.5), (c + 2.5, top, 2.5)), {
+            'north': in_fb, 'south': in_fb, 'east': in_sd, 'west': in_sd,
+            'up': none, 'down': _cuff_dn_10(),
+        }),
+        part('cuff_outer', ((c - 3.0, t, -3.0), (c + 3.0, top, 3.0)), {
+            'north': out_fb, 'south': out_fb, 'east': out_sd, 'west': out_sd,
+            'up': _ring_up('A', 'B', 'C', 'D'), 'down': none,
+        }),
+    ]
+
+    # 3. Spinning 4-barrel cluster (4 x 1.5x5.5x1.5 at +-1.25, y top-9.5..top-4.0 -> 3x11 sides, bone 'bit')
+    # Rows 0..4 exposed between cuff and muzzle shroud; 5..9 inside muzzle shroud (glow through slots); 10 = hot tip!
+    bar_side = lambda w, h: ['9' * w, '8' * w, '7' * w, '6' * w, '6' * w,
+                             '!' * w, '!' * w, '!' * w, '!' * w, '$' * w, '1' * w]
+    bfaces = {'north': bar_side, 'south': bar_side, 'east': bar_side, 'west': bar_side,
+              'up': none, 'down': _barrel_down_3}
+    for k, (dx, dz) in enumerate(((-1.25, -1.25), (1.25, -1.25), (1.25, 1.25), (-1.25, 1.25))):
+        parts.append(part(f'barrel{k}', ((c + dx - 0.75, top - 9.5, dz - 0.75),
+                                         (c + dx + 0.75, t, dz + 0.75)), bfaces, 'bit'))
+
+    # 4. Recessed central muzzle hub (3x2x3 at +-1.5, y top-9.0..top-7.0, zero coplanar w/ barrels)
+    hub_sd = lambda w, h: ['@' * w] + ['!' * w] * (h - 2) + ['3' * w]
+    hub_dn = lambda w, h: ['&' * w] + ['&' + '3' * (w - 2) + '&'] * (h - 2) + ['&' * w]
+    parts.append(part('muzzle_hub', ((c - 1.5, top - 9.0, -1.5), (c + 1.5, top - 7.0, 1.5)), {
+        'north': hub_sd, 'south': hub_sd, 'east': hub_sd, 'west': hub_sd,
+        'up': lambda w, h: ['!' * w] * h, 'down': hub_dn,
+    }, 'bit'))
+
+    # 5. 0.5 px cutout muzzle shroud (5x2.5x5 at +-2.5, y top-9.0..top-6.5 -> 10x5 sides, bone 'bit')
+    # Closed corners, clean top collar ring, interior cooling cutouts showing glowing barrels inside!
+    muz_sd = [
+        '@%%%%%%%%@',
+        '%h#....#h@',
+        '%!#....#!@',
+        '%!!!!!!!!@',
+        '3$$$$$$$$3',
+    ]
+    parts.append(part('muzzle_outer', ((c - 2.5, top - 9.0, -2.5), (c + 2.5, top - 6.5, 2.5)), {
+        'north': muz_sd, 'south': muz_sd, 'east': muz_sd, 'west': muz_sd,
+        'up': _ring_up('%', '%', '!', '@'), 'down': none,
+    }, 'bit'))
+    return parts
+
+
+def build_2d_legion(c, top, heat='dark'):
+    """Draft B (2d_legion): Heavy mech shrouded rotary autocannon (9.5 px total).
+    Static 0.5 px-cutout perforated cooling jacket with hazard-ochre band wrapping spinning inner barrels, plus a
+    recessed brass ammo feed window in the 3.5 px gunmetal cuff."""
+    P = _make_2d_base_pal(heat) | {k: _c(v) for k, v in {
+        'A': '7b828a', 'B': '4c5259', 'C': '33383e', 'D': '22262b', 'E': '14171a',
+        'Y': 'e6a82e', 'y': 'b87e1a', 'o': '784f0e',
+    }.items()}
+    part = lambda name, box, faces, bone='tool': dict(drill.part(name, box, _paint(faces, P)), bone=bone)
+    none = lambda w, h: ['.' * w] * h
+    t = top - 3.5
+
+    # 1. Cuff inner (5x3.5x5, y top-3.5..top -> 10x7 sides): crisp separated brass ammo cartridges on outer side (east)
+    in_ammo = [
+        'dkkkkkkkkd',
+        'dxZbbbfQxd',   # cartridge 1: dark link, bright brass casing, copper bullet tip
+        'dxxxxxxxxd',   # crisp dark separator between rounds so each shell reads distinctly
+        'dxZbbbfQxd',   # cartridge 2
+        'dxxxxxxxxd',
+        'dxZbbbfQxd',   # cartridge 3
+        'dddddddddd',
+    ]
+    in_fb = [
+        'dkkkkkkkkd',
+        'dmmmmmmmmd',
+        'dXkkkkkkXd',
+        'dXlLWWLlXd',   # recessed glowing emerald ready bar
+        'dXkkkkkkXd',
+        'dmmmmmmmmd',
+        'dddddddddd',
+    ]
+    in_west = [
+        'dkkkkkkkkd',
+        'dmmmmmmmmd',
+        'dXkxkxkxXd',
+        'dXmmmmmmXd',
+        'dXkxkxkxXd',
+        'dmmmmmmmmd',
+        'dddddddddd',
+    ]
+    # 2. Cuff outer (6x3.5x6, y top-3.5..top -> 12x7 sides): dark tactical gunmetal + ochre accents + crisp cutouts
+    out_east = [
+        'ABBBBBBBBBBA',
+        'BCX......XCD',   # cutout feed port framing the 3 separated brass cartridges
+        'BCX......XCD',
+        'BCX......XCD',
+        'BCX......XCD',
+        'BCX......XCD',
+        'EEEEEEEEEEEE',
+    ]
+    out_fb = [
+        'ABBBBBBBBBBA',
+        'BhYyyyyyyYgD',   # industrial hazard-ochre top collar bar
+        'BCCCCCCCCCCD',
+        'BCCX....XCCD',   # centered cutout revealing recessed emerald ready bar
+        'BCCCCCCCCCCD',
+        'BhCCCCCCCCgD',
+        'EEEEEEEEEEEE',
+    ]
+    out_west = [
+        'ABBBBBBBBBBA',
+        'BhYyyyyyyYgD',
+        'BCCX....XCCD',
+        'BCCX....XCCD',
+        'BCCX....XCCD',
+        'BhCCCCCCCCgD',
+        'EEEEEEEEEEEE',
+    ]
+    parts = [
+        part('cuff_inner', ((c - 2.5, t, -2.5), (c + 2.5, top, 2.5)), {
+            'north': in_fb, 'south': in_fb, 'east': in_ammo, 'west': in_west,
+            'up': none, 'down': _cuff_dn_10(),
+        }),
+        part('cuff_outer', ((c - 3.0, t, -3.0), (c + 3.0, top, 3.0)), {
+            'north': out_fb, 'south': out_fb, 'east': out_east, 'west': out_west,
+            'up': _ring_up('A', 'B', 'C', 'D'), 'down': none,
+        }),
+    ]
+
+    # 3. STATIC perforated 2D-cutout cooling jacket (5x5x5, y top-8.5..top-3.5 -> 10x10 sides, bone 'tool')
+    # Wide stacked cooling windows let the player see the spinning barrels & fiery overheat glow inside!
+    shroud_side = [
+        'ABBBBBBBBA',
+        'BX......XD',   # upper cooling slot (2 texels tall)
+        'BX......XD',
+        'BhCCCCCCgD',   # mid structural rib w/ corner rivets
+        'BX......XD',   # lower cooling slot (2 texels tall)
+        'BX......XD',
+        'BCCCCCCCCD',
+        'oYYyYYyYYo',   # signature industrial hazard-ochre band near muzzle
+        'oDyyDDyyDo',   # subtle dark hazard chevron ticks
+        'EDDDDDDDDE',   # soot-rimmed muzzle lip (stops 1.0 px above barrel tips)
+    ]
+    parts.append(part('shroud_outer', ((c - 2.5, top - 8.5, -2.5), (c + 2.5, t, 2.5)), {
+        'north': shroud_side, 'south': shroud_side, 'east': shroud_side, 'west': shroud_side,
+        'up': none, 'down': none,
+    }, 'tool'))
+
+    # 4. Spinning 4-barrel cluster (4 x 1.5x6.0x1.5 at +-1.25, y top-9.5..top-3.5 -> 3x12 sides, bone 'bit')
+    # Protrudes 1.0 px out the front of the static jacket so rotation & glowing yellow tips are unmistakable!
+    bar_side = lambda w, h: ['9' * w, '8' * w, '8' * w, '7' * w, '7' * w, '6' * w,
+                             '6' * w, '!' * w, '!' * w, '$' * w, '1' * w, '1' * w]
+    bfaces = {'north': bar_side, 'south': bar_side, 'east': bar_side, 'west': bar_side,
+              'up': none, 'down': _barrel_down_3}
+    for k, (dx, dz) in enumerate(((-1.25, -1.25), (1.25, -1.25), (1.25, 1.25), (-1.25, 1.25))):
+        parts.append(part(f'barrel{k}', ((c + dx - 0.75, top - 9.5, dz - 0.75),
+                                         (c + dx + 0.75, t, dz + 0.75)), bfaces, 'bit'))
+
+    # 5. Inner rotary muzzle binder hub (3x1.5x3 at +-1.5, y top-9.0..top-7.5, bone 'bit', zero coplanar w/ barrels)
+    hub_sd = lambda w, h: ['@' * w, '!' * w, '3' * w]
+    hub_dn = lambda w, h: ['&' * w] + ['&' + '3' * (w - 2) + '&'] * (h - 2) + ['&' * w]
+    parts.append(part('muzzle_binder', ((c - 1.5, top - 9.0, -1.5), (c + 1.5, top - 7.5, 1.5)), {
+        'north': hub_sd, 'south': hub_sd, 'east': hub_sd, 'west': hub_sd,
+        'up': lambda w, h: ['!' * w] * h, 'down': hub_dn,
+    }, 'bit'))
+    return parts
+
+
+def build_2d_vulcan(c, top, heat='dark'):
+    """Draft C (2d_vulcan): Classic long-barrel Gatling minigun (10.0 px total: compact 3 px blued-steel/brass cuff +
+    7 px exposed spinning 4-barrel rotor held by a single 0.5 px cutout skeletal clamp-ring & muzzle-brake cage)."""
+    P = _make_2d_base_pal(heat) | {k: _c(v) for k, v in {
+        'A': '7d8b99', 'B': '4c5764', 'C': '313942', 'D': '1e242b', 'E': '11151a',
+    }.items()}
+    part = lambda name, box, faces, bone='tool': dict(drill.part(name, box, _paint(faces, P)), bone=bone)
+    none = lambda w, h: ['.' * w] * h
+    t = top - 3.0
+
+    # 1. Compact 3 px cuff inner (5x3x5, y top-3..top -> 10x6 sides): 2 crisp separated brass cartridges on east
+    in_ammo = [
+        'dkkkkkkkkd',
+        'dxZbbbfQxd',   # cartridge 1: link + brass case + copper tip
+        'dxxxxxxxxd',   # dark separator
+        'dxZbbbfQxd',   # cartridge 2
+        'dmmmmmmmmd',
+        'dddddddddd',
+    ]
+    in_fb = [
+        'dkkkkkkkkd',
+        'dmmmmmmmmd',
+        'dXlLWWLlXd',
+        'dXlLWWLlXd',
+        'dmmmmmmmmd',
+        'dddddddddd',
+    ]
+    in_west = [
+        'dkkkkkkkkd',
+        'dXkxkxkxXd',
+        'dXmmmmmmXd',
+        'dXkxkxkxXd',
+        'dmmmmmmmmd',
+        'dddddddddd',
+    ]
+    # 2. Compact 3 px cuff outer (6x3x6, y top-3..top -> 12x6 sides): blued-steel armor + warm brass lower drive band
+    out_east = [
+        'ABBBBBBBBBBA',
+        'BCX......XCD',   # cutout framing brass cartridge feed
+        'BCX......XCD',
+        'BCX......XCD',
+        'zZbbbbbbbbZz',   # tarnished brass drive collar band
+        'EEEEEEEEEEEE',
+    ]
+    out_fb = [
+        'ABBBBBBBBBBA',
+        'BhCCCCCCCCgD',
+        'BCCX....XCCD',   # centered emerald status bar cutout
+        'BCCX....XCCD',
+        'zZbbbbbbbbZz',   # matching brass collar band all round
+        'EEEEEEEEEEEE',
+    ]
+    out_west = [
+        'ABBBBBBBBBBA',
+        'BhCCCCCCCCgD',
+        'BCCX....XCCD',
+        'BCCX....XCCD',
+        'zZbbbbbbbbZz',
+        'EEEEEEEEEEEE',
+    ]
+    parts = [
+        part('cuff_inner', ((c - 2.5, t, -2.5), (c + 2.5, top, 2.5)), {
+           'north': in_fb, 'south': in_fb, 'east': in_ammo, 'west': in_west,
+            'up': none, 'down': _cuff_dn_10(),
+        }),
+        part('cuff_outer', ((c - 3.0, t, -3.0), (c + 3.0, top, 3.0)), {
+            'north': out_fb, 'south': out_fb, 'east': out_east, 'west': out_west,
+            'up': _ring_up('A', 'B', 'C', 'D'), 'down': none,
+        }),
+    ]
+
+    # 3. Long 7 px spinning 4-barrel Gatling rotor (4 x 1.5x7.0x1.5 at +-1.25, y top-10.0..top-3.0 -> 3x14 sides)
+    bar_side = lambda w, h: ['9' * w, '9' * w, '8' * w, '8' * w, '8' * w, '7' * w, '7' * w,
+                             '7' * w, '6' * w, '6' * w, '!' * w, '!' * w, '$' * w, '1' * w]
+    bfaces = {'north': bar_side, 'south': bar_side, 'east': bar_side, 'west': bar_side,
+              'up': none, 'down': _barrel_down_3}
+    for k, (dx, dz) in enumerate(((-1.25, -1.25), (1.25, -1.25), (1.25, 1.25), (-1.25, 1.25))):
+        parts.append(part(f'barrel{k}', ((c + dx - 0.75, top - 10.0, dz - 0.75),
+                                         (c + dx + 0.75, t, dz + 0.75)), bfaces, 'bit'))
+
+    # 4. Single 0.5 px cutout skeletal clamp cage (5x6.5x5, y top-9.5..top-3.0 -> 10x13 sides, bone 'bit')
+    # Alpha-0 leaves open air along the upper & lower barrel shafts, carving just a mid brass-banded clamp ring
+    # (rows 5..6, matching mid_spindle) and a heavy slotted muzzle brake (rows 10..12, matching muzzle_hub)!
+    cage_sd = [
+        '..........',
+        '..........',
+        '..........',
+        '..........',
+        '..........',
+        'zZbbbbbbZz',   # mid-shaft brass-banded barrel clamp ring (rows 5..6 -> y top-6.5..top-5.5)
+        'E@ZZZZZZ@E',
+        '..........',
+        '..........',
+        '..........',
+        '@%%%%%%%%@',   # heavy slotted Gatling muzzle brake (rows 10..12 -> y top-9.5..top-8.0)
+        '%h#....#h@',
+        '3$$$$$$$$3',
+    ]
+    parts.append(part('cage_outer', ((c - 2.5, top - 9.5, -2.5), (c + 2.5, t, 2.5)), {
+        'north': cage_sd, 'south': cage_sd, 'east': cage_sd, 'west': cage_sd,
+        'up': none, 'down': none,
+    }, 'bit'))
+
+    # 5. Inner cores behind the two skeletal rings (+-1.5, zero coplanar w/ barrels)
+    hub_sd = lambda w, h: ['@' * w] + ['!' * w] * max(0, h - 2) + ['3' * w]
+    hub_dn = lambda w, h: ['&' * w] + ['&' + '3' * (w - 2) + '&'] * (h - 2) + ['&' * w]
+    parts.append(part('mid_spindle', ((c - 1.5, top - 6.5, -1.5), (c + 1.5, top - 5.5, 1.5)), {
+        'north': lambda w, h: ['!' * w] * h, 'south': lambda w, h: ['!' * w] * h,
+        'east': lambda w, h: ['!' * w] * h, 'west': lambda w, h: ['!' * w] * h,
+        'up': lambda w, h: ['@' * w] * h, 'down': lambda w, h: ['@' * w] * h,
+    }, 'bit'))
+    parts.append(part('muzzle_hub', ((c - 1.5, top - 9.5, -1.5), (c + 1.5, top - 8.0, 1.5)), {
+        'north': hub_sd, 'south': hub_sd, 'east': hub_sd, 'west': hub_sd,
+        'up': lambda w, h: ['!' * w] * h, 'down': hub_dn,
+    }, 'bit'))
+    return parts
+
+
+def build_r2_classic(c, top, heat='dark', rings='oldsuit', cuff='orig', ring_metal='dark', heat_zone='full'):
+    """Round 2/3 (2026-11-22, user: keep the original doom body, replace the chunky muzzle block with slim clamp rings
+    like vulcan + the old big-suit chaingun's exposed-barrel silhouette: 4 long barrels, central axle, thin rings,
+    protruding hot barrel tips; Round 3: tone overheat down to just the head so the barrel shafts stay cold).
+    Total length 10.0 px (4.0 px body + 6.0 px spinning barrel cluster).
+    - rings='oldsuit': thin 0.5 px rear collar under body + long exposed barrels + slim 4.5x1.0x4.5 front ring +
+                       1.5 px protruding barrel tips (matches model/power_suit.bbmodel chaingun_plate_back/front);
+    - rings='two':     slim mid clamp ring (0.5 px) + slim front clamp ring (1.0 px) + 1.0 px protruding barrel tips;
+    - cuff='orig':     the exact original 6x4x6 warm-black stacked-drum body w/ emerald vents (GUN_ACCENT=vents);
+    - cuff='cutout':   the exact same warm-black body pattern with 0.5 px cutout grooves recessing the emerald vents;
+    - ring_metal='dark' (warm-black) | 'brass' (vulcan tarnished brass trim on cool rear/mid ring);
+    - heat_zone='full' (R2) | 'head_tight' (tips + front ring only; shafts 100% cold) | 'head_soft' (+1 px fade)."""
+    P = _make_2d_base_pal(heat) | {k: _c(v) for k, v in {
+        'A': '857e72', 'B': '45413d', 'C': '2e2c2a', 'D': '1f1e1c', 'E': '0f0e0d',
+    }.items()}
+    part = lambda name, box, faces, bone='tool': dict(drill.part(name, box, _paint(faces, P)), bone=bone)
+    none = lambda w, h: ['.' * w] * h
+    t = top - 4.0
+
+    # 1. Body (4.0 px tall, y top-4..top)
+    if cuff == 'orig':
+        orig_side = [
+            'DBBBBBBBBBBD',
+            'BhCCCCCCCChD',
+            'DCBBBCCCCCDE',
+            'EDElLLLLlEDE',
+            'DCBBBCCCCCDE',
+            'EDElLLLLlEDE',
+            'DCBBBCCCCCDE',
+            'EDDDDDDDDDDE',
+        ]
+        orig_up = ['B' * 12] + ['B' + 'D' * 10 + 'B'] * 10 + ['B' * 12]
+        orig_dn = ['D' * 12] + ['D' + 'E' * 10 + 'D'] * 10 + ['D' * 12]
+        parts = [part('body', ((c - 3.0, t, -3.0), (c + 3.0, top, 3.0)), {
+            'north': orig_side, 'south': orig_side, 'east': orig_side, 'west': orig_side,
+            'up': orig_up, 'down': orig_dn,
+        })]
+    else:
+        # Exact original warm-black stacked-drum body with ONLY the two emerald vent grooves cut out 0.5 px deep!
+        # Uses exact same rich emerald 'L' as the original body (no white hot spot).
+        in_side = [
+            'DEEEEEEEED',
+            'DCCCCCCCCD',
+            'DCCCCCCCCD',
+            'DElLLLLlED',   # recessed upper emerald vent bar (0.5 px deep, exact original emerald shade)
+            'DCCCCCCCCD',
+            'DElLLLLlED',   # recessed lower emerald vent bar (0.5 px deep)
+            'DCCCCCCCCD',
+            'EEEEEEEEEE',
+        ]
+        out_side = [
+            'DBBBBBBBBBBD',
+            'BhCCCCCCCChD',
+            'DCBBBCCCCCDE',
+            'EDE......EDE',   # exact same row 3 groove, alpha-0 cutout exposing recessed emerald bar!
+            'DCBBBCCCCCDE',
+            'EDE......EDE',   # exact same row 5 groove, alpha-0 cutout exposing recessed emerald bar!
+            'DCBBBCCCCCDE',
+            'EDDDDDDDDDDE',
+        ]
+        parts = [
+            part('cuff_inner', ((c - 2.5, t, -2.5), (c + 2.5, top, 2.5)), {
+                'north': in_side, 'south': in_side, 'east': in_side, 'west': in_side,
+                'up': none, 'down': ['D' * 10] + ['D' + 'E' * 8 + 'D'] * 8 + ['D' * 10],
+            }),
+            part('cuff_outer', ((c - 3.0, t, -3.0), (c + 3.0, top, 3.0)), {
+                'north': out_side, 'south': out_side, 'east': out_side, 'west': out_side,
+                'up': _ring_up('B', 'B', 'C', 'D'), 'down': none,
+            }),
+        ]
+
+    # 2. Spinning 6.0 px 4-barrel cluster (4 x 1.5x6.0x1.5 at +-1.25, y top-10.0..top-4.0 -> 3x12 sides, bone 'bit')
+    if heat_zone == 'head_tight':
+        # Strictly head-only heat: the entire barrel shaft behind the front ring stays 100% cold gunmetal ('K')!
+        if rings == 'oldsuit':
+            # Front ring covers rows 7..8; protruding tips are rows 9..11 (fade warm orange -> yellow-hot tip!)
+            bar_rows = ['K'] * 7 + ['K', 'K', '6', '$', '1']
+        else:
+            # Front ring covers rows 8..9; protruding tips are rows 10..11
+            bar_rows = ['K'] * 8 + ['K', 'K', '$', '1']
+    elif heat_zone == 'head_soft':
+        # Head + subtle 1 px warm bleed right behind the front ring; rest of shaft stays 100% cold gunmetal ('K').
+        if rings == 'oldsuit':
+            bar_rows = ['K'] * 5 + ['9', '8', '7', '6', '6', '$', '1']
+        else:
+            bar_rows = ['K'] * 6 + ['9', '8', '7', '6', '$', '1']
+    else:
+        if rings == 'oldsuit':
+            bar_rows = ['9', '9', '8', '8', '7', '7', '6', '6', '!', '$', '1', '1']
+        else:
+            bar_rows = ['9', '9', '8', '8', '7', '7', '6', '6', '!', '!', '$', '1']
+    bar_side = lambda w, h: [ch * w for ch in bar_rows[:h]]
+    bfaces = {'north': bar_side, 'south': bar_side, 'east': bar_side, 'west': bar_side,
+              'up': none, 'down': _barrel_down_3}
+    for k, (dx, dz) in enumerate(((-1.25, -1.25), (1.25, -1.25), (1.25, 1.25), (-1.25, 1.25))):
+        parts.append(part(f'barrel{k}', ((c + dx - 0.75, top - 10.0, dz - 0.75),
+                                         (c + dx + 0.75, t, dz + 0.75)), bfaces, 'bit'))
+
+    # 3. Slim central spinning axle between the 4 barrels (1.0 x 5.5 x 1.0 at +-0.5, stopping 0.5 px shy of tips)
+    if heat_zone in ('head_tight', 'head_soft'):
+        ax_sd = lambda w, h: ['D' * w] * h
+        ax_dn = lambda w, h: ['3' * w] * h
+    else:
+        ax_sd = lambda w, h: ['D' * w] * max(0, h - 4) + ['6' * w, '!' * w, '!' * w, '@' * w][:h]
+        ax_dn = lambda w, h: ['3' * w] * h
+    parts.append(part('axle', ((c - 0.5, top - 9.5, -0.5), (c + 0.5, t, 0.5)), {
+        'north': ax_sd, 'south': ax_sd, 'east': ax_sd, 'west': ax_sd,
+        'up': none, 'down': ax_dn,
+    }, 'bit'))
+
+    # 4. Slim 4.5x4.5 clamp rings (0.25 px proud of the 4.0x4.0 barrel cluster -> 9 texels wide, clean & lightweight!)
+    # Front clamp ring: heats up with the head (Stage 2 on upper bevel/sides, Stage 1 hot orange on bottom rim/underside)
+    if heat_zone == 'head_tight':
+        # Subtle warm-orange front ring (cool dark top rim so heat stays strictly toward the muzzle tip!)
+        front_side = lambda w, h: ['D' + 'B' * (w - 2) + 'D', '@' + '!' * (w - 2) + '@']
+        front_up = lambda w, h: [''.join('B' if i in (0, w - 1) or j in (0, h - 1) else 'D' for i in range(w)) for j in range(h)]
+        front_dn = lambda w, h: [''.join('&' if i in (0, w - 1) or j in (0, h - 1) else '3' for i in range(w)) for j in range(h)]
+    else:
+        front_side = lambda w, h: (['@' + '%' * (w - 2) + '@', '3' + '$' * (w - 2) + '3'] if h == 2 else
+                                   ['@' + '%' * (w - 2) + '@'])
+        front_up = lambda w, h: [''.join('%' if i in (0, w - 1) or j in (0, h - 1) else '@' for i in range(w)) for j in range(h)]
+        front_dn = lambda w, h: [''.join('&' if i in (0, w - 1) or j in (0, h - 1) else '3' for i in range(w)) for j in range(h)]
+
+    # Cool rear / mid clamp ring (never glows hot; dark warm-black or vulcan tarnished brass)
+    if ring_metal == 'brass':
+        cool_side = lambda w, h: ['z' + 'b' * (w - 2) + 'z'] + ['E' + 'Z' * (w - 2) + 'E'] * (h - 1)
+        cool_cap = lambda w, h: [''.join('b' if i in (0, w - 1) or j in (0, h - 1) else 'Z' for i in range(w)) for j in range(h)]
+    else:
+        cool_side = lambda w, h: ['D' + 'B' * (w - 2) + 'D'] + ['E' + 'C' * (w - 2) + 'E'] * (h - 1)
+        cool_cap = lambda w, h: [''.join('B' if i in (0, w - 1) or j in (0, h - 1) else 'D' for i in range(w)) for j in range(h)]
+
+    if rings == 'oldsuit':
+        # Rear clamp ring (4.5 x 0.5 x 4.5, tucked right under body: old chaingun_plate_back)
+        parts.append(part('ring_back', ((c - 2.25, t - 0.5, -2.25), (c + 2.25, t, 2.25)), {
+            'north': cool_side, 'south': cool_side, 'east': cool_side, 'west': cool_side,
+            'up': none, 'down': cool_cap,
+        }, 'bit'))
+        # Slim front clamp ring (4.5 x 1.0 x 4.5, 1.5 px back from tips: old chaingun_plate_front!)
+        parts.append(part('ring_front', ((c - 2.25, top - 8.5, -2.25), (c + 2.25, top - 7.5, 2.25)), {
+            'north': front_side, 'south': front_side, 'east': front_side, 'west': front_side,
+            'up': front_up, 'down': front_dn,
+        }, 'bit'))
+    else:
+        # Two slim rings along the shaft (mid 0.5 px + front 1.0 px, 1.0 px back from tips)
+        parts.append(part('ring_mid', ((c - 2.25, top - 6.5, -2.25), (c + 2.25, top - 6.0, 2.25)), {
+            'north': cool_side, 'south': cool_side, 'east': cool_side, 'west': cool_side,
+            'up': cool_cap, 'down': cool_cap,
+        }, 'bit'))
+        parts.append(part('ring_front', ((c - 2.25, top - 9.0, -2.25), (c + 2.25, top - 8.0, 2.25)), {
+            'north': front_side, 'south': front_side, 'east': front_side, 'west': front_side,
+            'up': front_up, 'down': front_dn,
+        }, 'bit'))
+    return parts
+
+
+def build_r4_outer_rings(c, top, heat='dark', rings='two', inner='copper_red', lit=False):
+    """Round 4/5/6 (2026-11-22, user picked B `2ring`, heated orange front-ring bolts, and recessed copper / redstone
+    inner cuff replacing the green vents):
+    - Original warm-black stacked-drum cuff (5x4x5 inner + 6x4x6 cutout outer with 0.5 px recessed horizontal grooves);
+      inner: 'emerald' (R4/R5) | 'copper' (pure copper motor windings) | 'copper_red' (copper coils + redstone trace) |
+             'redstone' (dark stator + glowing redstone circuit traces); lit=True previews powered redstone glow;
+    - 4 spinning 1.5x6.0x1.5 textured cylindrical barrels + cold central 1.0x5.5x1.0 axle (bone 'bit');
+    - ONE single 5.0x6.0x5.0 (0.5 px proud) cutout outer layer (`rings_outer`, bone 'bit') painting the cool mid ring
+      and heated front ring (including heated orange corner bolts 'H');
+    - Exact old-suit heat lighting (tools/make-glowmasks.py)."""
+    # Reserved dark redstone shades (use R/S/T so they never collide with HEAT_SPEC letters!)
+    red_pal = ({'R': 'ff5a3a', 'S': 'e02010', 'T': '941008'} if lit else
+               {'R': '6e2018', 'S': '521610', 'T': '360d0a'})
+    P = _make_2d_base_pal(heat) | {k: _c(v) for k, v in ({
+        'A': '857e72', 'B': '45413d', 'C': '2e2c2a', 'D': '1f1e1c', 'E': '0f0e0d',
+        # Machined cylindrical gunmetal barrel ramp (lit / glint / mid / groove / shade)
+        'G': '747b82', 'U': '62686d', 'M': '4e5459', 'N': '43494e', 'V': '3a4045', 'v': '2c3136',
+        # Warm copper motor winding ramp (bright highlight -> deep coil shade)
+        'F': 'f0b07a',
+    } | red_pal).items()}
+    part = lambda name, box, faces, bone='tool': dict(drill.part(name, box, _paint(faces, P)), bone=bone)
+    none = lambda w, h: ['.' * w] * h
+    t = top - 4.0
+
+    # 1. Original warm-black stacked-drum body w/ 0.5 px recessed horizontal grooves (cuff_inner + cuff_outer)
+    # Note: cuff_outer cuts cols 3..8 (out of 0..11), aligning straight onto cuff_inner cols 2..7 (out of 0..9).
+    if inner == 'copper':
+        # Pure machined copper motor windings (3 crisp wound copper coils per groove, symmetric across cols 2..7)
+        slot_top = 'DEfQFFQfED'
+        slot_bot = 'DEqFffFqED'
+        mid_sep  = 'DCqQQQQqCD'
+    elif inner == 'copper_red':
+        # Copper motor coils flanking a recessed glowing redstone drive core in the center of each groove
+        slot_top = 'DEfQRRQfED'
+        slot_bot = 'DEQfSSfQED'
+        mid_sep  = 'DCqqTTqqCD'
+    elif inner == 'redstone':
+        # Dark slate circuit channel with glowing crimson redstone traces & bright redstone nodes
+        slot_top = 'DETSrrSTED'.replace('r', 'R')
+        slot_bot = 'DESRTTRSED'
+        mid_sep  = 'DCkkTTkkCD'
+    else:
+        slot_top = 'DElLLLLlED'
+        slot_bot = 'DElLLLLlED'
+        mid_sep  = 'DCCCCCCCCD'
+
+    in_side = [
+        'DEEEEEEEED',
+        'DCCCCCCCCD',
+        'DCCCCCCCCD',
+        slot_top,       # row 3: visible through upper 0.5 px cutout groove
+        mid_sep,        # row 4: recessed mechanical rib behind divider
+        slot_bot,       # row 5: visible through lower 0.5 px cutout groove
+        'DCCCCCCCCD',
+        'EEEEEEEEEE',
+    ]
+    out_side = [
+        'DBBBBBBBBBBD',
+        'BhCCCCCCCChD',
+        'DCBBBCCCCCDE',
+        'EDE......EDE',
+        'DCBBBCCCCCDE',
+        'EDE......EDE',
+        'DCBBBCCCCCDE',
+        'EDDDDDDDDDDE',
+    ]
+    parts = [
+        part('cuff_inner', ((c - 2.5, t, -2.5), (c + 2.5, top, 2.5)), {
+            'north': in_side, 'south': in_side, 'east': in_side, 'west': in_side,
+            'up': none, 'down': ['D' * 10] + ['D' + 'E' * 8 + 'D'] * 8 + ['D' * 10],
+        }),
+        part('cuff_outer', ((c - 3.0, t, -3.0), (c + 3.0, top, 3.0)), {
+            'north': out_side, 'south': out_side, 'east': out_side, 'west': out_side,
+            'up': _ring_up('B', 'B', 'C', 'D'), 'down': none,
+        }),
+    ]
+
+    # 2. Spinning 6.0 px 4-barrel cluster (4 x 1.5x6.0x1.5 at +-1.25, y top-10.0..top-4.0 -> 3x12 sides, bone 'bit')
+    if rings == 'oldsuit':
+        bar_rows = ['UNV', 'GMV', 'UMV', 'NNv', 'GMV', 'prs', 'ijo', 'ace', 'ace', ']{}', ']{}', '()[']
+        ring_rows = [
+            'DBhBBBBhBD',
+            '..........',
+            '..........',
+            '..........',
+            '..........',
+            '..........',
+            '..........',
+            '@%%%%%%%%@',
+            '@!H!!!!H!@',   # corner bolts 'H' glow bright orange right along with the front ring!
+            '..........',
+            '..........',
+            '..........',
+        ]
+    else:
+        bar_rows = ['UNV', 'GMV', 'UMV', 'NNv', 'UMV', 'UMV', 'prs', 'ijo', 'ace', 'ace', ']{}', '()[']
+        ring_rows = [
+            '..........',
+            '..........',
+            '..........',
+            '..........',
+            'DBhBBBBhBD',   # rows 4..5: cool mid clamp ring w/ steel pins (never glows)
+            'ECCCCCCCCE',
+            '..........',
+            '..........',
+            '@%%%%%%%%@',   # rows 8..9: front clamp ring (1.0 px, glows exact old-suit orange in heat_barrel)
+            '@!H!!!!H!@',   # corner bolts 'H' glow bright orange right along with the front ring!
+            '..........',   # rows 10..11: open air around 1.0 px protruding tips
+            '..........',
+        ]
+
+    bar_side = lambda w, h: bar_rows[:h]
+    # Down bore face: shaded hot tip rim ('('/')'/'[') framing crisp black center bore ('x')!
+    bar_dn = lambda w, h: ['(()', ')x[', ')[[']
+    bfaces = {'north': bar_side, 'south': bar_side, 'east': bar_side, 'west': bar_side,
+              'up': none, 'down': bar_dn}
+    for k, (dx, dz) in enumerate(((-1.25, -1.25), (1.25, -1.25), (1.25, 1.25), (-1.25, 1.25))):
+        parts.append(part(f'barrel{k}', ((c + dx - 0.75, top - 10.0, dz - 0.75),
+                                         (c + dx + 0.75, t, dz + 0.75)), bfaces, 'bit'))
+
+    # 3. Cold central spinning axle (1.0 x 5.5 x 1.0 at +-0.5, subtle machined shading — never glows!)
+    ax_sd = lambda w, h: ['CD' if j % 3 == 1 else 'DE' for j in range(h)]
+    parts.append(part('axle', ((c - 0.5, top - 9.5, -0.5), (c + 0.5, t, 0.5)), {
+        'north': ax_sd, 'south': ax_sd, 'east': ax_sd, 'west': ax_sd,
+        'up': none, 'down': lambda w, h: ['CD', 'DE'],
+    }, 'bit'))
+
+    # 4. ONE single 0.5 px cutout outer layer (`rings_outer`, 5.0x6.0x5.0 at +-2.5, bone 'bit') carrying the clamp rings!
+    parts.append(part('rings_outer', ((c - 2.5, top - 10.0, -2.5), (c + 2.5, t, 2.5)), {
+        'north': ring_rows, 'south': ring_rows, 'east': ring_rows, 'west': ring_rows,
+        'up': none, 'down': none,
+    }, 'bit'))
     return parts
