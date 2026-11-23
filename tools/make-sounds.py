@@ -50,10 +50,10 @@ def _pulse_train(t, rate_hz, sharpness):
     return (0.5 * (1.0 + np.cos(2 * np.pi * rate_hz * t))) ** sharpness
 
 
-def _master(y, freqs, target_rms=0.22):
-    y = _circ_eq(y, freqs, 45.0, 4200.0)
-    y = np.tanh(y * 1.35) / np.tanh(1.35)
-    y = _circ_eq(y, freqs, 45.0, 4000.0)
+def _master(y, freqs, f_lo=45.0, f_hi=4200.0, drive=1.35, target_rms=0.22):
+    y = _circ_eq(y, freqs, f_lo, f_hi)
+    y = np.tanh(y * drive) / np.tanh(drive)
+    y = _circ_eq(y, freqs, f_lo, min(f_hi, 4000.0))
     y = y * (target_rms / (np.sqrt(np.mean(y ** 2)) + 1e-9))
     peak = float(np.max(np.abs(y)))
     if peak > 0.88:
@@ -75,7 +75,25 @@ def make_drill_diamond_whir():
     cut = _circ_band_noise(rng, n, freqs, 650, 2300, 2.2) * flute_mod
     low = _circ_band_noise(rng, n, freqs, 150, 550, 2.0) * (0.7 + 0.3 * np.sin(2 * np.pi * 8.0 * t))
     y = 0.50 * motor * (0.82 + 0.18 * np.sin(2 * np.pi * 4.0 * t)) + 0.24 * rotor + 0.36 * cut + 0.25 * low
-    return _master(y, freqs, target_rms=0.22)
+    return _master(y, freqs, f_lo=45.0, f_hi=4200.0, drive=1.35, target_rms=0.22)
+
+
+def make_chaingun_heavy_gatling():
+    """Chaingun motor loop (2.0 s, 44.1 kHz mono): heavy mech autocannon torque motor (~132 Hz) + gear
+    mesh (~396 Hz) + 12 Hz 4-barrel bearing roll. Rolled off at 2.4 kHz so ChaingunItem's dynamic
+    0.5x -> 1.8x spin-up pitch sweep stays punchy and never shrill at full barrage speed."""
+    n = int(SR * 2.0)
+    t = np.arange(n) / SR
+    freqs = np.fft.rfftfreq(n, 1.0 / SR)
+    rng = np.random.default_rng(20261124)
+
+    motor = _harm_motor(t, 132.0, [1.0, 0.80, 0.55, 0.36, 0.20, 0.12], lfo_f=3.0, lfo_depth=1.2, rng=rng)
+    gear = _harm_motor(t, 396.0, [0.38, 0.20, 0.10], lfo_f=3.0, lfo_depth=2.5, rng=rng)
+    roll_env = 0.55 + 0.45 * _pulse_train(t, 12.0, 4.5)
+    mech = _circ_band_noise(rng, n, freqs, 250, 1400, 2.0) * roll_env
+    bearing = _circ_band_noise(rng, n, freqs, 900, 2200, 2.2) * (0.65 + 0.35 * _pulse_train(t, 24.0, 3.0))
+    y = 0.52 * motor * (0.8 + 0.2 * roll_env) + 0.24 * gear + 0.42 * mech + 0.18 * bearing
+    return _master(y, freqs, f_lo=50.0, f_hi=2400.0, drive=1.25, target_rms=0.22)
 
 
 def write_ogg(rel_path, samples):
@@ -87,6 +105,7 @@ def write_ogg(rel_path, samples):
 
 def main():
     write_ogg('tool/drill.ogg', make_drill_diamond_whir())
+    write_ogg('tool/chaingun.ogg', make_chaingun_heavy_gatling())
 
 
 if __name__ == '__main__':

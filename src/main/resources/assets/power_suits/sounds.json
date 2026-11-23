@@ -56,10 +56,8 @@
     "subtitle": "subtitles.power_suits.tool.chaingun",
     "sounds": [
       {
-        "name": "minecraft:entity.minecart.riding",
-        "type": "event",
-        "pitch": 1.0,
-        "volume": 0.8
+        "name": "power_suits:tool/chaingun",
+        "volume": 0.75
       }
     ]
   },
