@@ -76,7 +76,7 @@ def tool_specs():
          ('rail_flow_0', 'rail_flow_1', 'rail_flow_2', 'rail_emit'),
          rail_art.build(0, 0, 'dark', kind='2d_hybrid_closed', core='dark', length=6.0, sleeve=True, head_scale=True), glow),
         ('tnt_launcher', ('tnt_launcher', 'tnt_launcher_drum'), {}, (),
-         tnt_art.build(0, 0, kind='wide', sleeve=True), glow),
+         tnt_art.build(0, 0, kind='2d_mgl_closed', sleeve=True), glow),
         ('em_projector', ('em_projector', 'em_projector_poles'), {}, ('em_core', 'em_arc'),
          em_art.build(0, 0, kind='2d_gravity_gun', glow='dark', sleeve=True, head_scale=True), glow),
     ]

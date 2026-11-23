@@ -136,7 +136,9 @@ Replaces 3D component kitbashing (stacked flanges, lugs, sub-rods, protruding br
 `0.5 px` outer-cutout-layer language that made the flat iron armour (`pauldron_decal`) and 2D heart engine (`harness`)
 work. Proven on the Rail Cannon (`2d_hybrid_closed`, `06a8fb8`), Flamethrower (`halo_olive`, `f04cd10`), Chaingun
 (`2d_copper`, `fb5393b`), Chainsaw (`felling_taper`, `b2473b0`, keeping the Husqvarna Rancher base + 2-phase in-place marching
-chain `chainsaw_chain` / `chainsaw_chain_b` in `ToolRotors`), and EM Projector (`2d_gravity_gun`, 7 cubes); apply to the remaining tools (TNT Launcher, Drill):
+chain `chainsaw_chain` / `chainsaw_chain_b` in `ToolRotors`), EM Projector (`2d_gravity_gun`, `7e7a66d`), and TNT Launcher
+(`2d_mgl_closed`, 6 cubes, closed fluted mechanical drum with zero exposed vanilla TNT textures so resource packs never
+clash); apply to the remaining tool (Drill):
 - **Minimal geometry (2–4 boxes) + `0.5 px` cutout outer layers:** build each tool from simple inner core boxes wrapped
   in `0.5 px`-proud outer covering cubes whose alpha-0 cutouts (`'.'`) carve windows, vents, core apertures, stepped
   muzzles, and angled cowling profiles. In Minecraft 26.3, `RenderTypes.entityCutout` (`ToolModelRenderer`) is already
@@ -374,14 +376,16 @@ chain `chainsaw_chain` / `chainsaw_chain_b` in `ToolRotors`), and EM Projector (
   (now `fadesByAlpha = true`) drives the enclosed base core's `rail_emit` glowmask independently. `muzzleInsetPixels`
   -1 (10 px under the socket). `runAutopilotRail` shows it (1P + 3P).
 
-## TNT launcher and EM projector (2026-11-15; both reworked 2026-11-20)
-- `frame_tnt_art.py` (TOOL=tnt, knob `TNT=wide` default | `flush` | `chunky` | `legacy`; reworked 2026-11-20 to match
-  the big suit's round 5 launcher: a 5 x 1 x 5 dark-slate socket collar, a 6 x 3 x 6 fluted dark-slate octagonal drum
-  built from three flush non-overlapping cubes on bone `tnt_launcher_drum` with four red TNT chamber ends recessed
-  inside a 1-texel dark-slate rim on its down face (`ch_in=1.0, ch_out=2.5, ch_span=1.0`, keeping the top chamber
-  hidden behind the barrel so no red peeks over it, 90 deg symmetric for `ToolRotors`), a 3.5 x 4 x 3.5 light-steel
-  barrel, a 4 x 1 x 4 dark-slate muzzle ring flush with the drum front, and two 0.5 px fork-sight prongs with a 1 px
-  gap; 9 px under the socket, `muzzleInsetPixels` 0).
+## TNT launcher and EM projector (2026-11-15; both reworked 2026-11-20 & 2026-11-22)
+- `frame_tnt_art.py` (TOOL=tnt, knob `TNT=2d_mgl_closed` default | `2d_tf2_closed` | `2d_mgl_clean` | `2d_octo_closed`
+  | `2d_revolver_cutout` | `2d_demolition_mgl` | `2d_mortar_cannon` | `2d_octo_revolver` | `wide` | `flush` | `chunky` |
+  `legacy`; reworked 2026-11-22 in the 2D-texture + cutout outer-layer style, 6 cubes, 9.0 px under the socket,
+  `muzzleInsetPixels` 0: 6 x 1.5 x 6 dark gunmetal 2-layer breech cuff with recessed yellow/black demolition hazard
+  stripes over a closed 6 x 3.0 x 6 deeply-fluted turning mechanical drum (`tnt_launcher_drum`, 90 deg symmetric with
+  recessed dark-bore breech sockets on `down` and zero exposed vanilla TNT textures so resource packs never clash),
+  feeding an offset 3.0 x 4.5 x 3.0 dark gunmetal mortar tube wrapped in a `0.5 px` proud 4.0 x 4.5 x 4.0 perforated
+  iron-steel MGL cooling heat-shield jacket with integrated top sight posts, yellow/black hazard collar, and heavy dark
+  muzzle brake).
 - `frame_em_art.py` (TOOL=em, knob `EM=2d_gravity_gun` default | `2d_shroud_claw` | `2d_tesla_cage` |
   `2d_lodestone_dish` | `claw_b2` | `claw_b1` | `claw` | `splay` | `corner` | `step` | `legacy`, `EM_GLOW=dark` | `idle`
   | `lit`; reworked 2026-11-22 in the 2D-texture + cutout outer-layer style, 7 cubes, 7.5 px under the socket,

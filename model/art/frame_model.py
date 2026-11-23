@@ -981,16 +981,17 @@ def _tool_parts(TOOL):
     TOOL_PARTS = rail_art.build(6.25 + ARM_OUT, SOCKET_Y, 'dark', os.environ.get('RAIL', '2d_hybrid_closed'),
                                 os.environ.get('RAIL_CORE', 'dark'), float(os.environ.get('RAIL_L', '6')),
                                 sleeve=TOOL_SLEEVE, head_scale=HEAD_SCALE)
-# The TNT launcher (frame_tnt_art.py) and the EM projector (frame_em_art.py): the big suit's designs (user, 2026-11-15).
-# TNT knob (2026-11-20 rework, picked 'wide' with ch_out=2.5 so no red peeks over the barrel):
-# 'wide' (default) | 'flush' | 'chunky' | 'legacy'.
+# The TNT launcher (frame_tnt_art.py) and the EM projector (frame_em_art.py):
+# TNT knob (2026-11-22 2D-layer rework, user picked R2-A '2d_mgl_closed', 6 cubes, 9.0 px: closed deeply-fluted
+# mechanical drum w/ zero vanilla TNT textures + recessed demolition hazard breech + perforated iron-steel MGL
+# heat-shield offset barrel & hazard muzzle brake): '2d_mgl_closed' (default) | '2d_tf2_closed' | '2d_mgl_clean' | ...
 # EM knob (2026-11-22 2D-layer rework, user picked B '2d_gravity_gun': 6x3.5x6 dark magnetized slate 2-layer cuff w/
 # recessed copper stator coil & redstone core windows + spinning 4x1.5x4 chiseled lodestone lens & 4 unified cardinal
 # prongs with copper coils, riveted iron jaws and inner redstone arc rails, 7.5 px overall, spun by ToolRotors):
 # '2d_gravity_gun' (default) | '2d_shroud_claw' | '2d_tesla_cage' | '2d_lodestone_dish' | 'claw_b2' | ...
   if TOOL == 'tnt':
     import frame_tnt_art as tnt_art
-    TOOL_PARTS = tnt_art.build(6.25 + ARM_OUT, SOCKET_Y, kind=os.environ.get('TNT', 'wide'), sleeve=TOOL_SLEEVE)
+    TOOL_PARTS = tnt_art.build(6.25 + ARM_OUT, SOCKET_Y, kind=os.environ.get('TNT', '2d_mgl_closed'), sleeve=TOOL_SLEEVE)
   if TOOL == 'em':
     import frame_em_art as em_art
     TOOL_PARTS = em_art.build(6.25 + ARM_OUT, SOCKET_Y, kind=os.environ.get('EM', '2d_gravity_gun'),
