@@ -134,8 +134,9 @@ the end and `docs/guide.md` Notes).
 ### 2D-texture + outer-cutout-layer tool design system (2026-11-21/22, approved)
 Replaces 3D component kitbashing (stacked flanges, lugs, sub-rods, protruding brackets) with the same 2D-painted +
 `0.5 px` outer-cutout-layer language that made the flat iron armour (`pauldron_decal`) and 2D heart engine (`harness`)
-work. Proven on the Rail Cannon (`2d_hybrid_closed`, `06a8fb8`), Flamethrower (`halo_olive`, `f04cd10`), and Chaingun
-(`2d_copper`); apply to the remaining tools (TNT Launcher, EM Projector, Drill, Chainsaw):
+work. Proven on the Rail Cannon (`2d_hybrid_closed`, `06a8fb8`), Flamethrower (`halo_olive`, `f04cd10`), Chaingun
+(`2d_copper`, `fb5393b`), and Chainsaw (`felling_taper`, keeping the Husqvarna Rancher base + 2-phase in-place marching
+chain `chainsaw_chain` / `chainsaw_chain_b` in `ToolRotors`); apply to the remaining tools (TNT Launcher, EM Projector, Drill):
 - **Minimal geometry (2–4 boxes) + `0.5 px` cutout outer layers:** build each tool from simple inner core boxes wrapped
   in `0.5 px`-proud outer covering cubes whose alpha-0 cutouts (`'.'`) carve windows, vents, core apertures, stepped
   muzzles, and angled cowling profiles. In Minecraft 26.3, `RenderTypes.entityCutout` (`ToolModelRenderer`) is already

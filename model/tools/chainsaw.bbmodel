@@ -28,6 +28,7 @@
    "export": true,
    "scope": 0,
    "allow_mirror_modeling": true,
+   "visibility": true,
    "from": [
     -3,
     -4,
@@ -48,79 +49,80 @@
    "faces": {
     "north": {
      "uv": [
-      39,
+      12,
+      18,
       0,
-      27,
-      8
+      26
      ],
      "texture": 0
     },
     "east": {
      "uv": [
-      75,
-      0,
-      63,
-      8
+      48,
+      18,
+      36,
+      26
      ],
      "texture": 0
     },
     "south": {
      "uv": [
-      63,
-      0,
-      51,
-      8
+      36,
+      18,
+      24,
+      26
      ],
      "texture": 0
     },
     "west": {
      "uv": [
-      51,
-      0,
-      39,
-      8
+      24,
+      18,
+      12,
+      26
      ],
      "texture": 0
     },
     "up": {
      "uv": [
-      87,
-      0,
-      75,
-      12
+      60,
+      18,
+      48,
+      30
      ],
      "texture": 0
     },
     "down": {
      "uv": [
-      99,
-      0,
-      87,
-      12
+      72,
+      18,
+      60,
+      30
      ],
      "texture": 0
     }
    },
    "type": "cube",
-   "uuid": "bbe604d6-b102-4be4-a669-0b6ed9d49f6c"
+   "uuid": "6b0ea79f-7f94-406f-b164-6dc0bc0f3e49"
   },
   {
-   "name": "tl_chainsaw_bar",
+   "name": "tl_chainsaw_bar_clamp",
    "box_uv": false,
    "render_order": "default",
    "locked": false,
    "export": true,
    "scope": 0,
    "allow_mirror_modeling": true,
+   "visibility": true,
    "from": [
-    -0.5,
-    -10,
-    -2.5
+    -1,
+    -6,
+    -2.75
    ],
    "to": [
-    0.5,
+    1,
     -4,
-    2.5
+    2.75
    ],
    "autouv": 0,
    "color": 1,
@@ -132,121 +134,37 @@
    "faces": {
     "north": {
      "uv": [
-      101,
-      0,
-      99,
-      12
+      76,
+      18,
+      72,
+      22
      ],
      "texture": 0
     },
     "east": {
      "uv": [
-      123,
-      0,
-      113,
-      12
+      102,
+      18,
+      91,
+      22
      ],
      "texture": 0
     },
     "south": {
      "uv": [
-      113,
-      0,
-      111,
-      12
+      91,
+      18,
+      87,
+      22
      ],
      "texture": 0
     },
     "west": {
      "uv": [
-      111,
-      0,
-      101,
-      12
-     ],
-     "texture": 0
-    },
-    "up": {
-     "uv": [
-      125,
-      0,
-      123,
-      10
-     ],
-     "texture": 0
-    },
-    "down": {
-     "uv": [
-      127,
-      0,
-      125,
-      10
-     ],
-     "texture": 0
-    }
-   },
-   "type": "cube",
-   "uuid": "7d891f76-755f-43cd-9521-37f4d38a0136"
-  },
-  {
-   "name": "tl_chainsaw_chain",
-   "box_uv": false,
-   "render_order": "default",
-   "locked": false,
-   "export": true,
-   "scope": 0,
-   "allow_mirror_modeling": true,
-   "from": [
-    -0.25,
-    -10.5,
-    -3
-   ],
-   "to": [
-    0.25,
-    -4,
-    3
-   ],
-   "autouv": 0,
-   "color": 1,
-   "origin": [
-    0,
-    0,
-    0
-   ],
-   "faces": {
-    "north": {
-     "uv": [
-      1,
-      0,
-      0,
-      13
-     ],
-     "texture": 0
-    },
-    "east": {
-     "uv": [
-      26,
-      0,
-      14,
-      13
-     ],
-     "texture": 0
-    },
-    "south": {
-     "uv": [
-      14,
-      0,
-      13,
-      13
-     ],
-     "texture": 0
-    },
-    "west": {
-     "uv": [
-      13,
-      0,
-      1,
-      13
+      87,
+      18,
+      76,
+      22
      ],
      "texture": 0
     },
@@ -261,22 +179,362 @@
     },
     "down": {
      "uv": [
-      27,
-      0,
-      26,
-      12
+      106,
+      18,
+      102,
+      29
      ],
      "texture": 0
     }
    },
    "type": "cube",
-   "uuid": "db82d00a-c177-41e9-9379-ebfeb72d52d3"
+   "uuid": "4a70082e-5d85-4dde-93ed-3a53e1e6db6b"
+  },
+  {
+   "name": "tl_chainsaw_bar_inner",
+   "box_uv": false,
+   "render_order": "default",
+   "locked": false,
+   "export": true,
+   "scope": 0,
+   "allow_mirror_modeling": true,
+   "visibility": true,
+   "from": [
+    -0.5,
+    -12,
+    -1.5
+   ],
+   "to": [
+    0.5,
+    -4,
+    1.5
+   ],
+   "autouv": 0,
+   "color": 1,
+   "origin": [
+    0,
+    0,
+    0
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      48,
+      0,
+      46,
+      16
+     ],
+     "texture": 0
+    },
+    "east": {
+     "uv": [
+      62,
+      0,
+      56,
+      16
+     ],
+     "texture": 0
+    },
+    "south": {
+     "uv": [
+      56,
+      0,
+      54,
+      16
+     ],
+     "texture": 0
+    },
+    "west": {
+     "uv": [
+      54,
+      0,
+      48,
+      16
+     ],
+     "texture": 0
+    },
+    "up": {
+     "uv": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "texture": null
+    },
+    "down": {
+     "uv": [
+      64,
+      0,
+      62,
+      6
+     ],
+     "texture": 0
+    }
+   },
+   "type": "cube",
+   "uuid": "7cece1d5-5359-4ff9-8d13-4f62c31cb568"
+  },
+  {
+   "name": "tl_chainsaw_bar_outer",
+   "box_uv": false,
+   "render_order": "default",
+   "locked": false,
+   "export": true,
+   "scope": 0,
+   "allow_mirror_modeling": true,
+   "visibility": true,
+   "from": [
+    -1,
+    -11.5,
+    -1
+   ],
+   "to": [
+    1,
+    -6,
+    1
+   ],
+   "autouv": 0,
+   "color": 1,
+   "origin": [
+    0,
+    0,
+    0
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      110,
+      18,
+      106,
+      29
+     ],
+     "texture": 0
+    },
+    "east": {
+     "uv": [
+      122,
+      18,
+      118,
+      29
+     ],
+     "texture": 0
+    },
+    "south": {
+     "uv": [
+      118,
+      18,
+      114,
+      29
+     ],
+     "texture": 0
+    },
+    "west": {
+     "uv": [
+      114,
+      18,
+      110,
+      29
+     ],
+     "texture": 0
+    },
+    "up": {
+     "uv": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "texture": null
+    },
+    "down": {
+     "uv": [
+      126,
+      18,
+      122,
+      22
+     ],
+     "texture": 0
+    }
+   },
+   "type": "cube",
+   "uuid": "fd201514-cc34-454e-896e-b9a74d8ede40"
+  },
+  {
+   "name": "tl_chainsaw_chain",
+   "box_uv": false,
+   "render_order": "default",
+   "locked": false,
+   "export": true,
+   "scope": 0,
+   "allow_mirror_modeling": true,
+   "visibility": true,
+   "from": [
+    -0.25,
+    -13,
+    -2.5
+   ],
+   "to": [
+    0.25,
+    -4,
+    2.5
+   ],
+   "autouv": 0,
+   "color": 1,
+   "origin": [
+    0,
+    0,
+    0
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      1,
+      0,
+      0,
+      18
+     ],
+     "texture": 0
+    },
+    "east": {
+     "uv": [
+      22,
+      0,
+      12,
+      18
+     ],
+     "texture": 0
+    },
+    "south": {
+     "uv": [
+      12,
+      0,
+      11,
+      18
+     ],
+     "texture": 0
+    },
+    "west": {
+     "uv": [
+      11,
+      0,
+      1,
+      18
+     ],
+     "texture": 0
+    },
+    "up": {
+     "uv": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "texture": null
+    },
+    "down": {
+     "uv": [
+      23,
+      0,
+      22,
+      10
+     ],
+     "texture": 0
+    }
+   },
+   "type": "cube",
+   "uuid": "bc15a92f-4f45-44c4-9319-dc092af1e707"
+  },
+  {
+   "name": "tl_chainsaw_chain_b",
+   "box_uv": false,
+   "render_order": "default",
+   "locked": false,
+   "export": true,
+   "scope": 0,
+   "allow_mirror_modeling": true,
+   "visibility": false,
+   "from": [
+    -0.25,
+    -13,
+    -2.5
+   ],
+   "to": [
+    0.25,
+    -4,
+    2.5
+   ],
+   "autouv": 0,
+   "color": 1,
+   "origin": [
+    0,
+    0,
+    0
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      24,
+      0,
+      23,
+      18
+     ],
+     "texture": 0
+    },
+    "east": {
+     "uv": [
+      45,
+      0,
+      35,
+      18
+     ],
+     "texture": 0
+    },
+    "south": {
+     "uv": [
+      35,
+      0,
+      34,
+      18
+     ],
+     "texture": 0
+    },
+    "west": {
+     "uv": [
+      34,
+      0,
+      24,
+      18
+     ],
+     "texture": 0
+    },
+    "up": {
+     "uv": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "texture": null
+    },
+    "down": {
+     "uv": [
+      46,
+      0,
+      45,
+      10
+     ],
+     "texture": 0
+    }
+   },
+   "type": "cube",
+   "uuid": "38186b89-7fa1-4d2a-bdb6-7f442dff9e88"
   }
  ],
  "groups": [
   {
    "name": "chainsaw",
-   "uuid": "23a15217-5cfe-4645-b43c-865067d5cc8f",
+   "uuid": "7b1b9e5c-bfbc-4a36-a163-161b594bdbf8",
    "export": true,
    "locked": false,
    "scope": 0,
@@ -304,7 +562,7 @@
   },
   {
    "name": "chainsaw_chain",
-   "uuid": "8aa44f95-4233-4617-aed2-6b202a771718",
+   "uuid": "7621102e-31e2-47b1-b098-605b741aff90",
    "export": true,
    "locked": false,
    "scope": 0,
@@ -329,22 +587,59 @@
    "autouv": 0,
    "isOpen": true,
    "primary_selected": false
+  },
+  {
+   "name": "chainsaw_chain_b",
+   "uuid": "63d9b9b3-b34c-44ad-a9ad-7274ff93769a",
+   "export": true,
+   "locked": false,
+   "scope": 0,
+   "selected": false,
+   "visibility": false,
+   "origin": [
+    0,
+    0,
+    0
+   ],
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "bedrock_binding": "",
+   "color": 0,
+   "children": [],
+   "reset": false,
+   "shade": true,
+   "mirror_uv": false,
+   "autouv": 0,
+   "isOpen": true,
+   "primary_selected": false
   }
  ],
  "outliner": [
   {
-   "uuid": "23a15217-5cfe-4645-b43c-865067d5cc8f",
+   "uuid": "7b1b9e5c-bfbc-4a36-a163-161b594bdbf8",
    "isOpen": true,
    "children": [
     {
-     "uuid": "8aa44f95-4233-4617-aed2-6b202a771718",
+     "uuid": "7621102e-31e2-47b1-b098-605b741aff90",
      "isOpen": true,
      "children": [
-      "db82d00a-c177-41e9-9379-ebfeb72d52d3"
+      "bc15a92f-4f45-44c4-9319-dc092af1e707"
      ]
     },
-    "bbe604d6-b102-4be4-a669-0b6ed9d49f6c",
-    "7d891f76-755f-43cd-9521-37f4d38a0136"
+    {
+     "uuid": "63d9b9b3-b34c-44ad-a9ad-7274ff93769a",
+     "isOpen": true,
+     "children": [
+      "38186b89-7fa1-4d2a-bdb6-7f442dff9e88"
+     ]
+    },
+    "6b0ea79f-7f94-406f-b164-6dc0bc0f3e49",
+    "4a70082e-5d85-4dde-93ed-3a53e1e6db6b",
+    "7cece1d5-5359-4ff9-8d13-4f62c31cb568",
+    "fd201514-cc34-454e-896e-b9a74d8ede40"
    ]
   }
  ],
@@ -374,9 +669,9 @@
    "visible": true,
    "internal": true,
    "saved": true,
-   "uuid": "9882fefc-ef22-4720-8d74-9d99a5efe74c",
+   "uuid": "8a2df875-e939-4f9e-a140-ef00fb49f500",
    "relative_path": "chainsaw.png",
-   "source": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAABACAYAAADS1n9/AAAByElEQVR42u3XvUoDQRDA8XsCsbEwIIEUKURiIwiK2IjPIDaKYKO1jR+VWJjKztLGJg8jqe0E38AXWJmDDctyt85cvEty+f9guJDbXc+bublNtvX96SQypZW7W1d1zs9wTx1fF1338PhsmhOHzA8jXt+6lvX6e/2Bu7l/Uh+3d3YbiZPzqzwmyZHQJlMSWXWO3JSDfs8N1tfyz6kYHXfc/uHRn+PC8fF3p2eXrrPRzSNeKxwv51NHCZkviZWjJoquUb4vux4Jn5jhy2teEKnwYy3jCwugyQ4QP5GpkOTN2/hWFkCTHUBuojbkBs3b+FkVwMd4bCqAsvEz7wDSdrVxvbk6efK0463ra+f4bkEH+Ic9gOWd7p88qei391EefoNVFNaWrr0W3y3YA0zZAaoWgCRebpocyzZpfny48SsLv+6iFECtr4AmO4D1Z5G/meE/m2rp2uRIyN/Qvi78HDrAlB0gW3DWApAnMYy4AOLzrd8DLFsBhK8un/SwAOLzrf8VsGwFYN2U1t0BSpNDB9CxbGL9O98SYVLriGRyLMcqczIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJbbL7rynsGGpOnnAAAAAElFTkSuQmCC"
+   "source": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAABACAYAAADS1n9/AAADVklEQVR42u2Zv2sUQRTH90+wsUggRIIcaHFgoYVBTHGojWApaZRAQDRltPIXiEXs7MTGQps0VmIp/gNyVSqb/AUWB6lHv8u94/GcmZ25u/1xd98PPPYy783e3rzvvje7KYox/SvXXBHA+nJiwcaFi8F460uNxfcM7tx1GJPPMHzGmIyH/AWpP0l1ievP6MzNKgAZY+ZrStLw5LfrcgWgABa4AkBcFMCcQDmVkhpbeInLiWUFWOEWAAHgTv36/UelYCRO7uxYLOKsAHD8ebjjTj88moxpAWAMPsSInxkfU2eSmmoBIoDXg15QAPBRAA3uAZCkutoLHwMXYA9Qp7jsYyCOo28vK1sAYlgBGtoD1N1efC1Al3grAOtnxhd4D8AWsCDvAbgH4B6gkfcA0uOr9gDaz8wv4R6Aj4Ed2wM00QJ0efe97Qv5mXlPC/DdGbKQNklVsTZxsfhpY207CCW3yk/+IVVA3zny2e7qU2N1dQnF+6pLLNZeC5lzO9BVQY/NEuvz6/nTxpI5MHp33aXa6d6me/HmyOXMsYb52uz5c8+Ve/1bvb57+vxt8tEKEXapf7XSJHbaub4K/ezV0X/2/uPnsiru7h2UtnP7XmkYg0/iggLAotzobbn+2vlygWJ2fGvdbd8cVMbpeDu2+2DfrW9slmbPpePhjx1hmI/E4phivmvEeOh6YL41kwX2CRfj8IfWe9q5VgBItvb5BCB+8fnmFvaOjBmS17X4ugWgFxKfJUkw392rEzDLXOvTd7NNInxWABhLEgAWMdWwQF2Lb6MCAJ0wbRivarspc63PJwDdBnwC8CbcgrKbak8un5vceanxuedPnSPVoi0B1E2KAHIqQHQPkNPT5c77NRy6T1+OS5Ne5rPckp56LVItKICWBIDEY9FwDG3SJF5v/EIm56UAGm4BuY9Fspj3Hz6eWKykpyYHhu9IbRcyZ1UEYKusfmKCz7ZRHY/xpX6PkSMAtC5tVgDW39bvsk8BPgHoNfAJQO/zKICxAHTrkqRrAVh/V36nfQGky7r8rVuAfvkTbQGrJoDcTWmXf7vsA2KiWerk525ipefnGP9ZQAghhBBCCCGEEEIIIYQQQgghhBBCCCGEEEIIIYQQQgghhBBCCCGEEEIIaY+/+fInBUlRzoUAAAAASUVORK5CYII="
   }
  ]
 }

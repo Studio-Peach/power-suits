@@ -941,7 +941,8 @@ def _tool_parts(TOOL):
                                os.environ.get('SAW_ART', 'B'), os.environ.get('SAW_FINS', 'A'),
                                os.environ.get('SAW_COWL', 'slate'), os.environ.get('SAW_BARREL', 'copper'),
                                os.environ.get('SAW_BAR', 'box'), os.environ.get('SAW_LOW', 'fins'),
-                               os.environ.get('SAW_LOOK', 'rancher'), sleeve=TOOL_SLEEVE, head_scale=HEAD_SCALE)
+                               os.environ.get('SAW_LOOK', 'rancher'), sleeve=TOOL_SLEEVE, head_scale=HEAD_SCALE,
+                               blade=os.environ.get('SAW_BLADE', 'felling_taper'))
 # The chaingun (frame_gun_art.py): reworked 2026-11-22 in the 2D-texture + cutout outer-layer style (GUN_LOOK=2d_copper):
 # warm-black stacked-drum 6x4x6 cutout cuff over recessed copper motor coils, 4 textured 1.5x6x1.5 barrels + cold central
 # axle + ONE 5x6x5 outer-layer clamp-ring cage (cool mid ring + heated front ring w/ orange bolts, 1 px tips, 10 px total),

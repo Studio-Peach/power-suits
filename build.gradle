@@ -172,6 +172,12 @@ neoForge {
             systemProperty 'power_suits.autopilot', 'vision'
         }
 
+        // Dev tool: quick chainsaw showcase (3P side/front3q/back/raised + 1P cockpit rest/run; ap_saw_*.png), ~20 s.
+        autopilotSaw {
+            client()
+            systemProperty 'power_suits.autopilot', 'saw'
+        }
+
         // Dev tool: live-tunes the cockpit viewmodel (see AutoPilot.viewTuner); stays open until closed.
         autopilotView {
             client()

@@ -18,12 +18,15 @@ final class ToolRotors {
         bones.ifPresent("chaingun_barrels", barrels -> barrels.setRotY(angle * Mth.DEG_TO_RAD));
         bones.ifPresent("tnt_launcher_drum", drum -> drum.setRotY(angle * Mth.DEG_TO_RAD));
         bones.ifPresent("em_projector_poles", poles -> poles.setRotY(angle * Mth.DEG_TO_RAD));
+        // Chainsaw chain runs by swapping two in-place tooth phases (chainsaw_chain / chainsaw_chain_b) rather than
+        // translating the chain bone vertically, so the teeth march smoothly around the rounded nose with zero gap.
+        boolean phaseB = running && (((int) time) & 1) == 1;
+        bones.ifPresent("chainsaw_chain", chain -> chain.skipRender(phaseB).skipChildrenRender(phaseB));
+        bones.ifPresent("chainsaw_chain_b", chain -> chain.skipRender(!phaseB).skipChildrenRender(!phaseB));
         if (running) {
-            // Matches the former drill_run (4 rev/s = 72 deg/tick) and chainsaw_run (1 px chain step + subtle buzz).
+            // Matches the former drill_run (4 rev/s = 72 deg/tick) and a subtle chainsaw buzz.
             bones.ifPresent("drill_bit", bit -> bit.setRotY(((time * 72F) % 360F) * Mth.DEG_TO_RAD));
-            float step = (((int) time) & 1) == 0 ? 0F : -1F;
-            bones.ifPresent("chainsaw_chain", chain -> chain.setTranslateY(step));
-            float buzz = 0.85F * Mth.DEG_TO_RAD;
+            float buzz = 0.55F * Mth.DEG_TO_RAD;
             bones.ifPresent("chainsaw", saw -> saw.setRotX(saw.getRotX() + buzz * jitter(time, 0.5F))
                     .setRotZ(saw.getRotZ() + buzz * jitter(time, 2.3F)));
         }

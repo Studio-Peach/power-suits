@@ -287,7 +287,489 @@ def rancher_parts(c, t, look, lamp, part, sleeve=False):
     return parts
 
 
-def build(c, top, lamp='red', kind='B', art='B', fins='A', cowl='slate', barrel='copper', bar_shape='box', low='fins', look='rancher', sleeve=False, head_scale=False):
+def _blade_pal():
+    """Clean 2-layer palette for the 2D-texture + 0.5 px cutout chainsaw blades (2026-11-22):
+    - Brushed steel outer plates: w g h e l p s z (no bluish/slate mixing)
+    - Neutral dark gunmetal recessed core & chain links: n m k d x
+    - Husqvarna orange accents: O o u v (exact match to LOOKS['rancher'])
+    - Machined copper inner core / tensioner / sprocket: F f Q C q
+    - Diamond-cyan tooth accents: 3 2 1 0
+    """
+    return {
+        '.': '.',
+        # Brushed steel ramp
+        'w': _c('eef2f5'), 'g': _c('cfd5db'), 'h': _c('aeb6be'), 'e': _c('919aa3'),
+        'l': _c('767f89'), 'p': _c('5a626c'), 's': _c('404750'), 'z': _c('292e35'),
+        # Neutral dark gunmetal slate (recessed inner bar + oiled chain links)
+        'n': _c('5a5e63'), 'm': _c('44484d'), 'k': _c('2e3136'), 'd': _c('1d2024'), 'x': _c('121417'),
+        # Husqvarna Rancher orange accents (matches LOOKS['rancher'])
+        'O': _c('f28a3a'), 'o': _c('e0621f'), 'u': _c('a9461a'), 'v': _c('6b2a10'),
+        # Recessed copper tensioner / oil-feed / sprocket internals
+        'F': _c('f2b47e'), 'f': _c('e09868'), 'Q': _c('c07440'), 'C': _c('804426'), 'q': _c('522814'),
+        # Diamond-cyan tooth ramp (matches Power Suits diamond D)
+        '3': D['3'], '2': D['2'], '1': D['1'], '0': D['0'],
+    }
+
+
+def _paint_blade(faces, P):
+    return lambda f, w, h: [
+        [P[ch] for ch in r]
+        for r in (faces[f](w, h) if callable(faces[f]) else faces[f])
+    ]
+
+
+def _make_blade_box(name, box, side, P, bone='tool', north=None, south=None, down=None, up=None,
+                    edge_n='k', edge_s='d', edge_d='k'):
+    """Builds one blade cube from its canonical side grid (col 0 = front/-z, col W-1 = back/+z;
+    row 0 = root/+y, row H-1 = tip/-y). Automatically mirrors east, derives watertight edge faces
+    (painting only where the side silhouette reaches that cube boundary so zero slivers float),
+    and leaves buried up faces transparent."""
+    (x0, y0, z0), (x1, y1, z1) = box
+    wx, wy, wz = round((x1 - x0) * 2), round((y1 - y0) * 2), round((z1 - z0) * 2)
+    assert len(side) == wy and all(len(r) == wz for r in side), (name, len(side), wy, len(side[0]), wz)
+    west = list(side)
+    east = [r[::-1] for r in side]
+    def _fill(ch, n):
+        return ch if len(ch) == n else ch * n
+    def _derive_edge(col_idx, default_ch):
+        out = []
+        for j in range(wy):
+            c = side[j][col_idx]
+            if c == '.':
+                out.append('.' * wx)
+            else:
+                out.append(_fill(c if default_ch is None else default_ch, wx))
+        return out
+    n_face = north if north is not None else _derive_edge(0, edge_n)
+    s_face = south if south is not None else _derive_edge(-1, edge_s)
+    if down is not None:
+        d_face = down
+    else:
+        d_face = []
+        for k in range(wz):
+            c = side[-1][k]
+            d_face.append('.' * wx if c == '.' else _fill(c if edge_d is None else edge_d, wx))
+    u_face = up if up is not None else ['.' * wx] * wz
+    for fn, rows, ew, eh in (('north', n_face, wx, wy), ('south', s_face, wx, wy),
+                             ('east', east, wz, wy), ('west', west, wz, wy),
+                             ('up', u_face, wx, wz), ('down', d_face, wx, wz)):
+        assert len(rows) == eh and all(len(r) == ew for r in rows), (name, fn, len(rows), eh, len(rows[0]), ew)
+    faces = {'north': n_face, 'south': s_face, 'east': east, 'west': west, 'up': u_face, 'down': d_face}
+    return dict(drill.part(name, box, _paint_blade(faces, P)), bone=bone, rot=0)
+
+
+def _blade_rancher_2d(c, t, P, include_phase_b=False):
+    """Option A (`rancher_2d`): Classic Husqvarna laminated guide bar in 2D-layer style (3 blade cubes).
+    - Sleek 3.0 x 7.5 px recessed gunmetal bar_inner with rounded nose + nose sprocket rivets;
+    - 0.5 px proud brushed-steel bar_outer cheek plates (2.0 x 7.0 x 2.0) with Husqvarna orange collar stripe,
+      cutout central fuller slot, and circular nose-sprocket cutout;
+    - 0.5 px thick jagged razor-steel sawtooth chain (5.0 x 8.5) with dark oiled drive links + bright teeth."""
+    # bar_inner: 1.0 x 7.5 x 3.0 (wx=2, wy=15, wz=6)
+    bi_side = [
+        'dkmmkd',  # 0 root
+        'dknmkd',  # 1
+        'dkmmkd',  # 2
+        'dkmmkd',  # 3
+        'dkmkkd',  # 4
+        'dmnnmd',  # 5 behind fuller: recessed dark slate + machined steel spline
+        'dmkkmd',  # 6
+        'dmnnmd',  # 7
+        'dmkkmd',  # 8
+        'dmnnmd',  # 9
+        'dkmmkd',  # 10
+        'dmffmd',  # 11 behind sprocket cutout: recessed copper/steel bearing hub
+        'dmCQmd',  # 12
+        'kmmmmk',  # 13 nose shoulder
+        '.kmmk.',  # 14 rounded nose tip
+    ]
+    # bar_outer: 2.0 x 7.0 x 2.0 (wx=4, wy=14, wz=4), 0.5 px proud on cheeks, inset 0.5 px from bar_inner edges
+    bo_side = [
+        'zssz',  # 0 root clamp
+        'shhs',  # 1 clamp bolts
+        'zssz',  # 2 clamp lower rim
+        'Ooou',  # 3 Husqvarna orange accent band
+        'hell',  # 4 brushed steel laminated bar
+        'h..p',  # 5 cutout fuller slot (reveals recessed bar_inner)
+        'e..p',  # 6
+        'e..p',  # 7
+        'e..p',  # 8
+        'e..p',  # 9
+        'ellp',  # 10 bridge above nose sprocket
+        'e..p',  # 11 cutout nose sprocket window
+        'l..p',  # 12
+        '.lp.',  # 13 rounded outer cheek tip
+    ]
+    bo_n = ['zssz', 'sllp', 'zssz', 'Oooo', 'hlll', 'hlll', 'elll', 'elll', 'elll', 'elll', 'elll', 'elll', 'llll', '....']
+    bo_s = ['zzzz', 'spps', 'zzzz', 'uuvv', 'ppss', 'ppss', 'ppss', 'ppss', 'ppss', 'ppss', 'ppss', 'ppss', 'ppss', '....']
+    bo_d = ['....', 'pllp', 'pllp', '....']
+    # chain: 0.5 x 8.5 x 5.0 (wx=1, wy=17, wz=10), 2-texel toothed rim around rounded bar_inner
+    # bar_inner occupies cols 2..7, rows 0..14 (hidden inside bar_inner -> '.')
+    ch_side = [
+        'gk......kh',  # 0
+        '.d......d.',  # 1
+        'wk......kw',  # 2
+        '.k......k.',  # 3
+        'gk......kh',  # 4
+        '.d......d.',  # 5
+        'wk......kw',  # 6
+        '.k......k.',  # 7
+        'gk......kh',  # 8
+        '.d......d.',  # 9
+        'wk......kw',  # 10
+        '.k......k.',  # 11
+        'gk......kh',  # 12
+        '.d......d.',  # 13
+        'wkd....dkw',  # 14 curves round nose shoulder
+        '.hkdkkdkh.',  # 15 lower drive links + diagonal corner teeth
+        '..w.g.w...',  # 16 nose tip cutter teeth (Wait: symmetric! '..w.gw.w..' -> 10 chars!)
+    ]
+    ch_side[16] = '..g.ww.g..'
+    ch_side_b = [
+        '.k......k.',  # 0 phase B: teeth shifted 1 texel along the perimeter (zero gap!)
+        'wk......kw',  # 1
+        '.d......d.',  # 2
+        'gk......kh',  # 3
+        '.k......k.',  # 4
+        'wk......kw',  # 5
+        '.d......d.',  # 6
+        'gk......kh',  # 7
+        '.k......k.',  # 8
+        'wk......kw',  # 9
+        '.d......d.',  # 10
+        'gk......kh',  # 11
+        '.k......k.',  # 12
+        'wk......kw',  # 13
+        '.kd....dk.',  # 14
+        'gkkdkkdkkh',  # 15
+        '.w.g..g.w.',  # 16
+    ]
+    ch_box = ((c - 0.25, t - 8.5, -2.5), (c + 0.25, t, 2.5))
+    out = [
+        _make_blade_box('bar_inner', ((c - 0.5, t - 7.5, -1.5), (c + 0.5, t, 1.5)), bi_side, P,
+                        edge_n='km', edge_s='dk', edge_d='km'),
+        _make_blade_box('bar_outer', ((c - 1.0, t - 7.0, -1.0), (c + 1.0, t, 1.0)), bo_side, P,
+                        north=bo_n, south=bo_s, down=bo_d),
+        _make_blade_box('chain', ch_box, ch_side, P, bone='bit', edge_n=None, edge_s=None, edge_d=None),
+    ]
+    if include_phase_b:
+        out.append(_make_blade_box('chain_b', ch_box, ch_side_b, P, bone='bit_b',
+                                   edge_n=None, edge_s=None, edge_d=None))
+    return out
+
+
+def _blade_diamond_truss(c, t, P, include_phase_b=False):
+    """Option B (`diamond_truss`): Heavy industrial diamond trench-saw (3 blade cubes).
+    - Muscular 4.0 x 7.0 px bar_inner with recessed copper tensioner rod + copper nose sprocket;
+    - 0.5 px proud steel/slate bar_outer (2.0 x 6.5 x 3.0) with 3 staggered cutout truss windows + orange collar;
+    - 0.5 px thick 6.0 x 8.0 px jagged diamond-cyan chain (dark oiled drive links + bright cyan teeth)."""
+    # bar_inner: 1.0 x 7.0 x 4.0 (wx=2, wy=14, wz=8)
+    bi_side = [
+        'ddkkkkdd',  # 0
+        'dkmQQmkd',  # 1
+        'dkmfQmkd',  # 2
+        'dkmCQmkd',  # 3 recessed copper oil/tensioner spine visible through cutouts
+        'dkmfFmkd',  # 4
+        'dkmQQmkd',  # 5
+        'dkmCQmkd',  # 6
+        'dkmfFmkd',  # 7
+        'dkmQQmkd',  # 8
+        'dkmCQmkd',  # 9
+        'dkfFFfkd',  # 10 copper nose sprocket wheel
+        'dkQCCQkd',  # 11
+        '.kmmmmk.',  # 12 rounded nose shoulder
+        '..kmmk..',  # 13 rounded nose tip
+    ]
+    # bar_outer: 2.0 x 6.5 x 3.0 (wx=4, wy=13, wz=6), 0.5 px proud each cheek, inset 0.5 px inside bar_inner
+    bo_side = [
+        'zssssz',  # 0 heavy dark-iron root clamp
+        'shllhs',  # 1 twin bolts
+        'OOoouu',  # 2 Husqvarna orange collar stripe
+        'helllp',  # 3 upper steel bridge
+        'he..lp',  # 4 truss cutout 1 (shows copper spine)
+        'he..lp',  # 5
+        'hllllp',  # 6 riveted cross-rib
+        'el..lp',  # 7 truss cutout 2 (shows copper spine)
+        'el..lp',  # 8
+        'ellllp',  # 9 lower cross-rib
+        'el..pp',  # 10 nose sprocket cutout window
+        'll..pp',  # 11
+        '.ellp.',  # 12 rounded cheek nose
+    ]
+    bo_n = ['zssz', 'sllp', 'Oooo', 'hlll', 'hlll', 'hlll', 'hlll', 'elll', 'elll', 'elll', 'elll', 'llll', '....']
+    bo_s = ['zzzz', 'spps', 'uuvv', 'ppss', 'ppss', 'ppss', 'ppss', 'ppss', 'ppss', 'ppss', 'ppss', 'ppss', '....']
+    bo_d = ['....', 'pllp', 'pllp', 'pllp', 'pllp', '....']
+    # chain: 0.5 x 8.0 x 6.0 (wx=1, wy=16, wz=12), flush with 6x6 base!
+    # bar_inner occupies cols 2..9, rows 0..13 (row 12 cols 3..8, row 13 cols 4..7)
+    ch_side = [
+        '2k........k2',  # 0
+        '.d........d.',  # 1
+        '3k........k3',  # 2
+        '.k........k.',  # 3
+        '2k........k2',  # 4
+        '.d........d.',  # 5
+        '3k........k3',  # 6
+        '.k........k.',  # 7
+        '2k........k2',  # 8
+        '.d........d.',  # 9
+        '3k........k3',  # 10
+        '.k........k.',  # 11
+        '2kd......dk2',  # 12 hugs rounded nose shoulder
+        '.3kd....dk3.',  # 13
+        '..2kdkkdk2..',  # 14 lower drive links + corner diamond teeth
+        '...3.22.3...',  # 15 nose tip diamond teeth
+    ]
+    ch_side_b = [
+        '.k........k.',  # 0 phase B: diamond teeth shifted 1 texel along the perimeter
+        '3k........k3',  # 1
+        '.d........d.',  # 2
+        '2k........k2',  # 3
+        '.k........k.',  # 4
+        '3k........k3',  # 5
+        '.d........d.',  # 6
+        '2k........k2',  # 7
+        '.k........k.',  # 8
+        '3k........k3',  # 9
+        '.d........d.',  # 10
+        '2k........k2',  # 11
+        '.kd......dk.',  # 12
+        '3kkd....dkk3',  # 13
+        '.2kdkddkdk2.',  # 14
+        '..3..22..3..',  # 15
+    ]
+    ch_box = ((c - 0.25, t - 8.0, -3.0), (c + 0.25, t, 3.0))
+    out = [
+        _make_blade_box('bar_inner', ((c - 0.5, t - 7.0, -2.0), (c + 0.5, t, 2.0)), bi_side, P,
+                        edge_n='km', edge_s='dk', edge_d='km'),
+        _make_blade_box('bar_outer', ((c - 1.0, t - 6.5, -1.5), (c + 1.0, t, 1.5)), bo_side, P,
+                        north=bo_n, south=bo_s, down=bo_d),
+        _make_blade_box('chain', ch_box, ch_side, P, bone='bit', edge_n=None, edge_s=None, edge_d=None),
+    ]
+    if include_phase_b:
+        out.append(_make_blade_box('chain_b', ch_box, ch_side_b, P, bone='bit_b',
+                                   edge_n=None, edge_s=None, edge_d=None))
+    return out
+
+
+def _blade_chainsword(c, t, P, include_phase_b=False):
+    """Option C (`chainsword`): Armoured Chainsword / Ripper Blade (3 blade cubes).
+    - Asymmetric silhouette: Husqvarna-orange & iron armoured spine shroud wraps OVER the top edge (-z/north,
+      the hero first-person cockpit face!) with 3 recessed cutout cooling vents showing a copper inner rail;
+    - Clean squared iron nose collar (zero hollow bevel slivers in 3/4 views) + exposed bottom cutting edge
+      (+z/south) and chamfered tip with jagged razor-steel & diamond teeth."""
+    # bar_inner: 1.0 x 7.5 x 3.5 (wx=2, wy=15, wz=7), z: -2.0..+1.5
+    bi_side = [
+        'ddkkmmd',  # 0
+        'dkfQmmk',  # 1 recessed copper rail under top shroud + steel lower track
+        'dkCQmlk',  # 2
+        'dkfFmlk',  # 3
+        'dkQQmlk',  # 4
+        'dkCQmlk',  # 5
+        'dkfFmlk',  # 6
+        'dkQQmlk',  # 7
+        'dkCQmlk',  # 8
+        'dkfFmlk',  # 9
+        'dkQQmlk',  # 10
+        'dkCQmlk',  # 11
+        'dkmmllk',  # 12
+        'dkmmmmk',  # 13 solid nose shoulder
+        '.kmmmm.',  # 14 clean 1-texel chamfered nose (no jagged stair-step!)
+    ]
+    # bar_outer: 2.0 x 6.5 x 3.0 (wx=4, wy=13, wz=6), z: -2.5..+0.5 (wraps OVER -z top spine!)
+    # Ends cleanly in a solid bevel-capped iron nose collar at row 12 (0.5 px above bar_inner's tip -> zero slivers!)
+    bo_side = [
+        'zsszsz',  # 0 heavy iron root housing
+        'sOOoou',  # 1 Husqvarna orange spine casing
+        'sO..ou',  # 2 cutout vent 1 (reveals recessed copper spine)
+        'sO..ou',  # 3
+        'sOOoou',  # 4 solid rib
+        'so..ou',  # 5 cutout vent 2
+        'so..ou',  # 6
+        'sOOoou',  # 7 solid rib
+        'so..ou',  # 8 cutout vent 3
+        'so..ou',  # 9
+        'sOOoou',  # 10 solid lower guard
+        'zssllp',  # 11 heavy iron nose collar
+        'zzsspp',  # 12 solid lower rim (watertight down cap!)
+    ]
+    # Hero top spine face (north, wx=4 x wy=13): sleek orange/iron rail with recessed dark vents down the center
+    bo_n = [
+        'zssz', 'OOOO', 'OxxO', 'OxxO', 'OuuO', 'OxxO', 'OxxO', 'OuuO', 'OxxO', 'OxxO', 'OuuO', 'zssz', 'zzzz',
+    ]
+    bo_s = ['zzzz'] + ['uuvv'] * 10 + ['ppss', 'zzzz']
+    bo_d = ['zzzz', 'ssss', 'ssss', 'ssss', 'ssss', 'zzzz']
+    # chain: 0.5 x 8.5 x 4.0 (wx=1, wy=17, wz=8), z: -1.5..+2.5 (buried under shroud on -z, roaring out +z & nose!)
+    ch_side = [
+        '......kw',  # 0 exposed bottom cutting teeth (cols 6-7)
+        '......d.',  # 1
+        '......k3',  # 2 alternating razor steel & diamond-tipped fangs
+        '......k.',  # 3
+        '......kw',  # 4
+        '......d.',  # 5
+        '......k3',  # 6
+        '......k.',  # 7
+        '......kw',  # 8
+        '......d.',  # 9
+        '......k3',  # 10
+        '......k.',  # 11
+        '......kw',  # 12
+        '......d.',  # 13
+        '.....dk3',  # 14 wraps nose corner
+        '.dkdkdk.',  # 15 drive links hugging bar_inner tip
+        '..3.w.3.',  # 16 clean nose cutter teeth
+    ]
+    ch_side_b = [
+        '......k.',  # 0 phase B: fangs shifted 1 texel along the cutting edge & nose
+        '......k3',  # 1
+        '......d.',  # 2
+        '......kw',  # 3
+        '......k.',  # 4
+        '......k3',  # 5
+        '......d.',  # 6
+        '......kw',  # 7
+        '......k.',  # 8
+        '......k3',  # 9
+        '......d.',  # 10
+        '......kw',  # 11
+        '......k.',  # 12
+        '......k3',  # 13
+        '.....dk.',  # 14
+        '.dkdkdkw',  # 15
+        '.w.3.w..',  # 16
+    ]
+    ch_box = ((c - 0.25, t - 8.5, -1.5), (c + 0.25, t, 2.5))
+    out = [
+        _make_blade_box('bar_inner', ((c - 0.5, t - 7.5, -2.0), (c + 0.5, t, 1.5)), bi_side, P,
+                        edge_n='km', edge_s='dk', edge_d='km'),
+        _make_blade_box('bar_outer', ((c - 1.0, t - 6.5, -2.5), (c + 1.0, t, 0.5)), bo_side, P,
+                        north=bo_n, south=bo_s, down=bo_d),
+        _make_blade_box('chain', ch_box, ch_side, P, bone='bit', edge_n=None, edge_s=None, edge_d=None),
+    ]
+    if include_phase_b:
+        out.append(_make_blade_box('chain_b', ch_box, ch_side_b, P, bone='bit_b',
+                                   edge_n=None, edge_s=None, edge_d=None))
+    return out
+
+
+def _blade_felling_taper(c, t, P, include_phase_b=False):
+    """Option D (`felling_taper`): Heavy Industrial Felling Saw (4 blade cubes, zero shared planes).
+    - Wide 5.5 x 2.0 px bar_clamp root collar with twin parallel serrated 2D cutout felling-dog spikes
+      biting out front & back where the bar exits the orange housing;
+    - Sleek 3.0 x 8.0 px bar_inner + 0.5 px proud 2.0 x 5.5 px brushed-steel bar_outer with recessed copper
+      tensioner fuller windows + bold Husqvarna orange tip guard around the exposed nose sprocket;
+    - 0.5 px thick 5.0 x 9.0 px razor-steel toothed chain running cleanly out from inside the root clamp."""
+    # 1. bar_clamp: 2.0 x 2.0 x 5.5 (wx=4, wy=4, wz=11), z: -2.75..+2.75 (0.25 px wider than chain -> zero coplanar!)
+    bc_side = [
+        'gzzzzzzzzzg',  # 0 upper felling-dog spike + dark iron clamp
+        '.shOOoOOhs.',  # 1 Husqvarna orange bar-clamp stripe + twin steel bolts
+        'hsszzzzzssh',  # 2 lower felling-dog spike
+        '..zsssssz..',  # 3 bevelled taper step down onto the sleek bar
+    ]
+    # Twin parallel cheek spikes ('g..g') instead of a solid wide block: reads as real twin chainsaw felling dogs!
+    bc_n = ['g..g', '....', 'h..h', '....']
+    bc_s = ['g..g', '....', 'h..h', '....']
+    bc_d = ['....', '....', 'zzzz', 'ssss', 'ssss', 'ssss', 'ssss', 'ssss', 'zzzz', '....', '....']
+    # 2. bar_inner: 1.0 x 8.0 x 3.0 (wx=2, wy=16, wz=6), z: -1.5..+1.5
+    bi_side = [
+        'dkmmkd',  # 0 inside clamp
+        'dkmmkd',  # 1
+        'dkmmkd',  # 2
+        'dkmmkd',  # 3
+        'dkmmkd',  # 4
+        'dmfQmd',  # 5 recessed copper tensioner bar visible through outer fuller
+        'dmCQmd',  # 6
+        'dkmmkd',  # 7 behind mid cross-rib
+        'dmfFmd',  # 8 lower copper tensioner window
+        'dmQQmd',  # 9
+        'dkmmkd',  # 10
+        'dkmmkd',  # 11
+        'dmffmd',  # 12 copper nose sprocket bearing
+        'dmCQmd',  # 13
+        'kmmmmk',  # 14 nose shoulder
+        '.kmmk.',  # 15 rounded nose tip
+    ]
+    # 3. bar_outer: 2.0 x 5.5 x 2.0 (wx=4, wy=11, wz=4), y: t-7.5..t-2.0 (starts cleanly below bar_clamp!)
+    bo_side = [
+        'hell',  # 0 brushed steel cheek
+        'h..p',  # 1 upper fuller cutout (reveals recessed copper tensioner)
+        'e..p',  # 2
+        'ellp',  # 3 solid steel center cross-rib (breaks up the long slot cleanly)
+        'e..p',  # 4 lower fuller cutout
+        'e..p',  # 5
+        'ellp',  # 6 steel bridge
+        'Ooou',  # 7 Husqvarna orange tip-guard band
+        'O..u',  # 8 nose sprocket cutout framed in orange & steel
+        'l..p',  # 9
+        '.lp.',  # 10 rounded tip
+    ]
+    bo_n = ['hlll', 'hlll', 'elll', 'elll', 'elll', 'elll', 'elll', 'Oooo', 'Oooo', 'llll', '....']
+    bo_s = ['ppss', 'ppss', 'ppss', 'ppss', 'ppss', 'ppss', 'ppss', 'uuvv', 'uuvv', 'ppss', '....']
+    bo_d = ['....', 'pllp', 'pllp', '....']
+    # 4. chain: 0.5 x 9.0 x 5.0 (wx=1, wy=18, wz=10), y: t-9.0..t (runs up inside bar_clamp so running anim never gaps!)
+    ch_side = [
+        '.k......k.',  # 0 inside clamp
+        '.d......d.',  # 1
+        '.k......k.',  # 2
+        '.d......d.',  # 3
+        'wk......kw',  # 4 emerges cleanly below felling dogs
+        '.k......k.',  # 5
+        'gk......kh',  # 6
+        '.d......d.',  # 7
+        'wk......kw',  # 8
+        '.k......k.',  # 9
+        'gk......kh',  # 10
+        '.d......d.',  # 11
+        'wk......kw',  # 12
+        '.k......k.',  # 13
+        'gk......kh',  # 14
+        'wkd....dkw',  # 15 curves round nose shoulder
+        '.hkdkkdkh.',  # 16 drive links + corner teeth
+        '..g.ww.g..',  # 17 nose tip razor teeth
+    ]
+    ch_side_b = [
+        '.d......d.',  # 0 phase B: teeth shifted 1 texel along the perimeter
+        '.k......k.',  # 1
+        '.d......d.',  # 2
+        '.k......k.',  # 3
+        '.d......d.',  # 4
+        'gk......kh',  # 5
+        '.k......k.',  # 6
+        'wk......kw',  # 7
+        '.d......d.',  # 8
+        'gk......kh',  # 9
+        '.k......k.',  # 10
+        'wk......kw',  # 11
+        '.d......d.',  # 12
+        'gk......kh',  # 13
+        'wk......kw',  # 14
+        '.kd....dk.',  # 15
+        'gkkdkkdkkh',  # 16
+        '.w.g..g.w.',  # 17
+    ]
+    ch_box = ((c - 0.25, t - 9.0, -2.5), (c + 0.25, t, 2.5))
+    out = [
+        _make_blade_box('bar_clamp', ((c - 1.0, t - 2.0, -2.75), (c + 1.0, t, 2.75)), bc_side, P,
+                        north=bc_n, south=bc_s, down=bc_d),
+        _make_blade_box('bar_inner', ((c - 0.5, t - 8.0, -1.5), (c + 0.5, t, 1.5)), bi_side, P,
+                        edge_n='km', edge_s='dk', edge_d='km'),
+        _make_blade_box('bar_outer', ((c - 1.0, t - 7.5, -1.0), (c + 1.0, t - 2.0, 1.0)), bo_side, P,
+                        north=bo_n, south=bo_s, down=bo_d),
+        _make_blade_box('chain', ch_box, ch_side, P, bone='bit', edge_n=None, edge_s=None, edge_d=None),
+    ]
+    if include_phase_b:
+        out.append(_make_blade_box('chain_b', ch_box, ch_side_b, P, bone='bit_b',
+                                   edge_n=None, edge_s=None, edge_d=None))
+    return out
+
+
+BLADES_2D = {
+    'rancher_2d': _blade_rancher_2d,
+    'diamond_truss': _blade_diamond_truss,
+    'chainsword': _blade_chainsword,
+    'felling_taper': _blade_felling_taper,
+}
+
+
+def build(c, top, lamp='red', kind='B', art='B', fins='A', cowl='slate', barrel='copper', bar_shape='box', low='fins', look='rancher', sleeve=False, head_scale=False, blade='felling_taper', include_phase_b=False):
     """The chainsaw's parts on an arm centred at x c (right side) whose socket is at y top: the body (the drill's)
     and the bar under it (SAW, picked: B), its paint SAW_ART; bone 'tool' still, 'bit' the chain (it runs)."""
     sq = lambda n, y0, y1: ((c - n / 2, y0, -n / 2), (c + n / 2, y1, n / 2))
@@ -295,6 +777,10 @@ def build(c, top, lamp='red', kind='B', art='B', fins='A', cowl='slate', barrel=
     part = lambda name, box, faces, bone='tool': dict(drill.part(name, box, _paint(faces) if isinstance(faces, dict) else faces), bone=bone)
     parts = ([part('body', sq(5, t, top), saw_body(art, lamp, fins, cowl, barrel, low))] if look == 'old' else
              rancher_parts(c, t, look, lamp, part, sleeve=sleeve))
+    if blade in BLADES_2D:
+        parts += BLADES_2D[blade](c, t, _blade_pal(), include_phase_b=include_phase_b)
+        for p in parts: p.setdefault('rot', 0)
+        return parts
     if BARS[bar_shape]:
         parts += toothed_parts(c, t, BARS[bar_shape], part)
         for p in parts: p.setdefault('rot', 0)
@@ -314,8 +800,20 @@ def build(c, top, lamp='red', kind='B', art='B', fins='A', cowl='slate', barrel=
         # 0.5 past the bar is the body's front and back plane; its top, see-through, isn't drawn)
         teeth = lambda w, h: [tooth(j) * w for j in range(h)]
         cd = bd + 0.5
-        parts.append(part('chain', ((c - 0.25, t - 6.5, -cd), (c + 0.25, t, cd)),
+        ch_box = ((c - 0.25, t - 6.5, -cd), (c + 0.25, t, cd))
+        parts.append(part('chain', ch_box,
                           {'north': teeth, 'south': teeth, 'east': ring, 'west': ring, 'up': lambda w, h: ['.' * w] * h,
                            'down': teeth}, bone='bit'))
+        if include_phase_b:
+            teeth_b = lambda w, h: [tooth(j, 1) * w for j in range(h)]
+            def ring_b(w, h):
+                g = [['.'] * w for _ in range(h)]
+                for j in range(h):
+                    g[j][0], g[j][-1] = tooth(j, 1), tooth(j, 0)
+                g[-1] = [tooth(i, h + 1) for i in range(w)]
+                return [''.join(r) for r in g]
+            parts.append(part('chain_b', ch_box,
+                              {'north': teeth_b, 'south': teeth_b, 'east': ring_b, 'west': ring_b,
+                               'up': lambda w, h: ['.' * w] * h, 'down': teeth_b}, bone='bit_b'))
     for p in parts: p.setdefault('rot', 0)
     return parts

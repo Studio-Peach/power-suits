@@ -64,9 +64,10 @@ def tool_specs():
     return [
         ('drill', ('drill', 'drill_bit'), {}, ('lamp_idle', 'lamp_run'),
          drill_art.build(0, 0, lamp='dark', art='B', mode='open', fit='sleeve_box', band='slate', head_scale=True), glow),
-        ('chainsaw', ('chainsaw', 'chainsaw_chain'), {}, ('lamp_idle', 'lamp_run'),
+        ('chainsaw', ('chainsaw', 'chainsaw_chain'), {'bit_b': 'chainsaw_chain_b'}, ('lamp_idle', 'lamp_run'),
          saw_art.build(0, 0, lamp='dark', kind='B', art='B', fins='A', cowl='slate', barrel='copper',
-                       bar_shape='box', low='fins', look='rancher', sleeve=True, head_scale=True), glow),
+                       bar_shape='box', low='fins', look='rancher', sleeve=True, head_scale=True,
+                       blade=os.environ.get('SAW_BLADE', 'felling_taper'), include_phase_b=True), glow),
         ('chaingun', ('chaingun', 'chaingun_barrels'), {}, ('heat', 'heat_barrel'),
          gun_art.build(0, 0, look='2d_copper', heat='dark'), glow),
         ('flamethrower', ('flamethrower', 'flamethrower_bit'), {}, ('pilot',),
@@ -144,7 +145,10 @@ def build_bbmodel(name, bone_names, extra_bones, parts, tw, th, tex_bytes, place
     root = grp(bone_names[0], None)
     bones = {'tool': root, 'bit': grp(bone_names[1], root)}
     for k, bname in extra_bones.items():
-        bones[k] = grp(bname, root)
+        g = grp(bname, root)
+        if bname.endswith('_b'):
+            g['visibility'] = False
+        bones[k] = g
 
     for tp in parts:
         g_ = bones[tp.get('bone', 'tool')]
@@ -152,7 +156,7 @@ def build_bbmodel(name, bone_names, extra_bones, parts, tw, th, tex_bytes, place
         if side == 'l':
             x0, x1 = -x1, -x0
         e = {'name': f"tl_{name}_{tp['name']}", 'box_uv': False, 'render_order': 'default', 'locked': False,
-             'export': True, 'scope': 0, 'allow_mirror_modeling': True,
+             'export': True, 'scope': 0, 'allow_mirror_modeling': True, 'visibility': g_['visibility'],
              'from': [r(min(x0, x1)), r(min(y0, y1)), r(min(z0, z1))],
              'to': [r(max(x0, x1)), r(max(y0, y1)), r(max(z0, z1))],
              'autouv': 0, 'color': 1, 'origin': [0, 0, 0], 'faces': {}, 'type': 'cube', 'uuid': uid()}
