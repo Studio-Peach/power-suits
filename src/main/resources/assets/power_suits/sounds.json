@@ -36,10 +36,8 @@
     "subtitle": "subtitles.power_suits.tool.drill",
     "sounds": [
       {
-        "name": "minecraft:entity.minecart.riding",
-        "type": "event",
-        "pitch": 1.7,
-        "volume": 0.9
+        "name": "power_suits:tool/drill",
+        "volume": 0.75
       }
     ]
   },
