@@ -135,8 +135,8 @@ the end and `docs/guide.md` Notes).
 Replaces 3D component kitbashing (stacked flanges, lugs, sub-rods, protruding brackets) with the same 2D-painted +
 `0.5 px` outer-cutout-layer language that made the flat iron armour (`pauldron_decal`) and 2D heart engine (`harness`)
 work. Proven on the Rail Cannon (`2d_hybrid_closed`, `06a8fb8`), Flamethrower (`halo_olive`, `f04cd10`), Chaingun
-(`2d_copper`, `fb5393b`), and Chainsaw (`felling_taper`, keeping the Husqvarna Rancher base + 2-phase in-place marching
-chain `chainsaw_chain` / `chainsaw_chain_b` in `ToolRotors`); apply to the remaining tools (TNT Launcher, EM Projector, Drill):
+(`2d_copper`, `fb5393b`), Chainsaw (`felling_taper`, `b2473b0`, keeping the Husqvarna Rancher base + 2-phase in-place marching
+chain `chainsaw_chain` / `chainsaw_chain_b` in `ToolRotors`), and EM Projector (`2d_gravity_gun`, 7 cubes); apply to the remaining tools (TNT Launcher, Drill):
 - **Minimal geometry (2–4 boxes) + `0.5 px` cutout outer layers:** build each tool from simple inner core boxes wrapped
   in `0.5 px`-proud outer covering cubes whose alpha-0 cutouts (`'.'`) carve windows, vents, core apertures, stepped
   muzzles, and angled cowling profiles. In Minecraft 26.3, `RenderTypes.entityCutout` (`ToolModelRenderer`) is already
@@ -382,15 +382,17 @@ chain `chainsaw_chain` / `chainsaw_chain_b` in `ToolRotors`); apply to the remai
   hidden behind the barrel so no red peeks over it, 90 deg symmetric for `ToolRotors`), a 3.5 x 4 x 3.5 light-steel
   barrel, a 4 x 1 x 4 dark-slate muzzle ring flush with the drum front, and two 0.5 px fork-sight prongs with a 1 px
   gap; 9 px under the socket, `muzzleInsetPixels` 0).
-- `frame_em_art.py` (TOOL=em, knob `EM=claw_b2` default | `claw_b1` | `claw` | `splay` | `corner` | `step` | `legacy`,
-  `EM_GLOW=dark` | `lit`; reworked 2026-11-20: compact 5 x 3 x 5 vented steel/dark-iron housing over a 3 x 1 x 3
-  dark-bezel redstone core and four cardinal flush copper-wound prongs with aligned glowing redstone tips at
-  r=1.5..2.5; 7 px under the socket, `muzzleInsetPixels` 2; the core and four prongs share bone `em_projector_poles`
-  and spin smoothly via `ToolRotors` / `EmProjectorEffects` while searching and holding, hub corner r 2.12 < 2.5
-  housing). Both are in TOOL=all: every tool now has frame art.
-- The lens / vents and the tips are reserved dark reds (`frame_em_art.RES`), lit by `TOOL_GLOW` em_core / em_arc
-  (`ToolLight.EM_CORE` / `EM_ARC`). Seen in `runAutopilotFrame` (`ap_frame_tool_<tool>`) and `runAutopilotTnt`
-  (`ap_tnt_drum_*`, `ap_tnt_husks_fp_*`).
+- `frame_em_art.py` (TOOL=em, knob `EM=2d_gravity_gun` default | `2d_shroud_claw` | `2d_tesla_cage` |
+  `2d_lodestone_dish` | `claw_b2` | `claw_b1` | `claw` | `splay` | `corner` | `step` | `legacy`, `EM_GLOW=dark` | `idle`
+  | `lit`; reworked 2026-11-22 in the 2D-texture + cutout outer-layer style, 7 cubes, 7.5 px under the socket,
+  `muzzleInsetPixels` 1.5: 6 x 3.5 x 6 dark magnetized slate 2-layer cutout cuff with an upper 0.5 px recessed wound
+  copper stator coil window and a lower 0.5 px recessed glowing redstone capacitor window over a spinning 4 x 1.5 x 4
+  chiseled dark-lodestone bezel + faceted redstone emitter lens and four unified single-cube cardinal prongs at
+  r=2.0..3.0 with copper coil roots, riveted iron jaws and tall inner-facing glowing redstone arc electrode rails &
+  tips; core and prongs share bone `em_projector_poles` and spin smoothly via `ToolRotors` / `EmProjectorEffects`).
+- The lens / cuff windows and the prong arc rails / tips are reserved dark reds (`em_core` / `em_arc`), lit by opacity
+  (`ToolLight.EM_CORE` / `EM_ARC` with `fadesByAlpha = true`). Seen in `runAutopilotFrame` (`ap_frame_tool_em_projector`),
+  `runAutopilotHud` (`ap_hud_em*`), and `runAutopilot` (`ap_em_*`).
 
 ## Two sockets, hands detachable (2026-11-15, user)
 - Either arm ends in its hand or, with a power tool fitted, the socket the tool hangs from; both arms can carry one.

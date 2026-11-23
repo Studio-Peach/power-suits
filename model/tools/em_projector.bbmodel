@@ -16,21 +16,107 @@
  "timeline_setups": [],
  "unhandled_root_fields": {},
  "resolution": {
-  "width": 128,
+  "width": 64,
   "height": 64
  },
  "elements": [
   {
-   "name": "tl_em_projector_body",
+   "name": "tl_em_projector_cuff_inner",
    "box_uv": false,
    "render_order": "default",
    "locked": false,
    "export": true,
    "scope": 0,
    "allow_mirror_modeling": true,
+   "visibility": true,
+   "from": [
+    -2.5,
+    -3.5,
+    -2.5
+   ],
+   "to": [
+    2.5,
+    0,
+    2.5
+   ],
+   "autouv": 0,
+   "color": 1,
+   "origin": [
+    0,
+    0,
+    0
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      10,
+      12,
+      0,
+      19
+     ],
+     "texture": 0
+    },
+    "east": {
+     "uv": [
+      40,
+      12,
+      30,
+      19
+     ],
+     "texture": 0
+    },
+    "south": {
+     "uv": [
+      30,
+      12,
+      20,
+      19
+     ],
+     "texture": 0
+    },
+    "west": {
+     "uv": [
+      20,
+      12,
+      10,
+      19
+     ],
+     "texture": 0
+    },
+    "up": {
+     "uv": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "texture": null
+    },
+    "down": {
+     "uv": [
+      50,
+      12,
+      40,
+      22
+     ],
+     "texture": 0
+    }
+   },
+   "type": "cube",
+   "uuid": "7f6991eb-cbed-461b-9273-820f7d578004"
+  },
+  {
+   "name": "tl_em_projector_cuff_outer",
+   "box_uv": false,
+   "render_order": "default",
+   "locked": false,
+   "export": true,
+   "scope": 0,
+   "allow_mirror_modeling": true,
+   "visibility": true,
    "from": [
     -3,
-    -3,
+    -3.5,
     -3
    ],
    "to": [
@@ -51,7 +137,7 @@
       12,
       0,
       0,
-      6
+      7
      ],
      "texture": 0
     },
@@ -60,7 +146,7 @@
       48,
       0,
       36,
-      6
+      7
      ],
      "texture": 0
     },
@@ -69,7 +155,7 @@
       36,
       0,
       24,
-      6
+      7
      ],
      "texture": 0
     },
@@ -78,7 +164,7 @@
       24,
       0,
       12,
-      6
+      7
      ],
      "texture": 0
     },
@@ -93,33 +179,34 @@
     },
     "down": {
      "uv": [
-      72,
       0,
-      60,
-      12
+      0,
+      0,
+      0
      ],
-     "texture": 0
+     "texture": null
     }
    },
    "type": "cube",
-   "uuid": "c8a37cb4-04e2-4387-9953-ecff7b8f78b5"
+   "uuid": "9f47d7b5-e564-45f4-a5dc-641f3f5d03f7"
   },
   {
-   "name": "tl_em_projector_hub",
+   "name": "tl_em_projector_emitter_core",
    "box_uv": false,
    "render_order": "default",
    "locked": false,
    "export": true,
    "scope": 0,
    "allow_mirror_modeling": true,
+   "visibility": true,
    "from": [
     -2,
-    -4,
+    -5,
     -2
    ],
    "to": [
     2,
-    -3,
+    -3.5,
     2
    ],
    "autouv": 0,
@@ -132,79 +219,165 @@
    "faces": {
     "north": {
      "uv": [
-      80,
+      8,
+      22,
       0,
-      72,
-      2
+      25
      ],
      "texture": 0
     },
     "east": {
      "uv": [
-      104,
-      0,
-      96,
-      2
+      32,
+      22,
+      24,
+      25
      ],
      "texture": 0
     },
     "south": {
      "uv": [
-      96,
-      0,
-      88,
-      2
+      24,
+      22,
+      16,
+      25
      ],
      "texture": 0
     },
     "west": {
      "uv": [
-      88,
-      0,
-      80,
-      2
+      16,
+      22,
+      8,
+      25
      ],
      "texture": 0
     },
     "up": {
      "uv": [
-      112,
       0,
-      104,
-      8
+      0,
+      0,
+      0
      ],
-     "texture": 0
+     "texture": null
     },
     "down": {
      "uv": [
-      120,
-      0,
-      112,
-      8
+      40,
+      22,
+      32,
+      30
      ],
      "texture": 0
     }
    },
    "type": "cube",
-   "uuid": "b82fe0ad-74c2-4458-831f-e9460875835c"
+   "uuid": "ef1632fc-bcb6-43fc-9724-a171f1f48050"
   },
   {
-   "name": "tl_em_projector_pole_e_wind",
+   "name": "tl_em_projector_prong_e",
    "box_uv": false,
    "render_order": "default",
    "locked": false,
    "export": true,
    "scope": 0,
    "allow_mirror_modeling": true,
+   "visibility": true,
    "from": [
     -3,
-    -4.5,
-    -1.25
+    -7.5,
+    -1
    ],
    "to": [
     -2,
-    -3,
-    1.25
+    -3.5,
+    1
+   ],
+   "autouv": 0,
+   "color": 1,
+   "origin": [
+    0,
+    0,
+    0
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      42,
+      22,
+      40,
+      30
+     ],
+     "texture": 0
+    },
+    "east": {
+     "uv": [
+      52,
+      22,
+      48,
+      30
+     ],
+     "texture": 0
+    },
+    "south": {
+     "uv": [
+      48,
+      22,
+      46,
+      30
+     ],
+     "texture": 0
+    },
+    "west": {
+     "uv": [
+      46,
+      22,
+      42,
+      30
+     ],
+     "texture": 0
+    },
+    "up": {
+     "uv": [
+      54,
+      22,
+      52,
+      26
+     ],
+     "texture": 0
+    },
+    "down": {
+     "uv": [
+      56,
+      22,
+      54,
+      26
+     ],
+     "texture": 0
+    }
+   },
+   "type": "cube",
+   "uuid": "1c6ea0d0-8493-43d1-97cc-b841084d388a"
+  },
+  {
+   "name": "tl_em_projector_prong_w",
+   "box_uv": false,
+   "render_order": "default",
+   "locked": false,
+   "export": true,
+   "scope": 0,
+   "allow_mirror_modeling": true,
+   "visibility": true,
+   "from": [
+    2,
+    -7.5,
+    -1
+   ],
+   "to": [
+    3,
+    -3.5,
+    1
    ],
    "autouv": 0,
    "color": 1,
@@ -217,246 +390,79 @@
     "north": {
      "uv": [
       2,
-      12,
+      30,
       0,
-      15
+      38
      ],
      "texture": 0
     },
     "east": {
      "uv": [
-      14,
       12,
-      9,
-      15
+      30,
+      8,
+      38
      ],
      "texture": 0
     },
     "south": {
      "uv": [
-      9,
-      12,
-      7,
-      15
+      8,
+      30,
+      6,
+      38
      ],
      "texture": 0
     },
     "west": {
      "uv": [
-      7,
-      12,
+      6,
+      30,
       2,
-      15
+      38
      ],
      "texture": 0
     },
     "up": {
      "uv": [
-      16,
-      12,
       14,
-      17
+      30,
+      12,
+      34
      ],
      "texture": 0
     },
     "down": {
      "uv": [
-      18,
-      12,
       16,
-      17
+      30,
+      14,
+      34
      ],
      "texture": 0
     }
    },
    "type": "cube",
-   "uuid": "76922821-21b5-4e79-aeae-22f4ef355b5f"
+   "uuid": "aa8f3705-0724-40d2-a0ec-2074262975e6"
   },
   {
-   "name": "tl_em_projector_pole_e_steel",
+   "name": "tl_em_projector_prong_s",
    "box_uv": false,
    "render_order": "default",
    "locked": false,
    "export": true,
    "scope": 0,
    "allow_mirror_modeling": true,
+   "visibility": true,
    "from": [
-    -3,
-    -6,
-    -1
+    -1,
+    -7.5,
+    2
    ],
    "to": [
-    -2,
-    -4.5,
-    1
-   ],
-   "autouv": 0,
-   "color": 1,
-   "origin": [
-    0,
-    0,
-    0
-   ],
-   "faces": {
-    "north": {
-     "uv": [
-      38,
-      12,
-      36,
-      15
-     ],
-     "texture": 0
-    },
-    "east": {
-     "uv": [
-      48,
-      12,
-      44,
-      15
-     ],
-     "texture": 0
-    },
-    "south": {
-     "uv": [
-      44,
-      12,
-      42,
-      15
-     ],
-     "texture": 0
-    },
-    "west": {
-     "uv": [
-      42,
-      12,
-      38,
-      15
-     ],
-     "texture": 0
-    },
-    "up": {
-     "uv": [
-      50,
-      12,
-      48,
-      16
-     ],
-     "texture": 0
-    },
-    "down": {
-     "uv": [
-      52,
-      12,
-      50,
-      16
-     ],
-     "texture": 0
-    }
-   },
-   "type": "cube",
-   "uuid": "b6e1b1b2-7576-42f1-9f41-83e6577fb40e"
-  },
-  {
-   "name": "tl_em_projector_pole_e_tip",
-   "box_uv": false,
-   "render_order": "default",
-   "locked": false,
-   "export": true,
-   "scope": 0,
-   "allow_mirror_modeling": true,
-   "from": [
-    -3,
-    -7,
-    -1
-   ],
-   "to": [
-    -2,
-    -6,
-    1
-   ],
-   "autouv": 0,
-   "color": 1,
-   "origin": [
-    0,
-    0,
-    0
-   ],
-   "faces": {
-    "north": {
-     "uv": [
-      54,
-      12,
-      52,
-      14
-     ],
-     "texture": 0
-    },
-    "east": {
-     "uv": [
-      64,
-      12,
-      60,
-      14
-     ],
-     "texture": 0
-    },
-    "south": {
-     "uv": [
-      60,
-      12,
-      58,
-      14
-     ],
-     "texture": 0
-    },
-    "west": {
-     "uv": [
-      58,
-      12,
-      54,
-      14
-     ],
-     "texture": 0
-    },
-    "up": {
-     "uv": [
-      66,
-      12,
-      64,
-      16
-     ],
-     "texture": 0
-    },
-    "down": {
-     "uv": [
-      68,
-      12,
-      66,
-      16
-     ],
-     "texture": 0
-    }
-   },
-   "type": "cube",
-   "uuid": "f089c2ae-76df-463a-b151-21a11a9c723e"
-  },
-  {
-   "name": "tl_em_projector_pole_w_wind",
-   "box_uv": false,
-   "render_order": "default",
-   "locked": false,
-   "export": true,
-   "scope": 0,
-   "allow_mirror_modeling": true,
-   "from": [
-    2,
-    -4.5,
-    -1.25
-   ],
-   "to": [
-    3,
-    -3,
-    1.25
+    1,
+    -3.5,
+    3
    ],
    "autouv": 0,
    "color": 1,
@@ -469,497 +475,78 @@
     "north": {
      "uv": [
       20,
-      12,
-      18,
-      15
+      30,
+      16,
+      38
      ],
      "texture": 0
     },
     "east": {
      "uv": [
-      32,
-      12,
-      27,
-      15
+      28,
+      30,
+      26,
+      38
      ],
      "texture": 0
     },
     "south": {
      "uv": [
-      27,
-      12,
-      25,
-      15
+      26,
+      30,
+      22,
+      38
      ],
      "texture": 0
     },
     "west": {
      "uv": [
-      25,
-      12,
+      22,
+      30,
       20,
-      15
+      38
      ],
      "texture": 0
     },
     "up": {
      "uv": [
-      34,
-      12,
       32,
-      17
+      30,
+      28,
+      32
      ],
      "texture": 0
     },
     "down": {
      "uv": [
       36,
-      12,
-      34,
-      17
+      30,
+      32,
+      32
      ],
      "texture": 0
     }
    },
    "type": "cube",
-   "uuid": "1a180473-2519-4a68-8afd-d343da850426"
+   "uuid": "ef57ebe2-ea9f-4623-8c06-07ad49221c48"
   },
   {
-   "name": "tl_em_projector_pole_w_steel",
+   "name": "tl_em_projector_prong_n",
    "box_uv": false,
    "render_order": "default",
    "locked": false,
    "export": true,
    "scope": 0,
    "allow_mirror_modeling": true,
-   "from": [
-    2,
-    -6,
-    -1
-   ],
-   "to": [
-    3,
-    -4.5,
-    1
-   ],
-   "autouv": 0,
-   "color": 1,
-   "origin": [
-    0,
-    0,
-    0
-   ],
-   "faces": {
-    "north": {
-     "uv": [
-      70,
-      12,
-      68,
-      15
-     ],
-     "texture": 0
-    },
-    "east": {
-     "uv": [
-      80,
-      12,
-      76,
-      15
-     ],
-     "texture": 0
-    },
-    "south": {
-     "uv": [
-      76,
-      12,
-      74,
-      15
-     ],
-     "texture": 0
-    },
-    "west": {
-     "uv": [
-      74,
-      12,
-      70,
-      15
-     ],
-     "texture": 0
-    },
-    "up": {
-     "uv": [
-      82,
-      12,
-      80,
-      16
-     ],
-     "texture": 0
-    },
-    "down": {
-     "uv": [
-      84,
-      12,
-      82,
-      16
-     ],
-     "texture": 0
-    }
-   },
-   "type": "cube",
-   "uuid": "d82b2dea-72b0-404d-8b26-cf2ea14f7a05"
-  },
-  {
-   "name": "tl_em_projector_pole_w_tip",
-   "box_uv": false,
-   "render_order": "default",
-   "locked": false,
-   "export": true,
-   "scope": 0,
-   "allow_mirror_modeling": true,
-   "from": [
-    2,
-    -7,
-    -1
-   ],
-   "to": [
-    3,
-    -6,
-    1
-   ],
-   "autouv": 0,
-   "color": 1,
-   "origin": [
-    0,
-    0,
-    0
-   ],
-   "faces": {
-    "north": {
-     "uv": [
-      86,
-      12,
-      84,
-      14
-     ],
-     "texture": 0
-    },
-    "east": {
-     "uv": [
-      96,
-      12,
-      92,
-      14
-     ],
-     "texture": 0
-    },
-    "south": {
-     "uv": [
-      92,
-      12,
-      90,
-      14
-     ],
-     "texture": 0
-    },
-    "west": {
-     "uv": [
-      90,
-      12,
-      86,
-      14
-     ],
-     "texture": 0
-    },
-    "up": {
-     "uv": [
-      98,
-      12,
-      96,
-      16
-     ],
-     "texture": 0
-    },
-    "down": {
-     "uv": [
-      100,
-      12,
-      98,
-      16
-     ],
-     "texture": 0
-    }
-   },
-   "type": "cube",
-   "uuid": "7f237e16-e50e-4135-b237-f1646228bb49"
-  },
-  {
-   "name": "tl_em_projector_pole_s_wind",
-   "box_uv": false,
-   "render_order": "default",
-   "locked": false,
-   "export": true,
-   "scope": 0,
-   "allow_mirror_modeling": true,
-   "from": [
-    -1.25,
-    -4.5,
-    2
-   ],
-   "to": [
-    1.25,
-    -3,
-    3
-   ],
-   "autouv": 0,
-   "color": 1,
-   "origin": [
-    0,
-    0,
-    0
-   ],
-   "faces": {
-    "north": {
-     "uv": [
-      105,
-      12,
-      100,
-      15
-     ],
-     "texture": 0
-    },
-    "east": {
-     "uv": [
-      114,
-      12,
-      112,
-      15
-     ],
-     "texture": 0
-    },
-    "south": {
-     "uv": [
-      112,
-      12,
-      107,
-      15
-     ],
-     "texture": 0
-    },
-    "west": {
-     "uv": [
-      107,
-      12,
-      105,
-      15
-     ],
-     "texture": 0
-    },
-    "up": {
-     "uv": [
-      119,
-      12,
-      114,
-      14
-     ],
-     "texture": 0
-    },
-    "down": {
-     "uv": [
-      124,
-      12,
-      119,
-      14
-     ],
-     "texture": 0
-    }
-   },
-   "type": "cube",
-   "uuid": "52ebd649-f875-4f31-b291-a2eb2d38de21"
-  },
-  {
-   "name": "tl_em_projector_pole_s_steel",
-   "box_uv": false,
-   "render_order": "default",
-   "locked": false,
-   "export": true,
-   "scope": 0,
-   "allow_mirror_modeling": true,
+   "visibility": true,
    "from": [
     -1,
-    -6,
-    2
-   ],
-   "to": [
-    1,
-    -4.5,
-    3
-   ],
-   "autouv": 0,
-   "color": 1,
-   "origin": [
-    0,
-    0,
-    0
-   ],
-   "faces": {
-    "north": {
-     "uv": [
-      4,
-      17,
-      0,
-      20
-     ],
-     "texture": 0
-    },
-    "east": {
-     "uv": [
-      12,
-      17,
-      10,
-      20
-     ],
-     "texture": 0
-    },
-    "south": {
-     "uv": [
-      10,
-      17,
-      6,
-      20
-     ],
-     "texture": 0
-    },
-    "west": {
-     "uv": [
-      6,
-      17,
-      4,
-      20
-     ],
-     "texture": 0
-    },
-    "up": {
-     "uv": [
-      16,
-      17,
-      12,
-      19
-     ],
-     "texture": 0
-    },
-    "down": {
-     "uv": [
-      20,
-      17,
-      16,
-      19
-     ],
-     "texture": 0
-    }
-   },
-   "type": "cube",
-   "uuid": "21643b47-bf66-4080-94a4-dc9534aee2e3"
-  },
-  {
-   "name": "tl_em_projector_pole_s_tip",
-   "box_uv": false,
-   "render_order": "default",
-   "locked": false,
-   "export": true,
-   "scope": 0,
-   "allow_mirror_modeling": true,
-   "from": [
-    -1,
-    -7,
-    2
-   ],
-   "to": [
-    1,
-    -6,
-    3
-   ],
-   "autouv": 0,
-   "color": 1,
-   "origin": [
-    0,
-    0,
-    0
-   ],
-   "faces": {
-    "north": {
-     "uv": [
-      68,
-      17,
-      64,
-      19
-     ],
-     "texture": 0
-    },
-    "east": {
-     "uv": [
-      76,
-      17,
-      74,
-      19
-     ],
-     "texture": 0
-    },
-    "south": {
-     "uv": [
-      74,
-      17,
-      70,
-      19
-     ],
-     "texture": 0
-    },
-    "west": {
-     "uv": [
-      70,
-      17,
-      68,
-      19
-     ],
-     "texture": 0
-    },
-    "up": {
-     "uv": [
-      80,
-      17,
-      76,
-      19
-     ],
-     "texture": 0
-    },
-    "down": {
-     "uv": [
-      84,
-      17,
-      80,
-      19
-     ],
-     "texture": 0
-    }
-   },
-   "type": "cube",
-   "uuid": "11ae368e-8d38-49a4-891f-92635ecc59d5"
-  },
-  {
-   "name": "tl_em_projector_pole_n_wind",
-   "box_uv": false,
-   "render_order": "default",
-   "locked": false,
-   "export": true,
-   "scope": 0,
-   "allow_mirror_modeling": true,
-   "from": [
-    -1.25,
-    -4.5,
+    -7.5,
     -3
    ],
    "to": [
-    1.25,
-    -3,
+    1,
+    -3.5,
     -2
    ],
    "autouv": 0,
@@ -972,235 +559,67 @@
    "faces": {
     "north": {
      "uv": [
-      25,
-      17,
-      20,
-      20
+      40,
+      30,
+      36,
+      38
      ],
      "texture": 0
     },
     "east": {
-     "uv": [
-      34,
-      17,
-      32,
-      20
-     ],
-     "texture": 0
-    },
-    "south": {
-     "uv": [
-      32,
-      17,
-      27,
-      20
-     ],
-     "texture": 0
-    },
-    "west": {
-     "uv": [
-      27,
-      17,
-      25,
-      20
-     ],
-     "texture": 0
-    },
-    "up": {
-     "uv": [
-      39,
-      17,
-      34,
-      19
-     ],
-     "texture": 0
-    },
-    "down": {
-     "uv": [
-      44,
-      17,
-      39,
-      19
-     ],
-     "texture": 0
-    }
-   },
-   "type": "cube",
-   "uuid": "19de272c-e7cf-4d55-aaeb-053772fb02e3"
-  },
-  {
-   "name": "tl_em_projector_pole_n_steel",
-   "box_uv": false,
-   "render_order": "default",
-   "locked": false,
-   "export": true,
-   "scope": 0,
-   "allow_mirror_modeling": true,
-   "from": [
-    -1,
-    -6,
-    -3
-   ],
-   "to": [
-    1,
-    -4.5,
-    -2
-   ],
-   "autouv": 0,
-   "color": 1,
-   "origin": [
-    0,
-    0,
-    0
-   ],
-   "faces": {
-    "north": {
      "uv": [
       48,
-      17,
-      44,
-      20
-     ],
-     "texture": 0
-    },
-    "east": {
-     "uv": [
-      56,
-      17,
-      54,
-      20
+      30,
+      46,
+      38
      ],
      "texture": 0
     },
     "south": {
      "uv": [
-      54,
-      17,
-      50,
-      20
+      46,
+      30,
+      42,
+      38
      ],
      "texture": 0
     },
     "west": {
      "uv": [
-      50,
-      17,
+      42,
+      30,
+      40,
+      38
+     ],
+     "texture": 0
+    },
+    "up": {
+     "uv": [
+      52,
+      30,
       48,
-      20
+      32
      ],
      "texture": 0
     },
-    "up": {
+    "down": {
      "uv": [
-      60,
-      17,
       56,
-      19
-     ],
-     "texture": 0
-    },
-    "down": {
-     "uv": [
-      64,
-      17,
-      60,
-      19
+      30,
+      52,
+      32
      ],
      "texture": 0
     }
    },
    "type": "cube",
-   "uuid": "e25a6a73-721f-42b3-9f2b-a48cfa0f5240"
-  },
-  {
-   "name": "tl_em_projector_pole_n_tip",
-   "box_uv": false,
-   "render_order": "default",
-   "locked": false,
-   "export": true,
-   "scope": 0,
-   "allow_mirror_modeling": true,
-   "from": [
-    -1,
-    -7,
-    -3
-   ],
-   "to": [
-    1,
-    -6,
-    -2
-   ],
-   "autouv": 0,
-   "color": 1,
-   "origin": [
-    0,
-    0,
-    0
-   ],
-   "faces": {
-    "north": {
-     "uv": [
-      88,
-      17,
-      84,
-      19
-     ],
-     "texture": 0
-    },
-    "east": {
-     "uv": [
-      96,
-      17,
-      94,
-      19
-     ],
-     "texture": 0
-    },
-    "south": {
-     "uv": [
-      94,
-      17,
-      90,
-      19
-     ],
-     "texture": 0
-    },
-    "west": {
-     "uv": [
-      90,
-      17,
-      88,
-      19
-     ],
-     "texture": 0
-    },
-    "up": {
-     "uv": [
-      100,
-      17,
-      96,
-      19
-     ],
-     "texture": 0
-    },
-    "down": {
-     "uv": [
-      104,
-      17,
-      100,
-      19
-     ],
-     "texture": 0
-    }
-   },
-   "type": "cube",
-   "uuid": "3a12a7ec-3b13-4392-af6d-e0e8bef40c0c"
+   "uuid": "2b2627f1-91c1-4f1e-894b-855874f1d5a2"
   }
  ],
  "groups": [
   {
    "name": "em_projector",
-   "uuid": "cee71174-2a0e-4af7-bab3-a67e8286772c",
+   "uuid": "4ea91be7-250f-4948-928f-c208dcda44de",
    "export": true,
    "locked": false,
    "scope": 0,
@@ -1228,7 +647,7 @@
   },
   {
    "name": "em_projector_poles",
-   "uuid": "8780a569-9e4b-420c-ae0c-604fdad9715a",
+   "uuid": "13d22a25-98d7-473f-92af-7105f668d2af",
    "export": true,
    "locked": false,
    "scope": 0,
@@ -1257,29 +676,22 @@
  ],
  "outliner": [
   {
-   "uuid": "cee71174-2a0e-4af7-bab3-a67e8286772c",
+   "uuid": "4ea91be7-250f-4948-928f-c208dcda44de",
    "isOpen": true,
    "children": [
     {
-     "uuid": "8780a569-9e4b-420c-ae0c-604fdad9715a",
+     "uuid": "13d22a25-98d7-473f-92af-7105f668d2af",
      "isOpen": true,
      "children": [
-      "b82fe0ad-74c2-4458-831f-e9460875835c",
-      "76922821-21b5-4e79-aeae-22f4ef355b5f",
-      "b6e1b1b2-7576-42f1-9f41-83e6577fb40e",
-      "f089c2ae-76df-463a-b151-21a11a9c723e",
-      "1a180473-2519-4a68-8afd-d343da850426",
-      "d82b2dea-72b0-404d-8b26-cf2ea14f7a05",
-      "7f237e16-e50e-4135-b237-f1646228bb49",
-      "52ebd649-f875-4f31-b291-a2eb2d38de21",
-      "21643b47-bf66-4080-94a4-dc9534aee2e3",
-      "11ae368e-8d38-49a4-891f-92635ecc59d5",
-      "19de272c-e7cf-4d55-aaeb-053772fb02e3",
-      "e25a6a73-721f-42b3-9f2b-a48cfa0f5240",
-      "3a12a7ec-3b13-4392-af6d-e0e8bef40c0c"
+      "ef1632fc-bcb6-43fc-9724-a171f1f48050",
+      "1c6ea0d0-8493-43d1-97cc-b841084d388a",
+      "aa8f3705-0724-40d2-a0ec-2074262975e6",
+      "ef57ebe2-ea9f-4623-8c06-07ad49221c48",
+      "2b2627f1-91c1-4f1e-894b-855874f1d5a2"
      ]
     },
-    "c8a37cb4-04e2-4387-9953-ecff7b8f78b5"
+    "7f6991eb-cbed-461b-9273-820f7d578004",
+    "9f47d7b5-e564-45f4-a5dc-641f3f5d03f7"
    ]
   }
  ],
@@ -1291,9 +703,9 @@
    "namespace": "",
    "id": "0",
    "group": "",
-   "width": 128,
+   "width": 64,
    "height": 64,
-   "uv_width": 128,
+   "uv_width": 64,
    "uv_height": 64,
    "particle": false,
    "use_as_default": false,
@@ -1309,9 +721,9 @@
    "visible": true,
    "internal": true,
    "saved": true,
-   "uuid": "e495d190-2c78-41a4-bbb4-b2c8b7b813bd",
+   "uuid": "67c7b91e-99e5-405a-aac3-6b57d641b6ce",
    "relative_path": "em_projector.png",
-   "source": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAABACAYAAADS1n9/AAAB6UlEQVR42u3YsUrEMBjA8T6CcgeKiyB4IMi5CC4OIm6Ks4ODOImTg24OLr6Dm4uLb+ELyL2CbxLJyScx5tqvTXNJ4f+Dj961ubR8+S5NW72+vRttPDw+m6G335pMW8X2zq7Z2z9YGKmPt71eP6omNimfs5m5uLqtDdvm8PjMlNjebjVhf2eTom3vFsDpaOV3UOSzPZb6uGaQL9dH89/4W3UBNCVbQhJeWvsuBVD3r7MhBVBlpikAO9h3m2t/whaB6vqbpiB/uiqtPQXwMwP4BaCeAdyE247sVjpx94UGqIT2FEDkDBC7yMgdFEDkDDB0FMA0uABUzwAUwPALIOoxkAIouwBAASBFAWhfBJHhwmkH0x1U7qGOr5cb83F/ZOzWDdm36JjE08lkHn31E3rHL99D+yVkgM/Hq1GR+/xt8+fnMZRTN/4VQKiRJupOEtOPvAp2Xwm7r4hD+90BuN4YtwpJvHzPff7YPLYugNJmgNgBaDsD9l0AsefvOgMs/dbhD1yufvoegKGdP5tSCgCRtIsdf9HjV75E6kVM39cbu2hLHUt5jtbe62R/XUJTL2L6vt6uizZ/6u4aTf0VVwCax8qUi5i+rxcAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACCnb31weM/OD111AAAAAElFTkSuQmCC"
+   "source": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAACk0lEQVR42u1Yu2obQRTVB5hgI2MHQ1CVYIMhjSHBSSVCmgh1BhtUGEMaFcYQ0qUIBjdu4i4/ksI/YfQD+Yr8wCRnyTHDZK7nyquVdsk5cNnRfWhmz2j2XG3v4/mnMDo6KRrynu/thzbmew11vRRwvhm+Dy8PXv0b/AvEkIMJ25jfcwL5IiBHAH4e+MKHjD+5NubXIgBOMJoNZnLali8C6hKw82wQumy1Ceg6RIAIEAH/NwFsiLyWVYFSEZ+4q8rz2KMZxETj3a1wO30dfn6bhF8/LivDGD7EuKBV5HmJqkXA13cv7hcSG3yIcaJV5DVOQBeOQOO/ALSVh0/Wwof+epg87VeGMXxpi7rsvKURwEVcDLYr42LSBS87bylHoO3WKAFthwgQAQ03QijOvYKCj1++yjh2mO0u82KfZWc7m8HV+yPJkiJ+WZNxvtvDUz821rJLRGPEbpFjxFJ/TMB4cyPUOmOlp/Ai4nwDTJLiPgAxtsu8xmNcU//cBLTh31zaD7APQIytMnaXrTLHbJlj/9xHoE0EpI0QYtc336udvJvNwucvV5XRh2v1p+rPGNbJ//ulI3B8Oq1u7u1wVI1hGMOHMQnozI5bLzRyD0HGeHPxTsc+jDtz5ueVYd4gxrxRjuObpy30lVJOf3Na66l7aJ54Z+eps2Ikw3UkLD219DdeNCbx1nGe0oK9es95SoQWCbD01NLflABvHa+l9Xj1np9rn0FLTy39TXfOW8d5Suvx6j3nqU2ApaeW/mZfqjrqOE9pPV69Z2whBOT01NJfi4BSHecprcer95ynNgGWnlr6myPQU+d9Knv1nrGFEJDTU0t/c/WeOm+j4tV7+nqCIAiCIAiCIAiCIAiCIAiCIAiC4MJv4EyHth99ECsAAAAASUVORK5CYII="
   }
  ]
 }

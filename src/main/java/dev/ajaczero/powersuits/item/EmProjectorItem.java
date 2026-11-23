@@ -188,10 +188,10 @@ public class EmProjectorItem extends Item implements PowerTool, ModTooltip {
         return "em_projector";
     }
 
-    /** The frame's spinning pole tips end 7 px under the socket, 2 px shorter than the chaingun's 9 px muzzle. */
+    /** The frame's spinning prong tips end 7.5 px under the socket, 1.5 px shorter than the chaingun's 9 px muzzle. */
     @Override
     public float muzzleInsetPixels() {
-        return 2F;
+        return 1.5F;
     }
 
     @Override

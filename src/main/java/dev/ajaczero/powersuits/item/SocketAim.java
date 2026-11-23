@@ -24,7 +24,7 @@ public final class SocketAim {
     // reach along the view. The shoulder pivot (model/power_frame.bbmodel, left_arm): 8.25 px left of the centre, 28 px up
     // from the feet; with the +3 px sleeved tool socket (built y 19), the reach to the chaingun's muzzle (its muzzle
     // block's bottom, y 10.5 under the shoulder's 28) is 17.5 px. The other tools end within a px or two of it (drill/TNT/
-    // flamethrower 18, rail 19, chainsaw 22 (felling_taper), EM 16 with its 2 px inset). The shoulder turns with the torso, which faces
+    // flamethrower 18, rail 19, chainsaw 22 (felling_taper), EM 16.5 with its 1.5 px inset). The shoulder turns with the torso, which faces
     // the view within the head's 50 degrees: taking the view's yaw puts it at most ~0.2 blocks off, for a shot that goes
     // for the crosshair anyway (aimPoint).
     // (The big suit's: its raised elbow's muzzle 0.709 left, 2.226 up, 1.738 forward of the feet, the torso pivot

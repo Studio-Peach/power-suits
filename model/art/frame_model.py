@@ -984,15 +984,16 @@ def _tool_parts(TOOL):
 # The TNT launcher (frame_tnt_art.py) and the EM projector (frame_em_art.py): the big suit's designs (user, 2026-11-15).
 # TNT knob (2026-11-20 rework, picked 'wide' with ch_out=2.5 so no red peeks over the barrel):
 # 'wide' (default) | 'flush' | 'chunky' | 'legacy'.
-# EM knob (2026-11-20 rework, picked 'claw_b2': 3 px housing + spinning 3x1x3 redstone core & four cardinal flush
-# copper-wound prongs, 7 px overall, spun by ToolRotors): 'claw_b2' (default) | 'claw_b1' | 'claw' | 'splay' |
-# 'corner' | 'step' | 'legacy'.
+# EM knob (2026-11-22 2D-layer rework, user picked B '2d_gravity_gun': 6x3.5x6 dark magnetized slate 2-layer cuff w/
+# recessed copper stator coil & redstone core windows + spinning 4x1.5x4 chiseled lodestone lens & 4 unified cardinal
+# prongs with copper coils, riveted iron jaws and inner redstone arc rails, 7.5 px overall, spun by ToolRotors):
+# '2d_gravity_gun' (default) | '2d_shroud_claw' | '2d_tesla_cage' | '2d_lodestone_dish' | 'claw_b2' | ...
   if TOOL == 'tnt':
     import frame_tnt_art as tnt_art
     TOOL_PARTS = tnt_art.build(6.25 + ARM_OUT, SOCKET_Y, kind=os.environ.get('TNT', 'wide'), sleeve=TOOL_SLEEVE)
   if TOOL == 'em':
     import frame_em_art as em_art
-    TOOL_PARTS = em_art.build(6.25 + ARM_OUT, SOCKET_Y, kind=os.environ.get('EM', 'claw_b2'),
+    TOOL_PARTS = em_art.build(6.25 + ARM_OUT, SOCKET_Y, kind=os.environ.get('EM', '2d_gravity_gun'),
                               glow=os.environ.get('EM_GLOW', 'dark'), sleeve=TOOL_SLEEVE, head_scale=HEAD_SCALE)
   return TOOL_PARTS
 TOOL_PARTS = {t: _tool_parts(t) for t in TOOLS}

@@ -12,10 +12,10 @@ public enum ToolLight {
     HEAT(true),
     /** The chaingun's barrels behind the tips, only once they're really hot. */
     HEAT_BARREL(true),
-    /** The EM projector's lens and vents. */
-    EM_CORE(false),
-    /** The EM projector's prong tips. */
-    EM_ARC(false),
+    /** The EM projector's lens and cuff capacitor ports (fade by opacity cleanly over unlit dark redstone). */
+    EM_CORE(true),
+    /** The EM projector's prong arc rails and tips. */
+    EM_ARC(true),
     /** The flamethrower's pilot light. */
     PILOT(true),
     /** The rail cannon's core rings, a third each: lit in turn, the energy runs along the core. */

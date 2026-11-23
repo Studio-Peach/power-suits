@@ -78,7 +78,7 @@ def tool_specs():
         ('tnt_launcher', ('tnt_launcher', 'tnt_launcher_drum'), {}, (),
          tnt_art.build(0, 0, kind='wide', sleeve=True), glow),
         ('em_projector', ('em_projector', 'em_projector_poles'), {}, ('em_core', 'em_arc'),
-         em_art.build(0, 0, kind='claw_b2', glow='dark', sleeve=True, head_scale=True), glow),
+         em_art.build(0, 0, kind='2d_gravity_gun', glow='dark', sleeve=True, head_scale=True), glow),
     ]
 
 
