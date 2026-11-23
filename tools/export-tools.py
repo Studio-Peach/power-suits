@@ -63,7 +63,8 @@ def tool_specs():
     glow = dict(GLOW_MAPS) | gun_art.HEAT_GLOW
     return [
         ('drill', ('drill', 'drill_bit'), {}, ('lamp_idle', 'lamp_run'),
-         drill_art.build(0, 0, lamp='dark', art='B', mode='open', fit='sleeve_box', band='slate', head_scale=True), glow),
+         drill_art.build(0, 0, lamp='dark', art='B', mode='open', fit='sleeve_box', band='slate', head_scale=True,
+                         kind=os.environ.get('DRILL', '2d_spire_rotor')), glow),
         ('chainsaw', ('chainsaw', 'chainsaw_chain'), {'bit_b': 'chainsaw_chain_b'}, ('lamp_idle', 'lamp_run'),
          saw_art.build(0, 0, lamp='dark', kind='B', art='B', fins='A', cowl='slate', barrel='copper',
                        bar_shape='box', low='fins', look='rancher', sleeve=True, head_scale=True,

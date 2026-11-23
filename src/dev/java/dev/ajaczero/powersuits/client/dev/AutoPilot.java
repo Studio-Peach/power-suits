@@ -119,6 +119,8 @@ public final class AutoPilot {
     private static final boolean VISION_ONLY = "vision".equals(System.getProperty("power_suits.autopilot"));
     /** "saw" mode: quick chainsaw showcase (SawScene: 3P side/front3q/back/raised + 1P rest/run), ~20 s. */
     private static final boolean SAW_ONLY = "saw".equals(System.getProperty("power_suits.autopilot"));
+    /** "drill" mode: quick drill showcase (DrillScene: 3P side/front3q/back + 1P/3P spinning frames), ~20 s. */
+    private static final boolean DRILL_ONLY = "drill".equals(System.getProperty("power_suits.autopilot"));
     // The main script's sections, each starting where the one before ends (its length is the difference). Case labels
     // in script() count from their section's start, so a step added to one section only changes that section's length
     // here; every later section (and the mech scenes, MECH_START) moves along by itself. Screenshot names keep the
@@ -236,6 +238,10 @@ public final class AutoPilot {
             }
         } else if (SAW_ONLY) {
             if (!SawScene.step(mc, tick++)) {
+                mc.stop();
+            }
+        } else if (DRILL_ONLY) {
+            if (!DrillScene.step(mc, tick++)) {
                 mc.stop();
             }
         } else {

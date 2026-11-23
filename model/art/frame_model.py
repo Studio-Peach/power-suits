@@ -934,7 +934,8 @@ def _tool_parts(TOOL):
     TOOL_PARTS = drill_art.build(6.25 + ARM_OUT, SOCKET_Y, os.environ.get('LAMP', 'dark'), os.environ.get('DRILL_ART', 'B'),
                                  os.environ.get('DRILL_BASE', 'open'),
                                  'sleeve_box' if TOOL_SLEEVE else os.environ.get('DRILL_FIT', 'fist'),
-                                 os.environ.get('DRILL_BAND', 'slate'), head_scale=HEAD_SCALE)
+                                 os.environ.get('DRILL_BAND', 'slate'), head_scale=HEAD_SCALE,
+                                 kind=os.environ.get('DRILL', '2d_spire_rotor'))
   if TOOL == 'saw':
     import frame_saw_art as saw_art
     TOOL_PARTS = saw_art.build(6.25 + ARM_OUT, SOCKET_Y, os.environ.get('LAMP', 'dark'), os.environ.get('SAW', 'B'),

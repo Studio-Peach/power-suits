@@ -131,14 +131,18 @@ the end and `docs/guide.md` Notes).
 
 ## Tools (2026-11-13, the drill first)
 
-### 2D-texture + outer-cutout-layer tool design system (2026-11-21/22, approved)
+### 2D-texture + outer-cutout-layer tool design system (2026-11-21/23, approved — all 7 tools complete)
 Replaces 3D component kitbashing (stacked flanges, lugs, sub-rods, protruding brackets) with the same 2D-painted +
 `0.5 px` outer-cutout-layer language that made the flat iron armour (`pauldron_decal`) and 2D heart engine (`harness`)
-work. Proven on the Rail Cannon (`2d_hybrid_closed`, `06a8fb8`), Flamethrower (`halo_olive`, `f04cd10`), Chaingun
-(`2d_copper`, `fb5393b`), Chainsaw (`felling_taper`, `b2473b0`, keeping the Husqvarna Rancher base + 2-phase in-place marching
-chain `chainsaw_chain` / `chainsaw_chain_b` in `ToolRotors`), EM Projector (`2d_gravity_gun`, `7e7a66d`), and TNT Launcher
-(`2d_mgl_closed`, 6 cubes, closed fluted mechanical drum with zero exposed vanilla TNT textures so resource packs never
-clash); apply to the remaining tool (Drill):
+work. Completed across all 7 power tools: Rail Cannon (`2d_hybrid_closed`, `06a8fb8`), Flamethrower (`halo_olive`,
+`f04cd10`), Chaingun (`2d_copper`, `fb5393b`), Chainsaw (`felling_taper`, `b2473b0`, keeping the Husqvarna Rancher base +
+2-phase in-place marching chain `chainsaw_chain` / `chainsaw_chain_b` in `ToolRotors`), EM Projector (`2d_gravity_gun`,
+`7e7a66d`), TNT Launcher (`2d_mgl_closed`, `34cba72`, 6 cubes, closed fluted mechanical drum with zero exposed vanilla
+TNT textures so resource packs never clash), and Mining Drill (`2d_spire_rotor`, 8 cubes, `10.0 px` overall: compact
+`6x3.0x6` dark-slate/iron 2-layer cuff with outer-layer status lamp + riveted `6x2` cutout window over a sculpted
+copper rotor drum & steel commutator on `cuff_inner`, and a `7.0 px` 4-stage spinning crystalline diamond spire using
+`0.25 px`-inset seamless 4-way helical flute cutouts `5.0/4.5 -> 3.5/3.0 @ 45° -> 1.5` for real flute depth with zero
+floating edge slivers):
 - **Minimal geometry (2–4 boxes) + `0.5 px` cutout outer layers:** build each tool from simple inner core boxes wrapped
   in `0.5 px`-proud outer covering cubes whose alpha-0 cutouts (`'.'`) carve windows, vents, core apertures, stepped
   muzzles, and angled cowling profiles. In Minecraft 26.3, `RenderTypes.entityCutout` (`ToolModelRenderer`) is already

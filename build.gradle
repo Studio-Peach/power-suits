@@ -178,6 +178,12 @@ neoForge {
             systemProperty 'power_suits.autopilot', 'saw'
         }
 
+        // Dev tool: quick mining drill showcase (3P side/front3q/back + 1P/3P spinning frames; ap_drill_*.png), ~20 s.
+        autopilotDrill {
+            client()
+            systemProperty 'power_suits.autopilot', 'drill'
+        }
+
         // Dev tool: live-tunes the cockpit viewmodel (see AutoPilot.viewTuner); stays open until closed.
         autopilotView {
             client()
