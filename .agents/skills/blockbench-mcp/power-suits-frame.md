@@ -417,3 +417,28 @@ floating edge slivers):
   used with right click; both arms' HUD readouts share their corners (two chaingun-style corners would overlap); the machine
   mind uses the primary tool only; the cockpit's right tool has its own exported view model (`frame_tool_r`,
   `frame_tool_r_slim`) so it uses the same det=+1 transform as the left arm without flipping triangle winding.
+
+## Bare-frame chassis & universal gauntlets rework (2026-11-23, user)
+- Playtesting showed the original 1x-density bare frame (bright `#b4b9be` rails, 1-px leather slivers, 1-px
+  checkerboard joints, far-wall cutout collision when parked) read visually noisy and blended into iron armour.
+- Reworked in the 2D-texture + `0.5 px` cutout outer-layer design system (`model/art/frame_r4_art.py`, dispatched from
+  `frame_chassis_art.py`, default `FRAME_LOOK=iron_charcoal`, `GAUNTLET=power_fist`; earlier drafts and `current` kept
+  as knobs; texture height `TH=384`):
+  - **Palette grounded in the crafting recipes** (`suit_torso`: iron block + copper block + redstone block;
+    `suit_arm`/`suit_leg`: iron block + copper block + piston; leather dropped): tempered dark forged-iron structural
+    rails (`#969ca3` down to `#21252b`, clearly darker than bright iron armour) with top-to-bottom light falloff and
+    joint AO, deep oil-rubbed cast-iron joints/boots, burnished copper joint collars/conduits, brushed raw-iron dorsal
+    spine vertebrae, and a subtle dark redstone engine-bay core.
+  - **Covered 2-layer mechanical chest:** full `z ±3.0` chest chassis over solid `z ±2.5` `fr_chest_inner` backing with
+    recessed copper conduit slots and the central engine bay, plus widened 3-texel abdomen side rails — completely
+    closing the arm-torso air gap from every angle while keeping sleek flush open-skeleton arms and legs around the
+    pilot.
+  - **Universal 2-layer neutral dark-slate gauntlets (`GAUNTLET=power_fist`):** split cleanly between an **outer
+    `0.5 px` hand guard only** (`6 × 4.5 × 6`, `raw y 11.0..15.5`, beveled vambrace cuff + `12×12` `up` wrist ring +
+    `6×3` cutout exposing the recessed copper dorsal piston + knuckle bumper + thumb guard; `down` blank and inner palm
+    `west` open below the cuff) and the **inner `5 × 4 × 5` mechanical hand** (`raw y 10.0..14.0`, dark grip palm +
+    4 curled fingers stepping `0.5 px` inward and protruding `1.0 px` below the knuckle guard into a `10×10` Variant-B
+    clenched-fist underside aligned 1-to-1 around `east` → `down` → `west`). Painted in neutral dark slate outside iron
+    armour's 8 dye-swapped steel shades and shared across Bare Frame (`fr_gauntlet_outer_*`), Copper Armour
+    (`cu_gauntlet_outer_*`), and Iron Armour (`ar_gauntlet_outer_*`) hand arms (socket arms untouched for tools;
+    first-person cockpit `view/frame_arm(_l)(_slim).geo.json` picks it up automatically).

@@ -1001,6 +1001,42 @@ def _tool_parts(TOOL):
 TOOL_PARTS = {t: _tool_parts(t) for t in TOOLS}
 for t, parts_ in TOOL_PARTS.items():
     for p in parts_: SHELLS[f"tl_{t}_{p['name']}"] = dict(faces=p['faces'])
+# Bare-frame chassis art (2026-11-23, user picked R4-A 'iron_charcoal' + universal slate 2-layer 'power_fist'
+# gauntlet in the 2D-texture + 0.5 px cutout outer-layer design system): 2 texels/px dark tempered forged-iron
+# open-limb skeleton with burnished copper joint collars, covered 2-layer mechanical chest w/ recessed conduits &
+# redstone engine socket, and a universal neutral-slate 2-layer gauntlet (outer 0.5 px hand guard + inner 5x5
+# curled mechanical fingers) shared across bare frame, copper armour, and iron armour. Earlier drafts and 'current'
+# (original 1x frame) remain available as FRAME_LOOK / GAUNTLET env knobs.
+FRAME_LOOK = os.environ.get('FRAME_LOOK', 'iron_charcoal')
+CHASSIS = None
+if FRAME_LOOK != 'current':
+    import frame_chassis_art as chassis_art
+    CHASSIS = chassis_art.build(FRAME_LOOK, CHEST_X)
+    for _ck in ('chest_shell', 'abdomen_shell', 'belt_shell', 'arm_shell', 'arm_socket_shell', 'leg_shell'):
+        SHELLS[_ck] = dict(faces=CHASSIS[_ck], compact=True)
+    for _ck in ('chest_inner', 'abdomen_inner'):
+        SHELLS[_ck] = dict(faces=CHASSIS[_ck], compact=True)
+    if CHASSIS['layered_limbs']:
+        SHELLS['arm_outer'] = dict(faces=CHASSIS['arm_outer'], compact=True)
+        SHELLS['leg_outer'] = dict(faces=CHASSIS['leg_outer'], compact=True)
+    else:
+        SHELLS['shoulder_plate'] = dict(faces=CHASSIS['shoulder_plate'], compact=True)
+    if CHASSIS.get('gauntlet_outer') is not None:
+        SHELLS['gauntlet_outer'] = dict(faces=CHASSIS['gauntlet_outer'], compact=True)
+        # Share the universal 2x dark-slate inner hand across iron & copper hand-arm armour pieces too!
+        def _arm_with_2x_fist(arm_key):
+            sp = SHELLS[arm_key]
+            gi = CHASSIS['gauntlet_inner']
+            faces = {}
+            for f in ('north', 'east', 'south', 'west'):
+                # Exact 2x2 integer doubling of the 5x12 arm vambrace + 10x8 dark-slate inner hand
+                up2 = [[c for c in r for _ in range(2)] for r in sp['cage'][f] for _ in range(2)]
+                faces[f] = up2 + gi[f][24:]
+            faces['up'] = sp['up']
+            faces['down'] = gi['down']
+            SHELLS[arm_key] = dict(faces=faces, compact=True)
+        for _ak in ('arm_armor', 'cu_arm_armor'):
+            if _ak in SHELLS: _arm_with_2x_fist(_ak)
 # where each shell's faces sit in the texture (below / beside nothing else), one strip per shell
 SHELL_AT = {'arm_shell': (0, 64), 'leg_shell': (0, 80),
             'chest_armor': (35, 87), 'waist_armor': (128, 40), 'helmet_armor': (70, 112), 'arm_armor': (128, 0),
@@ -1038,6 +1074,14 @@ def shell_art(part, f):
 # half.
 TW = 256
 SHELL_AT.update(belt_shell=(128, 32), chest_shell=(128, 80), abdomen_shell=(128, 92), shoulder_plate=(128, 104))
+if CHASSIS is not None:
+    TH = max(TH, 384)
+    for _ck in ('chest_shell', 'abdomen_shell', 'chest_inner', 'abdomen_inner', 'belt_shell',
+                'arm_shell', 'arm_socket_shell', 'leg_shell', 'shoulder_plate', 'arm_outer', 'leg_outer', 'gauntlet_outer'):
+        if _ck in SHELLS: SHELL_AT[_ck] = None
+    if CHASSIS.get('gauntlet_outer') is not None:
+        for _ak in ('arm_armor', 'cu_arm_armor'):
+            if _ak in SHELLS: SHELL_AT[_ak] = None
 
 SHELL_UV, _used = {}, set()
 # Parts without a fixed place (SHELL_AT None) go into the first free strip, scanning the texture row by row (the
@@ -1074,11 +1118,10 @@ for part, at in sorted(SHELL_AT.items(), key=lambda kv: kv[1] is None):
     u, v = at or _free_at(part)
     for f in FACES:
         if _blank(part, f):
-            if EMPTY_UV is None:   # a texel left free (so see-through) in the strip's row, past its end
-                SHELL_AT['_empty'] = None
-                SHELLS['_empty'] = dict(faces={g: ['.'] if g == 'north' else [] for g in FACES})
-                EMPTY_UV = _free_at('_empty')
-                del SHELL_AT['_empty'], SHELLS['_empty']
+            if EMPTY_UV is None:   # one free see-through texel at the far bottom-right corner
+                EMPTY_UV = (TW - 1, TH - 1)
+                while EMPTY_UV in _used:
+                    EMPTY_UV = (EMPTY_UV[0] - 1, EMPTY_UV[1])
                 _used.add(EMPTY_UV)
             SHELL_UV[part, f] = (*EMPTY_UV, 1, 1)
             continue
@@ -1208,6 +1251,10 @@ def painted(g, side, part, name, a, b, raw=False):
 def hollow(g, side, part, name, a, b, raw=False):
     """A shell: a painted cube whose see-through texels the clearance check ignores (it checks shell_slabs)."""
     e = painted(g, side, part, name, a, b, raw=raw)
+    if SHELLS[part].get('compact'):
+        for f in FACES:
+            src = f if side == 'r' else {'east': 'west', 'west': 'east'}.get(f, f)
+            if _blank(part, src): e['faces'][f]['texture'] = None
     e['_args'] = (part, side, a, b, 0 if raw else FY)
     slab_up(e)
     return e
@@ -1255,6 +1302,9 @@ steve(pilot, 'st_head', (-4, 26, -4), (4, 34, 4), STEVE['head'])
 # (its art: _torso()).
 hollow(torso, 'r', 'chest_shell', 'fr_chest_shell', (-CHEST_X, 20, -TZ), (CHEST_X, 26, TZ))
 hollow(torso, 'r', 'abdomen_shell', 'fr_abdomen_shell', (-TX, 15, -TZ), (TX, 20, TZ))
+if CHASSIS is not None:
+    hollow(torso, 'r', 'chest_inner', 'fr_chest_inner', (-CHEST_X + 0.5, 20, -TZ + 0.5), (CHEST_X - 0.5, 26, TZ - 0.5))
+    hollow(torso, 'r', 'abdomen_inner', 'fr_abdomen_inner', (-TX + 0.5, 15, -TZ + 0.5), (TX - 0.5, 20, TZ - 0.5))
 pilot = group('pilot_torso', (0, 14, 0), torso)
 steve(pilot, 'st_torso', (-4, 14, -2), (4, 26, 2), STEVE['torso'])
 
@@ -1275,6 +1325,9 @@ for side in ('r', 'l'):
     # the splay (outer edge 0.1 px up at 2 deg). It stops at y 15.5, 0.5 px under the belt: its top band's outer end
     # rises as the leg splays.
     hollow(leg, side, 'leg_shell', f'fr_leg_shell_{side}', (-0.25 + LEG_OUT, 0, -2.5), (4.75 + LEG_OUT, 15.5, 2.5), raw=True)
+    if CHASSIS is not None and CHASSIS['layered_limbs']:
+        hollow(leg, side, 'leg_outer', f'fr_leg_outer_{side}',
+               (-0.25 + LEG_OUT, 4, -2.5 - DECAL), (4.75 + LEG_OUT + DECAL, 15.5, 2.5 + DECAL), raw=True)
     p = group(f'pilot_{nm}_leg', ((2 + LEG_OUT) * s, 14, 0), leg)
     steve(p, f'st_leg_{side}', *sx((0 + LEG_OUT, 2, -2), (4 + LEG_OUT, 14, 2)), STEVE[f'leg_{side}'])
     # arm: Steve's arm x 4..8 (his hand at the bottom, y 14), shoulder pivot (±6, 26)
@@ -1290,6 +1343,9 @@ for side in ('r', 'l'):
     hand_arm = side not in SOCKET_ARMS or ARMOR == 'game'
     if hand_arm:
         hollow(arm, side, 'arm_shell', f'fr_arm_shell_{side}', (3.75 + ARM_OUT, 10, -2.5), (8.75 + ARM_OUT, 26, 2.5))
+        if CHASSIS is not None and CHASSIS.get('gauntlet_outer') is not None:
+            hollow(arm, side, 'gauntlet_outer', f'fr_gauntlet_outer_{side}',
+                   (3.25 + ARM_OUT, 11, -2.5 - DECAL), (8.75 + ARM_OUT + DECAL, 15.5, 2.5 + DECAL))
     if side in SOCKET_ARMS:
         hollow(arm, side, 'arm_socket_shell', f'fr_arm_socket_shell_{side}' if ARMOR == 'game' else f'fr_arm_shell_{side}',
                (3.75 + ARM_OUT, ARM_SOCKET_Y, -2.5), (8.75 + ARM_OUT, 26, 2.5))
@@ -1325,7 +1381,10 @@ for side in ('r', 'l'):
     # the shoulder plate on the arm box's top, its inner side over the arm box's inner wall (one per look of the arm: hand,
     # and socket in the saved files, which hold both)
     for _sp in (('', '_socket') if ARMOR == 'game' else ('',)):
-        if SHOULDER == 'plate':
+        if CHASSIS is not None and CHASSIS['layered_limbs']:
+            hollow(arm, side, 'arm_outer', f'fr_shoulder_plate{_sp}_{side}',
+                   (3.75 + ARM_OUT, ARM_SOCKET_Y, -2.5 - DECAL), (8.75 + ARM_OUT + DECAL, 26 + DECAL, 2.5 + DECAL))
+        elif SHOULDER == 'plate':
             painted(arm, side, 'shoulder_plate', f'fr_shoulder_plate{_sp}_{side}',
                     (3.75 + ARM_OUT, 26, -2.5 - PLATE_FB), (8.75 + ARM_OUT + PLATE_OUT, 27, 2.5 + PLATE_FB))
         elif SHOULDER == 'decal':   # 3.5 px of the arm's top, 0.5 off it outside, front, back and above
@@ -1636,6 +1695,9 @@ if ARMOR != 'none':
     for piece, frame in (('chest', 'fr_chest_shell'), ('waist', 'fr_abdomen_shell')):
         unlink(frame)
         _armor('torso', 'r', piece, f'ar_{piece}')
+    if CHASSIS is not None:
+        unlink('fr_chest_inner')
+        unlink('fr_abdomen_inner')
     if 'cu_belt' in ARMOR_BOX:
         _armor('torso', 'r', 'cu_belt', 'ar_cu_belt')
     for i, b in enumerate(WAIST_STEPS if ARMOR_FORM == 'solid' and ARMOR != 'copper' else []):
@@ -1650,7 +1712,14 @@ if ARMOR != 'none':
             shell = f'fr_arm_socket_shell_{side}' if sock else f'fr_arm_shell_{side}'
             if ARMOR != 'game' and side == 'l' and TOOLS: shell, sock = f'fr_arm_shell_{side}', True
             for frame in (shell, f'fr_shoulder_plate{variant}_{side}'): unlink(frame, variant)
+            if not sock and CHASSIS is not None and CHASSIS.get('gauntlet_outer') is not None:
+                unlink(f'fr_gauntlet_outer_{side}', variant)
             _armor(f'{nm}_arm', side, 'arm_socket' if sock else 'arm', f'ar_arm{variant}_{side}', variant=variant)
+            if not sock and CHASSIS is not None and CHASSIS.get('gauntlet_outer') is not None:
+                _ga = next(x for x in groups if x['name'] == f'armor_{nm}_arm{variant}')
+                _ge = hollow(_ga, side, 'gauntlet_outer', f'ar_gauntlet_outer_{side}',
+                             (3.25 + ARM_OUT, 11, -2.5 - DECAL), (8.75 + ARM_OUT + DECAL, 15.5, 2.5 + DECAL))
+                _ge['_armor'] = 'addon'
             if ARMOR != 'copper':
                 if ARMOR_FORM == 'solid': _armor(f'{nm}_arm', side, 'pauldron', f'ar_pauldron{variant}_{side}', addon=True, variant=variant)
                 else:   # the decal: 0.5 px off the arm piece's top, outer side, front and back, its inner edge where the solid
@@ -1660,6 +1729,8 @@ if ARMOR != 'none':
                     e = painted(g, side, 'pauldron_armor', f'ar_pauldron{variant}_{side}', *PAULDRON_DECAL)
                     e['_armor'] = 'addon'
         unlink(f'fr_leg_shell_{side}')
+        if CHASSIS is not None and CHASSIS['layered_limbs']:
+            unlink(f'fr_leg_outer_{side}')
         _armor(f'{nm}_leg', side, 'leg', f'ar_leg_{side}', raw=True)
     if ARMOR == 'game':
         # Copper armour tier (2026-11-20): lighter silhouette (no pauldrons, no knee pads, pinched slim abdomen),
@@ -1671,6 +1742,11 @@ if ARMOR != 'none':
                 sock = variant == '_socket'
                 _armor(f'{nm}_arm', side, 'cu_arm_socket' if sock else 'cu_arm', f'cu_arm{variant}_{side}',
                        box=ARMOR_BOX['arm_socket' if sock else 'arm'], variant=variant, prefix='copper')
+                if not sock and CHASSIS is not None and CHASSIS.get('gauntlet_outer') is not None:
+                    _gc = next(x for x in groups if x['name'] == f'copper_{nm}_arm{variant}')
+                    _ge = hollow(_gc, side, 'gauntlet_outer', f'cu_gauntlet_outer_{side}',
+                                 (3.25 + ARM_OUT, 11, -2.5 - DECAL), (8.75 + ARM_OUT + DECAL, 15.5, 2.5 + DECAL))
+                    _ge['_armor'] = 'addon'
             _armor(f'{nm}_leg', side, 'cu_leg', f'cu_leg_{side}', box=ARMOR_BOX['leg'], raw=True, prefix='copper')
 
 # ---------------------------------------------------------------- engine (draft, ENGINE)
