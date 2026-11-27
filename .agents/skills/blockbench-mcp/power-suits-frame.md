@@ -442,3 +442,11 @@ floating edge slivers):
     armour's 8 dye-swapped steel shades and shared across Bare Frame (`fr_gauntlet_outer_*`), Copper Armour
     (`cu_gauntlet_outer_*`), and Iron Armour (`ar_gauntlet_outer_*`) hand arms (socket arms untouched for tools;
     first-person cockpit `view/frame_arm(_l)(_slim).geo.json` picks it up automatically).
+  - **2026-11-26 pure texture-only machine hand update (`GAUNTLET=wrio_a2` default, zero geometry changes):**
+    replaced the inner `5 × 4 × 5` hand texture with a Wriothesley-inspired dark-slate + burnished-copper clenched fist
+    (4 curled fingers `index 2 / middle 2 / ring 2 / pinky 1` + 3 `ink` grooves with copper knuckle & fingertip bands
+    wrapped 1-to-1 around `east → down` with `row = 9 - k` so index sits at `north` and pinky at `south`, a `1`-texel
+    `ink` hollow seam, and a chunky copper-banded thumb tucked into the empty palm space across `north`, `west`, and
+    `down`), while extending `gauntlet_outer` on `north` (`cols 0..5` flush to the hollow seam, dropping the old outer
+    thumb guard) and `south` (`cols 1..11` full riveted back guard, stopping flush at `col 1` with zero palm overhang).
+    Also added cube/quad AABB prefilters to `check()` / `check_armor()` in `frame_model.py` (`ARMOR=game` builds ~3.3 s).

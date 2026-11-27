@@ -685,6 +685,413 @@ def _gauntlet_2layer(st, heavy=False, slate_universal=True):
     return in_hand, outer
 
 
+def _gauntlet_wrio(st, variant='wrio_a'):
+    """Pure 2-layer texture-only Wriothesley-inspired machine hand under the existing 0.5 px outer guard (ZERO extra cubes!).
+
+    Uses ONLY the existing 2-layer boxes:
+    - INNER 5x4x5 hand (bottom 4 px of arm_shell / arm_armor / cu_arm_armor, 10x8 sides + 10x10 down):
+      4 curled fingers (index k=0..1, middle k=3..4, ring k=6..7, pinky k=9, separated by 3 ink grooves at k=2,5,8)
+      with burnished copper knuckle & fingertip bands + painted dark palm hollow recess aligned 1-to-1 across
+      east -> down -> north/south -> west (down row = 9 - k so index sits at north and pinky at south!).
+    - OUTER 0.5 px guard (gauntlet_outer, 6 x 4.5 x 6, 12x9 sides + 12x12 up, down = blank):
+      keeps the existing beveled slate cuff, copper dorsal piston cutout, and knuckle impact bar on east, while
+      painting the curled 3D-look THUMB (with burnished copper knuckle band) directly onto the 0.5 px-proud north
+      outer layer so it pops off the inner hand without any extra 3D geometry.
+
+    Variants (all 100% texture-only, identical 2-box geometry to power_fist):
+      wrio_a: 3-texel palm / 2-texel painted hollow / 5-texel copper-slate-copper fingers, neutral dark slate
+      wrio_b: 2-texel west hollow / 8-texel full-width curled fingers + copper-tipped west fingertips, bolder thumb
+      wrio_c: Same 3/2/5 Wriothesley layout as wrio_a with deeper oil-navy inner hand contrast under the slate guard
+    """
+    # Outer guard stays in the universal neutral dark slate (matches bare frame, copper armour, and every dyed iron armour)
+    srim = _rgba((0x74, 0x7b, 0x82))
+    shi_ = _rgba((0x5a, 0x62, 0x68))
+    smid = _rgba((0x44, 0x4b, 0x50))
+    ssh  = _rgba((0x30, 0x36, 0x3a))
+    sdk  = _rgba((0x21, 0x25, 0x28))
+    ink  = _rgba((0x13, 0x16, 0x18))
+    kbar_hi  = _rgba((0x6a, 0x71, 0x78))
+    kbar_mid = _rgba((0x4e, 0x55, 0x5b))
+    kbar_sh  = _rgba((0x34, 0x3a, 0x3f))
+
+    # Inner machine hand & thumb metal palette
+    if variant == 'wrio_c':
+        hrim = _rgba((0x52, 0x5d, 0x6c))
+        hhi  = _rgba((0x3c, 0x46, 0x54))
+        hmid = _rgba((0x2b, 0x33, 0x40))
+        hsh  = _rgba((0x1e, 0x24, 0x2e))
+        hdk  = _rgba((0x14, 0x18, 0x20))
+        hink = _rgba((0x0c, 0x0f, 0x14))
+        ahi, amid, ash = _rgba((0xf5, 0xb8, 0x80)), _rgba((0xcf, 0x7c, 0x44)), _rgba((0x85, 0x46, 0x22))
+    else:
+        hrim, hhi, hmid, hsh, hdk, hink = srim, shi_, smid, ssh, sdk, ink
+        ahi, amid, ash = [_rgba(c) for c in st['ac']]
+
+    gap_k = {2, 5, 8}   # k=0..1 index (north), 2 gap, 3..4 middle, 5 gap, 6..7 ring, 8 gap, 9 pinky (south)
+
+    # ---- 1. INNER 5x4x5 MACHINE HAND (10 x 8 sides, 10 x 10 down) ----
+    # East (back of hand + protruding knuckles, col = 9 - k: col 9 = north/index .. col 0 = south/pinky)
+    ie = _grid(10, 8, hdk)
+    _hline(ie, 0, 0, 10, hink)
+    # Recessed copper dorsal hydraulic piston visible through outer guard's 6x3 cutout (rows 1..3)
+    _rect(ie, 1, 1, 9, 4, hink)
+    _hline(ie, 1, 2, 8, ahi)
+    _hline(ie, 2, 2, 8, amid)
+    _hline(ie, 3, 2, 8, ash)
+    _hline(ie, 4, 0, 10, hsh)
+    _hline(ie, 5, 0, 10, hink)   # cast-shadow crease right below outer knuckle bar
+    # Protruding curled fingers (rows 6..7 = raw y 11.0..10.0): dark upper knuckle + burnished copper bend!
+    for k in range(10):
+        c = 9 - k
+        if k in gap_k:
+            ie[6][c] = ie[7][c] = hink
+        else:
+            lit = k in (0, 3, 6, 9)
+            ie[6][c] = hhi if lit else hmid
+            ie[7][c] = ahi if lit else amid
+
+    # Down (underside of clenched fist, 10 x 10: col 0 = west/palm .. col 9 = east/knuckles; row = 9 - k!)
+    idn = _grid(10, 10, hink)
+    if variant == 'wrio_b':
+        # Full-width curled fingers (cols 2..9) + 2-texel deep ink hollow along west (cols 0..1)
+        for k in range(10):
+            r = 9 - k
+            if k in gap_k:
+                _hline(idn, r, 0, 10, hink)
+            else:
+                lit = k in (0, 3, 6, 9)
+                for c in range(10):
+                    if c == 9:
+                        idn[r][c] = ahi if lit else amid        # outer copper knuckle band (meets east row 7)
+                    elif c == 2:
+                        idn[r][c] = ahi if lit else amid        # inner copper PIP joint / fingertip band
+                    elif c <= 1:
+                        idn[r][c] = hink                        # deep painted palm hollow slot along west
+                    elif c >= 7:
+                        idn[r][c] = hhi if lit else hmid
+                    elif c >= 5:
+                        idn[r][c] = hmid if lit else hsh
+                    else:
+                        idn[r][c] = hsh if lit else hdk
+    else:
+        # Wriothesley 3-2-5 layout: [0..2 palm heel] [3..4 ink hollow] [5 copper tips] [6..8 dark fingers] [9 copper knuckles]
+        for k in range(10):
+            r = 9 - k
+            # Palm heel (cols 0..2) — uninterrupted dark slate block on west side
+            idn[r][0] = hsh if r in (0, 9) else hdk
+            idn[r][1] = hdk
+            idn[r][2] = hink if r in (0, 9) else hdk
+            # Deep painted hollow gap (cols 3..4)
+            idn[r][3] = idn[r][4] = hink
+            # Curled fingers (cols 5..9)
+            if k in gap_k:
+                _hline(idn, r, 5, 10, hink)
+            else:
+                lit = k in (0, 3, 6, 9)
+                idn[r][5] = ahi if lit else amid                # copper fingertip cap facing painted hollow
+                idn[r][6] = hsh if lit else hdk
+                idn[r][7] = hmid if lit else hsh
+                idn[r][8] = hhi if lit else hmid
+                idn[r][9] = ahi if lit else amid                # copper knuckle band meeting east row 7
+        if variant == 'wrio_a2':
+            # Tucked thumb resting in the empty space under/beside the other fingers (cols 0..3, north rows 5..9; row 4 = ink gap!)
+            # Meets in_n cols 6..9 row 7 (copper edge at row 9) and west cols 0..4!
+            _hline(idn, 4, 0, 4, hink)                          # ink groove separating thumb from lower palm heel
+            for r in range(5, 10):
+                for c in range(0, 4):
+                    if r == 9:
+                        idn[r][c] = ahi if c >= 2 else amid if c == 1 else ash   # matches in_n row 7 cols 6..9!
+                    elif r == 5:
+                        idn[r][c] = ahi if c >= 2 else amid if c == 1 else ash   # copper thumb tip facing pinky side!
+                    elif c == 3:
+                        idn[r][c] = hhi if r >= 7 else hmid     # lit edge facing the 1-texel hollow col 4
+                    elif c == 0:
+                        idn[r][c] = hsh                         # shaded west edge
+                    else:
+                        idn[r][c] = hmid if r >= 7 else hsh
+
+    # North (index-finger & thumb side, 10 x 8: col 0 = east/knuckles .. col 9 = west/palm)
+    in_n = _grid(10, 8, hdk)
+    _hline(in_n, 0, 0, 10, hink)
+    _rect(in_n, 0, 1, 10, 5, hsh)
+    _hline(in_n, 5, 0, 10, hink)
+    if variant == 'wrio_b':
+        # Full-width index finger profile (cols 0..7) + 2-texel painted hollow slot on west (cols 8..9)
+        _rect(in_n, 8, 2, 10, 8, hink)
+        for c in range(8):
+            if c == 0:
+                in_n[6][c] = hhi; in_n[7][c] = ahi
+            elif c == 7:
+                in_n[6][c] = hmid; in_n[7][c] = ahi
+            else:
+                in_n[6][c] = hmid if c <= 3 else hsh
+                in_n[7][c] = hmid if c <= 3 else hsh
+    elif variant == 'wrio_a1':
+        # Keep A's 5-2-3 curled fingers + hollow + palm, with the curled THUMB painted in the middle layer (in_n)!
+        # Dark recessed background in open window behind/around thumb
+        _rect(in_n, 3, 1, 10, 6, hink)
+        # Curled index finger protruding below outer guard (cols 0..4, rows 6..7)
+        in_n[6][0] = hhi;  in_n[7][0] = ahi                     # copper knuckle corner (matches east & down col 9!)
+        in_n[6][1] = hmid; in_n[7][1] = hmid
+        in_n[6][2] = hmid; in_n[7][2] = hsh
+        in_n[6][3] = hsh;  in_n[7][3] = hsh
+        in_n[6][4] = hmid; in_n[7][4] = ahi                     # copper fingertip (matches down col 5!)
+        # Painted 2-texel palm hollow (cols 5..6, rows 6..7) & dark palm heel (cols 7..9, rows 6..7)
+        _rect(in_n, 5, 6, 7, 8, hink)
+        _rect(in_n, 7, 6, 10, 7, hdk); _hline(in_n, 7, 7, 10, hink)
+        # Curled THUMB in the middle layer (anchored at palm-wrist cols 7..9, copper band row 2, curls across hollow cols 4..7!)
+        in_n[1][7] = hhi;  in_n[1][8] = hmid; in_n[1][9] = hsh
+        in_n[2][6] = ahi;  in_n[2][7] = ahi;  in_n[2][8] = amid; in_n[2][9] = ash   # copper thumb knuckle band!
+        in_n[3][4] = hrim; in_n[3][5] = hhi;  in_n[3][6] = hmid; in_n[3][7] = hsh; in_n[3][8] = hink
+        in_n[4][3] = hrim; in_n[4][4] = hhi;  in_n[4][5] = hmid; in_n[4][6] = hsh; in_n[4][7] = hink
+        in_n[5][3] = hhi;  in_n[5][4] = hmid; in_n[5][5] = hsh;  in_n[5][6] = hdk
+        # Keep palm heel visible on far right (cols 8..9, rows 3..6)
+        _rect(in_n, 8, 3, 10, 6, hsh); _vline(in_n, 9, 3, 6, hmid)
+    elif variant == 'wrio_a2':
+        # Keep A's 5-col curled fingers, with the THUMB tucked lower into the empty hollow/palm space (north + down + west)!
+        _rect(in_n, 3, 1, 10, 8, hink)
+        # Curled index finger (cols 0..4, rows 6..7)
+        in_n[6][0] = hhi;  in_n[7][0] = ahi
+        in_n[6][1] = hmid; in_n[7][1] = hmid
+        in_n[6][2] = hmid; in_n[7][2] = hsh
+        in_n[6][3] = hsh;  in_n[7][3] = hsh
+        in_n[6][4] = hmid; in_n[7][4] = ahi
+        # 1-texel crisp ink hollow seam separating index fingertip (col 4) from tucked thumb (cols 6..9)!
+        _vline(in_n, 5, 1, 8, hink)
+        # Chunky curled THUMB occupying the empty space right beside/under the fingers (cols 6..9, rows 1..7)!
+        _rect(in_n, 6, 1, 10, 8, hmid)
+        _vline(in_n, 6, 1, 8, hhi)                              # lit knuckle-facing edge of thumb
+        _vline(in_n, 9, 1, 8, hsh)                              # shaded palm-corner edge (wraps onto west col 0!)
+        _hline(in_n, 1, 6, 10, hhi); in_n[1][6] = hrim
+        # Burnished copper thumb knuckle band (row 3) + copper thumb tip edge (row 7, wraps cleanly onto down!)
+        in_n[3][6] = ahi;  in_n[3][7] = ahi;  in_n[3][8] = amid; in_n[3][9] = ash
+        in_n[4][6] = hhi;  in_n[4][7] = hmid; in_n[4][8] = hsh;  in_n[4][9] = hdk
+        in_n[5][6] = hhi;  in_n[5][7] = hmid; in_n[5][8] = hsh;  in_n[5][9] = hdk
+        in_n[6][6] = hmid; in_n[6][7] = hmid; in_n[6][8] = hsh;  in_n[6][9] = hdk
+        in_n[7][6] = ahi;  in_n[7][7] = ahi;  in_n[7][8] = amid; in_n[7][9] = ash
+    else:
+        # 5-2-3 Wriothesley side profile aligned 1-to-1 with down:
+        # cols 0..4 curled index finger (col 0 copper knuckle, 1..3 slate, col 4 copper tip) | cols 5..6 deep ink hollow | cols 7..9 dark palm heel
+        _rect(in_n, 5, 2, 7, 8, hink)                           # vertical painted palm hollow behind thumb!
+        _rect(in_n, 7, 1, 10, 7, hsh); _vline(in_n, 9, 1, 7, hmid)
+        _hline(in_n, 6, 7, 10, hdk); _hline(in_n, 7, 7, 10, hink)   # recessed shadow under palm heel
+        in_n[6][0] = hhi;  in_n[7][0] = ahi                     # copper knuckle corner (matches east & down col 9!)
+        in_n[6][1] = hmid; in_n[7][1] = hmid
+        in_n[6][2] = hmid; in_n[7][2] = hsh
+        in_n[6][3] = hsh;  in_n[7][3] = hsh
+        in_n[6][4] = hmid; in_n[7][4] = ahi                     # copper fingertip (matches down col 5!)
+
+    # South (pinky side, 10 x 8: col 0 = west/palm .. col 9 = east/knuckles)
+    in_s = _grid(10, 8, hdk)
+    _hline(in_s, 0, 0, 10, hink)
+    _rect(in_s, 0, 1, 10, 5, hsh)
+    _hline(in_s, 5, 0, 10, hink)
+    if variant == 'wrio_b':
+        _rect(in_s, 0, 2, 2, 8, hink)
+        for c in range(2, 10):
+            if c == 9:
+                in_s[6][c] = hhi; in_s[7][c] = ahi
+            elif c == 2:
+                in_s[6][c] = hmid; in_s[7][c] = ahi
+            else:
+                in_s[6][c] = hsh if c <= 5 else hmid
+                in_s[7][c] = hdk if c <= 5 else hsh
+    else:
+        # 3-2-5 Wriothesley side profile (visible from behind in 3rd-person!):
+        # cols 0..2 dark palm heel | cols 3..4 deep ink hollow | cols 5..9 curled pinky (col 5 copper tip, col 9 copper knuckle)
+        _rect(in_s, 0, 1, 3, 7, hsh); _vline(in_s, 0, 1, 7, hdk)
+        _hline(in_s, 6, 0, 3, hdk); _hline(in_s, 7, 0, 3, hink)
+        _rect(in_s, 3, 2, 5, 8, hink)                           # vertical painted hollow visible from behind!
+        in_s[6][5] = hmid; in_s[7][5] = ahi                     # copper fingertip (matches down col 5!)
+        in_s[6][6] = hsh;  in_s[7][6] = hdk
+        in_s[6][7] = hsh;  in_s[7][7] = hsh
+        in_s[6][8] = hmid; in_s[7][8] = hsh
+        in_s[6][9] = hhi;  in_s[7][9] = ahi                     # copper knuckle (matches east & down col 9!)
+
+    # West (inner palm, 10 x 8: col = k so col 0 = north/index .. col 9 = south/pinky)
+    in_w = _grid(10, 8, hdk)
+    _hline(in_w, 0, 0, 10, hink)
+    if variant == 'wrio_b':
+        # Dark machined palm (rows 1..4) + deep crease (row 5) + 4 curled copper-tipped fingers (rows 6..7)
+        _rect(in_w, 1, 1, 9, 5, hsh)
+        _rect(in_w, 2, 2, 8, 4, hdk); _hline(in_w, 2, 2, 8, hmid)
+        _vline(in_w, 0, 1, 5, hmid); _vline(in_w, 9, 1, 5, hink)
+        _hline(in_w, 5, 0, 10, hink)
+        for k in range(10):
+            if k in gap_k:
+                in_w[6][k] = in_w[7][k] = hink
+            else:
+                lit = k in (0, 3, 6, 9)
+                in_w[6][k] = hmid if lit else hsh
+                in_w[7][k] = ahi if lit else amid
+    elif variant == 'wrio_a1':
+        # Palm heel + subtle thumb root wrap on col 0 matching in_n col 9 (rows 1..2)!
+        _rect(in_w, 1, 1, 9, 6, hsh)
+        _rect(in_w, 2, 2, 8, 5, hdk)
+        _hline(in_w, 2, 2, 8, hmid)
+        _hline(in_w, 4, 2, 8, hsh)
+        _vline(in_w, 0, 1, 6, hmid)
+        in_w[1][0] = hsh; in_w[2][0] = ash                      # copper thumb band edge wrapping onto west col 0
+        _vline(in_w, 9, 1, 6, hink)
+        _hline(in_w, 6, 0, 10, hink)
+        _hline(in_w, 7, 0, 10, hdk)
+        for gx in (2, 5, 8):
+            in_w[7][gx] = hink
+    elif variant == 'wrio_a2':
+        # Thumb wrapping cleanly down the north half of west (cols 0..4, rows 1..7, matching in_n & down rows 5..9!)
+        _rect(in_w, 5, 1, 10, 6, hsh)
+        _rect(in_w, 6, 2, 9, 5, hdk); _hline(in_w, 2, 6, 9, hmid)
+        _vline(in_w, 9, 1, 6, hink)
+        _hline(in_w, 6, 5, 10, hink); _hline(in_w, 7, 5, 10, hdk)
+        # Thumb body on cols 0..4 separated from palm heel by ink crease at col 5!
+        _vline(in_w, 5, 1, 8, hink)
+        _rect(in_w, 0, 1, 5, 8, hmid)
+        _vline(in_w, 0, 1, 8, hsh); _vline(in_w, 4, 1, 8, hdk)
+        _hline(in_w, 3, 0, 5, amid); in_w[3][0] = ash; in_w[3][1] = ahi   # copper thumb knuckle band wraps from in_n row 3!
+        _hline(in_w, 7, 0, 5, hsh); in_w[7][0] = ash; in_w[7][4] = amid   # matches down col 0 rows 5..9!
+    else:
+        # Pure dark machined palm heel (rows 1..5) + deep recessed shadow along bottom (rows 6..7, matches down cols 0..2!)
+        _rect(in_w, 1, 1, 9, 6, hsh)
+        _rect(in_w, 2, 2, 8, 5, hdk)
+        _hline(in_w, 2, 2, 8, hmid)
+        _hline(in_w, 4, 2, 8, hsh)
+        _vline(in_w, 0, 1, 6, hmid)                             # thumb-side heel bevel
+        _vline(in_w, 9, 1, 6, hink)
+        _hline(in_w, 6, 0, 10, hink)                            # deep recess crease under palm heel
+        _hline(in_w, 7, 0, 10, hdk)                             # shadowed underside edge (meets down col 0 cleanly)
+        for gx in (2, 5, 8):
+            in_w[7][gx] = hink
+
+    in_hand = {
+        'north': in_n, 'east': ie, 'south': in_s, 'west': in_w, 'down': idn,
+    }
+
+    # ---- 2. OUTER 0.5 px HAND GUARD + 3D-LOOK THUMB IN OUTER LAYER TEXTURE (6 x 4.5 x 6 -> 12 x 9) ----
+    def _slate_band(g, x0, y0, x1, y1):
+        h = y1 - y0
+        for dy in range(h):
+            y = y0 + dy
+            for x in range(x0, x1):
+                if dy == 0: c = srim if x < x1 - 1 else shi_
+                elif dy == 1 and h >= 3: c = shi_ if x == x0 else smid if x < x1 - 1 else ssh
+                else: c = smid if x < x1 - 1 else ssh
+                g[y][x] = c
+
+    W, H, D = 12, 9, 12
+
+    # East: existing beveled slate wrist cuff, copper rivets, 6x3 dorsal piston cutout & knuckle impact bar
+    oe = _grid(D, H, smid)
+    _slate_band(oe, 0, 0, D, 3)
+    oe[1][2] = oe[1][D - 3] = ahi
+    _rect(oe, 0, 3, 3, 9, smid); _rect(oe, D - 3, 3, D, 9, smid)
+    _rect(oe, 3, 3, D - 3, 6, '.')
+    _hline(oe, 2, 3, D - 3, ink)
+    _vline(oe, 2, 3, 6, ink); _vline(oe, D - 3, 3, 6, ink)
+    _rect(oe, 0, 6, D, 9, kbar_mid)
+    _hline(oe, 6, 0, D, kbar_hi); oe[6][D - 1] = srim
+    _hline(oe, 7, 0, D, kbar_sh)
+    _hline(oe, 8, 0, D, ink)
+    _vline(oe, 0, 0, 9, ssh); _vline(oe, D - 1, 0, 9, srim)
+    oe[8][0] = oe[8][D - 1] = ink
+
+    # North (col 0 = east/knuckles .. col 11 = west/palm):
+    on = _grid(W, H, '.')
+    _slate_band(on, 0, 0, W, 3)
+    _hline(on, 2, 0, W, ink)
+    _rect(on, 0, 3, 4, 9, smid)
+    _vline(on, 0, 0, 9, srim)
+    _vline(on, 3, 3, 9, ink)
+    _hline(on, 6, 0, 4, kbar_hi); _hline(on, 7, 0, 4, kbar_sh); _hline(on, 8, 0, 4, ink)
+
+    if variant == 'wrio_a1':
+        # Extend the outer hand guard cleanly over the flat dark area beside the middle-layer thumb
+        # (contours diagonally right around the thumb root cols 8..10, copper band r5 cols 7..10, & curled thumb r6..8 cols 4..7!)
+        _rect(on, 0, 3, 8, 4, smid); on[3][0] = srim; on[3][7] = ink
+        _rect(on, 0, 4, 7, 5, smid); on[4][0] = srim; on[4][6] = ink
+        _rect(on, 0, 5, 5, 6, smid); on[5][0] = srim; on[5][4] = ink
+        # Crisp beveled transition & knuckle bar across the extended dorsal cheek
+        on[3][3] = smid; on[4][3] = smid; on[5][3] = smid
+        on[3][4] = shi_; on[4][4] = smid; on[4][5] = ssh; on[3][5] = smid; on[3][6] = ssh
+        on[5][3] = kbar_hi; on[4][5] = kbar_sh
+        _hline(on, 6, 0, 4, kbar_hi); on[6][0] = srim; on[6][3] = ink
+        _hline(on, 7, 0, 4, kbar_sh); on[7][0] = srim; on[7][3] = ink
+        _hline(on, 8, 0, 4, ink)
+    elif variant == 'wrio_a2':
+        # Extend the outer hand guard right up to the thumb hollow seam (cols 0..5, rows 3..8) to cover the flat dark
+        # cheek beside the middle-layer thumb, leaving cols 6..11 open so wrio_a2's chunky thumb (c_out 7..10) shows cleanly!
+        _rect(on, 0, 3, 6, 9, smid)
+        _hline(on, 3, 1, 5, shi_)
+        _hline(on, 4, 1, 5, smid)
+        _hline(on, 5, 1, 5, ssh)
+        on[4][3] = ssh
+        _hline(on, 6, 0, 6, kbar_hi); on[6][0] = srim
+        _hline(on, 7, 0, 6, kbar_sh); on[7][0] = srim
+        _hline(on, 8, 0, 6, ink)
+        _vline(on, 0, 0, 9, srim)
+        _vline(on, 5, 3, 9, ink)
+        on[8][0] = ink
+    elif variant == 'wrio_b':
+        # Chunkier Wriothesley-style curled thumb (4-texel wide distal block + crisp copper knuckle band + copper tip)
+        on[3][8] = hhi;  on[3][9] = hmid; on[3][10] = hsh
+        on[4][7] = ahi;  on[4][8] = ahi;  on[4][9] = amid; on[4][10] = ash
+        on[5][5] = hrim; on[5][6] = hhi;  on[5][7] = hmid; on[5][8] = hsh;  on[5][9] = hink
+        on[6][4] = hrim; on[6][5] = hhi;  on[6][6] = hmid; on[6][7] = hsh;  on[6][8] = hdk; on[6][9] = hink
+        on[7][4] = ahi;  on[7][5] = hmid; on[7][6] = hsh;  on[7][7] = hdk;  on[7][8] = hink
+        on[8][4] = hink; on[8][5] = hink; on[8][6] = hink; on[8][7] = hink
+    else:
+        # Clean curved mechanical thumb (rows 3..8, bridging over the painted hollow cols 6..7 onto index cols 4..5!)
+        on[3][8] = hhi;  on[3][9] = hmid; on[3][10] = hsh
+        on[4][7] = ahi;  on[4][8] = ahi;  on[4][9] = amid; on[4][10] = ash
+        on[5][5] = hrim; on[5][6] = hhi;  on[5][7] = hmid; on[5][8] = hsh;  on[5][9] = hink
+        on[6][4] = hrim; on[6][5] = hhi;  on[6][6] = hmid; on[6][7] = hsh;  on[6][8] = hink
+        on[7][4] = hhi;  on[7][5] = hmid; on[7][6] = hsh;  on[7][7] = hdk
+        on[8][4] = hink; on[8][5] = hink; on[8][6] = hink; on[8][7] = hink
+
+    # South (col 0 = west/palm .. col 11 = east/knuckles):
+    os_ = _grid(W, H, '.')
+    _slate_band(os_, 0, 0, W, 3)
+    _hline(os_, 2, 0, W, ink)
+    if variant in ('wrio_a1', 'wrio_a2'):
+        # Extend the outer hand guard across the full back (pinky) side of the hand (cols 1..11, rows 3..8),
+        # stopping cleanly at col 1 (flush with inner hand west) so there's zero floating overhang past the open palm!
+        _rect(os_, 1, 3, W, 9, smid)
+        _hline(os_, 3, 2, W - 1, shi_)
+        _hline(os_, 4, 2, W - 1, smid)
+        _hline(os_, 5, 2, W - 1, ssh)
+        # Subtle riveted armor seam on the back cheek matching the guard's industrial look
+        _vline(os_, 6, 3, 6, ink)
+        os_[4][3] = os_[4][9] = ssh
+        # Continuous beveled knuckle impact bar across the back guard (rows 6..8)
+        _hline(os_, 6, 1, W, kbar_hi); os_[6][W - 1] = kbar_mid
+        _hline(os_, 7, 1, W, kbar_sh)
+        _hline(os_, 8, 1, W, ink)
+        _vline(os_, 1, 3, 9, ink)
+        _vline(os_, W - 1, 0, 9, ssh)
+        os_[8][W - 1] = ink
+    else:
+        _rect(os_, 8, 3, W, 9, smid)
+        _vline(os_, W - 1, 0, 9, ssh)
+        _vline(os_, 8, 3, 9, ink)
+        _hline(os_, 6, 8, W, kbar_mid); _hline(os_, 7, 8, W, kbar_sh); _hline(os_, 8, 8, W, ink)
+
+    # West: wrist cuff only (rows 0..2), palm rows 3..8 open '.'
+    ow = _grid(D, H, '.')
+    _slate_band(ow, 0, 0, D, 3)
+    _hline(ow, 2, 0, D, ink)
+
+    # Up: wrist collar ring
+    oup = _grid(W, D, '.')
+    _hline(oup, 0, 0, W, srim); _hline(oup, D - 1, 0, W, ssh)
+    _vline(oup, 0, 0, D, ssh); _vline(oup, W - 1, 0, D, srim)
+    oup[0][0] = oup[D - 1][W - 1] = shi_
+
+    outer = {
+        'north': on, 'south': os_, 'east': oe, 'west': ow,
+        'up': oup, 'down': _grid(W, D, '.'),
+    }
+    return in_hand, outer
+
+
 def _r4_arm(st, gauntlet='default'):
     """Sleek flush open exo-arm (R3-C's winning silhouette) with recipe-grounded metals + copper collars."""
     frim, fhi, fmid, fsh, fdk = [_rgba(c) for c in st['fr']]
@@ -700,6 +1107,8 @@ def _r4_arm(st, gauntlet='default'):
         fist, gauntlet_outer = _gauntlet_2layer(st, heavy=False)
     elif gauntlet == 'power_fist':
         fist, gauntlet_outer = _gauntlet_2layer(st, heavy=True)
+    elif gauntlet in ('wrio_a', 'wrio_b', 'wrio_c', 'wrio_a1', 'wrio_a2'):
+        fist, gauntlet_outer = _gauntlet_wrio(st, variant=gauntlet)
     else:
         fist = _r3_fist(st)
 
@@ -799,8 +1208,8 @@ def _r4_leg(st):
 def build(style, chest_x):
     assert style in R4_STYLES, (style, tuple(R4_STYLES))
     st = R4_STYLES[style]
-    gauntlet = os.environ.get('GAUNTLET', 'power_fist')
-    assert gauntlet in ('default', 'plated', 'layered', 'power_fist', 'cyber'), gauntlet
+    gauntlet = os.environ.get('GAUNTLET', 'wrio_a2')
+    assert gauntlet in ('default', 'plated', 'layered', 'power_fist', 'cyber', 'wrio_a', 'wrio_b', 'wrio_c', 'wrio_a1', 'wrio_a2'), gauntlet
     chest_out, abd_out, chest_in, abd_in, belt = _r4_torso(st, chest_x)
     arm_hand, arm_sock, gauntlet_outer = _r4_arm(st, gauntlet=gauntlet)
     leg_in = _r4_leg(st)
@@ -816,7 +1225,7 @@ def build(style, chest_x):
         arm_socket_shell=arm_sock,
         arm_outer=None,
         gauntlet_outer=gauntlet_outer,
-        gauntlet_inner=arm_hand if gauntlet in ('layered', 'power_fist') else None,
+        gauntlet_inner=arm_hand if gauntlet in ('layered', 'power_fist', 'wrio_a', 'wrio_b', 'wrio_c', 'wrio_a1', 'wrio_a2') else None,
         shoulder_plate=shoulder,
         leg_shell=leg_in,
         leg_outer=None,

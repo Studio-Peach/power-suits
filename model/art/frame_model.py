@@ -1537,6 +1537,15 @@ def check_armor():
     pieces = [e for e in elements if e.get('_armor')]
     others = [x for e in elements for x in e.get('_hollow', [e])]
     W = {x['uuid']: world(x) for x in others + pieces}
+    Q = {x['uuid']: (quads(x), _centre(x)) for x in others}
+    def _aabb(e):
+        pts = [p for f in quads(e) for p in f]
+        return tuple((min(p[k] for p in pts), max(p[k] for p in pts)) for k in range(3)) if pts else None
+    def _qb(q):
+        return (min(p[0] for p in q), max(p[0] for p in q),
+                min(p[1] for p in q), max(p[1] for p in q),
+                min(p[2] for p in q), max(p[2] for p in q))
+    BB = {e['uuid']: _aabb(e) for e in elements}
     side = lambda A, P: sum((P[k] - A[0][k]) * n for k, n in enumerate(_normal(A)))
     for a in pieces:
         for st in elements:
@@ -1544,19 +1553,32 @@ def check_armor():
                     and st['_g']['_parent'] is a['_g']['_parent'] \
                     and not encloses(a, st, W, margin=0.1):
                 bad.append((a['name'], 'does not enclose', st['name']))
-        fa, ca = [A for x in a.get('_hollow', [a]) for A in quads(x)], _centre(a)
+        ba = BB[a['uuid']]
+        if ba is None: continue
+        fa, ca = [A for x in a.get('_hollow', [a]) for A in Q[x['uuid']][0]], _centre(a)
         planes = {}                                    # the piece's faces by plane, so each other face is tested only
         for A in fa:                                   # against the piece's faces in its own plane (a hollow piece,
-            planes.setdefault(_plane_key(A), []).append(A)   # the helmet's layer, is thousands of texel slabs: testing
-        for o in others:                               # every pair took ~12 min a build)
-            if o['name'] == a['name'] or apart(a, o): continue
-            co = _centre(o)
-            for B in quads(o):
-                axis, k = _plane_key(B)
-                near = [A for kk in (k - 1, k, k + 1) for A in planes.get((axis, kk), ())]
-                if any(coplanar(A, B) and side(A, ca) * side(A, co) >= 0 for A in near):
-                    bad.append((a['name'], 'shares a plane with', o['name']))
-                    break
+            planes.setdefault(_plane_key(A), []).append((A, _qb(A)))   # the helmet's layer, is thousands of texel slabs)
+        for e in elements:
+            if e['name'] == a['name'] or apart(a, e): continue
+            be = BB[e['uuid']]
+            if be is None or any(min(ba[k][1], be[k][1]) - max(ba[k][0], be[k][0]) < -0.05 for k in range(3)):
+                continue
+            for o in e.get('_hollow', [e]):
+                qs, co = Q[o['uuid']]
+                hit = False
+                for B in qs:
+                    axis, k = _plane_key(B)
+                    bx0, bx1, by0, by1, bz0, bz1 = _qb(B)
+                    near = [A for kk in (k - 1, k, k + 1) for A, (ax0, ax1, ay0, ay1, az0, az1) in planes.get((axis, kk), ())
+                            if ax1 >= bx0 - 0.01 and bx1 >= ax0 - 0.01
+                            and ay1 >= by0 - 0.01 and by1 >= ay0 - 0.01
+                            and az1 >= bz0 - 0.01 and bz1 >= az0 - 0.01]
+                    if any(coplanar(A, B) and side(A, ca) * side(A, co) >= 0 for A in near):
+                        bad.append((a['name'], 'shares a plane with', o['name']))
+                        hit = True
+                        break
+                if hit: break
     return bad
 
 PLANE_BIN = 0.05   # px; wider than coplanar()'s eps, so two faces in one plane fall in the same or the next bin
@@ -1577,26 +1599,35 @@ def _normal(A):
     return (u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0])
 
 def check():
-    items = [s for e in elements if not e.get('_armor') for s in e.get('_hollow', [e])]   # shells by their solid texels
-    of = {s['uuid']: e for e in elements for s in e.get('_hollow', [])}
-    W = {e['uuid']: world(e) for e in elements + items}
+    cubes = [e for e in elements if not e.get('_armor')]
+    W = {e['uuid']: world(e) for e in elements}
+    for e in cubes:
+        for s in e.get('_hollow', ()): W[s['uuid']] = world(s)
     bad = []
-    for i, a in enumerate(items):
-        for b in items[i + 1:]:
-            if apart(a, b): continue
-            if limb(a) == limb(b) and (a['uuid'] in of or b['uuid'] in of):   # a shell's texel and his part
-                sh, st = (of[a['uuid']], b) if a['uuid'] in of else (of[b['uuid']], a)
-                if st['name'].startswith(('fr_', 'ar_')) or encloses(sh, st, W): continue
-            if limb(a) == limb(b) and {a['name'][:3], b['name'][:3]} & {'tl_'}:   # a tool (TOOL) on its own arm:
-                o = b if a['name'].startswith('tl_') else a
-                if o['name'].startswith(('fr_', 'ar_', 'cu_', 'tl_')): continue          # built on it (a collar wraps it)
-                t_ = a if o is b else b                                          # his arm: inside it with room, or clear
-                if encloses(t_, o, W) or not overlap(W[a['uuid']], W[b['uuid']]): continue
-                bad.append((a['name'], b['name'])); continue
-            fa, fb = a['name'].startswith(('fr_', 'ar_', 'cu_')), b['name'].startswith(('fr_', 'ar_', 'cu_'))
+    for i, A in enumerate(cubes):
+        fa, la, sa = A['name'].startswith(('fr_', 'ar_', 'cu_')), limb(A), A.get('_hollow', [A])
+        ha = bool(A.get('_hollow'))
+        for B in cubes[i + 1:]:
+            if apart(A, B): continue
+            fb, lb = B['name'].startswith(('fr_', 'ar_', 'cu_')), limb(B)
             if not (fa or fb): continue                                   # Steve against himself: vanilla's business
-            if fa and fb and limb(a) == limb(b): continue                 # one limb's frame is built touching itself
-            if overlap(W[a['uuid']], W[b['uuid']]): bad.append((a['name'], b['name']))
+            if fa and fb and la == lb: continue                           # one limb's frame is built touching itself
+            if la == lb and (A['name'].startswith('tl_') or B['name'].startswith('tl_')):
+                o = B if A['name'].startswith('tl_') else A
+                if o['name'].startswith(('fr_', 'ar_', 'cu_', 'tl_')): continue
+            if not overlap(W[A['uuid']], W[B['uuid']]): continue          # parent boxes disjoint -> slabs disjoint
+            hb = bool(B.get('_hollow'))
+            for a in sa:
+                for b in B.get('_hollow', [B]):
+                    if la == lb and (ha or hb):                           # a shell's texel and his part
+                        sh, st = (A, b) if ha else (B, a)
+                        if st['name'].startswith(('fr_', 'ar_')) or encloses(sh, st, W): continue
+                    if la == lb and {a['name'][:3], b['name'][:3]} & {'tl_'}:
+                        o = b if a['name'].startswith('tl_') else a
+                        t_ = a if o is b else b
+                        if encloses(t_, o, W) or not overlap(W[a['uuid']], W[b['uuid']]): continue
+                        bad.append((a['name'], b['name'])); continue
+                    if overlap(W[a['uuid']], W[b['uuid']]): bad.append((a['name'], b['name']))
     return bad
 
 # ---------------------------------------------------------------- armour (draft)
